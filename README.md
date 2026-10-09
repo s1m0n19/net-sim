@@ -6,9 +6,9 @@ Il nome è provvisorio.
 
 ## Stato
 
-Il progetto è in sviluppo. Oggi la parte che simula la rete funziona per una LAN: PC e switch, con ARP e ping, da far avanzare un passo alla volta.
+Il progetto è in sviluppo. Oggi la parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti, da far avanzare un passo alla volta.
 
-Quello che si vede a schermo è invece una **pagina provvisoria**, fatta per osservare la simulazione: disegno essenziale, comandi con pulsanti e menu. Mancano ancora l'editor per costruire le reti, il salvataggio, il terminale dei PC, i guasti, l'avanzamento automatico del tempo e la grafica curata.
+Quello che si vede a schermo è invece una **pagina provvisoria**, fatta per osservare la simulazione: disegno essenziale, comandi con pulsanti e menu. Mancano ancora l'editor per costruire le reti, il salvataggio, il terminale dei PC, l'avanzamento automatico del tempo e la grafica curata.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
 
@@ -42,7 +42,9 @@ La pagina offre tre reti di esempio, nella rete 192.168.1.0/24:
 | ***host* fa ping a *indirizzo* con *n* richieste** | Sceglie chi fa il ping, verso quale indirizzo IP e con quanti echo request (quattro, come su Windows, se non si cambia). L'indirizzo si sceglie dall'elenco o si scrive a mano |
 | **Ping** | L'host scelto invia gli echo request, uno alla volta: il successivo parte quando il precedente si è concluso. Se non conosce il MAC della destinazione, prima parte da sola la richiesta ARP |
 | **Passo** | La rete avanza al prossimo istante in cui succede qualcosa: l'arrivo di un frame o la scadenza di un'attesa. È disattivato quando non c'è più nulla in programma |
-| **Ricomincia** | Ricarica la rete attuale, con le tabelle vuote |
+| **Ricomincia** | Ricarica la rete attuale, con le tabelle vuote e senza guasti |
+| **Clic su un cavo** | Lo stacca o lo riattacca. Staccato diventa rosso e tratteggiato |
+| **Clic su un dispositivo** | Lo spegne o lo accende. Spento diventa grigio |
 
 Per vedere un ping nella LAN con switch conviene impostare una sola richiesta: "Ping", poi otto clic su "Passo". I primi quattro passi sono lo scambio ARP, gli altri quattro l'echo request e l'echo reply. Un secondo ping dura solo quattro passi, perché le tabelle sono già piene.
 
@@ -53,6 +55,20 @@ Altre prove possibili scrivendo l'indirizzo a mano:
 - `192.168.1.99`, che nessuno ha: la richiesta ARP resta senza risposta. Quando non viaggia più nulla, il passo successivo salta alla scadenza dell'attesa (20 tick): il PC rinuncia all'echo request, che finisce con "host di destinazione non raggiungibile". Con più richieste, ognuna ripete la richiesta ARP e aspetta altri 20 tick.
 - `127.0.0.1`, oppure l'indirizzo del PC che fa il ping: il PC si risponde da solo, subito, e sul cavo non passa nulla.
 - `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla e tutte le richieste finiscono subito con "trasmissione non riuscita".
+
+### Guasti
+
+Un PC che non sente il segnale sul cavo lo dice con la scritta "senza segnale": succede se il suo cavo è staccato o se il dispositivo all'altro capo è spento. Un dispositivo spento perde le sue tabelle e, riacceso, riparte da zero.
+
+Tre prove nella LAN con switch, ciascuna con una richiesta sola e partendo da "Ricomincia":
+
+| Prova | Esito del ping da PC1 a PC2 |
+| --- | --- |
+| Stacca il cavo di PC1, poi "Ping" | Trasmissione non riuscita, subito: PC1 non sente il segnale |
+| Stacca il cavo di PC2, poi "Ping" | Host di destinazione non raggiungibile, dopo tre passi: nessuno risponde all'ARP |
+| Fai un ping completo, poi stacca il cavo di PC2 e ripeti il ping | Richiesta scaduta: PC1 conosce ancora il MAC di PC2 e l'echo request parte, ma lo switch non sa più dove mandarlo |
+
+Spegnendo lo switch, tutti e tre i PC restano senza segnale. Riaccendendolo, la sua tabella MAC è vuota, mentre i PC ricordano ancora le loro tabelle ARP.
 
 ### Tempesta di broadcast
 
@@ -77,7 +93,6 @@ Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC co
 
 - **Venti clic per un ping completo.** Con le quattro richieste di Windows e senza avanzamento automatico, un ping nella LAN richiede venti passi. Per una dimostrazione conviene impostare una richiesta sola.
 - **Le reti sono solo le tre di esempio.** Per provarne un'altra bisogna modificare un file in `examples/`.
-- **Non si può ancora provocare la "richiesta scaduta"** dalla pagina: serve un guasto, e i guasti non esistono ancora.
 
 ## Comandi
 

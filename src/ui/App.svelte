@@ -2,7 +2,7 @@
   import twoPcFile from "../../examples/due-pc.netsim.json?raw";
   import lanFile from "../../examples/lan-switch.netsim.json?raw";
   import ringFile from "../../examples/anello-switch.netsim.json?raw";
-  import { ping } from "../engine/actions";
+  import { connectLink, disconnectLink, ping, powerOff, powerOn, type Action } from "../engine/actions";
   import type { EthernetFrame } from "../engine/model/frames";
   import { findDevice, hostsOf, type PortRef } from "../engine/model/network";
   import { Simulator, type Trace } from "../engine/simulator";
@@ -42,6 +42,7 @@
       time: sim.time,
       links: sim.network.links.map((link) => ({
         id: link.id,
+        connected: link.connected,
         from: position(link.a.deviceId),
         to: position(link.b.deviceId),
       })),
@@ -50,6 +51,8 @@
         name: host.name,
         ip: host.ip,
         mac: host.ports[0].mac,
+        powered: host.powered,
+        linkUp: host.linkUp,
         at: position(host.id),
         arpRows: [...host.arpTable],
         pending: host.pendingPackets.map(
@@ -61,6 +64,7 @@
         .map((sw) => ({
           id: sw.id,
           name: sw.name,
+          powered: sw.powered,
           at: position(sw.id),
           macRows: [...sw.macTable],
         })),
@@ -109,6 +113,29 @@
       inputError = error instanceof Error ? error.message : String(error);
     }
     view = readState();
+  }
+
+  // Guasti: un clic stacca o riattacca un cavo, spegne o accende un dispositivo.
+  function toggleLink(link: { id: string; connected: boolean }) {
+    run(link.connected ? disconnectLink(link.id) : connectLink(link.id));
+  }
+
+  function togglePower(device: { id: string; powered: boolean }) {
+    run(device.powered ? powerOff(device.id) : powerOn(device.id));
+  }
+
+  function run(action: Action) {
+    if (sim.suspended) return;
+    sim.dispatch(action);
+    view = readState();
+  }
+
+  // Fa valere Invio e Spazio come un clic, per chi usa la tastiera.
+  function onKey(event: KeyboardEvent, action: () => void) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      action();
+    }
   }
 
   function step() {
@@ -218,19 +245,85 @@
   </p>
 {/if}
 
+<p>Clic su un cavo per staccarlo o riattaccarlo, su un dispositivo per spegnerlo o accenderlo.</p>
+
 <svg viewBox="0 0 700 340" width="700" height="340" style="border: 1px solid gray">
   {#each view.links as link (link.id)}
-    <line x1={link.from.x} y1={link.from.y} x2={link.to.x} y2={link.to.y} stroke="gray" stroke-width="3" />
+    <line
+      x1={link.from.x}
+      y1={link.from.y}
+      x2={link.to.x}
+      y2={link.to.y}
+      stroke={link.connected ? "gray" : "crimson"}
+      stroke-width="3"
+      stroke-dasharray={link.connected ? undefined : "8 8"}
+    />
+    <!-- Una riga larga e invisibile sopra il cavo: lo rende facile da cliccare. -->
+    <line
+      x1={link.from.x}
+      y1={link.from.y}
+      x2={link.to.x}
+      y2={link.to.y}
+      stroke="transparent"
+      stroke-width="18"
+      style="cursor: pointer"
+      role="button"
+      tabindex="0"
+      aria-label={link.connected ? `Stacca il cavo ${link.id}` : `Riattacca il cavo ${link.id}`}
+      onclick={() => toggleLink(link)}
+      onkeydown={(event) => onKey(event, () => toggleLink(link))}
+    />
   {/each}
 
   {#each view.switches as sw (sw.id)}
-    <rect x={sw.at.x - 45} y={sw.at.y - 25} width="90" height="50" fill="white" stroke="black" stroke-width="2" />
-    <text x={sw.at.x} y={sw.at.y + 5} text-anchor="middle">{sw.name}</text>
+    <g
+      style="cursor: pointer"
+      role="button"
+      tabindex="0"
+      aria-label={sw.powered ? `Spegni ${sw.name}` : `Accendi ${sw.name}`}
+      onclick={() => togglePower(sw)}
+      onkeydown={(event) => onKey(event, () => togglePower(sw))}
+    >
+      <rect
+        x={sw.at.x - 45}
+        y={sw.at.y - 25}
+        width="90"
+        height="50"
+        fill={sw.powered ? "white" : "lightgray"}
+        stroke={sw.powered ? "black" : "gray"}
+        stroke-width="2"
+      />
+      <text x={sw.at.x} y={sw.at.y + 5} text-anchor="middle">{sw.name}</text>
+    </g>
+    {#if !sw.powered}
+      <text x={sw.at.x} y={sw.at.y - 32} text-anchor="middle" fill="crimson">spento</text>
+    {/if}
   {/each}
 
   {#each view.hosts as host (host.id)}
-    <circle cx={host.at.x} cy={host.at.y} r="30" fill="white" stroke="black" stroke-width="2" />
-    <text x={host.at.x} y={host.at.y + 5} text-anchor="middle">{host.name}</text>
+    <g
+      style="cursor: pointer"
+      role="button"
+      tabindex="0"
+      aria-label={host.powered ? `Spegni ${host.name}` : `Accendi ${host.name}`}
+      onclick={() => togglePower(host)}
+      onkeydown={(event) => onKey(event, () => togglePower(host))}
+    >
+      <circle
+        cx={host.at.x}
+        cy={host.at.y}
+        r="30"
+        fill={host.powered ? "white" : "lightgray"}
+        stroke={host.powered ? "black" : "gray"}
+        stroke-width="2"
+      />
+      <text x={host.at.x} y={host.at.y + 5} text-anchor="middle">{host.name}</text>
+    </g>
+    {#if !host.powered}
+      <text x={host.at.x} y={host.at.y - 37} text-anchor="middle" fill="crimson">spento</text>
+    {:else if !host.linkUp}
+      <text x={host.at.x} y={host.at.y - 37} text-anchor="middle" fill="crimson">senza segnale</text>
+    {/if}
     <text x={host.at.x} y={host.at.y + 50} text-anchor="middle">{host.ip}</text>
     <text x={host.at.x} y={host.at.y + 68} text-anchor="middle">{host.mac}</text>
     {#if host.pending.length > 0}

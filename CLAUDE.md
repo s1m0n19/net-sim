@@ -17,7 +17,7 @@ I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ci
 
 ## Stato attuale
 
-Il motore del rilascio 1 è quasi completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti), in passo-passo. Mancano i guasti.
+Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti, loopback), guasti (cavo staccato, dispositivo spento), sospensione della tempesta di broadcast, in passo-passo.
 
 L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. Mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
 
