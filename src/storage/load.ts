@@ -3,7 +3,7 @@
 // Un file può arrivare modificato a mano o danneggiato: se qualcosa non
 // torna, il caricamento si ferma e dice che cosa non va. Non tenta di riparare.
 
-import type { Host, Link, Network, PortRef } from "../engine/model/network";
+import type { Device, Link, Network, Port, PortRef } from "../engine/model/network";
 
 export const FILE_FORMAT = "net-sim";
 export const FILE_VERSION = 1;
@@ -45,24 +45,11 @@ export function loadNetworkFile(text: string): LoadedFile {
     throw new Error(`Versione del file non supportata: ${data.version}.`);
   }
 
-  const devices: Host[] = [];
+  const devices: Device[] = [];
   const positions = new Map<string, Position>();
 
   for (const d of data.network.devices) {
-    if (d.kind !== "host") {
-      throw new Error(`Tipo di dispositivo non supportato: ${d.kind}.`);
-    }
-    devices.push({
-      kind: "host",
-      id: d.id,
-      name: d.name,
-      ports: d.ports.map((p: any) => ({ name: p.name, mac: p.mac })),
-      ip: d.ip,
-      mask: d.mask,
-      gateway: d.gateway,
-      // Una rete appena aperta è una rete appena accesa: le tabelle sono vuote.
-      arpTable: new Map(),
-    });
+    devices.push(readDevice(d));
     positions.set(d.id, { x: d.position.x, y: d.position.y });
   }
 
@@ -75,6 +62,30 @@ export function loadNetworkFile(text: string): LoadedFile {
   }
 
   return { network, positions };
+}
+
+// Costruisce un dispositivo a partire dai suoi dati nel file.
+// Una rete appena aperta è una rete appena accesa: le tabelle sono vuote.
+function readDevice(d: any): Device {
+  const ports: Port[] = d.ports.map((p: any) => ({ name: p.name, mac: p.mac }));
+
+  switch (d.kind) {
+    case "host":
+      return {
+        kind: "host",
+        id: d.id,
+        name: d.name,
+        ports,
+        ip: d.ip,
+        mask: d.mask,
+        gateway: d.gateway,
+        arpTable: new Map(),
+      };
+    case "switch":
+      return { kind: "switch", id: d.id, name: d.name, ports, macTable: new Map() };
+    default:
+      throw new Error(`Tipo di dispositivo non supportato: ${d.kind}.`);
+  }
 }
 
 function checkPortExists(network: Network, ref: PortRef, linkId: string): void {

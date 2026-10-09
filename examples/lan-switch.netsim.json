@@ -1,0 +1,67 @@
+{
+  "format": "net-sim",
+  "version": 1,
+  "network": {
+    "devices": [
+      {
+        "id": "s1",
+        "kind": "switch",
+        "name": "SW1",
+        "position": { "x": 350, "y": 150 },
+        "ports": [
+          { "name": "Fa0/1", "mac": "02:00:00:00:01:01" },
+          { "name": "Fa0/2", "mac": "02:00:00:00:01:02" },
+          { "name": "Fa0/3", "mac": "02:00:00:00:01:03" },
+          { "name": "Fa0/4", "mac": "02:00:00:00:01:04" }
+        ]
+      },
+      {
+        "id": "d1",
+        "kind": "host",
+        "name": "PC1",
+        "position": { "x": 100, "y": 150 },
+        "ports": [{ "name": "Fa0", "mac": "02:00:00:00:00:01" }],
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d2",
+        "kind": "host",
+        "name": "PC2",
+        "position": { "x": 600, "y": 60 },
+        "ports": [{ "name": "Fa0", "mac": "02:00:00:00:00:02" }],
+        "ip": "192.168.1.11",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d3",
+        "kind": "host",
+        "name": "PC3",
+        "position": { "x": 600, "y": 240 },
+        "ports": [{ "name": "Fa0", "mac": "02:00:00:00:00:03" }],
+        "ip": "192.168.1.12",
+        "mask": "255.255.255.0",
+        "gateway": null
+      }
+    ],
+    "links": [
+      {
+        "id": "l1",
+        "a": { "deviceId": "d1", "portName": "Fa0" },
+        "b": { "deviceId": "s1", "portName": "Fa0/1" }
+      },
+      {
+        "id": "l2",
+        "a": { "deviceId": "d2", "portName": "Fa0" },
+        "b": { "deviceId": "s1", "portName": "Fa0/2" }
+      },
+      {
+        "id": "l3",
+        "a": { "deviceId": "d3", "portName": "Fa0" },
+        "b": { "deviceId": "s1", "portName": "Fa0/3" }
+      }
+    ]
+  }
+}
