@@ -22,7 +22,7 @@ describe("attesa della risposta ARP", () => {
   test("insieme alla richiesta ARP parte un'attesa che scade dopo il tempo previsto", () => {
     const { sim } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", NOBODY));
+    sim.dispatch(ping("d1", NOBODY, 1));
 
     expect(arpTimersInQueue(sim)).toEqual([
       {
@@ -37,7 +37,7 @@ describe("attesa della risposta ARP", () => {
 
   test("se nessuno risponde, allo scadere l'host rinuncia al pacchetto in attesa", () => {
     const { sim, pc1 } = buildTwoHosts();
-    sim.dispatch(ping("d1", NOBODY));
+    sim.dispatch(ping("d1", NOBODY, 1));
     sim.step(); // PC2 scarta la richiesta: non è per lui
     expect(pc1.pendingPackets).toHaveLength(1);
 
@@ -60,7 +60,7 @@ describe("attesa della risposta ARP", () => {
   test("se la risposta arriva, l'attesa viene annullata e non resta nulla in coda", () => {
     const { sim } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(4); // la rete si ferma a ping concluso, non alla scadenza
@@ -72,7 +72,7 @@ describe("attesa della risposta ARP", () => {
     // PC1 conosce PC2 ma non il contrario: sarà PC2 a dover fare ARP per rispondere.
     pc1.arpTable.set(PC2_IP, "02:00:00:00:00:02");
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(4); // echo request, ARP request, ARP reply, echo reply
@@ -82,8 +82,8 @@ describe("attesa della risposta ARP", () => {
   test("due ping verso lo stesso indirizzo senza risposta: una sola richiesta, entrambi scartati insieme", () => {
     const { sim, pc1 } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", NOBODY));
-    const second = sim.dispatch(ping("d1", NOBODY));
+    sim.dispatch(ping("d1", NOBODY, 1));
+    const second = sim.dispatch(ping("d1", NOBODY, 1));
 
     expect(second).toEqual([]); // il secondo ping non manda nulla: c'è già una richiesta in corso
     expect(arpTimersInQueue(sim)).toHaveLength(1);
@@ -95,10 +95,10 @@ describe("attesa della risposta ARP", () => {
 
   test("dopo una scadenza, un nuovo ping fa ripartire richiesta e attesa", () => {
     const { sim } = buildTwoHosts();
-    sim.dispatch(ping("d1", NOBODY));
+    sim.dispatch(ping("d1", NOBODY, 1));
     runToEnd(sim);
 
-    const traces = sim.dispatch(ping("d1", NOBODY));
+    const traces = sim.dispatch(ping("d1", NOBODY, 1));
 
     expect(traces).toHaveLength(1);
     expect(traces[0]).toMatchObject({ kind: "frame-sent", frame: { etherType: "ARP" } });
@@ -110,8 +110,8 @@ describe("attesa della risposta ARP", () => {
   test("le attese di host diversi sono indipendenti", () => {
     const { sim, pc1, pc3 } = buildLan();
 
-    sim.dispatch(ping("d1", NOBODY));
-    sim.dispatch(ping("d3", PC2_IP)); // questo va a buon fine
+    sim.dispatch(ping("d1", NOBODY, 1));
+    sim.dispatch(ping("d3", PC2_IP, 1)); // questo va a buon fine
     runToEnd(sim);
 
     expect(sim.time).toBe(ARP_TIMEOUT_TICKS);

@@ -99,6 +99,7 @@ export type Trace =
       targetIp: PingResult["targetIp"];
       sequence: number;
       outcome: PingResult["outcome"];
+      remaining: number;
       conversationId: number;
     };
 
@@ -140,7 +141,7 @@ export class Simulator {
     let output: HostOutput;
     switch (action.kind) {
       case "ping":
-        output = startPing(host, action.targetIp);
+        output = startPing(host, action.targetIp, action.count);
         break;
       case "resolve-address": {
         const request = startArpResolution(host, action.targetIp);
@@ -210,6 +211,10 @@ export class Simulator {
     for (const frame of output.send) {
       this.transmit(port, frame, conversationId, produced);
     }
+    // Prima si annullano le attese vecchie, poi si avviano le nuove.
+    for (const timer of output.cancelTimers) {
+      this.cancelTimer(host.id, timer);
+    }
     for (const request of output.startTimers) {
       this.schedule({
         time: this.time + request.delay,
@@ -218,9 +223,6 @@ export class Simulator {
         timer: request.timer,
         conversationId,
       });
-    }
-    for (const timer of output.cancelTimers) {
-      this.cancelTimer(host.id, timer);
     }
   }
 

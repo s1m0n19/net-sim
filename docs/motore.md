@@ -226,7 +226,7 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Collisioni, velocità, duplex | Dipendono dal mezzo fisico | Assenti: ogni collegamento è punto-punto e senza errori |
 | Dimensione dei frame, MTU, frammentazione | Presenti | Assenti |
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
-| Ping | Windows manda quattro echo request, a un secondo l'uno dall'altro | Un solo echo request |
+| Ping | Windows manda quattro echo request, a un secondo l'uno dall'altro | Quattro echo request senza pausa: il successivo parte quando il precedente si conclude |
 | Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta: dopo 20 tick i pacchetti in attesa sono scartati |
 | Spanning tree | Elimina i cicli tra switch | Assente (vedi sotto) |
 

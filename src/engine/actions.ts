@@ -1,8 +1,9 @@
 import type { Ipv4Address } from "./model/addresses";
+import { DEFAULT_PING_COUNT } from "./protocols/icmp";
 
 // Le azioni sono l'unico modo in cui l'esterno comanda il motore.
 export type Action =
-  | { kind: "ping"; deviceId: string; targetIp: Ipv4Address }
+  | { kind: "ping"; deviceId: string; targetIp: Ipv4Address; count: number }
   | { kind: "resolve-address"; deviceId: string; targetIp: Ipv4Address };
 
 /**
@@ -10,10 +11,15 @@ export type Action =
  *
  * @param deviceId - identificativo dell'host che fa il ping
  * @param targetIp - indirizzo IP da raggiungere
+ * @param count - quanti echo request mandare, uno dopo l'altro; se manca, quattro
  * @returns l'azione da passare a `Simulator.dispatch`
  */
-export function ping(deviceId: string, targetIp: Ipv4Address): Action {
-  return { kind: "ping", deviceId, targetIp };
+export function ping(
+  deviceId: string,
+  targetIp: Ipv4Address,
+  count: number = DEFAULT_PING_COUNT,
+): Action {
+  return { kind: "ping", deviceId, targetIp, count };
 }
 
 /**

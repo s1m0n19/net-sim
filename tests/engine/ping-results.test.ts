@@ -21,7 +21,7 @@ describe("esito del ping: risposta", () => {
     pc1.arpTable.set(PC2_IP, PC2_MAC);
     pc2.arpTable.set(PC1_IP, PC1_MAC);
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(results(sim)).toEqual([
@@ -32,6 +32,7 @@ describe("esito del ping: risposta", () => {
         targetIp: PC2_IP,
         sequence: 1,
         outcome: "reply",
+        remaining: 0,
         conversationId: 1,
       },
     ]);
@@ -40,7 +41,7 @@ describe("esito del ping: risposta", () => {
   test("la risposta annulla l'attesa: la rete si ferma subito, non alla scadenza", () => {
     const { sim, pc1 } = buildLan();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(8);
@@ -51,7 +52,7 @@ describe("esito del ping: risposta", () => {
   test("solo chi ha lanciato il ping riceve un esito", () => {
     const { sim } = buildLan();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(results(sim).map((r) => r.deviceId)).toEqual(["d1"]);
@@ -60,9 +61,9 @@ describe("esito del ping: risposta", () => {
   test("ogni ping ha il suo esito, con il suo numero di sequenza", () => {
     const { sim } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(results(sim).map((r) => [r.sequence, r.outcome])).toEqual([
@@ -76,7 +77,7 @@ describe("esito del ping: host non raggiungibile", () => {
   test("se nessuno risponde all'ARP, il ping finisce allo scadere dell'attesa ARP", () => {
     const { sim, pc1 } = buildLan();
 
-    sim.dispatch(ping("d1", NOBODY));
+    sim.dispatch(ping("d1", NOBODY, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(ARP_TIMEOUT_TICKS); // non si aspetta anche la scadenza dell'echo
@@ -89,8 +90,8 @@ describe("esito del ping: host non raggiungibile", () => {
   test("due ping verso lo stesso indirizzo inesistente finiscono insieme", () => {
     const { sim } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", NOBODY));
-    sim.dispatch(ping("d1", NOBODY));
+    sim.dispatch(ping("d1", NOBODY, 1));
+    sim.dispatch(ping("d1", NOBODY, 1));
     runToEnd(sim);
 
     expect(results(sim).map((r) => [r.time, r.sequence, r.outcome])).toEqual([
@@ -104,7 +105,7 @@ describe("esito del ping: trasmissione non riuscita", () => {
   test("verso un'altra rete senza gateway, l'esito è immediato e non parte nessun frame", () => {
     const { sim } = buildTwoHosts();
 
-    const traces = sim.dispatch(ping("d1", "10.0.0.5"));
+    const traces = sim.dispatch(ping("d1", "10.0.0.5", 1));
 
     expect(traces).toEqual([
       expect.objectContaining({ time: 0, kind: "ping-result", targetIp: "10.0.0.5", outcome: "transmit-failed" }),
@@ -116,7 +117,7 @@ describe("esito del ping: trasmissione non riuscita", () => {
     const { sim, pc1 } = buildTwoHosts();
     pc1.ip = null;
 
-    const traces = sim.dispatch(ping("d1", PC2_IP));
+    const traces = sim.dispatch(ping("d1", PC2_IP, 1));
 
     expect(traces).toEqual([expect.objectContaining({ kind: "ping-result", outcome: "transmit-failed" })]);
   });
@@ -125,7 +126,7 @@ describe("esito del ping: trasmissione non riuscita", () => {
     const { sim, pc1 } = buildTwoHosts();
     pc1.gateway = "192.168.1.1"; // configurato, ma nessun dispositivo ha questo indirizzo
 
-    sim.dispatch(ping("d1", "10.0.0.5"));
+    sim.dispatch(ping("d1", "10.0.0.5", 1));
     runToEnd(sim);
 
     expect(results(sim)).toEqual([
@@ -141,7 +142,7 @@ describe("esito del ping: richiesta scaduta", () => {
     // a PC3, che lo scarta perché l'indirizzo IP non è il suo.
     pc1.arpTable.set(PC2_IP, PC3_MAC);
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(ECHO_TIMEOUT_TICKS);

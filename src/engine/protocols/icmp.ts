@@ -10,6 +10,9 @@ import type { IcmpMessage } from "../model/frames";
 // è un MAC che non si trova, lo si scopre prima.
 export const ECHO_TIMEOUT_TICKS = 40;
 
+// Quanti echo request manda un ping, se non si chiede altro. È il valore di Windows.
+export const DEFAULT_PING_COUNT = 4;
+
 /**
  * Costruisce un echo request, la domanda del ping.
  *

@@ -35,6 +35,8 @@ export interface PendingPacket {
 export interface AwaitedEcho {
   targetIp: Ipv4Address;
   sequence: number;
+  // Quanti echo request dello stesso ping devono ancora partire dopo questo.
+  remaining: number;
 }
 
 export interface Host {

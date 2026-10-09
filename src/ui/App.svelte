@@ -5,6 +5,7 @@
   import type { EthernetFrame } from "../engine/model/frames";
   import { findDevice, hostsOf, type PortRef } from "../engine/model/network";
   import { Simulator, type Trace } from "../engine/simulator";
+  import { DEFAULT_PING_COUNT } from "../engine/protocols/icmp";
   import { loadNetworkFile } from "../storage/load";
   import Packet from "./Packet.svelte";
 
@@ -25,6 +26,9 @@
   const firstHosts = hostsOf(loaded.network);
   let sourceId = $state(firstHosts[0].id);
   let targetIp = $state(firstHosts[1].ip ?? "");
+  // Quanti echo request manda il ping. Con 1 una dimostrazione passo-passo
+  // è più breve; il valore iniziale è quello di Windows.
+  let count = $state(DEFAULT_PING_COUNT);
   let inputError = $state("");
 
   // Il simulatore non sa nulla di Svelte: dopo ogni comando se ne legge
@@ -95,7 +99,7 @@
     // Un testo che non è un indirizzo non è un errore di rete: è un errore
     // di battitura, e va detto subito.
     try {
-      sim.dispatch(ping(sourceId, targetIp.trim()));
+      sim.dispatch(ping(sourceId, targetIp.trim(), count));
       inputError = "";
     } catch (error) {
       inputError = error instanceof Error ? error.message : String(error);
@@ -178,6 +182,9 @@
       <option value={host.ip}>{host.name}</option>
     {/each}
   </datalist>
+  con
+  <input type="number" bind:value={count} min="1" max="10" style="width: 3em" aria-label="Numero di echo request" />
+  richieste
   <button onclick={sendPing}>Ping</button>
   {#if inputError !== ""}
     <strong role="alert">{inputError}</strong>

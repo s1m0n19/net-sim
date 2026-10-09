@@ -17,7 +17,7 @@ I documenti in `docs/` sono nati prima del codice e in alcuni punti lo precedono
 
 ## Stato attuale
 
-Esiste solo lo scheletro: host, switch di livello 2, ARP e ping (un solo echo request, con ARP automatico, pacchetti in attesa, scadenze ed esito), in passo-passo. Mancano i quattro echo request per ping, tempo reale, editor, salvataggio, stile grafico. Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch).
+Esiste solo lo scheletro: host, switch di livello 2, ARP e ping (quattro echo request in serie, con ARP automatico, pacchetti in attesa, scadenze ed esito di ciascuno), in passo-passo. Mancano i guasti, tempo reale, editor, salvataggio, stile grafico. Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch).
 
 ## Comandi
 

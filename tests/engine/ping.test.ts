@@ -32,7 +32,7 @@ describe("ping a caldo tra due PC", () => {
     const { sim, pc1, pc2 } = buildTwoHosts();
     warmUp(pc1, pc2);
 
-    const traces = sim.dispatch(ping("d1", PC2_IP));
+    const traces = sim.dispatch(ping("d1", PC2_IP, 1));
 
     expect(sentFrames(traces)).toEqual([
       {
@@ -53,7 +53,7 @@ describe("ping a caldo tra due PC", () => {
   test("il destinatario risponde con un echo reply a indirizzi scambiati", () => {
     const { sim, pc1, pc2 } = buildTwoHosts();
     warmUp(pc1, pc2);
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
 
     const traces = sim.step();
 
@@ -77,7 +77,7 @@ describe("ping a caldo tra due PC", () => {
   test("dopo due passi l'echo reply è arrivato e la rete è ferma", () => {
     const { sim, pc1, pc2 } = buildTwoHosts();
     warmUp(pc1, pc2);
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
 
     sim.step();
     const traces = sim.step();
@@ -92,7 +92,7 @@ describe("ping a caldo tra due PC", () => {
     const { sim, pc1, pc2 } = buildTwoHosts();
     warmUp(pc1, pc2);
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.traces.some((t) => t.kind === "table-changed")).toBe(false);
@@ -104,9 +104,9 @@ describe("ping a caldo tra due PC", () => {
     const { sim, pc1, pc2 } = buildTwoHosts();
     warmUp(pc1, pc2);
 
-    const first = sentFrames(sim.dispatch(ping("d1", PC2_IP)))[0];
+    const first = sentFrames(sim.dispatch(ping("d1", PC2_IP, 1)))[0];
     runToEnd(sim);
-    const second = sentFrames(sim.dispatch(ping("d1", PC2_IP)))[0];
+    const second = sentFrames(sim.dispatch(ping("d1", PC2_IP, 1)))[0];
 
     expect(first).toMatchObject({ payload: { payload: { sequence: 1 } } });
     expect(second).toMatchObject({ payload: { payload: { sequence: 2 } } });
@@ -116,9 +116,9 @@ describe("ping a caldo tra due PC", () => {
     const { sim, pc1, pc2 } = buildTwoHosts();
     warmUp(pc1, pc2);
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     const conversations = sim.traces.filter((t) => t.kind === "frame-sent").map((t) => t.conversationId);
@@ -130,7 +130,7 @@ describe("ping a caldo in una LAN con uno switch", () => {
   test("con la tabella MAC vuota lo switch manda l'echo request anche a PC3, che lo scarta", () => {
     const { sim, pc1, pc2 } = buildLan();
     warmUp(pc1, pc2);
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
 
     sim.step(); // l'echo request arriva allo switch, che non conosce PC2
     const traces = sim.step(); // le copie arrivano a PC2 e PC3
@@ -147,7 +147,7 @@ describe("ping a caldo in una LAN con uno switch", () => {
     const { sim, sw, pc1, pc2 } = buildLan();
     warmUp(pc1, pc2);
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(4);
@@ -160,11 +160,11 @@ describe("ping a caldo in una LAN con uno switch", () => {
   test("al secondo ping lo switch non manda più nulla a PC3", () => {
     const { sim, pc1, pc2 } = buildLan();
     warmUp(pc1, pc2);
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
     const before = sim.traces.length;
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     const second = sim.traces.slice(before);
@@ -184,7 +184,7 @@ describe("ping a freddo tra due PC", () => {
   test("senza il MAC del destinatario parte una richiesta ARP e l'echo request aspetta", () => {
     const { sim, pc1 } = buildTwoHosts();
 
-    const traces = sim.dispatch(ping("d1", PC2_IP));
+    const traces = sim.dispatch(ping("d1", PC2_IP, 1));
 
     expect(sentKinds(traces)).toEqual(["ARP request"]);
     expect(pc1.pendingPackets).toHaveLength(1);
@@ -196,7 +196,7 @@ describe("ping a freddo tra due PC", () => {
 
   test("appena arriva la risposta ARP, l'echo request in attesa parte", () => {
     const { sim, pc1 } = buildTwoHosts();
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     sim.step(); // PC2 riceve la richiesta ARP e risponde
 
     const traces = sim.step(); // PC1 riceve la risposta ARP
@@ -209,7 +209,7 @@ describe("ping a freddo tra due PC", () => {
   test("il ping completo dura quattro passi: ARP, poi echo", () => {
     const { sim } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(4);
@@ -219,7 +219,7 @@ describe("ping a freddo tra due PC", () => {
   test("chi risponde non ha bisogno di ARP: ha imparato il MAC dalla richiesta", () => {
     const { sim } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     const arpRequests = sim.traces.filter(
@@ -231,7 +231,7 @@ describe("ping a freddo tra due PC", () => {
   test("ARP e ping appartengono alla stessa conversazione", () => {
     const { sim } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     const conversations = new Set(
@@ -242,11 +242,11 @@ describe("ping a freddo tra due PC", () => {
 
   test("il secondo ping non ha più bisogno di ARP e dura la metà", () => {
     const { sim } = buildTwoHosts();
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
     const before = sim.traces.length;
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(6); // 4 passi il primo, 2 il secondo
@@ -256,8 +256,8 @@ describe("ping a freddo tra due PC", () => {
   test("due ping lanciati prima della risposta ARP partono entrambi quando arriva", () => {
     const { sim, pc1 } = buildTwoHosts();
 
-    sim.dispatch(ping("d1", PC2_IP));
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     expect(pc1.pendingPackets).toHaveLength(2);
     runToEnd(sim);
 
@@ -273,7 +273,7 @@ describe("ping a freddo in una LAN con uno switch", () => {
   test("il ping completo dura otto passi", () => {
     const { sim, pc1, pc2 } = buildLan();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(8);
@@ -284,7 +284,7 @@ describe("ping a freddo in una LAN con uno switch", () => {
   test("PC3 vede solo la richiesta ARP: l'echo viaggia tra le sole porte di PC1 e PC2", () => {
     const { sim } = buildLan();
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     const atPc3 = sim.traces.filter((t) => t.kind !== "table-changed" && "at" in t && t.at.deviceId === "d3");
@@ -294,10 +294,10 @@ describe("ping a freddo in una LAN con uno switch", () => {
 
   test("il secondo ping dura quattro passi", () => {
     const { sim } = buildLan();
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.time).toBe(12);
@@ -308,7 +308,7 @@ describe("ping che non arriva o non parte", () => {
   test("verso un indirizzo che nessuno ha: la richiesta ARP resta senza risposta e l'echo non parte mai", () => {
     const { sim } = buildLan();
 
-    sim.dispatch(ping("d1", "192.168.1.99"));
+    sim.dispatch(ping("d1", "192.168.1.99", 1));
     runToEnd(sim);
 
     expect(sentKinds(sim.traces)).toEqual(["ARP request", "ARP request", "ARP request"]); // PC1, poi SW1 verso PC2 e PC3
@@ -318,7 +318,7 @@ describe("ping che non arriva o non parte", () => {
     const { sim, pc1 } = buildTwoHosts();
     pc1.gateway = "192.168.1.1";
 
-    const traces = sim.dispatch(ping("d1", "10.0.0.5"));
+    const traces = sim.dispatch(ping("d1", "10.0.0.5", 1));
 
     expect(sentFrames(traces)[0]).toMatchObject({
       etherType: "ARP",
@@ -332,7 +332,7 @@ describe("ping che non arriva o non parte", () => {
     // PC1 ha una riga sbagliata in tabella: crede che l'IP di PC2 stia al MAC di PC3.
     pc1.arpTable.set(PC2_IP, PC3_MAC);
 
-    sim.dispatch(ping("d1", PC2_IP));
+    sim.dispatch(ping("d1", PC2_IP, 1));
     runToEnd(sim);
 
     expect(sim.traces).toContainEqual(
@@ -343,7 +343,7 @@ describe("ping che non arriva o non parte", () => {
   test("senza gateway, un ping verso un'altra rete non parte", () => {
     const { sim } = buildTwoHosts();
 
-    const traces = sim.dispatch(ping("d1", "10.0.0.5"));
+    const traces = sim.dispatch(ping("d1", "10.0.0.5", 1));
 
     expect(traces.map((t) => t.kind)).toEqual(["ping-result"]); // nessun frame
     expect(sim.queue).toHaveLength(0);
@@ -353,7 +353,7 @@ describe("ping che non arriva o non parte", () => {
     const { sim, pc1 } = buildTwoHosts();
     pc1.ip = null;
 
-    const traces = sim.dispatch(ping("d1", PC2_IP));
+    const traces = sim.dispatch(ping("d1", PC2_IP, 1));
 
     expect(traces.map((t) => t.kind)).toEqual(["ping-result"]); // nessun frame
   });
@@ -361,6 +361,6 @@ describe("ping che non arriva o non parte", () => {
   test("un ping verso un testo che non è un indirizzo viene rifiutato", () => {
     const { sim } = buildTwoHosts();
 
-    expect(() => sim.dispatch(ping("d1", "pc2"))).toThrow("non valido");
+    expect(() => sim.dispatch(ping("d1", "pc2", 1))).toThrow("non valido");
   });
 });

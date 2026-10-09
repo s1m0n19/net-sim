@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è all'inizio. Oggi esiste solo uno **scheletro**: PC e switch, con ARP e ping funzionanti, da far avanzare un passo alla volta.
 
-Mancano ancora editor della rete, salvataggio, terminale e grafica curata. Un ping manda un solo echo request, non quattro come su Windows. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
+Mancano ancora editor della rete, salvataggio, terminale e grafica curata. I comandi si danno ancora con pulsanti provvisori. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
 
 ## Requisiti
 
@@ -36,19 +36,21 @@ La pagina offre due reti di esempio, nella rete 192.168.1.0/24:
 | Comando | Effetto |
 | --- | --- |
 | **Rete** | Sceglie la rete di esempio e la carica con le tabelle vuote |
-| ***host* fa ping a *indirizzo*** | Sceglie chi fa il ping e verso quale indirizzo IP. L'indirizzo si sceglie dall'elenco o si scrive a mano |
-| **Ping** | L'host scelto invia un echo request. Se non conosce il MAC della destinazione, prima parte da sola la richiesta ARP |
+| ***host* fa ping a *indirizzo* con *n* richieste** | Sceglie chi fa il ping, verso quale indirizzo IP e con quanti echo request (quattro, come su Windows, se non si cambia). L'indirizzo si sceglie dall'elenco o si scrive a mano |
+| **Ping** | L'host scelto invia gli echo request, uno alla volta: il successivo parte quando il precedente si è concluso. Se non conosce il MAC della destinazione, prima parte da sola la richiesta ARP |
 | **Passo** | La rete avanza al prossimo istante in cui succede qualcosa: l'arrivo di un frame o la scadenza di un'attesa. È disattivato quando non c'è più nulla in programma |
 | **Ricomincia** | Ricarica la rete attuale, con le tabelle vuote |
 
-Per vedere un ping completo nella LAN con switch: "Ping", poi otto clic su "Passo". I primi quattro passi sono lo scambio ARP, gli altri quattro l'echo request e l'echo reply. Un secondo ping dura solo quattro passi, perché le tabelle sono già piene.
+Per vedere un ping nella LAN con switch conviene impostare una sola richiesta: "Ping", poi otto clic su "Passo". I primi quattro passi sono lo scambio ARP, gli altri quattro l'echo request e l'echo reply. Un secondo ping dura solo quattro passi, perché le tabelle sono già piene.
+
+Con le quattro richieste di Windows lo stesso ping dura venti passi: otto per la prima, quattro per ciascuna delle altre tre.
 
 Altre prove possibili scrivendo l'indirizzo a mano:
 
-- `192.168.1.99`, che nessuno ha: la richiesta ARP resta senza risposta. Quando non viaggia più nulla, il passo successivo salta alla scadenza dell'attesa (20 tick): il PC rinuncia all'echo request e il ping finisce con "host di destinazione non raggiungibile".
-- `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla e il ping finisce subito con "trasmissione non riuscita".
+- `192.168.1.99`, che nessuno ha: la richiesta ARP resta senza risposta. Quando non viaggia più nulla, il passo successivo salta alla scadenza dell'attesa (20 tick): il PC rinuncia all'echo request, che finisce con "host di destinazione non raggiungibile". Con più richieste, ognuna ripete la richiesta ARP e aspetta altri 20 tick.
+- `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla e tutte le richieste finiscono subito con "trasmissione non riuscita".
 
-Ogni ping si conclude con un esito, scritto nell'elenco degli eventi come lo scriverebbe il comando `ping`:
+Ogni echo request si conclude con un esito, scritto nell'elenco degli eventi come lo scriverebbe il comando `ping`:
 
 | Esito | Significato |
 | --- | --- |
