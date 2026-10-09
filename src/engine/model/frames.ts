@@ -2,12 +2,10 @@ import type { Ipv4Address, MacAddress } from "./addresses";
 
 // L'incapsulamento è rappresentato alla lettera: il frame Ethernet
 // contiene nel campo `payload` l'unità del livello superiore.
-export interface EthernetFrame {
-  dstMac: MacAddress;
-  srcMac: MacAddress;
-  etherType: "ARP";
-  payload: ArpPacket;
-}
+// Il campo `etherType` dice che cosa c'è dentro, come nel frame vero.
+export type EthernetFrame =
+  | { dstMac: MacAddress; srcMac: MacAddress; etherType: "ARP"; payload: ArpPacket }
+  | { dstMac: MacAddress; srcMac: MacAddress; etherType: "IPv4"; payload: Ipv4Packet };
 
 export interface ArpPacket {
   operation: "request" | "reply";

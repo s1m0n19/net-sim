@@ -1,41 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { resolveAddress } from "../../src/engine/actions";
 import { BROADCAST_MAC } from "../../src/engine/model/addresses";
-import type { Host, Network } from "../../src/engine/model/network";
-import { Simulator } from "../../src/engine/simulator";
-
-const PC1_MAC = "02:00:00:00:00:01";
-const PC2_MAC = "02:00:00:00:00:02";
-
-function host(id: string, name: string, mac: string, ip: string): Host {
-  return {
-    kind: "host",
-    id,
-    name,
-    ports: [{ name: "Fa0", mac }],
-    ip,
-    mask: "255.255.255.0",
-    gateway: null,
-    arpTable: new Map(),
-  };
-}
-
-// Due PC collegati da un cavo, nella rete 192.168.1.0/24.
-function twoHosts(): { sim: Simulator; pc1: Host; pc2: Host } {
-  const pc1 = host("d1", "PC1", PC1_MAC, "192.168.1.10");
-  const pc2 = host("d2", "PC2", PC2_MAC, "192.168.1.11");
-  const network: Network = {
-    devices: [pc1, pc2],
-    links: [
-      {
-        id: "l1",
-        a: { deviceId: "d1", portName: "Fa0" },
-        b: { deviceId: "d2", portName: "Fa0" },
-      },
-    ],
-  };
-  return { sim: new Simulator(network), pc1, pc2 };
-}
+import { PC1_MAC, PC2_MAC, buildTwoHosts as twoHosts } from "./builders";
 
 describe("scambio ARP tra due PC", () => {
   test("la richiesta parte in broadcast", () => {

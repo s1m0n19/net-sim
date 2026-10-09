@@ -4,7 +4,15 @@
 // torna, il caricamento si ferma e dice che cosa non va. Non tenta di riparare.
 
 import { isValidMask } from "../engine/model/addresses";
-import type { Device, Link, Network, Port, PortRef } from "../engine/model/network";
+import {
+  createHost,
+  createSwitch,
+  type Device,
+  type Link,
+  type Network,
+  type Port,
+  type PortRef,
+} from "../engine/model/network";
 
 export const FILE_FORMAT = "net-sim";
 export const FILE_VERSION = 1;
@@ -76,18 +84,16 @@ function readDevice(d: any): Device {
       if (d.mask !== null && !isValidMask(d.mask)) {
         throw new Error(`${d.name} ha una subnet mask non valida: ${d.mask}.`);
       }
-      return {
-        kind: "host",
+      return createHost({
         id: d.id,
         name: d.name,
         ports,
         ip: d.ip,
         mask: d.mask,
         gateway: d.gateway,
-        arpTable: new Map(),
-      };
+      });
     case "switch":
-      return { kind: "switch", id: d.id, name: d.name, ports, macTable: new Map() };
+      return createSwitch({ id: d.id, name: d.name, ports });
     default:
       throw new Error(`Tipo di dispositivo non supportato: ${d.kind}.`);
   }

@@ -101,7 +101,10 @@
   }
 
   function labelOf(frame: EthernetFrame): string {
-    return `ARP ${frame.payload.operation}`;
+    if (frame.etherType === "ARP") {
+      return `ARP ${frame.payload.operation}`;
+    }
+    return `ICMP ${frame.payload.payload.type.replace("-", " ")}`;
   }
 
   // Dice che cosa è successo, senza spiegare perché.

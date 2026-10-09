@@ -32,8 +32,10 @@ export interface Host {
   ip: Ipv4Address | null;
   mask: Ipv4Address | null;
   gateway: Ipv4Address | null;
-  // Stato di esecuzione: si riempie mentre la rete funziona.
+  // Stato di esecuzione: cambia mentre la rete funziona.
   arpTable: Map<Ipv4Address, MacAddress>;
+  // Numero di sequenza del prossimo echo request: cresce a ogni ping.
+  nextEchoSequence: number;
 }
 
 export interface Switch {
@@ -48,6 +50,32 @@ export interface Switch {
 
 // I router si aggiungeranno qui.
 export type Device = Host | Switch;
+
+// La parte di un dispositivo che l'utente imposta e che si salva nel file.
+export type HostConfig = Pick<Host, "id" | "name" | "ports" | "ip" | "mask" | "gateway">;
+export type SwitchConfig = Pick<Switch, "id" | "name" | "ports">;
+
+/**
+ * Crea un host appena acceso: con la configurazione data e lo stato di
+ * esecuzione iniziale (tabella ARP vuota).
+ *
+ * @param config - identificativo, nome, porte e configurazione IP
+ * @returns l'host pronto per essere messo in una rete
+ */
+export function createHost(config: HostConfig): Host {
+  return { kind: "host", ...config, arpTable: new Map(), nextEchoSequence: 1 };
+}
+
+/**
+ * Crea uno switch appena acceso: con la configurazione data e la tabella
+ * MAC vuota.
+ *
+ * @param config - identificativo, nome e porte
+ * @returns lo switch pronto per essere messo in una rete
+ */
+export function createSwitch(config: SwitchConfig): Switch {
+  return { kind: "switch", ...config, macTable: new Map() };
+}
 
 /**
  * Elenca gli host di una rete, cioè i dispositivi che hanno un indirizzo IP.

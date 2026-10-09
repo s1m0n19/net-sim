@@ -5,7 +5,7 @@
 // ogni passo salta al prossimo istante in cui succede qualcosa.
 
 import type { Action } from "./actions";
-import { receiveFrame, startArpResolution, type DropReason } from "./devices/host";
+import { receiveFrame, startArpResolution, startPing, type DropReason } from "./devices/host";
 import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame } from "./model/frames";
 import {
@@ -94,14 +94,29 @@ export class Simulator {
     const produced: Trace[] = [];
     const host = findDevice(this.network, action.deviceId);
     if (host.kind !== "host") {
-      throw new Error(`${host.name} non è un host: non può risolvere indirizzi.`);
+      throw new Error(`${host.name} non è un host: non può eseguire questa azione.`);
     }
-    const request = startArpResolution(host, action.targetIp);
-    if (request !== null) {
+
+    // L'host dice quali frame vuole spedire per compiere l'azione.
+    let frames: EthernetFrame[];
+    switch (action.kind) {
+      case "ping":
+        frames = startPing(host, action.targetIp);
+        break;
+      case "resolve-address": {
+        const request = startArpResolution(host, action.targetIp);
+        frames = request === null ? [] : [request];
+        break;
+      }
+    }
+
+    if (frames.length > 0) {
       // Tutto il traffico provocato da questa azione avrà lo stesso numero.
       const conversationId = this.nextConversationId++;
       const port = { deviceId: host.id, portName: host.ports[0].name };
-      this.transmit(port, request, conversationId, produced);
+      for (const frame of frames) {
+        this.transmit(port, frame, conversationId, produced);
+      }
     }
     this.traces.push(...produced);
     return produced;

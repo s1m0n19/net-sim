@@ -1,20 +1,18 @@
 import { describe, expect, test } from "vitest";
 import { ipToNumber, isValidMask, sameNetwork } from "../../src/engine/model/addresses";
-import type { Host } from "../../src/engine/model/network";
+import { createHost, type Host } from "../../src/engine/model/network";
 import { makeEchoReply, makeEchoRequest } from "../../src/engine/protocols/icmp";
 import { DEFAULT_TTL, makeIpv4Packet, nextHopFor } from "../../src/engine/protocols/ipv4";
 
 function host(ip: string | null, mask: string | null, gateway: string | null): Host {
-  return {
-    kind: "host",
+  return createHost({
     id: "d1",
     name: "PC1",
     ports: [{ name: "Fa0", mac: "02:00:00:00:00:01" }],
     ip,
     mask,
     gateway,
-    arpTable: new Map(),
-  };
+  });
 }
 
 describe("indirizzi IPv4", () => {

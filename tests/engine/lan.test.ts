@@ -1,57 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { resolveAddress } from "../../src/engine/actions";
-import type { Host, Link, Network, Switch } from "../../src/engine/model/network";
-import { Simulator, type Trace } from "../../src/engine/simulator";
-
-const PC1_MAC = "02:00:00:00:00:01";
-const PC2_MAC = "02:00:00:00:00:02";
-const PC3_MAC = "02:00:00:00:00:03";
-
-function host(id: string, name: string, mac: string, ip: string): Host {
-  return {
-    kind: "host",
-    id,
-    name,
-    ports: [{ name: "Fa0", mac }],
-    ip,
-    mask: "255.255.255.0",
-    gateway: null,
-    arpTable: new Map(),
-  };
-}
-
-function link(id: string, hostId: string, switchPort: string): Link {
-  return {
-    id,
-    a: { deviceId: hostId, portName: "Fa0" },
-    b: { deviceId: "s1", portName: switchPort },
-  };
-}
-
-// Una LAN: lo switch SW1 con PC1 su Fa0/1, PC2 su Fa0/2 e PC3 su Fa0/3.
-// La porta Fa0/4 dello switch resta scollegata.
-function lan(): { sim: Simulator; sw: Switch; pc1: Host; pc2: Host; pc3: Host } {
-  const pc1 = host("d1", "PC1", PC1_MAC, "192.168.1.10");
-  const pc2 = host("d2", "PC2", PC2_MAC, "192.168.1.11");
-  const pc3 = host("d3", "PC3", PC3_MAC, "192.168.1.12");
-  const sw: Switch = {
-    kind: "switch",
-    id: "s1",
-    name: "SW1",
-    ports: [
-      { name: "Fa0/1", mac: "02:00:00:00:01:01" },
-      { name: "Fa0/2", mac: "02:00:00:00:01:02" },
-      { name: "Fa0/3", mac: "02:00:00:00:01:03" },
-      { name: "Fa0/4", mac: "02:00:00:00:01:04" },
-    ],
-    macTable: new Map(),
-  };
-  const network: Network = {
-    devices: [sw, pc1, pc2, pc3],
-    links: [link("l1", "d1", "Fa0/1"), link("l2", "d2", "Fa0/2"), link("l3", "d3", "Fa0/3")],
-  };
-  return { sim: new Simulator(network), sw, pc1, pc2, pc3 };
-}
+import type { Trace } from "../../src/engine/simulator";
+import { PC1_MAC, PC2_MAC, buildLan as lan } from "./builders";
 
 // I dispositivi verso cui lo switch ha spedito un frame in queste tracce.
 function sentBySwitchTo(traces: Trace[]): string[] {
