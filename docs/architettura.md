@@ -1,21 +1,21 @@
 # Architettura
 
-**Stato:** proposta, precede il codice.
+**Stato:** descrive il codice al 9 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
 
 L'app è divisa in due parti che non si mescolano: un **motore di simulazione**, che contiene tutta la logica di rete, e un'**interfaccia**, che lo mostra e lo comanda. Il motore non sa di essere disegnato su uno schermo.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Interfaccia (Svelte)                                     │
-│   Topologia      Pannelli              Terminali         │
+│   oggi: una pagina provvisoria                           │
 └──────────────┬───────────────────────────▲───────────────┘
                │ azioni dell'utente        │ tracce e stato
 ┌──────────────▼───────────────────────────┴───────────────┐
 │ Motore di simulazione (TypeScript puro)                  │
 │   Dispositivi    Protocolli            Coda degli eventi │
-└──────────────┬───────────────────────────▲───────────────┘
-               │ salva                     │ apri
-          ┌────▼───────────────────────────┴────┐
+└──────────────────────────────────────────▲───────────────┘
+                                           │ apri (salva: previsto)
+          ┌────────────────────────────────┴────┐
           │ File della rete (JSON)              │
           └─────────────────────────────────────┘
 ```
@@ -30,71 +30,86 @@ Questa separazione serve a tre cose:
 
 | Parte | Scelta | Motivo |
 | --- | --- | --- |
-| Linguaggio | TypeScript | I tipi descrivono in modo esplicito frame, pacchetti e tabelle |
+| Linguaggio | TypeScript 6 | I tipi descrivono in modo esplicito frame, pacchetti e tabelle. La versione 7 non è ancora supportata da `svelte-check` |
 | Motore | TypeScript senza librerie esterne | È la parte da leggere in classe: nulla da imparare oltre al linguaggio |
-| Interfaccia | Svelte | I componenti somigliano a HTML, CSS e JavaScript, già noti agli studenti |
+| Interfaccia | Svelte 5 | I componenti somigliano a HTML, CSS e JavaScript, già noti agli studenti |
 | Topologia | SVG | Nitido a qualsiasi zoom; adeguato ai 50 dispositivi previsti |
 | Costruzione | Vite | Produce un sito statico |
-| Offline | Service worker generato da `vite-plugin-pwa` | Rende il sito installabile e utilizzabile senza rete (rilascio 2) |
 | Test | Vitest | Stessa configurazione di Vite |
+| Offline | *Previsto* (rilascio 2): service worker generato da `vite-plugin-pwa` | Renderà il sito installabile e utilizzabile senza rete |
 
 ## Regola di dipendenza
 
 Il motore non importa mai nulla dall'interfaccia, dal browser o da Svelte. L'interfaccia importa dal motore.
 
-In pratica, dentro `src/engine/` sono vietati `document`, `window`, `setTimeout`, `Date.now()` e `Math.random()`. Il tempo è quello simulato, gestito dal motore stesso. Ne deriva che la simulazione è **deterministica**: la stessa rete con le stesse azioni produce sempre gli stessi eventi, nello stesso ordine. I test sono ripetibili e una lezione preparata a casa si svolge in aula allo stesso modo.
+In pratica, dentro `src/engine/` sono vietati `document`, `window`, `setTimeout`, `Date.now()` e `Math.random()`. Il tempo è quello simulato, gestito dal simulatore. Ne deriva che la simulazione è **deterministica**: la stessa rete con le stesse azioni produce sempre gli stessi eventi, nello stesso ordine. I test sono ripetibili e una lezione preparata a casa si svolge in aula allo stesso modo.
 
 ## Come comunicano le due parti
 
-1. L'interfaccia invia al motore un'**azione**: "aggiungi un PC", "collega queste due porte", "PC1 esegue un ping verso 192.168.1.11", "avanza di un evento".
-2. Il motore aggiorna lo stato e restituisce le **tracce** di ciò che è successo: "il frame X ha lasciato la porta Fa0/1 di SW1", "PC2 ha aggiunto una riga alla tabella ARP".
-3. L'interfaccia legge lo stato e le tracce e li disegna: anima il pacchetto, aggiorna la tabella, aggiunge una riga all'elenco degli eventi.
+1. L'interfaccia invia al motore un'**azione** con `Simulator.dispatch()`. Oggi le azioni sono due: `ping` (un host fa ping a un indirizzo, con un certo numero di echo request) e `resolve-address` (un host lancia una richiesta ARP; serve ai test, non è nella pagina).
+2. L'interfaccia fa avanzare il tempo con `Simulator.step()`.
+3. Entrambe le chiamate restituiscono le **tracce** di ciò che è successo: frame inviati, ricevuti e scartati, tabelle cambiate, pacchetti a cui un host ha rinunciato, esiti dei ping.
+4. L'interfaccia legge lo stato del simulatore e lo copia in una propria variabile, che è ciò che la pagina disegna. Non osserva il simulatore e non ne modifica mai lo stato direttamente.
 
-L'interfaccia non modifica mai lo stato della rete direttamente. Anche il pannello grafico e la CLI passano dalle stesse azioni, ed è questo a tenerli sincronizzati (requisito CFG-5).
+*Previsto:* le azioni di modifica della rete (aggiungere un dispositivo, collegare due porte, cambiare un indirizzo). Pannello grafico e CLI passeranno dalle stesse azioni, ed è questo che li terrà sincronizzati (requisito CFG-5).
 
 ## Struttura delle cartelle
 
 ```
 net-sim/
-├── SPEC.md
-├── docs/
+├── SPEC.md                    requisiti, decisioni, stato di avanzamento
+├── README.md                  come avviare e provare l'app
+├── CLAUDE.md                  regole di lavoro per Claude Code
+├── docs/                      questa documentazione
+├── examples/                  reti di esempio: due-pc, lan-switch
 ├── src/
+│   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
-│   │   ├── model/             tipi di base: indirizzi, frame, pacchetti, rete
-│   │   ├── protocols/         un file per protocollo: ethernet, arp, ipv4, icmp
-│   │   ├── devices/           un file per dispositivo: host, switch, router
-│   │   ├── simulator.ts       coda degli eventi e avanzamento del tempo
+│   │   ├── model/             addresses.ts, frames.ts, network.ts
+│   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
+│   │   ├── devices/           host.ts, switch.ts
+│   │   ├── simulator.ts       coda degli eventi, tempo, tracce
 │   │   └── actions.ts         le azioni accettate dal motore
-│   ├── shell/                 interpreti dei comandi: prompt Windows, CLI IOS
-│   ├── storage/               lettura e scrittura dei file, migrazioni di versione
-│   └── ui/                    interfaccia Svelte
-│       ├── topology/          disegno e modifica della rete
-│       ├── panels/            configurazione, tabelle, contenuto del pacchetto
-│       ├── terminal/          terminale e CLI
-│       └── theme/             icone e colori, in un solo punto
+│   ├── storage/
+│   │   └── load.ts            lettura dei file di rete
+│   └── ui/
+│       ├── App.svelte         la pagina provvisoria, tutta in un componente
+│       └── Packet.svelte      il frame animato sul collegamento
 └── tests/
-    └── engine/                uno scenario di prova per ogni comportamento
+    ├── engine/                un file per argomento, più builders.ts con le reti di prova
+    └── storage/               lettura dei file
 ```
 
-`shell/` sta fuori dal motore perché traduce testo in azioni: è un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
+Cartelle *previste* e non ancora esistenti:
+
+- `src/shell/`: interpreti dei comandi (prompt Windows degli host, CLI IOS). Starà fuori dal motore perché traduce testo in azioni: è un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
+- `src/ui/topology/`, `panels/`, `terminal/`, `theme/`: la divisione dell'interfaccia definitiva. `theme/` terrà icone e colori in un solo punto.
+- Scrittura dei file e migrazioni di versione in `src/storage/`.
 
 ## Convenzioni del codice
 
 - **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti.
 - **I nomi seguono la teoria.** Un campo si chiama come sul libro di testo e negli standard: `ttl`, `etherType`, `senderMac`.
-- **Identificatori in inglese, commenti in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. *Proposta da confermare.*
-- **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola.
+- **Identificatori in inglese, commenti e messaggi in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. È la decisione D-15.
+- **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola. Esempi: `chooseOutputPorts`, `nextHopFor`, `sameNetwork`.
+- **I dispositivi non spediscono e non misurano il tempo.** Restituiscono un elenco di cose da fare (frame da inviare, attese da avviare o annullare, esiti) e il simulatore le esegue.
 - **Niente scorciatoie intelligenti.** Tra una soluzione breve e una ovvia, si sceglie quella ovvia.
-- **Ogni comportamento ha un test** in `tests/engine/`, scritto come una piccola storia: costruisco la rete, faccio l'azione, controllo cosa è successo. I test fanno anche da esempi d'uso.
+- **Ogni funzione pubblica ha una docstring**: cosa fa, parametri, valore restituito, eccezioni.
+- **Ogni comportamento ha un test**, scritto come una piccola storia: costruisco la rete, faccio l'azione, controllo cosa è successo. I nomi dei test sono affermazioni in italiano e si leggono come un elenco di regole. I dispositivi dei test si creano con `createHost` e `createSwitch`, le reti con `tests/engine/builders.ts`.
 
 ## Le tre parti dello stato
 
-Lo stato si divide in tre parti con vita diversa:
-
-| Parte | Esempi | Salvata nel file | Soggetta ad annulla |
+| Parte | Esempi | Dove sta oggi | Nel file |
 | --- | --- | --- | --- |
-| Configurazione | dispositivi, collegamenti, indirizzi, posizioni, annotazioni | sì | sì |
-| Stato di esecuzione | tabelle MAC e ARP, pacchetti in viaggio, tempo simulato | no (proposta) | no |
-| Stato della vista | zoom, dispositivo selezionato, filtri, modalità presentazione | solo inquadratura ed etichette visibili | no |
+| Configurazione | dispositivi, porte, collegamenti, indirizzi | nei dispositivi della rete (`Host`, `Switch`) | sì |
+| Posizioni sul disegno | coordinate di ogni dispositivo | fuori dal motore, in `LoadedFile.positions` | sì |
+| Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator` | oggi no. *Previsto* (D-25): le sole tabelle MAC e ARP, se chi salva lo chiede |
+| Stato della vista | rete di esempio scelta, host e indirizzo del ping | in `App.svelte` | no |
 
-Annulla e ripristina (requisito ED-5) agiscono solo sulla configurazione. La proposta è conservare una pila di copie della configurazione: è un oggetto piccolo, e una copia per ogni modifica è più semplice da capire di un meccanismo che inverte le singole operazioni.
+`createHost` e `createSwitch` costruiscono un dispositivo "appena acceso": la configurazione data più lo stato di esecuzione iniziale. Li usano il lettore dei file e i test, così lo stato iniziale è definito in un solo punto.
+
+*Previsto:* annulla e ripristina (requisito ED-5) agiranno solo sulla configurazione. La proposta è conservare una pila di copie della configurazione: è un oggetto piccolo, e una copia per ogni modifica è più semplice da capire di un meccanismo che inverte le singole operazioni.
+
+## Cosa non è coperto da test
+
+I test riguardano il motore e la lettura dei file. La pagina non ha test automatici: finora è stata verificata a occhio nel browser. Non esiste un controllo automatico che esegua i test a ogni invio al repository.

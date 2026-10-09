@@ -10,14 +10,18 @@ Il codice è anche materiale didattico: gli studenti leggeranno il motore di sim
 
 Documenti di riferimento, da leggere prima di lavorare su una parte e da aggiornare insieme al codice:
 
-- `SPEC.md`: requisiti numerati (ED-1, SIM-2, ...) con il rilascio in cui arrivano, criterio di accettazione del rilascio 1, punti aperti.
-- `docs/architettura.md`, `docs/motore.md`, `docs/formato-file.md`: impostazione tecnica.
+- `SPEC.md`: requisiti numerati (ED-1, SIM-2, ...) con il rilascio in cui arrivano, criterio di accettazione del rilascio 1, punti aperti (sezione 7), registro delle decisioni (sezione 8), stato di avanzamento (sezione 9).
+- `docs/architettura.md`, `docs/motore.md`, `docs/formato-file.md`: come è fatto il codice.
 
-I documenti in `docs/` sono nati prima del codice e in alcuni punti lo precedono (per esempio i campi `powered`, `enabled`, `connected` dei guasti non sono ancora nel modello). Quando codice e documenti divergono, segnalarlo e riallinearli.
+I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ciò che ancora non esiste. Quando una modifica li rende falsi vanno corretti nello stesso lavoro; lo stesso vale per la sezione 9 di `SPEC.md`.
 
 ## Stato attuale
 
-Esiste solo lo scheletro: host, switch di livello 2, ARP e ping (quattro echo request in serie, con ARP automatico, pacchetti in attesa, scadenze ed esito di ciascuno), in passo-passo. Mancano i guasti, tempo reale, editor, salvataggio, stile grafico. Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch).
+Il motore del rilascio 1 è quasi completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti), in passo-passo. Mancano i guasti.
+
+L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. Mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
+
+Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Tre difetti noti hanno la correzione già decisa ma non ancora scritta (tabella in `SPEC.md`, sezione 9; dettagli in `docs/motore.md`): un ciclo tra switch non si ferma mai (SIM-15), un ping al proprio indirizzo fallisce (SIM-14), la configurazione IP e la struttura dei file non sono controllate (CFG-7, FILE-4).
 
 ## Comandi
 
@@ -52,16 +56,16 @@ Il motore non importa mai da `ui/`, da Svelte o dal browser. Dentro `src/engine/
 ### Flusso
 
 1. L'interfaccia invia un'**azione** (`src/engine/actions.ts`) con `Simulator.dispatch()`. Le azioni sono l'unico modo di comandare il motore.
-2. Il `Simulator` (`src/engine/simulator.ts`) è a eventi discreti: tiene una coda di arrivi di frame, ciascuno con il suo istante in **tick** (un tick per collegamento attraversato). `step()` salta al prossimo istante ed elabora **tutti** gli eventi di quell'istante.
-3. I dispositivi (`src/engine/devices/`) non spediscono nulla da soli: ricevono un frame e restituiscono una reazione (frame da inviare, eventuale scarto, tabella cambiata). È il simulatore a mettere i frame sul cavo.
+2. Il `Simulator` (`src/engine/simulator.ts`) è a eventi discreti: tiene una coda ordinata di arrivi di frame e di scadenze di attese, ciascuno con il suo istante in **tick** (un tick per collegamento attraversato). `step()` salta al prossimo istante ed elabora **tutti** gli eventi di quell'istante, uno alla volta dalla testa della coda.
+3. I dispositivi (`src/engine/devices/`) non spediscono nulla e non misurano il tempo: restituiscono un elenco di cose da fare (`HostOutput`: frame da inviare, attese da avviare o annullare, esiti dei ping), più l'eventuale scarto e il cambio di tabella. È il simulatore a eseguirle.
 4. `dispatch()` e `step()` restituiscono le **tracce** di ciò che è successo; l'elenco completo resta in `sim.traces`.
 5. L'interfaccia non osserva il simulatore: dopo ogni comando ne copia lo stato in una variabile `$state.raw` (`readState()` in `App.svelte`) e disegna quella.
 
-Ogni frame porta un `conversationId`: ciò che nasce elaborando un frame eredita il suo numero. Servirà a mostrare solo la conversazione seguita.
+Ogni frame e ogni attesa portano un `conversationId`: ciò che nasce elaborandoli eredita il loro numero. Servirà a mostrare solo la conversazione seguita.
 
 ### Configurazione e stato di esecuzione
 
-Ogni dispositivo ha una parte di configurazione (indirizzi, impostati dall'utente e salvati nel file) e una di stato di esecuzione (tabelle ARP, che si riempiono funzionando). Il file contiene solo la prima: una rete appena aperta ha le tabelle vuote. Le posizioni sul disegno stanno fuori dal modello del motore (`LoadedFile.positions`).
+Ogni dispositivo ha una parte di configurazione (indirizzi, porte, salvati nel file) e una di stato di esecuzione (tabelle, pacchetti in attesa, echo in sospeso). Il file contiene solo la prima: una rete appena aperta ha le tabelle vuote. `createHost` e `createSwitch` in `model/network.ts` creano un dispositivo "appena acceso" e sono l'unico punto in cui si definisce lo stato iniziale: un campo di stato nuovo va aggiunto lì. Le posizioni sul disegno stanno fuori dal modello del motore (`LoadedFile.positions`).
 
 ### Aggiungere un protocollo o un dispositivo
 
@@ -73,8 +77,8 @@ L'ordine previsto in `docs/motore.md`: tipo dell'unità dati in `model/`, compor
 - **Interfaccia in italiano**, con termini tecnici e comandi in inglese (switch, router, gateway, frame).
 - **Un concetto, un file**: `arp.ts` contiene ARP e nient'altro.
 - **Funzioni pure dove possibile**, e tra una soluzione breve e una ovvia si sceglie quella ovvia.
-- **Come una rete vera** (requisito SIM-8): l'app non avvisa degli errori di configurazione e non spiega perché un frame è stato scartato. Il campo `reason` delle tracce serve solo ai test; l'interfaccia non lo mostra.
-- **Test come piccole storie**: costruisco la rete, compio l'azione, controllo tracce o stato. Nomi dei test in italiano, scritti come affermazioni.
+- **Come una rete vera** (requisito SIM-8): l'app non avvisa degli errori di configurazione e non spiega perché un frame è stato scartato. Il campo `reason` delle tracce serve solo ai test; l'interfaccia non lo mostra. Due confini, entrambi decisi: ciò che Windows non lascerebbe impostare viene rifiutato all'inserimento (CFG-7), e l'avviso della tempesta di broadcast ne spiega la causa (SIM-15).
+- **Test come piccole storie**: costruisco la rete, compio l'azione, controllo tracce o stato. Nomi dei test in italiano, scritti come affermazioni. Le reti di prova stanno in `tests/engine/builders.ts`. La pagina non ha test automatici: ciò che cambia a schermo va fatto verificare all'utente nel browser, dicendo che cosa guardare e dove.
 - Stile grafico e disposizione dei pannelli sono decisioni dichiarate reversibili in `SPEC.md`: icone e colori vanno tenuti in un solo punto, e nulla nel motore deve dipenderne.
 
 ## Git

@@ -6,9 +6,11 @@ Il nome è provvisorio.
 
 ## Stato
 
-Il progetto è all'inizio. Oggi esiste solo uno **scheletro**: PC e switch, con ARP e ping funzionanti, da far avanzare un passo alla volta.
+Il progetto è in sviluppo. Oggi la parte che simula la rete funziona per una LAN: PC e switch, con ARP e ping, da far avanzare un passo alla volta.
 
-Mancano ancora editor della rete, salvataggio, terminale e grafica curata. I comandi si danno ancora con pulsanti provvisori. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
+Quello che si vede a schermo è invece una **pagina provvisoria**, fatta per osservare la simulazione: disegno essenziale, comandi con pulsanti e menu. Mancano ancora l'editor per costruire le reti, il salvataggio, il terminale dei PC, i guasti, l'avanzamento automatico del tempo e la grafica curata.
+
+Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
 
 ## Requisiti
 
@@ -61,6 +63,14 @@ Ogni echo request si conclude con un esito, scritto nell'elenco degli eventi com
 
 Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC con gli eventuali pacchetti in attesa, e l'elenco degli eventi con il contenuto di ogni frame.
 
+## Limiti noti
+
+- **Venti clic per un ping completo.** Con le quattro richieste di Windows e senza avanzamento automatico, un ping nella LAN richiede venti passi. Per una dimostrazione conviene impostare una richiesta sola.
+- **Un ping al proprio indirizzo fallisce** con "host di destinazione non raggiungibile". Un PC vero si risponde da solo: la correzione è decisa, non ancora fatta.
+- **Un ciclo tra switch non si ferma.** Le reti di esempio non ne hanno; anche qui la correzione è decisa (sospensione con avviso), non ancora fatta.
+- **Le reti sono solo quelle di esempio.** Per provarne un'altra bisogna modificare un file in `examples/`.
+- **Non si può ancora provocare la "richiesta scaduta"** dalla pagina: serve un guasto, e i guasti non esistono ancora.
+
 ## Comandi
 
 | Comando | Cosa fa |
@@ -79,7 +89,7 @@ Il codice è diviso in due parti che non si mescolano:
 - **`src/engine/`**: il motore di simulazione. Contiene tutta la logica di rete, in TypeScript puro, e non sa nulla della grafica.
 - **`src/ui/`**: l'interfaccia, in Svelte. Mostra lo stato del motore e gli invia i comandi.
 
-`src/storage/` legge i file delle reti. I test stanno in `tests/`.
+`src/storage/` legge i file delle reti. I test stanno in `tests/` e coprono il motore e la lettura dei file, non la pagina.
 
 Il motore è scritto per essere letto: un file per protocollo, nomi dei campi come sul libro di testo, commenti che spiegano il perché. Un buon punto di partenza è [src/engine/protocols/arp.ts](src/engine/protocols/arp.ts), seguito da [src/engine/devices/host.ts](src/engine/devices/host.ts).
 
@@ -87,7 +97,7 @@ Il motore è scritto per essere letto: un file per protocollo, nomi dei campi co
 
 | Documento | Contenuto |
 | --- | --- |
-| [SPEC.md](SPEC.md) | Che cosa deve fare l'app: requisiti, piano di rilascio, decisioni |
+| [SPEC.md](SPEC.md) | Che cosa deve fare l'app: requisiti, piano di rilascio, punti aperti, decisioni, stato di avanzamento |
 | [docs/architettura.md](docs/architettura.md) | Tecnologie, parti dell'app, convenzioni del codice |
-| [docs/motore.md](docs/motore.md) | Come funziona il motore di simulazione |
+| [docs/motore.md](docs/motore.md) | Come funziona il motore di simulazione, dove semplifica la realtà, difetti noti |
 | [docs/formato-file.md](docs/formato-file.md) | Il formato dei file delle reti |

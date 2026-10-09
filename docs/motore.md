@@ -1,25 +1,27 @@
 # Motore di simulazione
 
-**Stato:** proposta, precede il codice. Copre il rilascio 1 (PC, switch, ARP, ICMP) e indica dove si innesta il resto.
+**Stato:** descrive il codice al 9 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
 
 Il motore è la parte dell'app che fa funzionare la rete: decide che cosa fa un dispositivo quando riceve un frame, tiene le tabelle, fa scorrere il tempo. Non disegna nulla. Sta in `src/engine/` e non dipende da altro (vedi [architettura.md](architettura.md)).
 
+Oggi contiene host e switch, con Ethernet, ARP, IPv4 e ICMP echo.
+
 ## L'idea in breve
 
-Il motore è un **simulatore a eventi discreti**. Non fa scorrere il tempo in modo continuo: tiene un elenco di fatti futuri, ciascuno con il suo istante, e salta dall'uno all'altro.
+Il motore è un **simulatore a eventi discreti**. Non fa scorrere il tempo in modo continuo: tiene una coda di fatti futuri, ciascuno con il suo istante, e salta dall'uno all'altro.
 
 1. Un'azione dell'utente (un ping) fa nascere un frame su una porta.
-2. Il motore mette in coda l'evento "questo frame arriva all'altro capo del cavo all'istante *t* + 1".
-3. Quando si arriva a quell'istante, il motore consegna il frame al dispositivo, che reagisce secondo i suoi protocolli. La reazione può far nascere altri frame, cioè altri eventi futuri.
+2. Il simulatore mette in coda l'evento "questo frame arriva all'altro capo del cavo tra un tick".
+3. Quando si arriva a quell'istante, il simulatore consegna il frame al dispositivo, che reagisce secondo i suoi protocolli. La reazione può far nascere altri frame, cioè altri eventi futuri.
 4. Si ripete finché la coda è vuota.
 
-Tempo reale e passo-passo (requisito SIM-2) sono lo stesso meccanismo: cambia solo chi decide quando passare all'evento successivo, un orologio oppure il clic del docente.
+Nella coda non ci sono solo frame in viaggio: ci sono anche le **attese** degli host, per esempio "se entro 20 tick non arriva la risposta ARP, rinuncio".
 
 ## Modello dei dati
 
-I tipi qui sotto sono uno schizzo: fissano i nomi e la forma, non il codice definitivo.
+I tipi stanno in `src/engine/model/`. Qui sono riportati come nel codice, senza i commenti.
 
-### Indirizzi
+### Indirizzi (`addresses.ts`)
 
 ```ts
 type MacAddress = string;   // "02:00:00:00:00:01"
@@ -28,9 +30,17 @@ type Ipv4Address = string;  // "192.168.1.10"
 const BROADCAST_MAC: MacAddress = "ff:ff:ff:ff:ff:ff";
 ```
 
-Gli indirizzi MAC sono assegnati dal motore in sequenza alla creazione di ogni porta, quindi sono unici e sempre uguali a parità di rete.
+Tre funzioni fanno i calcoli sugli indirizzi:
 
-### Rete, dispositivi, collegamenti
+| Funzione | Che cosa fa |
+| --- | --- |
+| `ipToNumber(ip)` | Trasforma un indirizzo nel numero a 32 bit corrispondente. Rifiuta ciò che non è un indirizzo IPv4 |
+| `isValidMask(mask)` | Dice se una subnet mask è valida: scritta in binario, tutti i bit a 1 seguiti da tutti i bit a 0 |
+| `sameNetwork(a, b, mask)` | Dice se due indirizzi hanno lo stesso indirizzo di rete. Rifiuta una maschera non valida |
+
+Gli indirizzi MAC non sono generati dal motore: oggi arrivano dal file di rete.
+
+### Rete, dispositivi, collegamenti (`network.ts`)
 
 ```ts
 interface Network {
@@ -41,62 +51,72 @@ interface Network {
 interface Port {
   name: string;        // "Fa0/1"
   mac: MacAddress;
-  enabled: boolean;    // false = porta spenta
 }
 
-interface Link {
+interface PortRef {    // una porta precisa della rete
+  deviceId: string;
+  portName: string;
+}
+
+interface Link {       // il cavo tra due porte
   id: string;
-  a: PortRef;          // { deviceId, portName }
+  a: PortRef;
   b: PortRef;
-  connected: boolean;  // false = cavo staccato
 }
 
-type Device = Host | Switch | Router;
+type Device = Host | Switch;
 ```
 
-Ogni dispositivo ha una parte di **configurazione**, impostata dall'utente, e una parte di **stato di esecuzione**, che si riempie mentre la rete funziona.
+Ogni dispositivo ha una parte di **configurazione**, che sta nel file, e una parte di **stato di esecuzione**, che cambia mentre la rete funziona.
 
 ```ts
 interface Host {
   kind: "host";
   id: string;
   name: string;
-  powered: boolean;
-  ports: Port[];       // un PC ne ha una sola
+  ports: Port[];                    // un PC ne ha una sola
   // configurazione
   ip: Ipv4Address | null;
   mask: Ipv4Address | null;
   gateway: Ipv4Address | null;
   // stato di esecuzione
   arpTable: Map<Ipv4Address, MacAddress>;
-  nextEchoSequence: number;          // numero di sequenza del prossimo ping
-  pendingPackets: PendingPacket[];   // in attesa della risposta ARP, ciascuno con il suo prossimo salto
+  nextEchoSequence: number;         // numero di sequenza del prossimo echo request
+  pendingPackets: PendingPacket[];  // pacchetti in attesa della risposta ARP
+  awaitedEchoes: AwaitedEcho[];     // echo request non ancora conclusi
+}
+
+interface PendingPacket {
+  nextHop: Ipv4Address;             // di chi si aspetta il MAC
+  packet: Ipv4Packet;
+}
+
+interface AwaitedEcho {
+  targetIp: Ipv4Address;
+  sequence: number;
+  remaining: number;                // quanti echo request dello stesso ping devono ancora partire
 }
 
 interface Switch {
   kind: "switch";
   id: string;
   name: string;
-  powered: boolean;
   ports: Port[];
   // stato di esecuzione
   macTable: Map<MacAddress, string>;  // MAC -> nome della porta
 }
 ```
 
-Il router arriva nel rilascio 2: ha più porte, ciascuna con il proprio indirizzo IP, una tabella ARP e una tabella di routing.
+`createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali.
 
-### Frame e pacchetti
+### Frame e pacchetti (`frames.ts`)
 
-L'incapsulamento è rappresentato alla lettera: ogni unità contiene quella del livello superiore nel campo `payload`. È la stessa struttura che l'interfaccia mostra a strati annidati (requisito VIS-2).
+L'incapsulamento è rappresentato alla lettera: ogni unità contiene quella del livello superiore nel campo `payload`. Il campo `etherType` dice che cosa c'è dentro il frame, come nel frame vero.
 
 ```ts
-interface EthernetFrame {
-  dstMac: MacAddress;
-  srcMac: MacAddress;
-  etherType: "ARP" | "IPv4";
-  payload: ArpPacket | Ipv4Packet;
-}
+type EthernetFrame =
+  | { dstMac: MacAddress; srcMac: MacAddress; etherType: "ARP"; payload: ArpPacket }
+  | { dstMac: MacAddress; srcMac: MacAddress; etherType: "IPv4"; payload: Ipv4Packet };
 
 interface ArpPacket {
   operation: "request" | "reply";
@@ -109,108 +129,181 @@ interface ArpPacket {
 interface Ipv4Packet {
   srcIp: Ipv4Address;
   dstIp: Ipv4Address;
-  ttl: number;
-  protocol: "ICMP";               // poi anche "TCP" e "UDP"
+  ttl: number;                    // parte da 128, come su Windows
+  protocol: "ICMP";
   payload: IcmpMessage;
 }
 
 interface IcmpMessage {
   type: "echo-request" | "echo-reply";
-  identifier: number;
+  identifier: number;             // sempre 1, come su Windows
   sequence: number;
 }
 ```
 
-## Tempo, eventi, tracce
+## Tempo, eventi, tracce (`simulator.ts`)
 
 ### Tempo simulato
 
-Il tempo è un numero intero di **tick**, che parte da zero. Attraversare un collegamento richiede sempre 1 tick. Il tick non corrisponde a una durata reale: è l'interfaccia a decidere quanto dura sullo schermo (per esempio un secondo a velocità normale), ed è così che si regola la velocità (SIM-3).
+Il tempo è un numero intero di **tick**, che parte da zero. Attraversare un collegamento richiede sempre 1 tick. Il tick non corrisponde a una durata reale.
 
 Usare un tempo astratto evita un problema: con i tempi veri, un pacchetto attraversa una LAN in meno di un millisecondo e un ping scade dopo quattro secondi. Rallentando il primo perché sia visibile, il secondo durerebbe più di un'ora.
 
-### Eventi
+| Costante | Valore | Significato |
+| --- | --- | --- |
+| `LINK_TRANSIT_TICKS` | 1 | Tempo per attraversare un collegamento |
+| `ARP_TIMEOUT_TICKS` | 20 | Quanto un host aspetta la risposta ARP |
+| `ECHO_TIMEOUT_TICKS` | 40 | Quanto un host aspetta l'echo reply |
+| `DEFAULT_PING_COUNT` | 4 | Quanti echo request manda un ping, se non si chiede altro |
 
-Un evento è un fatto futuro con il suo istante.
+L'attesa dell'echo è più lunga di quella ARP: così, se il problema è un MAC che non si trova, lo si scopre prima.
+
+### Eventi
 
 ```ts
 type SimEvent =
-  | { time: number; kind: "frame-arrival"; to: PortRef; frame: EthernetFrame; conversationId: number }
-  | { time: number; kind: "timer"; deviceId: string; timer: TimerKind };
+  | { time: number; kind: "frame-arrival"; frameId: number; from: PortRef; to: PortRef;
+      frame: EthernetFrame; conversationId: number }
+  | { time: number; kind: "timer"; deviceId: string; timer: HostTimer; conversationId: number };
+
+type HostTimer =
+  | { kind: "arp-timeout"; ip: Ipv4Address }       // attesa della risposta ARP per un indirizzo
+  | { kind: "echo-timeout"; sequence: number };    // attesa dell'echo reply con quel numero di sequenza
 ```
 
-- `frame-arrival`: un frame arriva a una porta.
-- `timer`: scade un'attesa, per esempio quella di una risposta ARP o di un echo reply.
-
-La coda è ordinata per istante. A parità di istante vale l'ordine di inserimento, così il risultato è sempre lo stesso.
+La coda è tenuta ordinata per istante. A parità di istante vale l'ordine di inserimento, così il risultato è sempre lo stesso.
 
 ### Un passo
 
-Un passo elabora **tutti gli eventi del prossimo istante**, non uno solo. Quando uno switch inoltra un broadcast su tre porte, i tre frame viaggiano insieme e arrivano insieme: in passo-passo il docente li vede muoversi nello stesso clic, come accade nella realtà.
+`step()` porta il tempo al prossimo istante in cui c'è un evento ed elabora **tutti gli eventi di quell'istante**, non uno solo. Quando uno switch inoltra un broadcast su tre porte, i tre frame viaggiano insieme e arrivano insieme.
+
+Gli eventi dell'istante si elaborano uno alla volta, prendendoli dalla testa della coda. Così un evento può annullarne uno successivo dello stesso istante: una risposta ARP che arriva proprio quando l'attesa sta per scadere la annulla.
+
+Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenza: da tick 2 a tick 20, per esempio.
+
+### Azioni
+
+`dispatch(action)` esegue un'azione arrivata dall'esterno, senza far avanzare il tempo.
+
+| Azione | Che cosa fa |
+| --- | --- |
+| `ping(deviceId, targetIp, count)` | L'host manda `count` echo request, uno alla volta. Se `count` manca, quattro |
+| `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
+
+Un'azione rivolta a uno switch o a un dispositivo inesistente viene rifiutata con un errore. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
 
 ### Tracce
 
-Mentre elabora un passo, il motore registra ciò che accade in un elenco di tracce. L'interfaccia le legge per animare i pacchetti, aggiornare le tabelle e riempire l'elenco degli eventi (VIS-9).
+Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` restituiscono le tracce appena prodotte; l'elenco completo resta in `sim.traces`.
 
-```ts
-type Trace =
-  | { time: number; kind: "frame-sent"; from: PortRef; to: PortRef; frame: EthernetFrame; conversationId: number }
-  | { time: number; kind: "frame-received"; at: PortRef; frame: EthernetFrame; conversationId: number }
-  | { time: number; kind: "frame-dropped"; at: PortRef; frame: EthernetFrame; reason: DropReason; conversationId: number }
-  | { time: number; kind: "table-changed"; deviceId: string; table: "mac" | "arp" };
-```
+| Traccia | Significato |
+| --- | --- |
+| `frame-sent` | Un frame è partito da una porta verso l'altro capo del cavo |
+| `frame-received` | Un dispositivo ha accettato un frame |
+| `frame-dropped` | Un dispositivo ha scartato un frame. Contiene il motivo (`reason`) |
+| `table-changed` | È cambiata una tabella, `arp` o `mac` |
+| `packet-dropped` | Un host ha rinunciato a un pacchetto che teneva in attesa |
+| `ping-result` | Un echo request si è concluso. Contiene l'esito e quanti ne restano |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
 
 ### Conversazioni
 
-Ogni azione dell'utente che genera traffico riceve un numero di conversazione. Tutto ciò che nasce elaborando un frame eredita il numero di quel frame. Così la richiesta ARP causata da un ping appartiene alla stessa conversazione del ping, e l'interfaccia può mostrare solo quella (VIS-5).
+Ogni azione dell'utente riceve un numero di conversazione. Tutto ciò che nasce elaborando un frame o un'attesa eredita il numero di quel frame o di quell'attesa. Così la richiesta ARP causata da un ping, i suoi quattro echo e i loro esiti appartengono alla stessa conversazione. Servirà all'interfaccia per mostrare solo quella (requisito VIS-5).
+
+Un caso limite: se due ping aspettano la stessa risposta ARP, quando arriva partono entrambi con il numero di conversazione del primo.
+
+## Come un dispositivo parla con il simulatore
+
+I dispositivi non spediscono nulla e non misurano il tempo. Le loro funzioni restituiscono un elenco di cose da fare, e il simulatore le esegue.
+
+```ts
+interface HostOutput {
+  send: EthernetFrame[];          // frame da mettere sul cavo
+  startTimers: TimerRequest[];    // attese da avviare: { delay, timer }
+  cancelTimers: HostTimer[];      // attese che non servono più
+  pingResults: PingResult[];      // echo request arrivati a una conclusione
+}
+```
+
+Le funzioni di un host (`devices/host.ts`):
+
+| Funzione | Quando viene chiamata | Che cosa restituisce in più |
+| --- | --- | --- |
+| `startPing(host, targetIp, count)` | All'azione `ping` | — |
+| `startArpResolution(host, targetIp)` | All'azione `resolve-address` | Solo il frame, o `null` |
+| `receiveFrame(host, frame)` | All'arrivo di un frame | Il motivo dell'eventuale scarto, e se la tabella ARP è cambiata |
+| `timerExpired(host, timer)` | Alla scadenza di un'attesa | I pacchetti a cui l'host rinuncia |
+
+Queste funzioni modificano lo stato dell'host (tabella ARP, pacchetti in attesa, echo in sospeso), ma tutto ciò che riguarda il cavo e il tempo passa dal simulatore.
+
+Lo switch (`devices/switch.ts`) è più semplice: `receiveFrameOnSwitch(sw, inPort, frame)` restituisce le porte su cui inoltrare, il motivo dell'eventuale scarto e se la tabella MAC è cambiata.
 
 ## Comportamento dei dispositivi
 
-### Host: inviare un pacchetto IP
+### Host: spedire un pacchetto IP
 
-1. La destinazione è nella mia stessa rete? Si confrontano indirizzo e maschera.
-   - Sì: il prossimo salto è la destinazione stessa.
-   - No, e ho un gateway: il prossimo salto è il gateway.
-   - No, e non ho un gateway: l'invio fallisce subito e non parte alcun frame.
-2. Conosco il MAC del prossimo salto? Si guarda la tabella ARP.
-   - Sì: si incapsula il pacchetto in un frame e lo si invia.
-   - No: il pacchetto va in attesa, parte una richiesta ARP in broadcast e si avvia un timer.
-3. Arriva la risposta ARP: si aggiorna la tabella e si inviano i pacchetti in attesa.
-4. Scade il timer senza risposta: i pacchetti in attesa vengono scartati.
+1. **A chi lo consegno sulla mia LAN?** È il *prossimo salto*, deciso da `nextHopFor` in `protocols/ipv4.ts`.
+   - La destinazione è nella mia rete (stesso indirizzo di rete, data la mia maschera): il prossimo salto è la destinazione.
+   - È in un'altra rete e ho un gateway: il prossimo salto è il gateway.
+   - È in un'altra rete e non ho un gateway, oppure non ho indirizzo o maschera: non c'è un prossimo salto, il pacchetto non può partire.
+2. **Conosco il MAC del prossimo salto?** Si guarda la tabella ARP.
+   - Sì: il pacchetto viene incapsulato in un frame e parte.
+   - No: il pacchetto va in attesa. Se per quell'indirizzo non c'è già una richiesta ARP in corso, ne parte una, insieme a un'attesa di 20 tick.
+3. **Arriva la risposta ARP:** la tabella si aggiorna, i pacchetti in attesa di quel MAC partono, l'attesa viene annullata.
+4. **L'attesa scade:** i pacchetti in attesa di quel MAC vengono scartati. La richiesta ARP non viene ripetuta.
 
 ### Host: ricevere un frame
 
 1. Il MAC di destinazione è il mio o è il broadcast? Altrimenti il frame viene scartato.
-2. Se contiene ARP:
+2. Se contiene **ARP**:
    - richiesta per il mio IP: registro il mittente nella tabella ARP e rispondo, in unicast;
    - richiesta per un altro IP: scarto;
    - risposta: aggiorno la tabella ARP.
-3. Se contiene IPv4 destinato al mio indirizzo:
-   - echo request: rispondo con un echo reply;
-   - echo reply: lo consegno al ping che lo aspettava.
+3. Se contiene **IPv4**:
+   - destinato a un altro IP: scarto. Un host non è un router;
+   - echo request: rispondo con un echo reply, a indirizzi scambiati. La risposta segue la stessa strada di ogni pacchetto IP, compresa l'eventuale attesa del MAC;
+   - echo reply che stavo aspettando: il ping ha avuto risposta;
+   - echo reply che non stavo aspettando (arrivato dopo la scadenza): ricevuto e ignorato.
 
 ### Ping
 
-Il comando `ping` invia quattro echo request, uno dopo l'altro, come su Windows. Per ciascuno attende l'echo reply fino allo scadere di un timer, poi stampa l'esito e passa al successivo.
+Un ping è una serie di echo request, quattro se non si chiede altro, mandati **uno alla volta**: il successivo parte nell'istante in cui il precedente si conclude. Ogni echo request ha un numero di sequenza più alto del precedente, e un'attesa di 40 tick.
+
+Ogni echo request si conclude con uno di quattro esiti, gli stessi che stampa il comando `ping` di Windows:
+
+| Esito | Nel codice | Quando |
+| --- | --- | --- |
+| Risposta | `reply` | È arrivato l'echo reply |
+| Richiesta scaduta | `timeout` | L'echo request è partito, ma dopo 40 tick non è tornato nulla |
+| Host di destinazione non raggiungibile | `unreachable` | C'era un prossimo salto, ma non ha risposto all'ARP entro 20 tick |
+| Trasmissione non riuscita | `transmit-failed` | Non c'era un prossimo salto: l'echo request non è nemmeno partito |
+
+Gli ultimi due si distinguono apposta: il primo indica un problema sulla propria LAN, il secondo un problema di configurazione IP o di rotte.
+
+Durate tipiche, nella LAN di esempio con uno switch:
+
+| Caso | Durata |
+| --- | --- |
+| Un echo request, tabelle vuote | 8 tick: 4 di ARP, 4 di echo |
+| Un echo request, tabelle piene | 4 tick |
+| Quattro echo request, tabelle vuote | 20 tick |
+| Quattro echo request verso un indirizzo che nessuno ha | 80 tick: ognuno ripete l'ARP e aspetta 20 tick |
+| Quattro echo request senza una strada | 0 tick: quattro esiti immediati, nessun frame |
 
 ### Switch
 
 Per ogni frame ricevuto su una porta:
 
-1. **Apprendimento.** Registra nella tabella MAC che l'indirizzo sorgente si raggiunge da quella porta.
-2. **Decisione.**
-   - Destinazione broadcast, oppure sconosciuta: inoltra su tutte le porte attive tranne quella di arrivo (flooding).
-   - Destinazione nota su un'altra porta: inoltra solo lì.
-   - Destinazione nota sulla porta di arrivo: scarta.
+1. **Apprendimento.** Registra nella tabella MAC che l'indirizzo sorgente si raggiunge da quella porta. Se il MAC era già noto su un'altra porta, vale l'informazione più recente.
+2. **Decisione**, presa da `chooseOutputPorts`, che non modifica nulla:
+   - destinazione broadcast, oppure sconosciuta: tutte le porte tranne quella di arrivo (flooding);
+   - destinazione nota su un'altra porta: solo quella;
+   - destinazione nota sulla porta di arrivo: nessuna, il frame viene scartato.
 
-La decisione è una funzione pura: riceve il frame, la porta di arrivo e la tabella, restituisce l'elenco delle porte di uscita.
+Lo switch inoltra il frame così com'è, senza modificarlo, e non guarda che cosa contiene: gli bastano i due indirizzi MAC. Per questo l'aggiunta di IPv4 e ICMP non ha richiesto di toccarlo.
 
-### Guasti
-
-- **Cavo staccato o porta spenta:** un frame inviato su quella porta non parte. Un frame già in viaggio su un cavo che viene staccato va perso.
-- **Dispositivo spento:** non invia e non riceve. Alla riaccensione le sue tabelle sono vuote.
+Un frame inoltrato su una porta senza cavo non parte.
 
 ## Semplificazioni
 
@@ -218,49 +311,101 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 
 | Che cosa | Nella realtà | In net-sim |
 | --- | --- | --- |
-| Tabella ARP | Le voci scadono dopo qualche minuto | Restano finché il dispositivo è acceso |
-| Tabella MAC | Le voci scadono dopo 5 minuti | Restano finché lo switch è acceso o il cavo è collegato |
+| Tabella ARP | Le voci scadono dopo qualche minuto | Non scadono mai |
+| Tabella MAC | Le voci scadono dopo 5 minuti | Non scadono mai |
 | Richiesta ARP ricevuta da chi non è il destinatario | Può aggiornare una voce già presente | Viene scartata senza effetti |
+| Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta: dopo 20 tick i pacchetti in attesa sono scartati |
 | ARP gratuito, rilevamento di indirizzi duplicati | Presenti | Assenti |
+| Ping | Windows manda quattro echo request, a un secondo l'uno dall'altro | Quattro echo request senza pausa nel motore: il successivo parte quando il precedente si conclude. In tempo reale l'interfaccia aggiungerà una breve pausa a schermo (decisione D-29) |
+| Identificativo ICMP | Varia secondo il sistema | Sempre 1 |
 | Checksum e FCS | Calcolati e verificati | Assenti: i frame non si corrompono |
 | Collisioni, velocità, duplex | Dipendono dal mezzo fisico | Assenti: ogni collegamento è punto-punto e senza errori |
 | Dimensione dei frame, MTU, frammentazione | Presenti | Assenti |
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
-| Ping | Windows manda quattro echo request, a un secondo l'uno dall'altro | Quattro echo request senza pausa: il successivo parte quando il precedente si conclude |
-| Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta: dopo 20 tick i pacchetti in attesa sono scartati |
-| Spanning tree | Elimina i cicli tra switch | Assente (vedi sotto) |
+| TTL | Diminuisce a ogni router | Resta 128: non esistono ancora router |
+| Spanning tree | Elimina i cicli tra switch | Assente. Previsto in una tappa futura (requisito DEV-11) |
 
-### Cicli tra switch
+## Difetti noti, con la correzione già decisa
 
-Senza spanning tree, due switch collegati ad anello fanno girare un broadcast all'infinito e lo moltiplicano. È ciò che accade davvero, e mostrarlo ha valore didattico, ma non deve bloccare l'app.
+Questi comportamenti sono nel codice di oggi ma sono sbagliati. Per ciascuno la correzione è decisa e registrata in [SPEC.md](../SPEC.md); nessuna è ancora realizzata.
 
-Proposta: lasciare che la tempesta di broadcast avvenga e sospendere la simulazione quando i frame in viaggio superano una soglia, segnalando la sospensione. *Punto aperto.*
+### Un ciclo tra switch non si ferma mai
+
+Senza spanning tree, due switch collegati ad anello fanno girare un broadcast all'infinito e lo moltiplicano. È ciò che accade davvero in una rete senza spanning tree, ma oggi nulla lo interrompe: in passo-passo i frame aumentano a ogni clic, e un programma che facesse avanzare la rete "fino alla fine" non terminerebbe. Le due reti di esempio non hanno cicli.
+
+**Correzione decisa** (D-26, requisito SIM-15): la tempesta avviene, ma quando i frame in viaggio superano una soglia il simulatore si sospende e lo segnala. L'avviso dirà che ci sono troppi frame in viaggio e che la causa è un ciclo tra switch: è l'unico caso in cui l'app spiega una causa, perché altrimenti sembrerebbe un suo difetto. La soglia proposta è di 200 frame, circa quattro volte il massimo di una rete senza cicli da 50 dispositivi. Lo spanning tree vero arriverà in una tappa futura.
+
+### Un ping al proprio indirizzo non funziona
+
+L'host tratta il proprio indirizzo come quello di un vicino: lo cerca con ARP, non riceve risposta e conclude "host di destinazione non raggiungibile". Un ping a 127.0.0.1 conclude invece "trasmissione non riuscita", perché l'indirizzo sembra appartenere a un'altra rete.
+
+**Correzione decisa** (D-27, requisito SIM-14): un ping al proprio indirizzo o a un indirizzo 127.x.x.x riceve risposta subito, senza che alcun frame esca sul cavo. Per 127.x.x.x vale anche su un host senza configurazione IP.
+
+### La configurazione IP degli host non è controllata
+
+Oggi l'unico controllo è sulla forma della subnet mask. Un host con un indirizzo scritto male viene caricato, e l'errore compare solo quando quell'indirizzo entra in un calcolo. Un host può avere l'indirizzo senza la maschera.
+
+**Correzione decisa** (D-28, requisito CFG-7): la configurazione è accettata o rifiutata come farebbe Windows.
+
+| Regola | Esempio rifiutato |
+| --- | --- |
+| Indirizzo e gateway devono essere indirizzi IPv4 scritti correttamente | `192.168.1.256` |
+| Indirizzo e maschera si impostano insieme, o nessuno dei due | indirizzo senza maschera |
+| La maschera ha i bit a 1 contigui (già in vigore) | `255.0.255.0` |
+| L'indirizzo non può essere quello di rete né quello di broadcast della sottorete | `192.168.1.0` e `192.168.1.255` con maschera /24 |
+| Non sono ammessi 0.0.0.0, gli indirizzi 127.x.x.x e quelli da 224 in su | `127.0.0.1`, `224.0.0.5` |
+
+Le stesse regole valgono per il gateway. Tutto il resto resta ammesso anche se sbagliato per quella rete: indirizzi duplicati, host della stessa LAN con maschere diverse, un gateway fuori dalla sottorete. Sono errori che lo studente deve saper diagnosticare (requisito SIM-8).
+
+## Previsto
+
+Non ancora nel codice, oltre alle tre correzioni qui sopra:
+
+- **Guasti** (requisiti SIM-6 e SIM-7): cavo staccato, dispositivo spento, porta spenta. Richiederanno nuovi campi nel modello e nel file.
+- **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
+- **Azioni di modifica della rete**: aggiungere, togliere, collegare, configurare.
+- **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
+- **Router**, con più porte ciascuna con il proprio indirizzo, tabella di routing e decremento del TTL (rilascio 2).
+- **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
 
-L'ordine è sempre lo stesso, ed è quello che seguirà chi estende il motore con VLAN, TCP o IPv6:
+L'ordine è quello seguito per IPv4 e ICMP, e vale per chi estenderà il motore:
 
-1. Si definisce il tipo dell'unità dati in `model/`.
-2. Si scrive il comportamento in un nuovo file di `protocols/`.
+1. Si definisce il tipo dell'unità dati in `model/frames.ts`.
+2. Si scrive il comportamento in un nuovo file di `protocols/`, con funzioni che costruiscono e decidono senza modificare nulla.
 3. Si collega il protocollo ai dispositivi che lo usano, in `devices/`.
-4. Si scrivono i test in `tests/engine/`.
+4. Si scrivono i test in `tests/engine/`, prima i mattoni isolati e poi gli scenari.
 5. Si aggiorna la tabella delle semplificazioni qui sopra.
 
 ## Come si prova
 
-Ogni test costruisce una rete, compie un'azione e controlla le tracce o lo stato finale. Schizzo:
+Ogni test costruisce una rete, compie un'azione e controlla le tracce o lo stato finale. `tests/engine/builders.ts` fornisce due reti pronte: `buildTwoHosts()`, due PC collegati da un cavo, e `buildLan()`, uno switch con tre PC.
 
 ```ts
-test("lo switch inoltra in flooding quando non conosce la destinazione", () => {
-  const net = buildLan({ hosts: 3 });        // SW1 con PC1, PC2, PC3
-  const sim = createSimulator(net);
+test("lo switch impara il MAC di chi chiede e inoltra la richiesta a tutti gli altri", () => {
+  const { sim, sw } = lan();
+  sim.dispatch(resolveAddress("d1", "192.168.1.11"));
 
-  sim.dispatch(ping("PC1", "192.168.1.11"));
-  sim.step();                                // la richiesta ARP arriva a SW1, che la inoltra subito
+  const traces = sim.step(); // la richiesta arriva allo switch
 
-  expect(framesSentBy(sim, "SW1")).toHaveLength(2);     // verso PC2 e PC3, non verso PC1
-  expect(macTableOf(sim, "SW1")).toContainEntry(macOf("PC1"), "Fa0/1");
+  expect(sim.time).toBe(1);
+  expect(sw.macTable.get(PC1_MAC)).toBe("Fa0/1");
+  expect(sentBySwitchTo(traces)).toEqual(["d2", "d3"]); // non verso PC1, non su Fa0/4
 });
 ```
 
-Il criterio di accettazione del rilascio 1 in [SPEC.md](../SPEC.md) diventa, passo per passo, una serie di test di questo tipo.
+I file di test, uno per argomento:
+
+| File | Argomento |
+| --- | --- |
+| `arp.test.ts` | Scambio ARP tra due PC |
+| `switch.test.ts` | Apprendimento e inoltro dello switch, isolati |
+| `lan.test.ts` | Scambio ARP attraverso lo switch |
+| `ipv4.test.ts` | Indirizzi, maschere, stessa rete, prossimo salto |
+| `ping.test.ts` | Ping a caldo e a freddo, casi in cui non parte o non arriva |
+| `timers.test.ts` | Attesa della risposta ARP |
+| `ping-results.test.ts` | I quattro esiti |
+| `ping-series.test.ts` | Più echo request per ping |
+
+I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.

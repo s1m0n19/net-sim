@@ -1,21 +1,21 @@
 # Documentazione tecnica
 
-Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'app deve fare, stanno in [SPEC.md](../SPEC.md).
+Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'app deve fare, stanno in [SPEC.md](../SPEC.md); lo stato di avanzamento è nella sua sezione 9.
 
-**Stato:** bozza di progetto. I documenti precedono il codice e descrivono l'impostazione proposta. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
+**Stato:** i documenti descrivono il codice com'è al 9 ottobre 2026. Dove parlano di qualcosa che ancora non esiste lo dicono, con la parola *previsto*. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
 
 ## Documenti
 
 | Documento | Contenuto |
 | --- | --- |
 | [architettura.md](architettura.md) | Tecnologie scelte, parti dell'app, struttura delle cartelle, convenzioni del codice |
-| [motore.md](motore.md) | Il motore di simulazione: modello dei dati, eventi, tempo, protocolli e loro semplificazioni |
-| [formato-file.md](formato-file.md) | Il formato dei file in cui si salvano le reti |
+| [motore.md](motore.md) | Il motore di simulazione: modello dei dati, eventi, tempo, attese, protocolli e loro semplificazioni |
+| [formato-file.md](formato-file.md) | Il formato dei file delle reti |
 
 Documenti previsti, da scrivere quando si arriva alla parte corrispondente:
 
 - `interfaccia.md`: componenti, disposizione, stile grafico (rilascio 1).
-- `cli.md`: interprete dei comandi IOS e terminale degli host (rilascio 2).
+- `cli.md`: interprete dei comandi IOS e terminale degli host (rilasci 1 e 2).
 - `esercizi.md`: obiettivi, verifica automatica, protezione dei file (tappa T1).
 
 ## A chi si rivolge
@@ -26,12 +26,15 @@ A chi sviluppa l'app e agli studenti che ne leggono il codice. Per questo ogni d
 
 | Termine | Significato in questa documentazione |
 | --- | --- |
-| Rete | L'insieme di dispositivi e collegamenti costruito dall'utente |
-| Dispositivo | PC, server, switch o router |
+| Rete | L'insieme di dispositivi e collegamenti |
+| Dispositivo | Oggi un host (PC) o uno switch; sono previsti server e router |
 | Porta | Punto di collegamento di un dispositivo, con un nome (per esempio `Fa0/1`) |
 | Collegamento | Il cavo tra due porte |
-| Configurazione | Ciò che l'utente imposta e che viene salvato nel file: indirizzi, rotte, nomi |
-| Stato di esecuzione | Ciò che la rete impara funzionando: tabelle MAC e ARP, pacchetti in viaggio |
-| Evento | Un fatto che avviene in un istante del tempo simulato, per esempio l'arrivo di un frame a una porta |
-| Traccia | La registrazione di ciò che un evento ha prodotto, letta dall'interfaccia per disegnare |
-| Conversazione | Il traffico generato da un'azione dell'utente, più tutto il traffico che esso provoca |
+| Configurazione | Ciò che si imposta e che sta nel file: indirizzi, nomi, porte |
+| Stato di esecuzione | Ciò che cambia mentre la rete funziona: tabelle MAC e ARP, pacchetti in attesa, echo request in sospeso |
+| Tick | L'unità del tempo simulato. Attraversare un collegamento richiede un tick |
+| Evento | Un fatto futuro con il suo istante: l'arrivo di un frame a una porta, oppure la scadenza di un'attesa |
+| Attesa | Un timer di un host: se scade prima che arrivi ciò che si aspettava, l'host rinuncia |
+| Traccia | La registrazione di ciò che è successo, letta dall'interfaccia per disegnare |
+| Conversazione | Tutto ciò che un'azione dell'utente provoca: in un ping, la richiesta ARP, gli echo e i loro esiti |
+| Esito | Come si conclude un echo request: risposta, richiesta scaduta, host non raggiungibile, trasmissione non riuscita |

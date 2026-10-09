@@ -2,7 +2,7 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** bozza. Del codice esiste solo lo scheletro (PC, switch, ARP e ping, in passo-passo).
+- **Stato:** in sviluppo. Il motore del rilascio 1 è quasi completo; l'interfaccia è ancora una pagina provvisoria. Il dettaglio è nella sezione 9.
 - **Ultimo aggiornamento:** 9 ottobre 2026.
 - **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
 - **Documentazione tecnica:** [docs/](docs/README.md).
@@ -71,6 +71,7 @@ I dispositivi sono generici, non modelli commerciali. Non esistono moduli da ins
 | DEV-8 | Routing dinamico (RIP, OSPF) e NAT/PAT | T5 |
 | DEV-9 | ACL sul router e firewall dedicato con zone e DMZ | T6 |
 | DEV-10 | Access point e client Wi-Fi | T7 |
+| DEV-11 | Spanning tree (STP) sugli switch: in presenza di un ciclo, gli switch bloccano da soli una porta | T2 |
 
 ### 3.3 Configurazione
 
@@ -82,6 +83,7 @@ I dispositivi sono generici, non modelli commerciali. Non esistono moduli da ins
 | CFG-4 | CLI di switch e router con sintassi Cisco IOS: modalità (`enable`, `configure terminal`, `interface`), abbreviazioni dei comandi, completamento con Tab, aiuto con `?` | R2 |
 | CFG-5 | CLI e pannello grafico sincronizzati: una modifica fatta in uno compare subito nell'altro | R2 |
 | CFG-6 | `nslookup` sugli host | T3 |
+| CFG-7 | La configurazione IP di un host è accettata o rifiutata come farebbe Windows. Indirizzo e subnet mask si impostano insieme, oppure nessuno dei due; il gateway è facoltativo. Sono rifiutati gli indirizzi scritti male, le maschere con bit non contigui e, come indirizzo dell'host o del gateway, l'indirizzo di rete e quello di broadcast della sottorete, 0.0.0.0, gli indirizzi 127.x.x.x e quelli da 224 in su. Tutto il resto è ammesso, anche se sbagliato per quella rete. Un gateway fuori dalla sottorete dell'host è ammesso | R1 |
 
 Il sottoinsieme dei comandi IOS è un punto aperto (sezione 7). Proposta iniziale per R2: `enable`, `configure terminal`, `hostname`, `interface`, `ip address`, `shutdown`, `no shutdown`, `ip route`, `exit`, `end`, `show running-config`, `show ip interface brief`, `show ip route`, `show mac address-table`, `show arp`, `ping`, `traceroute`.
 
@@ -92,13 +94,17 @@ I protocolli funzionano davvero, in forma semplificata: si simulano i campi prin
 | ID | Requisito | Rilascio |
 | --- | --- | --- |
 | SIM-1 | Ethernet, ARP, IPv4 e ICMP echo funzionanti | R1 |
-| SIM-2 | Due modalità commutabili: tempo reale e passo-passo. In passo-passo la rete avanza di un evento alla volta | R1 |
+| SIM-2 | Due modalità commutabili: tempo reale e passo-passo. In passo-passo la rete avanza di un istante alla volta: tutto ciò che accade nello stesso istante si muove insieme | R1 |
 | SIM-3 | Velocità regolabile in tempo reale | R1 |
 | SIM-4 | Generare traffico dal terminale dell'host | R1 |
 | SIM-5 | Generare un ping con il mouse, indicando sorgente e destinazione sulla topologia | R1 |
 | SIM-6 | Guasti fisici: staccare un cavo, spegnere un dispositivo | R1 |
 | SIM-7 | Guasti fisici: spegnere una singola porta | R2 |
 | SIM-8 | Comportamento da rete vera davanti agli errori di configurazione: nessun avviso preventivo e nessuna spiegazione del fallimento. La causa si cerca con gli strumenti (`ping`, `tracert`, comandi `show`) | R1 |
+| SIM-13 | Il ping manda quattro echo request, o il numero richiesto, e conclude ciascuno con l'esito che stamperebbe Windows: risposta, richiesta scaduta, host di destinazione non raggiungibile, trasmissione non riuscita | R1 |
+| SIM-14 | Un ping al proprio indirizzo, o a un indirizzo 127.x.x.x, riceve risposta subito e senza che alcun frame esca sul cavo (loopback). Vale anche per un host senza configurazione IP, limitatamente a 127.x.x.x | R1 |
+| SIM-15 | Tempesta di broadcast: un ciclo tra switch fa girare e moltiplicare i frame, come in una rete vera senza spanning tree. Quando i frame in viaggio superano una soglia la simulazione si sospende, e un avviso dice che ci sono troppi frame in viaggio e che la causa è un ciclo tra switch. È un'eccezione dichiarata a SIM-8 | R1 |
+| SIM-16 | In tempo reale, una breve pausa a schermo separa un echo request dal successivo, così i quattro giri si distinguono. In passo-passo non c'è pausa. La pausa è dell'interfaccia: il motore si comporta allo stesso modo nelle due modalità | R1 |
 | SIM-9 | TCP con handshake visibile e UDP | T3 |
 | SIM-10 | Applicazioni simulate sugli host (browser e simili) | T3 |
 | SIM-11 | Editor per costruire a mano un pacchetto | T6 |
@@ -144,6 +150,8 @@ I campi da mostrare in ogni strato sono un punto aperto (sezione 7). Proposta in
 | FILE-1 | Salvare la rete in un file locale e riaprirlo. Nessun account, nessun server | R1 |
 | FILE-2 | Formato con numero di versione, così le versioni future dell'app aprono i file vecchi | R1 |
 | FILE-3 | Nessuna importazione dei file `.pkt` di Packet Tracer | — |
+| FILE-4 | All'apertura un file viene controllato e, se qualcosa non torna, rifiutato con un messaggio che dice che cosa: campi mancanti o del tipo sbagliato, identificativi duplicati, indirizzi MAC duplicati, una porta con più di un cavo, collegamenti verso porte inesistenti, configurazione IP non accettabile secondo CFG-7 | R1 |
+| FILE-5 | Al salvataggio si può scegliere se includere nel file le tabelle MAC e ARP, per preparare una rete che parte "già calda" o con una riga sbagliata. Pacchetti in viaggio, attese e tempo non si salvano mai | R2 |
 
 ### 3.8 Esercizi e verifiche
 
@@ -184,7 +192,7 @@ Tappe successive, in ordine proposto:
 | Tappa | Contenuto |
 | --- | --- |
 | T1 | Esercizi con consegna, obiettivi verificati, errori nascosti, protezione dei file |
-| T2 | VLAN |
+| T2 | VLAN e spanning tree |
 | T3 | Trasporto e servizi: TCP, UDP, DHCP, DNS, web, applicazioni simulate |
 | T4 | Verifiche: punteggio e registro delle attività |
 | T5 | Routing dinamico e NAT |
@@ -234,15 +242,18 @@ Punti ancora da decidere:
 - [ ] Sottoinsieme dei comandi IOS (proposta nella sezione 3.3).
 - [ ] Campi mostrati negli strati dei pacchetti (proposta nella sezione 3.5).
 - [ ] Dove pubblicare il sito, verificando che il filtro della scuola non lo blocchi.
-- [ ] Lingua degli identificatori nel codice: adottata la proposta di [docs/architettura.md](docs/architettura.md), da confermare (decisione D-15).
-- [ ] Se salvare nel file anche lo stato della simulazione: adottata la proposta di [docs/formato-file.md](docs/formato-file.md), da confermare (decisione D-14).
-- [ ] Come trattare i cicli tra switch in assenza di spanning tree (vedi [docs/motore.md](docs/motore.md)).
+- [ ] Lingua dei messaggi del terminale degli host: italiano, come nei Windows del laboratorio, o inglese.
+- [ ] Come non affidare il significato al solo colore: studenti daltonici, proiettori sbiaditi.
+- [ ] Se aggiungere test automatici della pagina e un controllo automatico dei test a ogni invio al repository. Oggi la pagina è verificata solo a occhio.
+- [ ] Soglia della tempesta di broadcast (SIM-15). Proposta: 200 frame in viaggio, circa quattro volte il massimo di una rete senza cicli da 50 dispositivi.
+- [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
+- [ ] In quale rilascio collocare il salvataggio facoltativo delle tabelle (FILE-5). Proposta: R2.
 
 ## 8. Decisioni
 
 Registro delle scelte tecniche importanti, con il motivo. Ogni nuova scelta si aggiunge in fondo; una scelta superata non si cancella, si marca come sostituita. I dettagli stanno in [docs/](docs/README.md).
 
-Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docente, *adottata* se è già nel codice su proposta di chi sviluppa ma non è ancora stata discussa.
+Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docente, *adottata* se è già nel codice su proposta di chi sviluppa ma non è ancora stata discussa. Il 9 ottobre 2026 tutte le decisioni adottate fino a quel momento sono state discusse e confermate o sostituite.
 
 | N. | Data | Decisione | Motivo | Stato |
 | --- | --- | --- | --- | --- |
@@ -255,18 +266,76 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-7 | 8 ott 2026 | Protocolli realmente funzionanti ma semplificati | Si simula ciò che serve a capire, non ogni timer e caso limite. Le semplificazioni sono elencate in docs/motore.md | Confermata |
 | D-8 | 8 ott 2026 | L'app non avvisa degli errori di configurazione e non spiega i fallimenti | Deve comportarsi come una rete vera: la diagnosi è parte dell'esercizio | Confermata |
 | D-9 | 9 ott 2026 | Lo sviluppo parte da uno scheletro: scambio ARP tra due PC | È il comportamento vero più piccolo che attraversa file, motore, interfaccia e test | Confermata |
-| D-10 | 9 ott 2026 | Simulatore a eventi discreti, deterministico | Tempo reale e passo-passo diventano lo stesso meccanismo; test e lezioni sono ripetibili | Adottata |
-| D-11 | 9 ott 2026 | Tempo misurato in tick astratti, un tick per collegamento | Con i tempi veri, rallentare un pacchetto perché sia visibile renderebbe lunghissime le attese | Adottata |
-| D-12 | 9 ott 2026 | Un passo elabora tutti gli eventi dello stesso istante | I frame di un broadcast si muovono insieme, come nella realtà | Adottata |
-| D-13 | 9 ott 2026 | I dispositivi restituiscono una reazione; è il simulatore a spedire i frame | Il comportamento di un dispositivo si legge e si prova da solo | Adottata |
-| D-14 | 9 ott 2026 | Il file contiene solo la configurazione, non le tabelle né i pacchetti in viaggio | Una rete aperta si comporta sempre allo stesso modo. Non si può salvare una simulazione a metà | Adottata |
-| D-15 | 9 ott 2026 | Identificatori in inglese, commenti e messaggi in italiano | I nomi dei campi dei protocolli sono in inglese ovunque; i commenti devono essere letti dagli studenti | Adottata |
-| D-16 | 9 ott 2026 | TypeScript fermo alla versione 6 | Lo strumento di controllo dei componenti Svelte non supporta ancora la 7 | Adottata |
+| D-10 | 9 ott 2026 | Simulatore a eventi discreti, deterministico | Tempo reale e passo-passo diventano lo stesso meccanismo; test e lezioni sono ripetibili | Confermata |
+| D-11 | 9 ott 2026 | Tempo misurato in tick astratti, un tick per collegamento | Con i tempi veri, rallentare un pacchetto perché sia visibile renderebbe lunghissime le attese | Confermata |
+| D-12 | 9 ott 2026 | Un passo elabora tutti gli eventi dello stesso istante | I frame di un broadcast si muovono insieme, come nella realtà | Confermata |
+| D-13 | 9 ott 2026 | I dispositivi restituiscono una reazione; è il simulatore a spedire i frame | Il comportamento di un dispositivo si legge e si prova da solo | Confermata |
+| D-14 | 9 ott 2026 | Il file contiene solo la configurazione, non le tabelle né i pacchetti in viaggio | Una rete aperta si comporta sempre allo stesso modo. Non si può salvare una simulazione a metà | Sostituita da D-25 |
+| D-15 | 9 ott 2026 | Identificatori in inglese, commenti e messaggi in italiano | I nomi dei campi dei protocolli sono in inglese ovunque; i commenti devono essere letti dagli studenti | Confermata |
+| D-16 | 9 ott 2026 | TypeScript fermo alla versione 6 | Lo strumento di controllo dei componenti Svelte non supporta ancora la 7 | Confermata |
 | D-17 | 9 ott 2026 | Le subnet mask devono avere i bit a 1 contigui (notazione CIDR); le altre sono rifiutate | Una maschera con bit alternati non è una configurazione sbagliata da diagnosticare: non è una maschera | Confermata |
 | D-18 | 9 ott 2026 | Un ping manda un solo echo request, finché non esistono i timer | Mandarne quattro di seguito, come Windows, richiede di attendere ogni risposta fino a una scadenza | Sostituita da D-24 |
 | D-19 | 9 ott 2026 | I pacchetti IP partono con TTL 128 | È il valore di Windows, coerente con il terminale degli host in stile Windows | Confermata |
 | D-20 | 9 ott 2026 | Ogni pacchetto messo in attesa fa partire una richiesta ARP; i pacchetti in attesa non scadono | Senza timer è il modo più semplice per non lasciare mai un ping in silenzio. Da rivedere con i timer | Sostituita da D-22 |
-| D-21 | 9 ott 2026 | Le attese sono eventi della coda: un host chiede di avviarle o annullarle, il simulatore le fa scadere | Il tempo resta in un solo punto e gli host restano funzioni senza orologio, quindi facili da provare | Adottata |
-| D-22 | 9 ott 2026 | Una sola richiesta ARP per indirizzo alla volta; se non arriva risposta entro 20 tick i pacchetti in attesa sono scartati, senza ripetere la richiesta | Evita richieste doppie e pacchetti appesi per sempre. Venti tick bastano per andata e ritorno nelle reti previste | Adottata |
+| D-21 | 9 ott 2026 | Le attese sono eventi della coda: un host chiede di avviarle o annullarle, il simulatore le fa scadere | Il tempo resta in un solo punto e gli host restano funzioni senza orologio, quindi facili da provare | Confermata |
+| D-22 | 9 ott 2026 | Una sola richiesta ARP per indirizzo alla volta; se non arriva risposta entro 20 tick i pacchetti in attesa sono scartati, senza ripetere la richiesta | Evita richieste doppie e pacchetti appesi per sempre. Venti tick bastano per andata e ritorno nelle reti previste | Confermata |
 | D-23 | 9 ott 2026 | Ogni echo request si conclude con uno di quattro esiti: risposta, richiesta scaduta (40 tick), host di destinazione non raggiungibile (ARP senza risposta), trasmissione non riuscita (nessuna strada) | Sono gli esiti che il ping di Windows stampa. Tenerli distinti serve a riconoscere i problemi di rotte e, più avanti, di ACL. Non spiegano la causa, quindi non contraddicono D-8 | Confermata |
-| D-24 | 9 ott 2026 | Un ping manda quattro echo request, o il numero richiesto, uno alla volta; il successivo parte nell'istante in cui il precedente si conclude | Quattro è il valore di Windows. Senza la pausa di un secondo tra una richiesta e l'altra il passo-passo non ha clic a vuoto | Confermata il numero, adottata l'assenza di pausa |
+| D-24 | 9 ott 2026 | Un ping manda quattro echo request, o il numero richiesto, uno alla volta; il successivo parte nell'istante in cui il precedente si conclude | Quattro è il valore di Windows. Senza la pausa di un secondo tra una richiesta e l'altra il passo-passo non ha clic a vuoto | Confermata; per la pausa vedi D-29 |
+| D-25 | 9 ott 2026 | Il file contiene sempre la configurazione; le tabelle MAC e ARP solo se chi salva lo chiede. Pacchetti in viaggio, attese e tempo non si salvano mai | Serve a preparare lezioni che partono da una rete già calda ed esercizi con una riga ARP sbagliata. Lasciare fuori ciò che è in movimento tiene i file semplici e stabili tra versioni dell'app | Confermata, da realizzare |
+| D-26 | 9 ott 2026 | Un ciclo tra switch produce una tempesta di broadcast; oltre una soglia di frame in viaggio la simulazione si sospende con un avviso che ne spiega la causa. Lo spanning tree arriverà in una tappa futura | Mostrare la tempesta fa capire a che cosa serve lo spanning tree; la sospensione impedisce che l'app si blocchi. L'avviso spiega la causa, in deroga a D-8, perché altrimenti sembrerebbe un difetto dell'app | Confermata, da realizzare |
+| D-27 | 9 ott 2026 | Un host risponde da solo a un ping verso il proprio indirizzo o verso 127.x.x.x, senza frame sul cavo | È il comportamento reale, e permette di spiegare il loopback e il primo controllo di ogni diagnosi | Confermata, da realizzare |
+| D-28 | 9 ott 2026 | La configurazione IP di un host è accettata o rifiutata come farebbe Windows; indirizzo e maschera vanno insieme. Gli indirizzi MAC duplicati sono sempre rifiutati. All'apertura un file viene controllato anche nella struttura | Ciò che Windows non lascia impostare non è un errore da diagnosticare: non si può fare. I MAC li assegna l'app, quindi due uguali sono un file danneggiato | Confermata, da realizzare |
+| D-29 | 9 ott 2026 | Tra un echo request e il successivo c'è una pausa solo in tempo reale, ed è l'interfaccia a farla, non il motore | In passo-passo una pausa sarebbe un clic a vuoto; in tempo reale serve a distinguere i quattro giri. Tenerla fuori dal motore lo lascia identico nelle due modalità | Confermata, da realizzare |
+
+## 9. Stato di avanzamento
+
+Aggiornato al 9 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
+
+| Traguardo | Completamento |
+| --- | --- |
+| Motore del rilascio 1 | circa 85%: mancano i guasti |
+| Rilascio 1 intero | circa 35% |
+| Prima versione (rilasci 1 e 2) | circa 20% |
+| Progetto completo, fino alla tappa T8 | circa 8% |
+
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo.
+
+### Requisiti del rilascio 1
+
+| Stato | Requisiti |
+| --- | --- |
+| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · UI-3 lingua · UI-4 mouse e tastiera · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore |
+| **Fatto in forma provvisoria** | VIS-3 tabelle aggiornate dal vivo · VIS-9 elenco degli eventi · VIS-1 pacchetti animati, senza colore per protocollo · VIS-6 indirizzi IP e MAC sempre visibili, senza porte né interruttori · SIM-5 ping da pulsante e menu, non con il mouse sulla topologia |
+| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 solo lettura delle reti di esempio · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no |
+| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · CFG-7 controlli sulla configurazione IP (oggi solo la maschera) · SIM-3 velocità · SIM-6 guasti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-16 pausa tra gli echo in tempo reale · FILE-4 controlli all'apertura (oggi solo in parte) · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · VIS-8 stato delle porte · UI-1 disposizione a pannelli · UI-2 stile grafico · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili |
+
+Rilascio 2 e tappe successive: nulla è iniziato.
+
+### Rispetto al criterio di accettazione del rilascio 1
+
+| Punto | Stato |
+| --- | --- |
+| 1. Aprire un file con uno switch e tre PC | La rete esiste come esempio integrato; manca l'apertura di un file |
+| 2. Lanciare il ping dal terminale, in modalità presentazione | Il ping parte da un pulsante; mancano terminale e modalità presentazione |
+| 3. Richiesta ARP in broadcast, flooding, tabella MAC | Funziona |
+| 4. PC2 risponde, PC3 scarta, le tabelle si aggiornano | Funziona |
+| 5. Echo request su una sola porta, echo reply | Funziona |
+| 6. Selezionare un pacchetto e vederne gli strati | Il contenuto si vede solo come testo grezzo nell'elenco degli eventi |
+| 7. Staccare un cavo; cambiare un indirizzo | Mancano i guasti e la modifica della configurazione. Gli esiti del ping che ne risulterebbero funzionano già |
+| 8. Salvare la rete | Manca |
+
+### Che cosa esiste oltre ai requisiti
+
+- 99 test automatici su motore e lettura dei file.
+- Due reti di esempio in `examples/`.
+- Una pagina provvisoria in `src/ui/`, descritta in [README.md](README.md): serve a vedere il motore funzionare, e verrà sostituita dall'interfaccia definitiva.
+
+### Difetti noti, con la correzione già decisa
+
+| Difetto | Decisione | Requisito |
+| --- | --- | --- |
+| Un ciclo tra switch fa girare un broadcast all'infinito e nulla lo interrompe | D-26: sospensione oltre una soglia, con avviso | SIM-15 |
+| Un ping al proprio indirizzo conclude "host di destinazione non raggiungibile" | D-27: l'host risponde da solo | SIM-14 |
+| Un file con indirizzi IP scritti male, identificativi o MAC duplicati, campi mancanti o una porta con due cavi viene aperto lo stesso | D-28: controlli completi all'apertura | CFG-7, FILE-4 |
+
+Nessuna delle tre correzioni è ancora nel codice. I dettagli sono in [docs/motore.md](docs/motore.md) e [docs/formato-file.md](docs/formato-file.md).
