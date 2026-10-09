@@ -120,7 +120,9 @@ Un file può arrivare modificato a mano o danneggiato. All'apertura l'app contro
 
 Se un controllo fallisce, l'app non apre il file e dice quale controllo è fallito. Non tenta di riparare.
 
-Gli indirizzi IP non vengono controllati: una rete con indirizzi duplicati o maschere incoerenti è una rete valida, anche se non funziona (requisito SIM-8).
+Le subnet mask devono essere valide: bit a 1 contigui a sinistra, bit a 0 a destra. Una maschera come 255.0.255.0 fa rifiutare il file.
+
+Il resto della configurazione IP non viene controllato: una rete con indirizzi duplicati, o con host nella stessa LAN ma con maschere diverse, è una rete valida, anche se non funziona (requisito SIM-8).
 
 ## Salvare dal browser
 

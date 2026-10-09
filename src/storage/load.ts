@@ -3,6 +3,7 @@
 // Un file può arrivare modificato a mano o danneggiato: se qualcosa non
 // torna, il caricamento si ferma e dice che cosa non va. Non tenta di riparare.
 
+import { isValidMask } from "../engine/model/addresses";
 import type { Device, Link, Network, Port, PortRef } from "../engine/model/network";
 
 export const FILE_FORMAT = "net-sim";
@@ -28,7 +29,8 @@ export interface LoadedFile {
  * @returns la rete e le posizioni dei dispositivi sul disegno
  * @throws Error se il testo non è JSON valido, se non è un file di net-sim,
  *   se la versione non è supportata, se contiene un tipo di dispositivo
- *   sconosciuto o se un collegamento indica una porta inesistente
+ *   sconosciuto, se un host ha una subnet mask non valida o se un
+ *   collegamento indica una porta inesistente
  */
 export function loadNetworkFile(text: string): LoadedFile {
   let data: any;
@@ -71,6 +73,9 @@ function readDevice(d: any): Device {
 
   switch (d.kind) {
     case "host":
+      if (d.mask !== null && !isValidMask(d.mask)) {
+        throw new Error(`${d.name} ha una subnet mask non valida: ${d.mask}.`);
+      }
       return {
         kind: "host",
         id: d.id,

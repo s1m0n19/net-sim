@@ -262,3 +262,4 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-14 | 9 ott 2026 | Il file contiene solo la configurazione, non le tabelle né i pacchetti in viaggio | Una rete aperta si comporta sempre allo stesso modo. Non si può salvare una simulazione a metà | Adottata |
 | D-15 | 9 ott 2026 | Identificatori in inglese, commenti e messaggi in italiano | I nomi dei campi dei protocolli sono in inglese ovunque; i commenti devono essere letti dagli studenti | Adottata |
 | D-16 | 9 ott 2026 | TypeScript fermo alla versione 6 | Lo strumento di controllo dei componenti Svelte non supporta ancora la 7 | Adottata |
+| D-17 | 9 ott 2026 | Le subnet mask devono avere i bit a 1 contigui (notazione CIDR); le altre sono rifiutate | Una maschera con bit alternati non è una configurazione sbagliata da diagnosticare: non è una maschera | Confermata |

@@ -48,6 +48,13 @@ describe("lettura di un file di rete", () => {
     expect(() => loadNetworkFile(JSON.stringify(data))).toThrow("non supportato: tostapane");
   });
 
+  test("rifiuta un host con una subnet mask non valida", () => {
+    const data = JSON.parse(exampleFile);
+    data.network.devices[0].mask = "255.0.255.0";
+
+    expect(() => loadNetworkFile(JSON.stringify(data))).toThrow("PC1 ha una subnet mask non valida");
+  });
+
   test("rifiuta un file che non è JSON", () => {
     expect(() => loadNetworkFile("non sono JSON")).toThrow("non è JSON valido");
   });
