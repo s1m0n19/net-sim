@@ -135,6 +135,13 @@
         return `${nameOf(trace.at)} scarta ${labelOf(trace.frame)}`;
       case "packet-dropped":
         return `${findDevice(sim.network, trace.deviceId).name} rinuncia a spedire ${trace.packet.payload.type.replace("-", " ")} per ${trace.packet.dstIp}`;
+      case "ping-result": {
+        const name = findDevice(sim.network, trace.deviceId).name;
+        if (trace.outcome === "reply") return `${name}: risposta da ${trace.targetIp}`;
+        if (trace.outcome === "timeout") return `${name}: richiesta scaduta`;
+        if (trace.outcome === "unreachable") return `${name}: host di destinazione non raggiungibile`;
+        return `${name}: trasmissione non riuscita`;
+      }
       case "table-changed":
         return `${findDevice(sim.network, trace.deviceId).name} aggiorna la tabella ${trace.table === "arp" ? "ARP" : "MAC"}`;
     }

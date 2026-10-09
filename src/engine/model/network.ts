@@ -31,6 +31,12 @@ export interface PendingPacket {
   packet: Ipv4Packet;
 }
 
+// Un echo request di cui l'host aspetta ancora la risposta.
+export interface AwaitedEcho {
+  targetIp: Ipv4Address;
+  sequence: number;
+}
+
 export interface Host {
   kind: "host";
   id: string;
@@ -46,6 +52,8 @@ export interface Host {
   nextEchoSequence: number;
   // Pacchetti in attesa della risposta ARP.
   pendingPackets: PendingPacket[];
+  // Echo request spediti (o in attesa di partire) e non ancora conclusi.
+  awaitedEchoes: AwaitedEcho[];
 }
 
 export interface Switch {
@@ -79,6 +87,7 @@ export function createHost(config: HostConfig): Host {
     arpTable: new Map(),
     nextEchoSequence: 1,
     pendingPackets: [],
+    awaitedEchoes: [],
   };
 }
 

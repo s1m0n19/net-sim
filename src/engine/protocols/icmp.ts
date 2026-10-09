@@ -5,6 +5,11 @@
 
 import type { IcmpMessage } from "../model/frames";
 
+// Per quanti tick chi fa il ping aspetta l'echo reply prima di considerare
+// la richiesta scaduta. È più lunga dell'attesa ARP: così, se il problema
+// è un MAC che non si trova, lo si scopre prima.
+export const ECHO_TIMEOUT_TICKS = 40;
+
 /**
  * Costruisce un echo request, la domanda del ping.
  *

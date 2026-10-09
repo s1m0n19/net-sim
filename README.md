@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è all'inizio. Oggi esiste solo uno **scheletro**: PC e switch, con ARP e ping funzionanti, da far avanzare un passo alla volta.
 
-Mancano ancora editor della rete, salvataggio, terminale e grafica curata. Un ping manda un solo echo request, e un echo request senza risposta non scade ancora. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
+Mancano ancora editor della rete, salvataggio, terminale e grafica curata. Un ping manda un solo echo request, non quattro come su Windows. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
 
 ## Requisiti
 
@@ -45,8 +45,17 @@ Per vedere un ping completo nella LAN con switch: "Ping", poi otto clic su "Pass
 
 Altre prove possibili scrivendo l'indirizzo a mano:
 
-- `192.168.1.99`, che nessuno ha: la richiesta ARP resta senza risposta. Quando non viaggia più nulla, il passo successivo salta alla scadenza dell'attesa (20 tick) e il PC rinuncia all'echo request.
-- `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla.
+- `192.168.1.99`, che nessuno ha: la richiesta ARP resta senza risposta. Quando non viaggia più nulla, il passo successivo salta alla scadenza dell'attesa (20 tick): il PC rinuncia all'echo request e il ping finisce con "host di destinazione non raggiungibile".
+- `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla e il ping finisce subito con "trasmissione non riuscita".
+
+Ogni ping si conclude con un esito, scritto nell'elenco degli eventi come lo scriverebbe il comando `ping`:
+
+| Esito | Significato |
+| --- | --- |
+| Risposta da *indirizzo* | È arrivato l'echo reply |
+| Richiesta scaduta | L'echo request è partito, ma dopo 40 tick non è tornato nulla |
+| Host di destinazione non raggiungibile | Il PC sapeva a chi consegnare il pacchetto sulla propria LAN (la destinazione o il gateway), ma quel dispositivo non ha risposto all'ARP |
+| Trasmissione non riuscita | Il PC non sapeva a chi consegnarlo: non ha un indirizzo, oppure la destinazione è in un'altra rete e non c'è un gateway |
 
 Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC con gli eventuali pacchetti in attesa, e l'elenco degli eventi con il contenuto di ogni frame.
 

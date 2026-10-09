@@ -83,7 +83,7 @@ describe("ping a caldo tra due PC", () => {
     const traces = sim.step();
 
     expect(sim.time).toBe(2);
-    expect(traces).toHaveLength(1);
+    expect(traces.map((t) => t.kind)).toEqual(["frame-received", "ping-result"]);
     expect(traces[0]).toMatchObject({ kind: "frame-received", at: { deviceId: "d1" } });
     expect(sim.queue).toHaveLength(0);
   });
@@ -345,7 +345,7 @@ describe("ping che non arriva o non parte", () => {
 
     const traces = sim.dispatch(ping("d1", "10.0.0.5"));
 
-    expect(traces).toEqual([]);
+    expect(traces.map((t) => t.kind)).toEqual(["ping-result"]); // nessun frame
     expect(sim.queue).toHaveLength(0);
   });
 
@@ -353,7 +353,9 @@ describe("ping che non arriva o non parte", () => {
     const { sim, pc1 } = buildTwoHosts();
     pc1.ip = null;
 
-    expect(sim.dispatch(ping("d1", PC2_IP))).toEqual([]);
+    const traces = sim.dispatch(ping("d1", PC2_IP));
+
+    expect(traces.map((t) => t.kind)).toEqual(["ping-result"]); // nessun frame
   });
 
   test("un ping verso un testo che non è un indirizzo viene rifiutato", () => {

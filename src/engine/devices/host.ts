@@ -5,11 +5,16 @@
 // simulatore che cosa l'host vuole inviare e quali attese vuole avviare,
 // e il simulatore lo fa.
 
-import { BROADCAST_MAC, type Ipv4Address, type MacAddress } from "../model/addresses";
+import {
+  BROADCAST_MAC,
+  ipToNumber,
+  type Ipv4Address,
+  type MacAddress,
+} from "../model/addresses";
 import type { ArpPacket, EthernetFrame, Ipv4Packet } from "../model/frames";
 import type { Host } from "../model/network";
 import { ARP_TIMEOUT_TICKS, makeArpReply, makeArpRequest } from "../protocols/arp";
-import { makeEchoReply, makeEchoRequest } from "../protocols/icmp";
+import { ECHO_TIMEOUT_TICKS, makeEchoReply, makeEchoRequest } from "../protocols/icmp";
 import { makeIpv4Packet, nextHopFor } from "../protocols/ipv4";
 
 // Perché un frame è stato scartato. Serve ai test: l'interfaccia mostra
@@ -17,8 +22,44 @@ import { makeIpv4Packet, nextHopFor } from "../protocols/ipv4";
 export type DropReason = "not-my-mac" | "arp-not-for-me" | "ip-not-for-me";
 
 // Un'attesa dell'host: se scade, l'host deve fare qualcosa.
-// Per ora ne esiste una sola: l'attesa della risposta ARP per un indirizzo.
-export type HostTimer = { kind: "arp-timeout"; ip: Ipv4Address };
+export type HostTimer =
+  // Attesa della risposta ARP per un indirizzo.
+  | { kind: "arp-timeout"; ip: Ipv4Address }
+  // Attesa dell'echo reply con un certo numero di sequenza.
+  | { kind: "echo-timeout"; sequence: number };
+
+/**
+ * Dice se due attese sono la stessa attesa.
+ *
+ * @param a - la prima attesa
+ * @param b - la seconda attesa
+ * @returns true se hanno lo stesso tipo e riguardano lo stesso indirizzo
+ *   o lo stesso numero di sequenza
+ */
+export function sameTimer(a: HostTimer, b: HostTimer): boolean {
+  if (a.kind === "arp-timeout" && b.kind === "arp-timeout") return a.ip === b.ip;
+  if (a.kind === "echo-timeout" && b.kind === "echo-timeout") return a.sequence === b.sequence;
+  return false;
+}
+
+// Com'è finito un echo request, dal punto di vista di chi ha fatto il ping.
+// Sono gli esiti che il comando ping di Windows stampa: distinguerli è il
+// primo passo per capire dove sta il problema.
+export interface PingResult {
+  targetIp: Ipv4Address;
+  sequence: number;
+  outcome:
+    // È arrivato l'echo reply.
+    | "reply"
+    // L'echo request è partito, ma la risposta non è arrivata in tempo.
+    | "timeout"
+    // L'host sapeva a chi consegnarlo sulla propria LAN, ma quel
+    // dispositivo non ha risposto all'ARP.
+    | "unreachable"
+    // L'host non sapeva nemmeno a chi consegnarlo: non ha un indirizzo,
+    // oppure la destinazione è in un'altra rete e non c'è una strada.
+    | "transmit-failed";
+}
 
 // Richiesta di avviare un'attesa che scadrà dopo `delay` tick.
 export interface TimerRequest {
@@ -31,6 +72,8 @@ export interface HostOutput {
   send: EthernetFrame[];
   startTimers: TimerRequest[];
   cancelTimers: HostTimer[];
+  // Echo request arrivati a una conclusione.
+  pingResults: PingResult[];
 }
 
 // Che cosa ha fatto l'host dopo aver ricevuto un frame.
@@ -49,28 +92,46 @@ export interface TimerReaction extends HostOutput {
 // e distingue i ping con il numero di sequenza.
 const PING_IDENTIFIER = 1;
 
-const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [] };
+const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [], pingResults: [] };
 
 /**
  * Prepara un ping: un echo request verso un indirizzo IP.
  * Non lo spedisce: è il simulatore a metterlo sul cavo.
- * Fa avanzare il numero di sequenza dell'host e, se il MAC del prossimo
- * salto non è noto, mette il pacchetto in attesa.
+ * Fa avanzare il numero di sequenza dell'host, ricorda che aspetta una
+ * risposta e, se il MAC del prossimo salto non è noto, mette il pacchetto
+ * in attesa.
  *
  * @param host - l'host che fa il ping
  * @param targetIp - l'indirizzo IP da raggiungere
  * @returns che cosa fare: inviare l'echo request se il MAC del prossimo
- *   salto è noto, altrimenti inviare la richiesta ARP e avviare l'attesa
- *   della risposta; nulla se l'host non ha un indirizzo IP, o se la
- *   destinazione è in un'altra rete e manca il gateway
+ *   salto è noto, altrimenti inviare la richiesta ARP; in entrambi i casi
+ *   avviare l'attesa dell'echo reply. Se l'host non ha un indirizzo IP, o
+ *   se la destinazione è in un'altra rete e manca il gateway, l'unico
+ *   contenuto è l'esito "transmit-failed"
  * @throws Error se `targetIp` non è un indirizzo IPv4 valido
  */
 export function startPing(host: Host, targetIp: Ipv4Address): HostOutput {
-  if (host.ip === null) return NOTHING;
+  ipToNumber(targetIp); // rifiuta subito ciò che non è un indirizzo
 
-  const request = makeEchoRequest(PING_IDENTIFIER, host.nextEchoSequence);
+  const sequence = host.nextEchoSequence;
   host.nextEchoSequence += 1;
-  return sendIpv4Packet(host, makeIpv4Packet(host.ip, targetIp, request));
+
+  // Senza un indirizzo, o senza una strada verso la destinazione,
+  // l'echo request non può nemmeno partire.
+  if (host.ip === null || nextHopFor(host, targetIp) === null) {
+    return { ...NOTHING, pingResults: [{ targetIp, sequence, outcome: "transmit-failed" }] };
+  }
+
+  host.awaitedEchoes.push({ targetIp, sequence });
+  const request = makeIpv4Packet(host.ip, targetIp, makeEchoRequest(PING_IDENTIFIER, sequence));
+  const sent = sendIpv4Packet(host, request);
+  return {
+    ...sent,
+    startTimers: [
+      ...sent.startTimers,
+      { delay: ECHO_TIMEOUT_TICKS, timer: { kind: "echo-timeout", sequence } },
+    ],
+  };
 }
 
 /**
@@ -114,19 +175,62 @@ export function receiveFrame(host: Host, frame: EthernetFrame): HostReaction {
 
 /**
  * Decide che cosa fa un host quando scade una sua attesa.
- * Può togliere pacchetti dall'attesa.
+ * Può togliere pacchetti dall'attesa e chiudere echo request in sospeso.
  *
  * @param host - l'host a cui appartiene l'attesa
  * @param timer - l'attesa scaduta
- * @returns la reazione: i pacchetti a cui l'host rinuncia, più eventuali
- *   frame da inviare e attese da avviare o annullare
+ * @returns la reazione: i pacchetti a cui l'host rinuncia, gli esiti dei
+ *   ping che si concludono, e le attese da annullare
  */
 export function timerExpired(host: Host, timer: HostTimer): TimerReaction {
-  // La risposta ARP non è arrivata in tempo: chi aspettava quel MAC
-  // non può partire.
-  const waiting = host.pendingPackets.filter((pending) => pending.nextHop === timer.ip);
-  host.pendingPackets = host.pendingPackets.filter((pending) => pending.nextHop !== timer.ip);
-  return { ...NOTHING, droppedPackets: waiting.map((pending) => pending.packet) };
+  if (timer.kind === "arp-timeout") {
+    return arpTimedOut(host, timer.ip);
+  }
+  return echoTimedOut(host, timer.sequence);
+}
+
+// La risposta ARP non è arrivata in tempo: chi aspettava quel MAC non può partire.
+function arpTimedOut(host: Host, ip: Ipv4Address): TimerReaction {
+  const waiting = host.pendingPackets.filter((pending) => pending.nextHop === ip);
+  host.pendingPackets = host.pendingPackets.filter((pending) => pending.nextHop !== ip);
+
+  // Se tra i pacchetti scartati ci sono miei echo request, quei ping
+  // finiscono qui: non sono mai partiti.
+  const pingResults: PingResult[] = [];
+  const cancelTimers: HostTimer[] = [];
+  for (const { packet } of waiting) {
+    if (packet.payload.type !== "echo-request") continue;
+    const awaited = stopAwaiting(host, packet.dstIp, packet.payload.sequence);
+    if (awaited === null) continue;
+    pingResults.push({ ...awaited, outcome: "unreachable" });
+    cancelTimers.push({ kind: "echo-timeout", sequence: awaited.sequence });
+  }
+
+  return {
+    ...NOTHING,
+    cancelTimers,
+    pingResults,
+    droppedPackets: waiting.map((pending) => pending.packet),
+  };
+}
+
+// L'echo reply non è arrivato in tempo: la richiesta è scaduta.
+function echoTimedOut(host: Host, sequence: number): TimerReaction {
+  const index = host.awaitedEchoes.findIndex((awaited) => awaited.sequence === sequence);
+  if (index === -1) return { ...NOTHING, droppedPackets: [] };
+
+  const [awaited] = host.awaitedEchoes.splice(index, 1);
+  return { ...NOTHING, pingResults: [{ ...awaited, outcome: "timeout" }], droppedPackets: [] };
+}
+
+// Smette di aspettare un echo reply. Restituisce ciò che si stava
+// aspettando, oppure null se non si stava aspettando nulla del genere.
+function stopAwaiting(host: Host, targetIp: Ipv4Address, sequence: number) {
+  const index = host.awaitedEchoes.findIndex(
+    (awaited) => awaited.targetIp === targetIp && awaited.sequence === sequence,
+  );
+  if (index === -1) return null;
+  return host.awaitedEchoes.splice(index, 1)[0];
 }
 
 function receiveArp(host: Host, arp: ArpPacket): HostReaction {
@@ -166,8 +270,20 @@ function receiveIpv4(host: Host, packet: Ipv4Packet): HostReaction {
     return { ...sendIpv4Packet(host, reply), dropped: null, tableChanged: false };
   }
 
-  // È un echo reply: il ping è andato a buon fine.
-  return { ...NOTHING, dropped: null, tableChanged: false };
+  // È un echo reply. Se lo stavo aspettando, il ping è andato a buon fine
+  // e l'attesa non serve più. Una risposta arrivata dopo la scadenza, o
+  // mai richiesta, viene ricevuta e ignorata.
+  const awaited = stopAwaiting(host, packet.srcIp, icmp.sequence);
+  if (awaited === null) {
+    return { ...NOTHING, dropped: null, tableChanged: false };
+  }
+  return {
+    ...NOTHING,
+    cancelTimers: [{ kind: "echo-timeout", sequence: awaited.sequence }],
+    pingResults: [{ ...awaited, outcome: "reply" }],
+    dropped: null,
+    tableChanged: false,
+  };
 }
 
 // Spedisce un pacchetto IP: lo incapsula in un frame Ethernet diretto al

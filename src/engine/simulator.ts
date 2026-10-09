@@ -7,12 +7,14 @@
 import type { Action } from "./actions";
 import {
   receiveFrame,
+  sameTimer,
   startArpResolution,
   startPing,
   timerExpired,
   type DropReason,
   type HostOutput,
   type HostTimer,
+  type PingResult,
 } from "./devices/host";
 import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
@@ -87,6 +89,17 @@ export type Trace =
       packet: Ipv4Packet;
       reason: "arp-timeout";
       conversationId: number;
+    }
+  | {
+      // Un echo request è arrivato a una conclusione: è ciò che il
+      // comando ping stampa a chi lo ha lanciato.
+      time: number;
+      kind: "ping-result";
+      deviceId: string;
+      targetIp: PingResult["targetIp"];
+      sequence: number;
+      outcome: PingResult["outcome"];
+      conversationId: number;
     };
 
 export class Simulator {
@@ -131,13 +144,20 @@ export class Simulator {
         break;
       case "resolve-address": {
         const request = startArpResolution(host, action.targetIp);
-        output = { send: request === null ? [] : [request], startTimers: [], cancelTimers: [] };
+        output = {
+          send: request === null ? [] : [request],
+          startTimers: [],
+          cancelTimers: [],
+          pingResults: [],
+        };
         break;
       }
     }
 
-    if (output.send.length > 0) {
-      // Tutto il traffico provocato da questa azione avrà lo stesso numero.
+    const somethingToDo =
+      output.send.length > 0 || output.startTimers.length > 0 || output.pingResults.length > 0;
+    if (somethingToDo) {
+      // Tutto ciò che questa azione provoca avrà lo stesso numero.
       const conversationId = this.nextConversationId++;
       this.apply(host, output, conversationId, produced);
     }
@@ -174,9 +194,18 @@ export class Simulator {
     return produced;
   }
 
-  // Esegue ciò che un host ha chiesto: spedire frame, avviare attese,
-  // annullare attese.
+  // Esegue ciò che un host ha chiesto: registrare gli esiti dei ping,
+  // spedire frame, avviare attese, annullare attese.
   private apply(host: Host, output: HostOutput, conversationId: number, produced: Trace[]): void {
+    for (const result of output.pingResults) {
+      produced.push({
+        time: this.time,
+        kind: "ping-result",
+        deviceId: host.id,
+        ...result,
+        conversationId,
+      });
+    }
     const port = { deviceId: host.id, portName: host.ports[0].name };
     for (const frame of output.send) {
       this.transmit(port, frame, conversationId, produced);
@@ -205,10 +234,7 @@ export class Simulator {
   // Toglie dalla coda le attese di un host uguali a quella indicata.
   private cancelTimer(deviceId: string, timer: HostTimer): void {
     const matches = (event: SimEvent) =>
-      event.kind === "timer" &&
-      event.deviceId === deviceId &&
-      event.timer.kind === timer.kind &&
-      event.timer.ip === timer.ip;
+      event.kind === "timer" && event.deviceId === deviceId && sameTimer(event.timer, timer);
     this.queue = this.queue.filter((event) => !matches(event));
   }
 

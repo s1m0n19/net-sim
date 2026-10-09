@@ -14,13 +14,17 @@ function timersInQueue(sim: Simulator) {
   return sim.queue.filter((event) => event.kind === "timer");
 }
 
+function arpTimersInQueue(sim: Simulator) {
+  return timersInQueue(sim).filter((event) => event.timer.kind === "arp-timeout");
+}
+
 describe("attesa della risposta ARP", () => {
   test("insieme alla richiesta ARP parte un'attesa che scade dopo il tempo previsto", () => {
     const { sim } = buildTwoHosts();
 
     sim.dispatch(ping("d1", NOBODY));
 
-    expect(timersInQueue(sim)).toEqual([
+    expect(arpTimersInQueue(sim)).toEqual([
       {
         time: ARP_TIMEOUT_TICKS,
         kind: "timer",
@@ -40,7 +44,7 @@ describe("attesa della risposta ARP", () => {
     const traces = sim.step(); // non viaggia più nulla: si salta alla scadenza
 
     expect(sim.time).toBe(ARP_TIMEOUT_TICKS);
-    expect(traces).toEqual([
+    expect(traces).toContainEqual(
       expect.objectContaining({
         kind: "packet-dropped",
         deviceId: "d1",
@@ -48,7 +52,7 @@ describe("attesa della risposta ARP", () => {
         packet: expect.objectContaining({ dstIp: NOBODY }),
         conversationId: 1,
       }),
-    ]);
+    );
     expect(pc1.pendingPackets).toHaveLength(0);
     expect(sim.queue).toHaveLength(0);
   });
@@ -82,7 +86,7 @@ describe("attesa della risposta ARP", () => {
     const second = sim.dispatch(ping("d1", NOBODY));
 
     expect(second).toEqual([]); // il secondo ping non manda nulla: c'è già una richiesta in corso
-    expect(timersInQueue(sim)).toHaveLength(1);
+    expect(arpTimersInQueue(sim)).toHaveLength(1);
 
     runToEnd(sim);
     expect(sim.traces.filter((t) => t.kind === "packet-dropped")).toHaveLength(2);
@@ -98,7 +102,7 @@ describe("attesa della risposta ARP", () => {
 
     expect(traces).toHaveLength(1);
     expect(traces[0]).toMatchObject({ kind: "frame-sent", frame: { etherType: "ARP" } });
-    expect(timersInQueue(sim)).toEqual([
+    expect(arpTimersInQueue(sim)).toEqual([
       expect.objectContaining({ time: 2 * ARP_TIMEOUT_TICKS, conversationId: 2 }),
     ]);
   });
