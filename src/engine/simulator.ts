@@ -1,13 +1,21 @@
 // Simulatore a eventi discreti.
 //
 // Il tempo non scorre in modo continuo: il simulatore tiene una coda di
-// fatti futuri (per ora solo "questo frame arriva a questa porta") e a
-// ogni passo salta al prossimo istante in cui succede qualcosa.
+// fatti futuri ("questo frame arriva a questa porta", "questa attesa
+// scade") e a ogni passo salta al prossimo istante in cui succede qualcosa.
 
 import type { Action } from "./actions";
-import { receiveFrame, startArpResolution, startPing, type DropReason } from "./devices/host";
+import {
+  receiveFrame,
+  startArpResolution,
+  startPing,
+  timerExpired,
+  type DropReason,
+  type HostOutput,
+  type HostTimer,
+} from "./devices/host";
 import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
-import type { EthernetFrame } from "./model/frames";
+import type { EthernetFrame, Ipv4Packet } from "./model/frames";
 import {
   findDevice,
   otherEndOf,
@@ -31,7 +39,16 @@ export interface FrameArrival {
   conversationId: number;
 }
 
-export type SimEvent = FrameArrival;
+// Un'attesa di un host, con l'istante in cui scadrà.
+export interface TimerExpiry {
+  time: number;
+  kind: "timer";
+  deviceId: string;
+  timer: HostTimer;
+  conversationId: number;
+}
+
+export type SimEvent = FrameArrival | TimerExpiry;
 
 // Le tracce registrano ciò che è successo. L'interfaccia le legge per disegnare.
 export type Trace =
@@ -61,7 +78,16 @@ export type Trace =
       reason: DropReason | SwitchDropReason;
       conversationId: number;
     }
-  | { time: number; kind: "table-changed"; deviceId: string; table: "arp" | "mac" };
+  | { time: number; kind: "table-changed"; deviceId: string; table: "arp" | "mac" }
+  | {
+      // Un host ha rinunciato a spedire un pacchetto che teneva in attesa.
+      time: number;
+      kind: "packet-dropped";
+      deviceId: string;
+      packet: Ipv4Packet;
+      reason: "arp-timeout";
+      conversationId: number;
+    };
 
 export class Simulator {
   readonly network: Network;
@@ -97,26 +123,23 @@ export class Simulator {
       throw new Error(`${host.name} non è un host: non può eseguire questa azione.`);
     }
 
-    // L'host dice quali frame vuole spedire per compiere l'azione.
-    let frames: EthernetFrame[];
+    // L'host dice che cosa vuole fare per compiere l'azione.
+    let output: HostOutput;
     switch (action.kind) {
       case "ping":
-        frames = startPing(host, action.targetIp);
+        output = startPing(host, action.targetIp);
         break;
       case "resolve-address": {
         const request = startArpResolution(host, action.targetIp);
-        frames = request === null ? [] : [request];
+        output = { send: request === null ? [] : [request], startTimers: [], cancelTimers: [] };
         break;
       }
     }
 
-    if (frames.length > 0) {
+    if (output.send.length > 0) {
       // Tutto il traffico provocato da questa azione avrà lo stesso numero.
       const conversationId = this.nextConversationId++;
-      const port = { deviceId: host.id, portName: host.ports[0].name };
-      for (const frame of frames) {
-        this.transmit(port, frame, conversationId, produced);
-      }
+      this.apply(host, output, conversationId, produced);
     }
     this.traces.push(...produced);
     return produced;
@@ -133,15 +156,79 @@ export class Simulator {
     if (this.queue.length === 0) return [];
 
     this.time = this.queue[0].time;
-    const now = this.queue.filter((event) => event.time === this.time);
-    this.queue = this.queue.filter((event) => event.time !== this.time);
 
+    // Gli eventi di questo istante si elaborano uno alla volta, prendendoli
+    // dalla testa della coda: così un evento può annullarne uno successivo
+    // dello stesso istante (una risposta ARP che arriva proprio quando
+    // l'attesa sta per scadere).
     const produced: Trace[] = [];
-    for (const event of now) {
-      this.deliver(event, produced);
+    while (this.queue.length > 0 && this.queue[0].time === this.time) {
+      const event = this.queue.shift()!;
+      if (event.kind === "frame-arrival") {
+        this.deliver(event, produced);
+      } else {
+        this.fireTimer(event, produced);
+      }
     }
     this.traces.push(...produced);
     return produced;
+  }
+
+  // Esegue ciò che un host ha chiesto: spedire frame, avviare attese,
+  // annullare attese.
+  private apply(host: Host, output: HostOutput, conversationId: number, produced: Trace[]): void {
+    const port = { deviceId: host.id, portName: host.ports[0].name };
+    for (const frame of output.send) {
+      this.transmit(port, frame, conversationId, produced);
+    }
+    for (const request of output.startTimers) {
+      this.schedule({
+        time: this.time + request.delay,
+        kind: "timer",
+        deviceId: host.id,
+        timer: request.timer,
+        conversationId,
+      });
+    }
+    for (const timer of output.cancelTimers) {
+      this.cancelTimer(host.id, timer);
+    }
+  }
+
+  // Aggiunge un evento alla coda, tenendola ordinata per istante.
+  // A parità di istante vale l'ordine di inserimento.
+  private schedule(event: SimEvent): void {
+    this.queue.push(event);
+    this.queue.sort((a, b) => a.time - b.time);
+  }
+
+  // Toglie dalla coda le attese di un host uguali a quella indicata.
+  private cancelTimer(deviceId: string, timer: HostTimer): void {
+    const matches = (event: SimEvent) =>
+      event.kind === "timer" &&
+      event.deviceId === deviceId &&
+      event.timer.kind === timer.kind &&
+      event.timer.ip === timer.ip;
+    this.queue = this.queue.filter((event) => !matches(event));
+  }
+
+  // Un'attesa è scaduta: l'host decide che cosa fare.
+  private fireTimer(event: TimerExpiry, produced: Trace[]): void {
+    const host = findDevice(this.network, event.deviceId);
+    if (host.kind !== "host") return;
+
+    const reaction = timerExpired(host, event.timer);
+    for (const packet of reaction.droppedPackets) {
+      produced.push({
+        time: this.time,
+        kind: "packet-dropped",
+        deviceId: host.id,
+        packet,
+        reason: "arp-timeout",
+        conversationId: event.conversationId,
+      });
+    }
+    this.apply(host, reaction, event.conversationId, produced);
   }
 
   // Mette un frame sul cavo collegato a `from`. Arriverà dopo un tick.
@@ -156,9 +243,7 @@ export class Simulator {
 
     const frameId = this.nextFrameId++;
     produced.push({ time: this.time, kind: "frame-sent", frameId, from, to, frame, conversationId });
-    // I nuovi eventi hanno sempre un istante successivo a quelli già in
-    // coda o uguale all'ultimo, quindi la coda resta ordinata per tempo.
-    this.queue.push({
+    this.schedule({
       time: this.time + LINK_TRANSIT_TICKS,
       kind: "frame-arrival",
       frameId,
@@ -201,10 +286,8 @@ export class Simulator {
     if (reaction.tableChanged) {
       produced.push({ time: this.time, kind: "table-changed", deviceId: host.id, table: "arp" });
     }
-    for (const outgoing of reaction.send) {
-      // Ciò che nasce da un frame appartiene alla stessa conversazione.
-      this.transmit(to, outgoing, conversationId, produced);
-    }
+    // Ciò che nasce da un frame appartiene alla stessa conversazione.
+    this.apply(host, reaction, conversationId, produced);
   }
 
   private deliverToSwitch(sw: Switch, event: FrameArrival, produced: Trace[]): void {

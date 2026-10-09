@@ -262,6 +262,7 @@ describe("ping a freddo tra due PC", () => {
     runToEnd(sim);
 
     const kinds = sentKinds(sim.traces);
+    expect(kinds.filter((kind) => kind === "ARP request")).toHaveLength(1); // una sola richiesta per entrambi
     expect(kinds.filter((kind) => kind === "echo-request")).toHaveLength(2);
     expect(kinds.filter((kind) => kind === "echo-reply")).toHaveLength(2);
     expect(pc1.pendingPackets).toHaveLength(0);
@@ -305,13 +306,12 @@ describe("ping a freddo in una LAN con uno switch", () => {
 
 describe("ping che non arriva o non parte", () => {
   test("verso un indirizzo che nessuno ha: la richiesta ARP resta senza risposta e l'echo non parte mai", () => {
-    const { sim, pc1 } = buildLan();
+    const { sim } = buildLan();
 
     sim.dispatch(ping("d1", "192.168.1.99"));
     runToEnd(sim);
 
     expect(sentKinds(sim.traces)).toEqual(["ARP request", "ARP request", "ARP request"]); // PC1, poi SW1 verso PC2 e PC3
-    expect(pc1.pendingPackets).toHaveLength(1);
   });
 
   test("verso un'altra rete, con un gateway: la richiesta ARP cerca il gateway, non la destinazione", () => {

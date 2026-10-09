@@ -58,16 +58,20 @@
           at: position(sw.id),
           macRows: [...sw.macTable],
         })),
-      inFlight: sim.queue.map((event) => ({
-        key: `${generation}-${event.frameId}`,
-        from: position(event.from.deviceId),
-        to: position(event.to.deviceId),
-        label: labelOf(event.frame),
-      })),
+      // La coda contiene anche le attese: se non è vuota, c'è ancora un passo da fare.
+      pendingEvents: sim.queue.length,
+      inFlight: sim.queue
+        .filter((event) => event.kind === "frame-arrival")
+        .map((event) => ({
+          key: `${generation}-${event.frameId}`,
+          from: position(event.from.deviceId),
+          to: position(event.to.deviceId),
+          label: labelOf(event.frame),
+        })),
       traces: sim.traces.map((trace) => ({
         time: trace.time,
         text: describe(trace),
-        frame: trace.kind === "table-changed" ? null : JSON.stringify(trace.frame),
+        frame: "frame" in trace ? JSON.stringify(trace.frame) : null,
       })),
     };
   }
@@ -129,6 +133,8 @@
         return `${nameOf(trace.at)} riceve ${labelOf(trace.frame)} sulla porta ${trace.at.portName}`;
       case "frame-dropped":
         return `${nameOf(trace.at)} scarta ${labelOf(trace.frame)}`;
+      case "packet-dropped":
+        return `${findDevice(sim.network, trace.deviceId).name} rinuncia a spedire ${trace.packet.payload.type.replace("-", " ")} per ${trace.packet.dstIp}`;
       case "table-changed":
         return `${findDevice(sim.network, trace.deviceId).name} aggiorna la tabella ${trace.table === "arp" ? "ARP" : "MAC"}`;
     }
@@ -172,7 +178,7 @@
 </p>
 
 <p>
-  <button onclick={step} disabled={view.inFlight.length === 0}>Passo</button>
+  <button onclick={step} disabled={view.pendingEvents === 0}>Passo</button>
   <button onclick={() => load(exampleIndex)}>Ricomincia</button>
   Tempo: <strong>{view.time}</strong> tick
 </p>
@@ -192,6 +198,11 @@
     <text x={host.at.x} y={host.at.y + 5} text-anchor="middle">{host.name}</text>
     <text x={host.at.x} y={host.at.y + 50} text-anchor="middle">{host.ip}</text>
     <text x={host.at.x} y={host.at.y + 68} text-anchor="middle">{host.mac}</text>
+    {#if host.pending.length > 0}
+      <text x={host.at.x} y={host.at.y + 86} text-anchor="middle" fill="crimson">
+        in attesa: {host.pending.length}
+      </text>
+    {/if}
   {/each}
 
   {#each view.inFlight as packet (packet.key)}

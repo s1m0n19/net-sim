@@ -7,6 +7,10 @@
 import { BROADCAST_MAC, type Ipv4Address, type MacAddress } from "../model/addresses";
 import type { ArpPacket, EthernetFrame } from "../model/frames";
 
+// Per quanti tick un host aspetta la risposta ARP prima di rinunciare.
+// Bastano per andata e ritorno anche nelle reti più grandi previste.
+export const ARP_TIMEOUT_TICKS = 20;
+
 /**
  * Costruisce una richiesta ARP ("chi ha questo indirizzo IP?").
  * La richiesta viaggia in broadcast, perché non si sa ancora a chi mandarla.

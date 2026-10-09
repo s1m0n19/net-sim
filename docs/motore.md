@@ -227,8 +227,7 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Dimensione dei frame, MTU, frammentazione | Presenti | Assenti |
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
 | Ping | Windows manda quattro echo request e attende ciascuna risposta fino a una scadenza | Un solo echo request, senza scadenza (finché non esistono i timer) |
-| Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta; i pacchetti restano in attesa (finché non esistono i timer) |
-| Più pacchetti in attesa dello stesso MAC | Una sola richiesta ARP | Una richiesta ARP per ogni pacchetto |
+| Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta: dopo 20 tick i pacchetti in attesa sono scartati |
 | Spanning tree | Elimina i cicli tra switch | Assente (vedi sotto) |
 
 ### Cicli tra switch
