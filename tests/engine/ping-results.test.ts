@@ -8,7 +8,7 @@ import { PC1_IP, PC1_MAC, PC2_IP, PC2_MAC, PC3_MAC, buildLan, buildTwoHosts } fr
 const NOBODY = "192.168.1.99"; // un indirizzo della LAN che nessuno ha
 
 function runToEnd(sim: Simulator): void {
-  while (sim.queue.length > 0) sim.step();
+  while (sim.canStep()) sim.step();
 }
 
 function results(sim: Simulator) {

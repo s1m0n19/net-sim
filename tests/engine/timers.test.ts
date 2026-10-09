@@ -7,7 +7,7 @@ import { PC2_IP, buildLan, buildTwoHosts } from "./builders";
 const NOBODY = "192.168.1.99"; // un indirizzo della LAN che nessuno ha
 
 function runToEnd(sim: Simulator): void {
-  while (sim.queue.length > 0) sim.step();
+  while (sim.canStep()) sim.step();
 }
 
 function timersInQueue(sim: Simulator) {

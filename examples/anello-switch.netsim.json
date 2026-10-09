@@ -1,0 +1,87 @@
+{
+  "format": "net-sim",
+  "version": 1,
+  "network": {
+    "devices": [
+      {
+        "id": "s1",
+        "kind": "switch",
+        "name": "SW1",
+        "position": { "x": 250, "y": 230 },
+        "ports": [
+          { "name": "Fa0/1", "mac": "02:00:00:00:01:01" },
+          { "name": "Fa0/2", "mac": "02:00:00:00:01:02" },
+          { "name": "Fa0/3", "mac": "02:00:00:00:01:03" }
+        ]
+      },
+      {
+        "id": "s2",
+        "kind": "switch",
+        "name": "SW2",
+        "position": { "x": 450, "y": 230 },
+        "ports": [
+          { "name": "Fa0/1", "mac": "02:00:00:00:02:01" },
+          { "name": "Fa0/2", "mac": "02:00:00:00:02:02" },
+          { "name": "Fa0/3", "mac": "02:00:00:00:02:03" }
+        ]
+      },
+      {
+        "id": "s3",
+        "kind": "switch",
+        "name": "SW3",
+        "position": { "x": 350, "y": 70 },
+        "ports": [
+          { "name": "Fa0/1", "mac": "02:00:00:00:03:01" },
+          { "name": "Fa0/2", "mac": "02:00:00:00:03:02" }
+        ]
+      },
+      {
+        "id": "d1",
+        "kind": "host",
+        "name": "PC1",
+        "position": { "x": 80, "y": 230 },
+        "ports": [{ "name": "Fa0", "mac": "02:00:00:00:00:01" }],
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d2",
+        "kind": "host",
+        "name": "PC2",
+        "position": { "x": 620, "y": 230 },
+        "ports": [{ "name": "Fa0", "mac": "02:00:00:00:00:02" }],
+        "ip": "192.168.1.11",
+        "mask": "255.255.255.0",
+        "gateway": null
+      }
+    ],
+    "links": [
+      {
+        "id": "l1",
+        "a": { "deviceId": "d1", "portName": "Fa0" },
+        "b": { "deviceId": "s1", "portName": "Fa0/1" }
+      },
+      {
+        "id": "l2",
+        "a": { "deviceId": "d2", "portName": "Fa0" },
+        "b": { "deviceId": "s2", "portName": "Fa0/1" }
+      },
+      {
+        "id": "l3",
+        "a": { "deviceId": "s1", "portName": "Fa0/2" },
+        "b": { "deviceId": "s2", "portName": "Fa0/2" }
+      },
+      {
+        "id": "l4",
+        "a": { "deviceId": "s2", "portName": "Fa0/3" },
+        "b": { "deviceId": "s3", "portName": "Fa0/1" }
+      },
+      {
+        "id": "l5",
+        "a": { "deviceId": "s3", "portName": "Fa0/2" },
+        "b": { "deviceId": "s1", "portName": "Fa0/3" }
+      }
+    ]
+  }
+}

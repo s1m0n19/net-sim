@@ -21,7 +21,7 @@ Il motore del rilascio 1 è quasi completo: host, switch di livello 2, ARP, IPv4
 
 L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. Mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
 
-Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Un difetto noto ha la correzione già decisa ma non ancora scritta (tabella in `SPEC.md`, sezione 9; dettagli in `docs/motore.md`): un ciclo tra switch non si ferma mai (SIM-15).
+Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Non ci sono difetti noti aperti.
 
 ## Comandi
 
@@ -60,6 +60,8 @@ Il motore non importa mai da `ui/`, da Svelte o dal browser. Dentro `src/engine/
 3. I dispositivi (`src/engine/devices/`) non spediscono nulla e non misurano il tempo: restituiscono un elenco di cose da fare (`HostOutput`: frame da inviare, attese da avviare o annullare, esiti dei ping), più l'eventuale scarto e il cambio di tabella. È il simulatore a eseguirle.
 4. `dispatch()` e `step()` restituiscono le **tracce** di ciò che è successo; l'elenco completo resta in `sim.traces`.
 5. L'interfaccia non osserva il simulatore: dopo ogni comando ne copia lo stato in una variabile `$state.raw` (`readState()` in `App.svelte`) e disegna quella.
+
+Un ciclo tra switch produce una tempesta di broadcast, che il simulatore interrompe sospendendosi (`sim.suspended`). Per far avanzare la rete fino alla fine si usa `while (sim.canStep())`, mai la lunghezza della coda: a simulazione sospesa la coda non si svuota.
 
 Ogni frame e ogni attesa portano un `conversationId`: ciò che nasce elaborandoli eredita il loro numero. Servirà a mostrare solo la conversazione seguita.
 

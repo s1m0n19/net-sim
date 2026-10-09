@@ -1,6 +1,6 @@
 # Formato dei file
 
-**Stato:** descrive il codice al 9 ottobre 2026. Oggi l'app sa solo **leggere** i file, e solo le due reti di esempio della cartella `examples/`. Apertura di un file scelto dall'utente e salvataggio sono *previsti* (requisito FILE-1).
+**Stato:** descrive il codice al 9 ottobre 2026. Oggi l'app sa solo **leggere** i file, e solo le tre reti di esempio della cartella `examples/`. Apertura di un file scelto dall'utente e salvataggio sono *previsti* (requisito FILE-1).
 
 Una rete sta in un file di testo in formato JSON: si può leggere, confrontare con un altro e distribuire con qualsiasi mezzo.
 

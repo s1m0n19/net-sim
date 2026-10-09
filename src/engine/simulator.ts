@@ -30,6 +30,20 @@ import {
 // Tempo, in tick, per attraversare un collegamento.
 export const LINK_TRANSIT_TICKS = 1;
 
+// Tempesta di broadcast: senza spanning tree, un ciclo tra switch fa girare
+// un frame all'infinito. Il simulatore la lascia avvenire per un po', poi
+// si sospende. Due segnali, perché le tempeste sono di due tipi.
+//
+// 1. Un frame che gira in tondo. In una rete senza cicli un frame passa da
+//    ogni switch al massimo una volta: se è stato inoltrato più volte di
+//    quanti sono gli switch, c'è di sicuro un ciclo. Lo si lascia girare
+//    per questo numero di volte il numero degli switch, poi basta.
+export const STORM_LAPS = 3;
+// 2. I frame che si moltiplicano. Se gli switch del ciclo hanno più strade
+//    tra loro, a ogni giro le copie aumentano: oltre questo numero di frame
+//    in viaggio ci si ferma comunque.
+export const STORM_FRAME_LIMIT = 200;
+
 // Un frame in viaggio su un cavo, con l'istante in cui arriverà.
 export interface FrameArrival {
   time: number;
@@ -39,6 +53,9 @@ export interface FrameArrival {
   to: PortRef;
   frame: EthernetFrame;
   conversationId: number;
+  // Da quanti switch è già stato inoltrato: serve a riconoscere un frame
+  // che gira in tondo.
+  hops: number;
 }
 
 // Un'attesa di un host, con l'istante in cui scadrà.
@@ -101,6 +118,13 @@ export type Trace =
       outcome: PingResult["outcome"];
       remaining: number;
       conversationId: number;
+    }
+  | {
+      // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
+      time: number;
+      kind: "simulation-suspended";
+      cause: "switch-loop";
+      framesInFlight: number;
     };
 
 export class Simulator {
@@ -108,6 +132,9 @@ export class Simulator {
   time = 0;
   queue: SimEvent[] = [];
   traces: Trace[] = [];
+  // Diventa true quando il simulatore riconosce una tempesta di broadcast.
+  // Da quel momento non avanza più e non accetta azioni.
+  suspended = false;
 
   private nextFrameId = 1;
   private nextConversationId = 1;
@@ -127,10 +154,13 @@ export class Simulator {
    *
    * @param action - l'azione da eseguire
    * @returns le tracce prodotte da questa azione
-   * @throws Error se l'azione indica un dispositivo che non esiste
-   *   o che non è un host
+   * @throws Error se la simulazione è sospesa, o se l'azione indica un
+   *   dispositivo che non esiste o che non è un host
    */
   dispatch(action: Action): Trace[] {
+    if (this.suspended) {
+      throw new Error("La simulazione è sospesa: non accetta altre azioni.");
+    }
     const produced: Trace[] = [];
     const host = findDevice(this.network, action.deviceId);
     if (host.kind !== "host") {
@@ -170,11 +200,13 @@ export class Simulator {
    * Avanza al prossimo istante in cui succede qualcosa ed elabora tutti
    * gli eventi di quell'istante, non uno solo.
    *
-   * @returns le tracce prodotte in questo passo; un elenco vuoto se la coda
-   *   era vuota e quindi non è successo nulla
+   * Se dopo il passo riconosce una tempesta di broadcast, si sospende.
+   *
+   * @returns le tracce prodotte in questo passo; un elenco vuoto se non
+   *   c'era nulla da fare o se la simulazione è sospesa
    */
   step(): Trace[] {
-    if (this.queue.length === 0) return [];
+    if (!this.canStep()) return [];
 
     this.time = this.queue[0].time;
 
@@ -191,8 +223,37 @@ export class Simulator {
         this.fireTimer(event, produced);
       }
     }
+    this.suspendIfStorm(produced);
     this.traces.push(...produced);
     return produced;
+  }
+
+  /**
+   * Dice se c'è ancora qualcosa da far avanzare.
+   *
+   * @returns true se la coda contiene eventi e la simulazione non è sospesa
+   */
+  canStep(): boolean {
+    return this.queue.length > 0 && !this.suspended;
+  }
+
+  // Controlla se i frame in viaggio mostrano una tempesta di broadcast e,
+  // in quel caso, ferma la simulazione.
+  private suspendIfStorm(produced: Trace[]): void {
+    const inFlight = this.queue.filter((event) => event.kind === "frame-arrival");
+    const switches = this.network.devices.filter((device) => device.kind === "switch").length;
+
+    const goingInCircles = inFlight.some((event) => event.hops > switches * STORM_LAPS);
+    const multiplying = inFlight.length > STORM_FRAME_LIMIT;
+    if (!goingInCircles && !multiplying) return;
+
+    this.suspended = true;
+    produced.push({
+      time: this.time,
+      kind: "simulation-suspended",
+      cause: "switch-loop",
+      framesInFlight: inFlight.length,
+    });
   }
 
   // Esegue ciò che un host ha chiesto: registrare gli esiti dei ping,
@@ -209,7 +270,8 @@ export class Simulator {
     }
     const port = { deviceId: host.id, portName: host.ports[0].name };
     for (const frame of output.send) {
-      this.transmit(port, frame, conversationId, produced);
+      // Un frame che nasce da un host non è ancora passato da nessuno switch.
+      this.transmit(port, frame, conversationId, 0, produced);
     }
     // Prima si annullano le attese vecchie, poi si avviano le nuove.
     for (const timer of output.cancelTimers) {
@@ -264,6 +326,7 @@ export class Simulator {
     from: PortRef,
     frame: EthernetFrame,
     conversationId: number,
+    hops: number,
     produced: Trace[],
   ): void {
     const to = otherEndOf(this.network, from);
@@ -279,6 +342,7 @@ export class Simulator {
       to,
       frame,
       conversationId,
+      hops,
     });
   }
 
@@ -319,7 +383,7 @@ export class Simulator {
   }
 
   private deliverToSwitch(sw: Switch, event: FrameArrival, produced: Trace[]): void {
-    const { frameId, frame, conversationId, to } = event;
+    const { frameId, frame, conversationId, to, hops } = event;
     const reaction = receiveFrameOnSwitch(sw, to.portName, frame);
 
     // Lo switch impara dal frame anche quando poi lo scarta.
@@ -344,7 +408,7 @@ export class Simulator {
     // Lo switch inoltra il frame così com'è, senza modificarlo. Le copie
     // partono nello stesso istante e arriveranno insieme.
     for (const portName of reaction.forwardTo) {
-      this.transmit({ deviceId: sw.id, portName }, frame, conversationId, produced);
+      this.transmit({ deviceId: sw.id, portName }, frame, conversationId, hops + 1, produced);
     }
   }
 }

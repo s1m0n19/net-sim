@@ -20,7 +20,7 @@ function warmUp(pc1: Host, pc2: Host): void {
 }
 
 function runToEnd(sim: Simulator): void {
-  while (sim.queue.length > 0) sim.step();
+  while (sim.canStep()) sim.step();
 }
 
 function sentFrames(traces: Trace[]) {

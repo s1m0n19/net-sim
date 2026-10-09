@@ -61,7 +61,7 @@ net-sim/
 ├── README.md                  come avviare e provare l'app
 ├── CLAUDE.md                  regole di lavoro per Claude Code
 ├── docs/                      questa documentazione
-├── examples/                  reti di esempio: due-pc, lan-switch
+├── examples/                  reti di esempio: due-pc, lan-switch, anello-switch
 ├── src/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze

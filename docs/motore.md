@@ -170,6 +170,8 @@ Usare un tempo astratto evita un problema: con i tempi veri, un pacchetto attrav
 | Costante | Valore | Significato |
 | --- | --- | --- |
 | `LINK_TRANSIT_TICKS` | 1 | Tempo per attraversare un collegamento |
+| `STORM_LAPS` | 3 | Quante volte il numero degli switch un frame può essere inoltrato prima che la simulazione si sospenda |
+| `STORM_FRAME_LIMIT` | 200 | Quanti frame possono essere in viaggio prima che la simulazione si sospenda |
 | `ARP_TIMEOUT_TICKS` | 20 | Quanto un host aspetta la risposta ARP |
 | `ECHO_TIMEOUT_TICKS` | 40 | Quanto un host aspetta l'echo reply |
 | `DEFAULT_PING_COUNT` | 4 | Quanti echo request manda un ping, se non si chiede altro |
@@ -181,7 +183,7 @@ L'attesa dell'echo è più lunga di quella ARP: così, se il problema è un MAC 
 ```ts
 type SimEvent =
   | { time: number; kind: "frame-arrival"; frameId: number; from: PortRef; to: PortRef;
-      frame: EthernetFrame; conversationId: number }
+      frame: EthernetFrame; conversationId: number; hops: number }
   | { time: number; kind: "timer"; deviceId: string; timer: HostTimer; conversationId: number };
 
 type HostTimer =
@@ -199,6 +201,8 @@ Gli eventi dell'istante si elaborano uno alla volta, prendendoli dalla testa del
 
 Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenza: da tick 2 a tick 20, per esempio.
 
+`canStep()` dice se c'è ancora qualcosa da far avanzare: la coda non è vuota e la simulazione non è sospesa. Chi fa avanzare la rete "fino alla fine" deve usare questa funzione, non la lunghezza della coda: una simulazione sospesa ha ancora frame in coda, ma non li muoverà più.
+
 ### Azioni
 
 `dispatch(action)` esegue un'azione arrivata dall'esterno, senza far avanzare il tempo.
@@ -208,7 +212,7 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `ping(deviceId, targetIp, count)` | L'host manda `count` echo request, uno alla volta. Se `count` manca, quattro |
 | `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
 
-Un'azione rivolta a uno switch o a un dispositivo inesistente viene rifiutata con un errore. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
+Un'azione rivolta a uno switch o a un dispositivo inesistente viene rifiutata con un errore, e così qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
 
 ### Tracce
 
@@ -222,6 +226,7 @@ Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` r
 | `table-changed` | È cambiata una tabella, `arp` o `mac` |
 | `packet-dropped` | Un host ha rinunciato a un pacchetto che teneva in attesa |
 | `ping-result` | Un echo request si è concluso. Contiene l'esito e quanti ne restano |
+| `simulation-suspended` | Il simulatore si è fermato per una tempesta di broadcast. Contiene quanti frame erano in viaggio |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
 
@@ -344,21 +349,35 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Dimensione dei frame, MTU, frammentazione | Presenti | Assenti |
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
 | TTL | Diminuisce a ogni router | Resta 128: non esistono ancora router |
-| Spanning tree | Elimina i cicli tra switch | Assente. Previsto in una tappa futura (requisito DEV-11) |
+| Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11) |
 
-## Difetti noti, con la correzione già decisa
+## Tempesta di broadcast
 
-Questo comportamento è nel codice di oggi ma è sbagliato. La correzione è decisa e registrata in [SPEC.md](../SPEC.md), ma non ancora realizzata.
+Senza spanning tree, un ciclo tra switch fa girare un broadcast all'infinito: ogni switch lo inoltra al successivo, che lo inoltra al successivo, fino a tornare al primo. È ciò che accade davvero, e il motore lo lascia accadere, perché vederlo fa capire a che cosa serve lo spanning tree. Poi però si ferma da solo, altrimenti la simulazione non finirebbe mai.
 
-### Un ciclo tra switch non si ferma mai
+Le tempeste sono di due tipi, e il simulatore le riconosce con due segnali diversi. Li controlla alla fine di ogni passo.
 
-Senza spanning tree, due switch collegati ad anello fanno girare un broadcast all'infinito e lo moltiplicano. È ciò che accade davvero in una rete senza spanning tree, ma oggi nulla lo interrompe: in passo-passo i frame aumentano a ogni clic, e un programma che facesse avanzare la rete "fino alla fine" non terminerebbe. Le due reti di esempio non hanno cicli.
+| Tipo | Esempio | Segnale | Costante |
+| --- | --- | --- | --- |
+| Il frame gira in tondo | Tre switch ad anello: il broadcast percorre l'anello nei due versi, senza aumentare | Un frame è stato inoltrato dagli switch più di 3 volte il numero degli switch della rete | `STORM_LAPS` = 3 |
+| I frame si moltiplicano | Due switch uniti da tre cavi: ogni frame che arriva riparte su altri due | I frame in viaggio sono più di 200 | `STORM_FRAME_LIMIT` = 200 |
 
-**Correzione decisa** (D-26, requisito SIM-15): la tempesta avviene, ma quando i frame in viaggio superano una soglia il simulatore si sospende e lo segnala. L'avviso dirà che ci sono troppi frame in viaggio e che la causa è un ciclo tra switch: è l'unico caso in cui l'app spiega una causa, perché altrimenti sembrerebbe un suo difetto. La soglia proposta è di 200 frame, circa quattro volte il massimo di una rete senza cicli da 50 dispositivi. Lo spanning tree vero arriverà in una tappa futura.
+Il primo segnale non può sbagliare. In una rete senza cicli un frame passa da ogni switch al massimo una volta: se è stato inoltrato più volte di quanti sono gli switch, un ciclo c'è di sicuro. Per contare, ogni frame in viaggio porta con sé il numero di switch da cui è già passato (`hops`): zero quando parte da un host, uno in più a ogni inoltro.
+
+Quando scatta uno dei due segnali:
+
+- il simulatore diventa **sospeso** (`sim.suspended`), e registra una traccia `simulation-suspended`;
+- `step()` non fa più nulla, e i frame restano dove sono;
+- `dispatch()` rifiuta nuove azioni con un errore;
+- `canStep()` risponde di no.
+
+Non si può riprendere: bisogna ricominciare. L'interfaccia mostra un avviso che dice che c'è una tempesta di broadcast e che la causa è un ciclo tra switch. È l'unico caso in cui l'app spiega una causa (decisione D-26): senza spiegazione sembrerebbe un difetto dell'app.
+
+La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello e serve a mostrarlo: un ping tra i due PC si sospende dopo dieci passi.
 
 ## Previsto
 
-Non ancora nel codice, oltre alla correzione qui sopra:
+Non ancora nel codice:
 
 - **Guasti** (requisiti SIM-6 e SIM-7): cavo staccato, dispositivo spento, porta spenta. Richiederanno nuovi campi nel modello e nel file.
 - **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
@@ -379,7 +398,7 @@ L'ordine è quello seguito per IPv4 e ICMP, e vale per chi estenderà il motore:
 
 ## Come si prova
 
-Ogni test costruisce una rete, compie un'azione e controlla le tracce o lo stato finale. `tests/engine/builders.ts` fornisce due reti pronte: `buildTwoHosts()`, due PC collegati da un cavo, e `buildLan()`, uno switch con tre PC.
+Ogni test costruisce una rete, compie un'azione e controlla le tracce o lo stato finale. `tests/engine/builders.ts` fornisce quattro reti pronte: `buildTwoHosts()`, due PC collegati da un cavo; `buildLan()`, uno switch con tre PC; `buildRing()`, tre switch ad anello; `buildTripleLink()`, due switch uniti da tre cavi.
 
 ```ts
 test("lo switch impara il MAC di chi chiede e inoltra la richiesta a tutti gli altri", () => {
@@ -408,5 +427,6 @@ I file di test, uno per argomento:
 | `ping-results.test.ts` | I quattro esiti |
 | `ping-series.test.ts` | Più echo request per ping |
 | `loopback.test.ts` | Ping al proprio indirizzo e a 127.x.x.x |
+| `storm.test.ts` | Tempesta di broadcast e sospensione |
 
 I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.

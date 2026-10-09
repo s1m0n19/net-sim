@@ -86,7 +86,7 @@ describe("scambio ARP in una LAN con uno switch", () => {
   test("tutto il traffico dello scambio appartiene a una sola conversazione", () => {
     const { sim } = lan();
     sim.dispatch(resolveAddress("d1", "192.168.1.11"));
-    while (sim.queue.length > 0) sim.step();
+    while (sim.canStep()) sim.step();
 
     const conversations = new Set(
       sim.traces.filter((t) => t.kind === "frame-sent").map((t) => t.conversationId),

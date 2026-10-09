@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import exampleFile from "../../examples/due-pc.netsim.json?raw";
 import lanFile from "../../examples/lan-switch.netsim.json?raw";
+import ringFile from "../../examples/anello-switch.netsim.json?raw";
 import { resolveAddress } from "../../src/engine/actions";
 import { hostsOf } from "../../src/engine/model/network";
 import { Simulator } from "../../src/engine/simulator";
@@ -29,13 +30,21 @@ describe("lettura di un file di rete", () => {
     expect(positions.size).toBe(4);
   });
 
+  test("il file dell'anello contiene tre switch collegati in cerchio e due PC", () => {
+    const { network } = loadNetworkFile(ringFile);
+
+    expect(network.devices.filter((d) => d.kind === "switch").map((d) => d.name)).toEqual(["SW1", "SW2", "SW3"]);
+    expect(hostsOf(network).map((h) => h.name)).toEqual(["PC1", "PC2"]);
+    expect(network.links).toHaveLength(5);
+  });
+
   test("la LAN letta dal file funziona: lo scambio ARP si completa in quattro passi", () => {
     const { network } = loadNetworkFile(lanFile);
     const sim = new Simulator(network);
     const [pc1, pc2] = hostsOf(network);
 
     sim.dispatch(resolveAddress(pc1.id, pc2.ip!));
-    while (sim.queue.length > 0) sim.step();
+    while (sim.canStep()) sim.step();
 
     expect(sim.time).toBe(4);
     expect(pc1.arpTable.get(pc2.ip!)).toBe(pc2.ports[0].mac);

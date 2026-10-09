@@ -1,6 +1,7 @@
 <script lang="ts">
   import twoPcFile from "../../examples/due-pc.netsim.json?raw";
   import lanFile from "../../examples/lan-switch.netsim.json?raw";
+  import ringFile from "../../examples/anello-switch.netsim.json?raw";
   import { ping } from "../engine/actions";
   import type { EthernetFrame } from "../engine/model/frames";
   import { findDevice, hostsOf, type PortRef } from "../engine/model/network";
@@ -12,6 +13,7 @@
   const examples = [
     { name: "LAN con switch", text: lanFile },
     { name: "Due PC", text: twoPcFile },
+    { name: "Tre switch ad anello", text: ringFile },
   ];
 
   let exampleIndex = $state(0);
@@ -63,7 +65,9 @@
           macRows: [...sw.macTable],
         })),
       // La coda contiene anche le attese: se non è vuota, c'è ancora un passo da fare.
-      pendingEvents: sim.queue.length,
+      canStep: sim.canStep(),
+      suspended: sim.suspended,
+      framesInFlight: sim.queue.filter((event) => event.kind === "frame-arrival").length,
       inFlight: sim.queue
         .filter((event) => event.kind === "frame-arrival")
         .map((event) => ({
@@ -146,6 +150,8 @@
         if (trace.outcome === "unreachable") return `${name}: host di destinazione non raggiungibile`;
         return `${name}: trasmissione non riuscita`;
       }
+      case "simulation-suspended":
+        return `Simulazione sospesa: tempesta di broadcast, ${trace.framesInFlight} frame in viaggio`;
       case "table-changed":
         return `${findDevice(sim.network, trace.deviceId).name} aggiorna la tabella ${trace.table === "arp" ? "ARP" : "MAC"}`;
     }
@@ -185,17 +191,26 @@
   con
   <input type="number" bind:value={count} min="1" max="10" style="width: 3em" aria-label="Numero di echo request" />
   richieste
-  <button onclick={sendPing}>Ping</button>
+  <button onclick={sendPing} disabled={view.suspended}>Ping</button>
   {#if inputError !== ""}
     <strong role="alert">{inputError}</strong>
   {/if}
 </p>
 
 <p>
-  <button onclick={step} disabled={view.pendingEvents === 0}>Passo</button>
+  <button onclick={step} disabled={!view.canStep}>Passo</button>
   <button onclick={() => load(exampleIndex)}>Ricomincia</button>
   Tempo: <strong>{view.time}</strong> tick
 </p>
+
+{#if view.suspended}
+  <p role="alert" style="border: 2px solid crimson; padding: 0.5em; max-width: 680px">
+    <strong>Simulazione sospesa: tempesta di broadcast.</strong>
+    Ci sono {view.framesInFlight} frame che continuano a girare senza fermarsi. La causa è un ciclo
+    tra switch: senza spanning tree, un broadcast inoltrato in cerchio non si esaurisce mai. Premi
+    "Ricomincia" per ripartire.
+  </p>
+{/if}
 
 <svg viewBox="0 0 700 340" width="700" height="340" style="border: 1px solid gray">
   {#each view.links as link (link.id)}

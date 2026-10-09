@@ -28,12 +28,13 @@ Poi si apre http://localhost:5173 nel browser.
 
 ## Cosa si può fare
 
-La pagina offre due reti di esempio, nella rete 192.168.1.0/24:
+La pagina offre tre reti di esempio, nella rete 192.168.1.0/24:
 
 | Rete | Contenuto | File |
 | --- | --- | --- |
 | **LAN con switch** | Lo switch SW1 con PC1, PC2 e PC3 | [examples/lan-switch.netsim.json](examples/lan-switch.netsim.json) |
 | **Due PC** | PC1 e PC2 collegati direttamente | [examples/due-pc.netsim.json](examples/due-pc.netsim.json) |
+| **Tre switch ad anello** | SW1, SW2 e SW3 collegati in cerchio, con PC1 e PC2. Serve a vedere una tempesta di broadcast | [examples/anello-switch.netsim.json](examples/anello-switch.netsim.json) |
 
 | Comando | Effetto |
 | --- | --- |
@@ -53,6 +54,14 @@ Altre prove possibili scrivendo l'indirizzo a mano:
 - `127.0.0.1`, oppure l'indirizzo del PC che fa il ping: il PC si risponde da solo, subito, e sul cavo non passa nulla.
 - `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla e tutte le richieste finiscono subito con "trasmissione non riuscita".
 
+### Tempesta di broadcast
+
+Nella rete "Tre switch ad anello" non c'è spanning tree. Un ping da PC1 a PC2 fa partire una richiesta ARP in broadcast, che gli switch si passano in cerchio senza fine, nei due versi. Dopo dieci passi la simulazione si sospende e compare un avviso: c'è una tempesta di broadcast, causata da un ciclo tra switch. Da lì non si può proseguire: "Passo" e "Ping" sono disattivati, e si riparte con "Ricomincia".
+
+Guardando la tabella MAC degli switch durante la tempesta si vede la riga di PC1 spostarsi da una porta all'altra.
+
+### Esiti del ping
+
 Ogni echo request si conclude con un esito, scritto nell'elenco degli eventi come lo scriverebbe il comando `ping`:
 
 | Esito | Significato |
@@ -67,8 +76,7 @@ Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC co
 ## Limiti noti
 
 - **Venti clic per un ping completo.** Con le quattro richieste di Windows e senza avanzamento automatico, un ping nella LAN richiede venti passi. Per una dimostrazione conviene impostare una richiesta sola.
-- **Un ciclo tra switch non si ferma.** Le reti di esempio non ne hanno; anche qui la correzione è decisa (sospensione con avviso), non ancora fatta.
-- **Le reti sono solo quelle di esempio.** Per provarne un'altra bisogna modificare un file in `examples/`.
+- **Le reti sono solo le tre di esempio.** Per provarne un'altra bisogna modificare un file in `examples/`.
 - **Non si può ancora provocare la "richiesta scaduta"** dalla pagina: serve un guasto, e i guasti non esistono ancora.
 
 ## Comandi
