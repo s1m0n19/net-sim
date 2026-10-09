@@ -10,7 +10,7 @@ Una rete sta in un file di testo in formato JSON: si può leggere, confrontare c
 
 ## Che cosa contiene
 
-Il file contiene la **configurazione** della rete: dispositivi, porte, collegamenti, indirizzi, posizioni sul disegno.
+Il file contiene la **configurazione** della rete: dispositivi, porte, collegamenti, indirizzi, posizioni sul disegno, e i guasti, cioè quali dispositivi sono spenti e quali cavi sono staccati.
 
 Oggi non contiene nulla dello **stato di esecuzione**: una rete appena aperta è una rete appena accesa, con le tabelle vuote.
 
@@ -95,6 +95,17 @@ Campi di ogni dispositivo:
 | `position` | Coordinate `x` e `y` sul disegno | tutti |
 | `ports` | Le porte, ciascuna con `name` e `mac` | tutti |
 | `ip`, `mask`, `gateway` | La configurazione IPv4. Ciascuno può essere `null` | solo host |
+| `powered` | `false` se il dispositivo è spento. Facoltativo: se manca, è acceso | tutti |
+
+Campi di ogni collegamento:
+
+| Campo | Contenuto |
+| --- | --- |
+| `id` | Identificativo interno |
+| `a`, `b` | I due capi, ciascuno con `deviceId` e `portName` |
+| `connected` | `false` se il cavo è staccato. Facoltativo: se manca, è collegato |
+
+I due campi dei guasti sono facoltativi, quindi i file scritti prima che esistessero restano validi e non è servito cambiare il numero di versione. Un cavo staccato resta nel file: c'è, ma non porta nulla. Così una rete può essere preparata con un guasto già presente, per un esercizio di ricerca guasti.
 
 Gli identificativi (`id`) sono interni: i collegamenti si riferiscono a quelli, così un dispositivo potrà cambiare nome senza rompere nulla.
 
@@ -122,6 +133,7 @@ Un file può arrivare modificato a mano o danneggiato. Se un controllo fallisce,
 | Nessun collegamento unisce una porta a se stessa | «Il collegamento l1 unisce una porta a se stessa.» |
 | Gli identificativi dei collegamenti sono unici | «Identificativo di collegamento duplicato: l1.» |
 | Nessuna porta ha più di un collegamento | «La porta Fa0/1 di SW1 ha più di un collegamento.» |
+| `powered` e `connected`, se presenti, valgono `true` o `false` | «PC1: il campo "powered" deve valere true o false.» |
 
 Gli indirizzi MAC sono assegnati dall'app e l'utente non li cambia: due uguali indicano un file danneggiato, non una rete da diagnosticare. Il confronto non distingue maiuscole e minuscole.
 
@@ -150,6 +162,6 @@ Ciò che **non** viene controllato, di proposito: la coerenza della configurazio
 - **Aprire un file scelto dall'utente e salvare.** Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere direttamente in un file scelto dall'utente (File System Access API): dopo il primo salvataggio, "Salva" aggiornerà lo stesso file. Dove questa funzione manca, si ripiegherà sullo scaricamento.
 - **Versioni.** Il numero di versione crescerà di uno ogni volta che il formato cambia in modo incompatibile (requisito FILE-2). Un file più vecchio verrà aggiornato in memoria con una funzione di migrazione per ogni salto di versione; un file più nuovo dell'app verrà rifiutato con l'invito ad aggiornarla. Aggiungere un campo facoltativo non richiederà una nuova versione.
 - **Tabelle MAC e ARP**, facoltative (D-25, requisito FILE-5): ogni dispositivo potrà portare con sé le proprie tabelle già compilate.
-- **Campi dei guasti**: dispositivo acceso o spento, porta attiva o spenta, cavo collegato o staccato.
+- **Porta spenta** (requisito SIM-7, rilascio 2).
 - **Annotazioni e vista**: note e riquadri sul disegno, inquadratura ed etichette visibili al momento del salvataggio.
 - **Esercizi e verifiche**: una sezione con consegna, obiettivi e parte protetta da password (tappa T1), e una con punteggio e registro delle attività (tappa T4).

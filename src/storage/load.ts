@@ -32,7 +32,8 @@ export interface LoadedFile {
 
 /**
  * Legge una rete dal testo di un file, dopo averlo controllato.
- * Le tabelle dei dispositivi partono vuote: il file contiene solo la configurazione.
+ * Le tabelle dei dispositivi partono vuote: il file contiene solo la
+ * configurazione, compresi i guasti (dispositivi spenti, cavi staccati).
  *
  * @param text - il contenuto del file, in JSON
  * @returns la rete e le posizioni dei dispositivi sul disegno
@@ -100,6 +101,7 @@ function readDevice(d: any, where: string): { device: Device; position: Position
   const kind = readText(d, "kind", name);
   const position = { x: readNumber(d.position, "x", name), y: readNumber(d.position, "y", name) };
   const ports = readPorts(d, name);
+  const powered = readFlag(d, "powered", name);
 
   switch (kind) {
     case "host": {
@@ -112,10 +114,10 @@ function readDevice(d: any, where: string): { device: Device; position: Position
       if (problem !== null) {
         throw new Error(`${name}: ${problem}.`);
       }
-      return { device: createHost({ id, name, ports, ...config }), position };
+      return { device: createHost({ id, name, ports, powered, ...config }), position };
     }
     case "switch":
-      return { device: createSwitch({ id, name, ports }), position };
+      return { device: createSwitch({ id, name, ports, powered }), position };
     default:
       throw new Error(`Tipo di dispositivo non supportato: ${kind}.`);
   }
@@ -147,7 +149,7 @@ function readLink(l: any, where: string, network: Network): Link {
   if (a.deviceId === b.deviceId && a.portName === b.portName) {
     throw new Error(`Il collegamento ${id} unisce una porta a se stessa.`);
   }
-  return { id, a, b, connected: true };
+  return { id, a, b, connected: readFlag(l, "connected", `Collegamento ${id}`) };
 }
 
 function readPortRef(ref: any, where: string, network: Network): PortRef {
@@ -204,6 +206,17 @@ function readTextOrNull(source: any, field: string, where: string): string | nul
   const value = source?.[field];
   if (value === null) return null;
   return readText(source, field, where);
+}
+
+// Legge un campo sì/no facoltativo. Se manca vale "sì": un dispositivo è
+// acceso e un cavo è collegato, a meno che il file dica il contrario.
+function readFlag(source: any, field: string, where: string): boolean {
+  const value = source?.[field];
+  if (value === undefined) return true;
+  if (typeof value !== "boolean") {
+    throw new Error(`${where}: il campo "${field}" deve valere true o false.`);
+  }
+  return value;
 }
 
 function readNumber(source: any, field: string, where: string): number {

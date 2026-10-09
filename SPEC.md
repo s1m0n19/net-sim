@@ -295,7 +295,7 @@ Aggiornato al 9 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lav
 
 | Traguardo | Completamento |
 | --- | --- |
-| Motore del rilascio 1 | circa 95%: i guasti ci sono, ma non ancora nei file |
+| Motore del rilascio 1 | completo |
 | Rilascio 1 intero | circa 35% |
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
@@ -308,7 +308,7 @@ Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dal
 | --- | --- |
 | **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · UI-3 lingua · UI-4 mouse e tastiera · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
 | **Fatto in forma provvisoria** | VIS-3 tabelle aggiornate dal vivo · VIS-9 elenco degli eventi · VIS-1 pacchetti animati, senza colore per protocollo · VIS-6 indirizzi IP e MAC sempre visibili, senza porte né interruttori · SIM-5 ping da pulsante e menu, non con il mouse sulla topologia |
-| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 solo lettura delle reti di esempio · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive · SIM-6 cavo staccato e dispositivo spento esistono nel motore, non ancora nei file né nella pagina |
+| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 solo lettura delle reti di esempio · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive · SIM-6 cavo staccato e dispositivo spento esistono nel motore e nei file, non ancora nella pagina |
 | **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · SIM-3 velocità · SIM-16 pausa tra gli echo in tempo reale · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · VIS-8 stato delle porte · UI-1 disposizione a pannelli · UI-2 stile grafico · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
@@ -328,7 +328,7 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 ### Che cosa esiste oltre ai requisiti
 
-- 197 test automatici su motore e lettura dei file.
+- 202 test automatici su motore e lettura dei file.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
 - Una pagina provvisoria in `src/ui/`, descritta in [README.md](README.md): serve a vedere il motore funzionare, e verrà sostituita dall'interfaccia definitiva.
 

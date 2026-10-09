@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import exampleFile from "../../examples/due-pc.netsim.json?raw";
 import lanFile from "../../examples/lan-switch.netsim.json?raw";
 import ringFile from "../../examples/anello-switch.netsim.json?raw";
-import { resolveAddress } from "../../src/engine/actions";
+import { ping, resolveAddress } from "../../src/engine/actions";
 import { hostsOf } from "../../src/engine/model/network";
 import { Simulator } from "../../src/engine/simulator";
 import { loadNetworkFile } from "../../src/storage/load";
@@ -226,5 +226,54 @@ describe("configurazione IP degli host", () => {
     const file = altered(exampleFile, (d) => (d.network.devices[1].ip = "192.168.1.10"));
 
     expect(() => loadNetworkFile(file)).not.toThrow();
+  });
+});
+
+describe("guasti salvati nel file", () => {
+  test("se il file non dice nulla, i dispositivi sono accesi e i cavi collegati", () => {
+    const { network } = loadNetworkFile(lanFile);
+
+    expect(network.devices.every((d) => d.powered)).toBe(true);
+    expect(network.links.every((l) => l.connected)).toBe(true);
+  });
+
+  test("un file può contenere un dispositivo spento e un cavo staccato", () => {
+    const file = altered(lanFile, (d) => {
+      d.network.devices[3].powered = false; // PC3
+      d.network.links[1].connected = false; // il cavo di PC2
+    });
+
+    const { network } = loadNetworkFile(file);
+
+    expect(network.devices.find((d) => d.name === "PC3")!.powered).toBe(false);
+    expect(network.links.find((l) => l.id === "l2")!.connected).toBe(false);
+  });
+
+  test("la rete parte già con il guasto: il PC con il cavo staccato non sente il segnale", () => {
+    const file = altered(lanFile, (d) => (d.network.links[0].connected = false)); // il cavo di PC1
+    const { network } = loadNetworkFile(file);
+    const sim = new Simulator(network);
+    const [pc1, pc2] = hostsOf(network);
+
+    const traces = sim.dispatch(ping(pc1.id, pc2.ip!, 1));
+
+    expect(pc1.linkUp).toBe(false);
+    expect(traces).toEqual([expect.objectContaining({ kind: "ping-result", outcome: "transmit-failed" })]);
+  });
+
+  test("con lo switch spento nel file, nessun PC sente il segnale", () => {
+    const file = altered(lanFile, (d) => (d.network.devices[0].powered = false));
+    const { network } = loadNetworkFile(file);
+    new Simulator(network);
+
+    expect(hostsOf(network).map((h) => h.linkUp)).toEqual([false, false, false]);
+  });
+
+  test("rifiuta un valore che non è true o false", () => {
+    const device = altered(lanFile, (d) => (d.network.devices[1].powered = "no"));
+    const link = altered(lanFile, (d) => (d.network.links[0].connected = 0));
+
+    expect(() => loadNetworkFile(device)).toThrow('PC1: il campo "powered" deve valere true o false');
+    expect(() => loadNetworkFile(link)).toThrow('Collegamento l1: il campo "connected" deve valere true o false');
   });
 });

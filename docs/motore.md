@@ -398,7 +398,7 @@ Un guasto produce esiti diversi secondo dove sta e che cosa sanno i dispositivi:
 
 Le attese di un host acceso non vengono toccate da un guasto altrui: il suo ping si conclude comunque, con l'esito che gli spetta.
 
-Oggi i guasti esistono solo nel motore: non si possono ancora provocare dalla pagina né salvare in un file.
+I guasti fanno parte della configurazione: un file può contenere un dispositivo spento o un cavo staccato, e la rete parte già così (vedi [formato-file.md](formato-file.md)). Dalla pagina non si possono ancora provocare.
 
 *Previsto:* porta spenta (requisito SIM-7, rilascio 2).
 
@@ -430,7 +430,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 
 Non ancora nel codice:
 
-- **Guasti nei file e nella pagina** (requisito SIM-6): cavo staccato e dispositivo spento esistono nel motore, ma non si possono ancora provocare dalla pagina né salvare. La porta spenta (SIM-7) è del rilascio 2.
+- **Guasti nella pagina** (requisito SIM-6): cavo staccato e dispositivo spento esistono nel motore e nei file, ma non si possono ancora provocare dalla pagina. La porta spenta (SIM-7) è del rilascio 2.
 - **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
 - **Azioni di modifica della rete**: aggiungere, togliere, collegare, configurare.
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
