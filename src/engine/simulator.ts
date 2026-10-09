@@ -6,8 +6,16 @@
 
 import type { Action } from "./actions";
 import { receiveFrame, startArpResolution, type DropReason } from "./devices/host";
+import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame } from "./model/frames";
-import { findDevice, otherEndOf, type Network, type PortRef } from "./model/network";
+import {
+  findDevice,
+  otherEndOf,
+  type Host,
+  type Network,
+  type PortRef,
+  type Switch,
+} from "./model/network";
 
 // Tempo, in tick, per attraversare un collegamento.
 export const LINK_TRANSIT_TICKS = 1;
@@ -50,10 +58,10 @@ export type Trace =
       frameId: number;
       at: PortRef;
       frame: EthernetFrame;
-      reason: DropReason;
+      reason: DropReason | SwitchDropReason;
       conversationId: number;
     }
-  | { time: number; kind: "table-changed"; deviceId: string; table: "arp" };
+  | { time: number; kind: "table-changed"; deviceId: string; table: "arp" | "mac" };
 
 export class Simulator {
   readonly network: Network;
@@ -68,7 +76,7 @@ export class Simulator {
    * Crea un simulatore fermo all'istante zero, con la coda vuota.
    *
    * @param network - la rete da simulare; il simulatore ne modifica lo stato
-   *   di esecuzione (per esempio le tabelle ARP)
+   *   di esecuzione (tabelle ARP e tabelle MAC)
    */
   constructor(network: Network) {
     this.network = network;
@@ -80,10 +88,14 @@ export class Simulator {
    * @param action - l'azione da eseguire
    * @returns le tracce prodotte da questa azione
    * @throws Error se l'azione indica un dispositivo che non esiste
+   *   o che non è un host
    */
   dispatch(action: Action): Trace[] {
     const produced: Trace[] = [];
     const host = findDevice(this.network, action.deviceId);
+    if (host.kind !== "host") {
+      throw new Error(`${host.name} non è un host: non può risolvere indirizzi.`);
+    }
     const request = startArpResolution(host, action.targetIp);
     if (request !== null) {
       // Tutto il traffico provocato da questa azione avrà lo stesso numero.
@@ -142,10 +154,19 @@ export class Simulator {
     });
   }
 
-  // Consegna un frame al dispositivo e applica la sua reazione.
+  // Consegna un frame al dispositivo a cui è arrivato. Ogni tipo di
+  // dispositivo reagisce a modo suo.
   private deliver(event: FrameArrival, produced: Trace[]): void {
+    const device = findDevice(this.network, event.to.deviceId);
+    if (device.kind === "host") {
+      this.deliverToHost(device, event, produced);
+    } else {
+      this.deliverToSwitch(device, event, produced);
+    }
+  }
+
+  private deliverToHost(host: Host, event: FrameArrival, produced: Trace[]): void {
     const { frameId, frame, conversationId, to } = event;
-    const host = findDevice(this.network, to.deviceId);
     const reaction = receiveFrame(host, frame);
 
     if (reaction.dropped !== null) {
@@ -168,6 +189,36 @@ export class Simulator {
     for (const outgoing of reaction.send) {
       // Ciò che nasce da un frame appartiene alla stessa conversazione.
       this.transmit(to, outgoing, conversationId, produced);
+    }
+  }
+
+  private deliverToSwitch(sw: Switch, event: FrameArrival, produced: Trace[]): void {
+    const { frameId, frame, conversationId, to } = event;
+    const reaction = receiveFrameOnSwitch(sw, to.portName, frame);
+
+    // Lo switch impara dal frame anche quando poi lo scarta.
+    produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
+    if (reaction.tableChanged) {
+      produced.push({ time: this.time, kind: "table-changed", deviceId: sw.id, table: "mac" });
+    }
+
+    if (reaction.dropped !== null) {
+      produced.push({
+        time: this.time,
+        kind: "frame-dropped",
+        frameId,
+        at: to,
+        frame,
+        reason: reaction.dropped,
+        conversationId,
+      });
+      return;
+    }
+
+    // Lo switch inoltra il frame così com'è, senza modificarlo. Le copie
+    // partono nello stesso istante e arriveranno insieme.
+    for (const portName of reaction.forwardTo) {
+      this.transmit({ deviceId: sw.id, portName }, frame, conversationId, produced);
     }
   }
 }

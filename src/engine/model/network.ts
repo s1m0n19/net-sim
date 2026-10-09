@@ -46,8 +46,18 @@ export interface Switch {
   macTable: Map<MacAddress, string>;
 }
 
-// Per ora il simulatore conosce solo gli host. Switch e router si aggiungeranno qui.
-export type Device = Host;
+// I router si aggiungeranno qui.
+export type Device = Host | Switch;
+
+/**
+ * Elenca gli host di una rete, cioè i dispositivi che hanno un indirizzo IP.
+ *
+ * @param network - la rete da cui estrarli
+ * @returns gli host, nell'ordine in cui compaiono nella rete
+ */
+export function hostsOf(network: Network): Host[] {
+  return network.devices.filter((device) => device.kind === "host");
+}
 
 /**
  * Cerca un dispositivo della rete a partire dal suo identificativo.

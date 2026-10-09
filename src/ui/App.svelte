@@ -2,7 +2,7 @@
   import exampleFile from "../../examples/due-pc.netsim.json?raw";
   import { resolveAddress } from "../engine/actions";
   import type { EthernetFrame } from "../engine/model/frames";
-  import { findDevice, type PortRef } from "../engine/model/network";
+  import { findDevice, hostsOf, type PortRef } from "../engine/model/network";
   import { Simulator, type Trace } from "../engine/simulator";
   import { loadNetworkFile, type Position } from "../storage/load";
   import Packet from "./Packet.svelte";
@@ -20,7 +20,7 @@
       inFlight: [...sim.queue],
       traces: [...sim.traces],
       links: sim.network.links,
-      devices: sim.network.devices.map((d) => ({
+      devices: hostsOf(sim.network).map((d) => ({
         id: d.id,
         name: d.name,
         ip: d.ip,
@@ -31,8 +31,7 @@
   }
 
   // Lo scheletro ha una sola azione: il primo PC cerca il MAC del secondo.
-  const source = loaded.network.devices[0];
-  const target = loaded.network.devices[1];
+  const [source, target] = hostsOf(loaded.network);
 
   function resolve() {
     sim.dispatch(resolveAddress(source.id, target.ip!));
