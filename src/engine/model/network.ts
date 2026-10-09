@@ -47,6 +47,7 @@ export interface Host {
   name: string;
   ports: Port[]; // un PC ne ha una sola
   // Configurazione: la imposta l'utente.
+  powered: boolean; // false = il dispositivo è spento
   ip: Ipv4Address | null;
   mask: Ipv4Address | null;
   gateway: Ipv4Address | null;
@@ -68,6 +69,7 @@ export interface Switch {
   id: string;
   name: string;
   ports: Port[];
+  powered: boolean; // false = il dispositivo è spento
   // Stato di esecuzione: per ogni MAC conosciuto, il nome della porta
   // da cui lo si raggiunge.
   macTable: Map<MacAddress, string>;
@@ -77,8 +79,11 @@ export interface Switch {
 export type Device = Host | Switch;
 
 // La parte di un dispositivo che l'utente imposta e che si salva nel file.
-export type HostConfig = Pick<Host, "id" | "name" | "ports" | "ip" | "mask" | "gateway">;
-export type SwitchConfig = Pick<Switch, "id" | "name" | "ports">;
+// `powered` si può omettere: un dispositivo nasce acceso.
+export type HostConfig = Pick<Host, "id" | "name" | "ports" | "ip" | "mask" | "gateway"> & {
+  powered?: boolean;
+};
+export type SwitchConfig = Pick<Switch, "id" | "name" | "ports"> & { powered?: boolean };
 
 /**
  * Crea un host appena acceso: con la configurazione data e lo stato di
@@ -92,6 +97,7 @@ export function createHost(config: HostConfig): Host {
   return {
     kind: "host",
     ...config,
+    powered: config.powered ?? true,
     linkUp: false,
     arpTable: new Map(),
     nextEchoSequence: 1,
@@ -108,7 +114,7 @@ export function createHost(config: HostConfig): Host {
  * @returns lo switch pronto per essere messo in una rete
  */
 export function createSwitch(config: SwitchConfig): Switch {
-  return { kind: "switch", ...config, macTable: new Map() };
+  return { kind: "switch", ...config, powered: config.powered ?? true, macTable: new Map() };
 }
 
 /**
@@ -182,4 +188,23 @@ export function otherEndOf(network: Network, port: PortRef): PortRef | null {
     if (samePort(link.b, port)) return link.a;
   }
   return null;
+}
+
+/**
+ * Riporta un dispositivo allo stato di uno appena acceso: tabelle vuote,
+ * niente in sospeso. È ciò che succede quando lo si spegne. Non tocca la
+ * configurazione.
+ *
+ * @param device - il dispositivo di cui azzerare lo stato di esecuzione
+ */
+export function clearRuntimeState(device: Device): void {
+  if (device.kind === "switch") {
+    device.macTable.clear();
+    return;
+  }
+  device.linkUp = false;
+  device.arpTable.clear();
+  device.nextEchoSequence = 1;
+  device.pendingPackets = [];
+  device.awaitedEchoes = [];
 }

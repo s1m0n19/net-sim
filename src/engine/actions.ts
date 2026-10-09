@@ -5,7 +5,8 @@ import { DEFAULT_PING_COUNT } from "./protocols/icmp";
 export type Action =
   | { kind: "ping"; deviceId: string; targetIp: Ipv4Address; count: number }
   | { kind: "resolve-address"; deviceId: string; targetIp: Ipv4Address }
-  | { kind: "set-link-connected"; linkId: string; connected: boolean };
+  | { kind: "set-link-connected"; linkId: string; connected: boolean }
+  | { kind: "set-device-powered"; deviceId: string; powered: boolean };
 
 /**
  * Crea l'azione "questo host fa ping a questo indirizzo IP".
@@ -53,4 +54,24 @@ export function disconnectLink(linkId: string): Action {
  */
 export function connectLink(linkId: string): Action {
   return { kind: "set-link-connected", linkId, connected: true };
+}
+
+/**
+ * Crea l'azione "spegni questo dispositivo".
+ *
+ * @param deviceId - identificativo del dispositivo
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function powerOff(deviceId: string): Action {
+  return { kind: "set-device-powered", deviceId, powered: false };
+}
+
+/**
+ * Crea l'azione "accendi questo dispositivo".
+ *
+ * @param deviceId - identificativo del dispositivo
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function powerOn(deviceId: string): Action {
+  return { kind: "set-device-powered", deviceId, powered: true };
 }

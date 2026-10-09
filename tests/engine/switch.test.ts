@@ -2,15 +2,14 @@ import { describe, expect, test } from "vitest";
 import { chooseOutputPorts, receiveFrameOnSwitch } from "../../src/engine/devices/switch";
 import { BROADCAST_MAC } from "../../src/engine/model/addresses";
 import type { EthernetFrame } from "../../src/engine/model/frames";
-import type { Switch } from "../../src/engine/model/network";
+import { createSwitch, type Switch } from "../../src/engine/model/network";
 
 const MAC_A = "02:00:00:00:00:0a";
 const MAC_B = "02:00:00:00:00:0b";
 
 // Uno switch a quattro porte, con la tabella MAC vuota.
 function fourPortSwitch(): Switch {
-  return {
-    kind: "switch",
+  return createSwitch({
     id: "s1",
     name: "SW1",
     ports: [
@@ -19,8 +18,7 @@ function fourPortSwitch(): Switch {
       { name: "Fa0/3", mac: "02:00:00:00:01:03" },
       { name: "Fa0/4", mac: "02:00:00:00:01:04" },
     ],
-    macTable: new Map(),
-  };
+  });
 }
 
 // Lo switch guarda solo i due MAC: il contenuto del frame qui non conta.

@@ -19,11 +19,13 @@ import {
 import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
 import {
+  clearRuntimeState,
   findDevice,
   findLink,
   hostsOf,
   linkAt,
   otherEndOf,
+  type Device,
   type Host,
   type Link,
   type Network,
@@ -124,7 +126,8 @@ export type Trace =
       conversationId: number;
     }
   | {
-      // Un frame in viaggio è andato perso: il cavo è stato staccato.
+      // Un frame in viaggio è andato perso: il cavo è stato staccato,
+      // oppure il dispositivo a cui era diretto è stato spento.
       time: number;
       kind: "frame-lost";
       frameId: number;
@@ -134,6 +137,7 @@ export type Trace =
       conversationId: number;
     }
   | { time: number; kind: "link-changed"; linkId: string; connected: boolean }
+  | { time: number; kind: "power-changed"; deviceId: string; powered: boolean }
   | {
       // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
       time: number;
@@ -172,17 +176,25 @@ export class Simulator {
    * @returns le tracce prodotte da questa azione
    * @throws Error se la simulazione è sospesa; se l'azione indica un
    *   dispositivo o un collegamento che non esiste; se chiede a uno switch
-   *   qualcosa che solo un host può fare
+   *   qualcosa che solo un host può fare, o a un host spento di fare
+   *   qualcosa
    */
   dispatch(action: Action): Trace[] {
     if (this.suspended) {
       throw new Error("La simulazione è sospesa: non accetta altre azioni.");
     }
     const produced: Trace[] = [];
-    if (action.kind === "set-link-connected") {
-      this.setLinkConnected(findLink(this.network, action.linkId), action.connected, produced);
-    } else {
-      this.runHostAction(action, produced);
+    switch (action.kind) {
+      case "ping":
+      case "resolve-address":
+        this.runHostAction(action, produced);
+        break;
+      case "set-link-connected":
+        this.setLinkConnected(findLink(this.network, action.linkId), action.connected, produced);
+        break;
+      case "set-device-powered":
+        this.setDevicePowered(findDevice(this.network, action.deviceId), action.powered, produced);
+        break;
     }
     this.traces.push(...produced);
     return produced;
@@ -190,12 +202,15 @@ export class Simulator {
 
   // Esegue un'azione che riguarda un host: ping o richiesta ARP.
   private runHostAction(
-    action: Extract<Action, { deviceId: string }>,
+    action: Extract<Action, { kind: "ping" | "resolve-address" }>,
     produced: Trace[],
   ): void {
     const host = findDevice(this.network, action.deviceId);
     if (host.kind !== "host") {
       throw new Error(`${host.name} non è un host: non può eseguire questa azione.`);
+    }
+    if (!host.powered) {
+      throw new Error(`${host.name} è spento.`);
     }
 
     // L'host dice che cosa vuole fare per compiere l'azione.
@@ -239,11 +254,32 @@ export class Simulator {
 
   // I frame che stavano viaggiando su un cavo staccato non arrivano più.
   private loseFramesOn(link: Link, produced: Trace[]): void {
+    this.loseFrames((arrival) => linkAt(this.network, arrival.to)?.id === link.id, produced);
+  }
+
+  // Spegne o accende un dispositivo.
+  private setDevicePowered(device: Device, powered: boolean, produced: Trace[]): void {
+    if (device.powered === powered) return;
+    device.powered = powered;
+    produced.push({ time: this.time, kind: "power-changed", deviceId: device.id, powered });
+
+    if (!powered) {
+      // Un dispositivo spento non riceve più nulla, non aspetta più nulla
+      // e dimentica tutto ciò che aveva imparato.
+      this.loseFrames((arrival) => arrival.to.deviceId === device.id, produced);
+      this.queue = this.queue.filter(
+        (event) => !(event.kind === "timer" && event.deviceId === device.id),
+      );
+      clearRuntimeState(device);
+    }
+    this.refreshLinkState(produced);
+  }
+
+  // Toglie dalla coda i frame in viaggio indicati da `isLost` e lo registra.
+  private loseFrames(isLost: (arrival: FrameArrival) => boolean, produced: Trace[]): void {
     const kept: SimEvent[] = [];
     for (const event of this.queue) {
-      const onThisLink =
-        event.kind === "frame-arrival" && linkAt(this.network, event.to)?.id === link.id;
-      if (!onThisLink) {
+      if (event.kind !== "frame-arrival" || !isLost(event)) {
         kept.push(event);
         continue;
       }
@@ -253,10 +289,15 @@ export class Simulator {
     this.queue = kept;
   }
 
-  // Una porta sente il segnale se le è attaccato un cavo e il cavo non è staccato.
+  // Una porta sente il segnale se le è attaccato un cavo, il cavo non è
+  // staccato, e i dispositivi ai due capi sono entrambi accesi.
   private hasCarrier(port: PortRef): boolean {
     const link = linkAt(this.network, port);
-    return link !== null && link.connected;
+    if (link === null || !link.connected) return false;
+    return (
+      findDevice(this.network, link.a.deviceId).powered &&
+      findDevice(this.network, link.b.deviceId).powered
+    );
   }
 
   // Dopo un guasto o una riparazione, aggiorna ciò che i dispositivi sanno

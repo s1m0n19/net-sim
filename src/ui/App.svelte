@@ -152,6 +152,8 @@
       }
       case "frame-lost":
         return `${labelOf(trace.frame)} da ${nameOf(trace.from)} a ${nameOf(trace.to)} va perso`;
+      case "power-changed":
+        return `${findDevice(sim.network, trace.deviceId).name} ${trace.powered ? "acceso" : "spento"}`;
       case "link-changed":
         return `Cavo ${trace.linkId} ${trace.connected ? "riattaccato" : "staccato"}`;
       case "simulation-suspended":

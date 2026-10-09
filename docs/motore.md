@@ -95,6 +95,7 @@ interface Host {
   name: string;
   ports: Port[];                    // un PC ne ha una sola
   // configurazione
+  powered: boolean;                 // false = spento
   ip: Ipv4Address | null;
   mask: Ipv4Address | null;
   gateway: Ipv4Address | null;
@@ -122,12 +123,13 @@ interface Switch {
   id: string;
   name: string;
   ports: Port[];
+  powered: boolean;                   // false = spento
   // stato di esecuzione
   macTable: Map<MacAddress, string>;  // MAC -> nome della porta
 }
 ```
 
-`createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali.
+`createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali. `clearRuntimeState(device)` riporta un dispositivo a quello stato: è ciò che succede quando lo si spegne.
 
 ### Frame e pacchetti (`frames.ts`)
 
@@ -214,8 +216,9 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `ping(deviceId, targetIp, count)` | L'host manda `count` echo request, uno alla volta. Se `count` manca, quattro |
 | `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
 | `disconnectLink(linkId)`, `connectLink(linkId)` | Stacca o riattacca un cavo |
+| `powerOff(deviceId)`, `powerOn(deviceId)` | Spegne o accende un dispositivo |
 
-Un ping rivolto a uno switch, e qualsiasi azione su un dispositivo o un collegamento inesistente, vengono rifiutati con un errore. Così anche qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
+Un ping rivolto a uno switch o lanciato da un host spento, e qualsiasi azione su un dispositivo o un collegamento inesistente, vengono rifiutati con un errore. Così anche qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
 
 ### Tracce
 
@@ -229,8 +232,9 @@ Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` r
 | `table-changed` | È cambiata una tabella, `arp` o `mac` |
 | `packet-dropped` | Un host ha rinunciato a un pacchetto che teneva in attesa |
 | `ping-result` | Un echo request si è concluso. Contiene l'esito e quanti ne restano |
-| `frame-lost` | Un frame in viaggio è andato perso perché il cavo è stato staccato |
+| `frame-lost` | Un frame in viaggio è andato perso: il cavo è stato staccato, o il dispositivo a cui era diretto è stato spento |
 | `link-changed` | Un cavo è stato staccato o riattaccato |
+| `power-changed` | Un dispositivo è stato spento o acceso |
 | `simulation-suspended` | Il simulatore si è fermato per una tempesta di broadcast. Contiene quanti frame erano in viaggio |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
@@ -360,26 +364,43 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 
 ## Guasti
 
-Oggi esiste un guasto: il **cavo staccato**. Un collegamento ha il campo `connected`; le azioni `disconnectLink` e `connectLink` lo cambiano.
+I guasti sono due: il **cavo staccato** e il **dispositivo spento**. Un collegamento ha il campo `connected`, un dispositivo il campo `powered`; le azioni `disconnectLink`, `connectLink`, `powerOff` e `powerOn` li cambiano.
 
-Il concetto su cui si regge tutto è il **segnale sul cavo**. Una porta sente il segnale se le è attaccato un cavo e il cavo non è staccato. Il simulatore lo ricalcola dopo ogni guasto o riparazione, e aggiorna ciò che i dispositivi sanno:
+### Il segnale sul cavo
 
-- **Host.** Il campo `linkUp` dice se la scheda sente il segnale. Senza segnale l'host sa di non poter trasmettere: un ping finisce subito con "trasmissione non riuscita", senza che parta nulla. È ciò che fa un PC vero con il cavo staccato.
+Il concetto su cui si regge tutto è il **segnale sul cavo**. Una porta sente il segnale se le è attaccato un cavo, il cavo non è staccato, e i dispositivi ai due capi sono entrambi accesi. Il simulatore lo ricalcola dopo ogni guasto o riparazione, e aggiorna ciò che i dispositivi sanno:
+
+- **Host.** Il campo `linkUp` dice se la scheda sente il segnale. Senza segnale l'host sa di non poter trasmettere: un ping finisce subito con "trasmissione non riuscita", senza che parta nulla. È ciò che fa un PC vero con il cavo staccato, o collegato a uno switch spento.
 - **Switch.** Dimentica i MAC che aveva imparato sulla porta rimasta senza segnale, e su quella porta non inoltra più nulla.
 
-I frame che stavano viaggiando sul cavo al momento del distacco vanno persi (traccia `frame-lost`).
+I frame che stavano viaggiando su un cavo al momento del distacco vanno persi (traccia `frame-lost`).
 
-Staccare un cavo produce così tre esiti diversi del ping, secondo dove sta il guasto e che cosa sanno i dispositivi:
+### Spegnere un dispositivo
+
+Un dispositivo spento:
+
+- non riceve più nulla: i frame in viaggio verso di lui vanno persi;
+- non aspetta più nulla: le sue attese vengono tolte dalla coda. Un ping che aveva in corso finisce lì, senza alcun esito;
+- dimentica tutto: tabella ARP o MAC, pacchetti in attesa, numero di sequenza dei ping. Riacceso, riparte da zero;
+- toglie il segnale ai vicini.
+
+Un host spento non può fare ping: l'azione viene rifiutata.
+
+### Che cosa vede chi fa il ping
+
+Un guasto produce esiti diversi secondo dove sta e che cosa sanno i dispositivi:
 
 | Situazione | Esito | Perché |
 | --- | --- | --- |
-| Il cavo staccato è quello di chi fa il ping | Trasmissione non riuscita | Il PC non sente il segnale e non prova nemmeno |
-| È quello della destinazione, e chi fa il ping non ne conosce il MAC | Host di destinazione non raggiungibile | La richiesta ARP parte, ma nessuno risponde |
-| È quello della destinazione, e chi fa il ping ne conosce già il MAC | Richiesta scaduta | L'echo request parte, lo switch non sa più dove mandarlo e lo inoltra agli altri, che lo scartano |
+| Chi fa il ping ha il cavo staccato, o è collegato a un dispositivo spento | Trasmissione non riuscita | Il PC non sente il segnale e non prova nemmeno |
+| La destinazione è staccata o spenta, e chi fa il ping non ne conosce il MAC | Host di destinazione non raggiungibile | La richiesta ARP parte, ma nessuno risponde |
+| La destinazione è staccata o spenta, e chi fa il ping ne conosce già il MAC | Richiesta scaduta | L'echo request parte, lo switch non sa più dove mandarlo e lo inoltra agli altri, che lo scartano |
 
-Le attese di un host non vengono toccate da un guasto: un ping in corso si conclude comunque, con l'esito che gli spetta.
+Le attese di un host acceso non vengono toccate da un guasto altrui: il suo ping si conclude comunque, con l'esito che gli spetta.
 
-*Previsto:* dispositivo spento e porta spenta.
+Oggi i guasti esistono solo nel motore: non si possono ancora provocare dalla pagina né salvare in un file.
+
+*Previsto:* porta spenta (requisito SIM-7, rilascio 2).
 
 ## Tempesta di broadcast
 
@@ -409,7 +430,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 
 Non ancora nel codice:
 
-- **Gli altri guasti** (requisiti SIM-6 e SIM-7): dispositivo spento, porta spenta. Il cavo staccato esiste nel motore, ma non ancora nei file né nella pagina.
+- **Guasti nei file e nella pagina** (requisito SIM-6): cavo staccato e dispositivo spento esistono nel motore, ma non si possono ancora provocare dalla pagina né salvare. La porta spenta (SIM-7) è del rilascio 2.
 - **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
 - **Azioni di modifica della rete**: aggiungere, togliere, collegare, configurare.
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
@@ -459,5 +480,6 @@ I file di test, uno per argomento:
 | `loopback.test.ts` | Ping al proprio indirizzo e a 127.x.x.x |
 | `storm.test.ts` | Tempesta di broadcast e sospensione |
 | `link-faults.test.ts` | Cavo staccato |
+| `power-faults.test.ts` | Dispositivo spento |
 
 I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.
