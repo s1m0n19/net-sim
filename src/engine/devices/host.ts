@@ -20,13 +20,29 @@ export interface HostReaction {
   tableChanged: boolean;
 }
 
-// L'host vuole conoscere il MAC di `targetIp`: prepara la richiesta ARP.
-// Senza un indirizzo IP proprio non può chiedere nulla.
+/**
+ * Prepara la richiesta ARP con cui un host cerca il MAC di un indirizzo IP.
+ * Non la spedisce: è il simulatore a metterla sul cavo.
+ *
+ * @param host - l'host che vuole risolvere l'indirizzo
+ * @param targetIp - l'indirizzo IP di cui si cerca il MAC
+ * @returns il frame da inviare, oppure null se l'host non ha un indirizzo IP
+ *   e quindi non può chiedere nulla
+ */
 export function startArpResolution(host: Host, targetIp: Ipv4Address): EthernetFrame | null {
   if (host.ip === null) return null;
   return makeArpRequest(host.ports[0].mac, host.ip, targetIp);
 }
 
+/**
+ * Decide che cosa fa un host quando gli arriva un frame.
+ * Può aggiornare la tabella ARP dell'host.
+ *
+ * @param host - l'host che riceve; la sua tabella ARP può essere modificata
+ * @param frame - il frame arrivato alla sua porta
+ * @returns la reazione: frame da inviare, motivo dell'eventuale scarto,
+ *   e se la tabella ARP è cambiata
+ */
 export function receiveFrame(host: Host, frame: EthernetFrame): HostReaction {
   const myMac = host.ports[0].mac;
 

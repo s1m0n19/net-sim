@@ -64,11 +64,23 @@ export class Simulator {
   private nextFrameId = 1;
   private nextConversationId = 1;
 
+  /**
+   * Crea un simulatore fermo all'istante zero, con la coda vuota.
+   *
+   * @param network - la rete da simulare; il simulatore ne modifica lo stato
+   *   di esecuzione (per esempio le tabelle ARP)
+   */
   constructor(network: Network) {
     this.network = network;
   }
 
-  // Esegue un'azione arrivata dall'esterno. Restituisce le tracce prodotte.
+  /**
+   * Esegue un'azione arrivata dall'esterno, senza far avanzare il tempo.
+   *
+   * @param action - l'azione da eseguire
+   * @returns le tracce prodotte da questa azione
+   * @throws Error se l'azione indica un dispositivo che non esiste
+   */
   dispatch(action: Action): Trace[] {
     const produced: Trace[] = [];
     const host = findDevice(this.network, action.deviceId);
@@ -83,8 +95,13 @@ export class Simulator {
     return produced;
   }
 
-  // Avanza al prossimo istante in cui succede qualcosa ed elabora tutti
-  // gli eventi di quell'istante. Restituisce le tracce prodotte.
+  /**
+   * Avanza al prossimo istante in cui succede qualcosa ed elabora tutti
+   * gli eventi di quell'istante, non uno solo.
+   *
+   * @returns le tracce prodotte in questo passo; un elenco vuoto se la coda
+   *   era vuota e quindi non è successo nulla
+   */
   step(): Trace[] {
     if (this.queue.length === 0) return [];
 

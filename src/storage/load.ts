@@ -20,6 +20,16 @@ export interface LoadedFile {
   positions: Map<string, Position>;
 }
 
+/**
+ * Legge una rete dal testo di un file.
+ * Le tabelle dei dispositivi partono vuote: il file contiene solo la configurazione.
+ *
+ * @param text - il contenuto del file, in JSON
+ * @returns la rete e le posizioni dei dispositivi sul disegno
+ * @throws Error se il testo non è JSON valido, se non è un file di net-sim,
+ *   se la versione non è supportata, se contiene un tipo di dispositivo
+ *   sconosciuto o se un collegamento indica una porta inesistente
+ */
 export function loadNetworkFile(text: string): LoadedFile {
   let data: any;
   try {

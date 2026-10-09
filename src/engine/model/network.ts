@@ -39,6 +39,14 @@ export interface Host {
 // Per ora esistono solo gli host. Switch e router si aggiungeranno qui.
 export type Device = Host;
 
+/**
+ * Cerca un dispositivo della rete a partire dal suo identificativo.
+ *
+ * @param network - la rete in cui cercare
+ * @param deviceId - l'identificativo interno del dispositivo (non il nome)
+ * @returns il dispositivo trovato
+ * @throws Error se nessun dispositivo ha quell'identificativo
+ */
 export function findDevice(network: Network, deviceId: string): Device {
   const device = network.devices.find((d) => d.id === deviceId);
   if (device === undefined) {
@@ -51,7 +59,13 @@ function samePort(p: PortRef, q: PortRef): boolean {
   return p.deviceId === q.deviceId && p.portName === q.portName;
 }
 
-// Dove finisce il cavo che parte da questa porta? null se non c'è nessun cavo.
+/**
+ * Dice dove finisce il cavo che parte da una porta.
+ *
+ * @param network - la rete in cui cercare il collegamento
+ * @param port - la porta di partenza
+ * @returns la porta all'altro capo del cavo, oppure null se la porta è scollegata
+ */
 export function otherEndOf(network: Network, port: PortRef): PortRef | null {
   for (const link of network.links) {
     if (samePort(link.a, port)) return link.b;

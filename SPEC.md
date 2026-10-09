@@ -2,8 +2,8 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** bozza, precede la scrittura del codice.
-- **Ultimo aggiornamento:** 8 ottobre 2026.
+- **Stato:** bozza. Del codice esiste solo lo scheletro (scambio ARP tra due PC).
+- **Ultimo aggiornamento:** 9 ottobre 2026.
 - **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
@@ -234,6 +234,31 @@ Punti ancora da decidere:
 - [ ] Sottoinsieme dei comandi IOS (proposta nella sezione 3.3).
 - [ ] Campi mostrati negli strati dei pacchetti (proposta nella sezione 3.5).
 - [ ] Dove pubblicare il sito, verificando che il filtro della scuola non lo blocchi.
-- [ ] Lingua degli identificatori nel codice (proposta in [docs/architettura.md](docs/architettura.md)).
-- [ ] Se salvare nel file anche lo stato della simulazione (proposta in [docs/formato-file.md](docs/formato-file.md)).
+- [ ] Lingua degli identificatori nel codice: adottata la proposta di [docs/architettura.md](docs/architettura.md), da confermare (decisione D-15).
+- [ ] Se salvare nel file anche lo stato della simulazione: adottata la proposta di [docs/formato-file.md](docs/formato-file.md), da confermare (decisione D-14).
 - [ ] Come trattare i cicli tra switch in assenza di spanning tree (vedi [docs/motore.md](docs/motore.md)).
+
+## 8. Decisioni
+
+Registro delle scelte tecniche importanti, con il motivo. Ogni nuova scelta si aggiunge in fondo; una scelta superata non si cancella, si marca come sostituita. I dettagli stanno in [docs/](docs/README.md).
+
+Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docente, *adottata* se è già nel codice su proposta di chi sviluppa ma non è ancora stata discussa.
+
+| N. | Data | Decisione | Motivo | Stato |
+| --- | --- | --- | --- | --- |
+| D-1 | 8 ott 2026 | Applicazione web statica, senza server né account | La rete della scuola è instabile e filtrata; nessun dato personale da gestire | Confermata |
+| D-2 | 8 ott 2026 | Le reti si salvano in file locali | Si distribuiscono con qualsiasi mezzo e funzionano offline | Confermata |
+| D-3 | 8 ott 2026 | Motore di simulazione separato dall'interfaccia, senza dipendenze | Il motore si legge in classe e si prova senza browser; la grafica può cambiare senza toccarlo | Confermata |
+| D-4 | 8 ott 2026 | TypeScript per tutto il codice | I tipi descrivono in modo esplicito frame, pacchetti e tabelle | Confermata |
+| D-5 | 8 ott 2026 | Svelte per l'interfaccia, SVG per la topologia | I componenti somigliano a HTML, CSS e JavaScript; SVG è nitido a ogni zoom e basta per 50 dispositivi | Confermata |
+| D-6 | 8 ott 2026 | Vite per la costruzione, Vitest per i test | Producono un sito statico e condividono la configurazione | Confermata |
+| D-7 | 8 ott 2026 | Protocolli realmente funzionanti ma semplificati | Si simula ciò che serve a capire, non ogni timer e caso limite. Le semplificazioni sono elencate in docs/motore.md | Confermata |
+| D-8 | 8 ott 2026 | L'app non avvisa degli errori di configurazione e non spiega i fallimenti | Deve comportarsi come una rete vera: la diagnosi è parte dell'esercizio | Confermata |
+| D-9 | 9 ott 2026 | Lo sviluppo parte da uno scheletro: scambio ARP tra due PC | È il comportamento vero più piccolo che attraversa file, motore, interfaccia e test | Confermata |
+| D-10 | 9 ott 2026 | Simulatore a eventi discreti, deterministico | Tempo reale e passo-passo diventano lo stesso meccanismo; test e lezioni sono ripetibili | Adottata |
+| D-11 | 9 ott 2026 | Tempo misurato in tick astratti, un tick per collegamento | Con i tempi veri, rallentare un pacchetto perché sia visibile renderebbe lunghissime le attese | Adottata |
+| D-12 | 9 ott 2026 | Un passo elabora tutti gli eventi dello stesso istante | I frame di un broadcast si muovono insieme, come nella realtà | Adottata |
+| D-13 | 9 ott 2026 | I dispositivi restituiscono una reazione; è il simulatore a spedire i frame | Il comportamento di un dispositivo si legge e si prova da solo | Adottata |
+| D-14 | 9 ott 2026 | Il file contiene solo la configurazione, non le tabelle né i pacchetti in viaggio | Una rete aperta si comporta sempre allo stesso modo. Non si può salvare una simulazione a metà | Adottata |
+| D-15 | 9 ott 2026 | Identificatori in inglese, commenti e messaggi in italiano | I nomi dei campi dei protocolli sono in inglese ovunque; i commenti devono essere letti dagli studenti | Adottata |
+| D-16 | 9 ott 2026 | TypeScript fermo alla versione 6 | Lo strumento di controllo dei componenti Svelte non supporta ancora la 7 | Adottata |
