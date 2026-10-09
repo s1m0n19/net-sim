@@ -1,0 +1,35 @@
+{
+  "format": "net-sim",
+  "version": 1,
+  "network": {
+    "devices": [
+      {
+        "id": "d1",
+        "kind": "host",
+        "name": "PC1",
+        "position": { "x": 150, "y": 130 },
+        "ports": [{ "name": "Fa0", "mac": "02:00:00:00:00:01" }],
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d2",
+        "kind": "host",
+        "name": "PC2",
+        "position": { "x": 550, "y": 130 },
+        "ports": [{ "name": "Fa0", "mac": "02:00:00:00:00:02" }],
+        "ip": "192.168.1.11",
+        "mask": "255.255.255.0",
+        "gateway": null
+      }
+    ],
+    "links": [
+      {
+        "id": "l1",
+        "a": { "deviceId": "d1", "portName": "Fa0" },
+        "b": { "deviceId": "d2", "portName": "Fa0" }
+      }
+    ]
+  }
+}
