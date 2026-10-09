@@ -36,7 +36,17 @@ export interface Host {
   arpTable: Map<Ipv4Address, MacAddress>;
 }
 
-// Per ora esistono solo gli host. Switch e router si aggiungeranno qui.
+export interface Switch {
+  kind: "switch";
+  id: string;
+  name: string;
+  ports: Port[];
+  // Stato di esecuzione: per ogni MAC conosciuto, il nome della porta
+  // da cui lo si raggiunge.
+  macTable: Map<MacAddress, string>;
+}
+
+// Per ora il simulatore conosce solo gli host. Switch e router si aggiungeranno qui.
 export type Device = Host;
 
 /**
