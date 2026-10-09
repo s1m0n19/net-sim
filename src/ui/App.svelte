@@ -150,6 +150,10 @@
         if (trace.outcome === "unreachable") return `${name}: host di destinazione non raggiungibile`;
         return `${name}: trasmissione non riuscita`;
       }
+      case "frame-lost":
+        return `${labelOf(trace.frame)} da ${nameOf(trace.from)} a ${nameOf(trace.to)} va perso`;
+      case "link-changed":
+        return `Cavo ${trace.linkId} ${trace.connected ? "riattaccato" : "staccato"}`;
       case "simulation-suspended":
         return `Simulazione sospesa: tempesta di broadcast, ${trace.framesInFlight} frame in viaggio`;
       case "table-changed":

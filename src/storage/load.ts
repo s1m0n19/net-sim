@@ -147,7 +147,7 @@ function readLink(l: any, where: string, network: Network): Link {
   if (a.deviceId === b.deviceId && a.portName === b.portName) {
     throw new Error(`Il collegamento ${id} unisce una porta a se stessa.`);
   }
-  return { id, a, b };
+  return { id, a, b, connected: true };
 }
 
 function readPortRef(ref: any, where: string, network: Network): PortRef {

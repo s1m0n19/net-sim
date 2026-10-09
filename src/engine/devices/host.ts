@@ -60,8 +60,9 @@ export interface PingResult {
     // L'host sapeva a chi consegnarlo sulla propria LAN, ma quel
     // dispositivo non ha risposto all'ARP.
     | "unreachable"
-    // L'host non sapeva nemmeno a chi consegnarlo: non ha un indirizzo,
-    // oppure la destinazione è in un'altra rete e non c'è una strada.
+    // L'host non ha nemmeno potuto provarci: non sente il segnale sul
+    // cavo, non ha un indirizzo, oppure la destinazione è in un'altra
+    // rete e non c'è una strada.
     | "transmit-failed";
 }
 
@@ -114,9 +115,10 @@ const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [], pingR
  *   i casi avviare l'attesa dell'echo reply. Se la destinazione è l'host
  *   stesso (il suo indirizzo, o un 127.x.x.x) non parte nulla e il
  *   risultato contiene solo gli esiti "reply", uno per ciascun echo
- *   request. Se l'host non ha un indirizzo IP, o se la destinazione è in
- *   un'altra rete e manca il gateway, nessun echo request può partire: il
- *   risultato contiene solo gli esiti "transmit-failed"
+ *   request. Se l'host non sente il segnale sul cavo, non ha un indirizzo
+ *   IP, o se la destinazione è in un'altra rete e manca il gateway, nessun
+ *   echo request può partire: il risultato contiene solo gli esiti
+ *   "transmit-failed"
  * @throws Error se `targetIp` non è un indirizzo IPv4 valido, o se `count`
  *   non è un numero intero maggiore di zero
  */
@@ -139,9 +141,9 @@ function sendEchoRequest(host: Host, targetIp: Ipv4Address, remaining: number): 
     return concludeEcho(host, echo, "reply");
   }
 
-  // Senza un indirizzo, o senza una strada verso la destinazione,
-  // l'echo request non può nemmeno partire.
-  if (host.ip === null || nextHopFor(host, targetIp) === null) {
+  // Senza segnale sul cavo, senza un indirizzo, o senza una strada verso
+  // la destinazione, l'echo request non può nemmeno partire.
+  if (!host.linkUp || host.ip === null || nextHopFor(host, targetIp) === null) {
     return concludeEcho(host, echo, "transmit-failed");
   }
 
@@ -336,6 +338,9 @@ function receiveIpv4(host: Host, packet: Ipv4Packet): HostReaction {
 // Spedisce un pacchetto IP: lo incapsula in un frame Ethernet diretto al
 // prossimo salto. Se il MAC del prossimo salto non è noto, il pacchetto aspetta.
 function sendIpv4Packet(host: Host, packet: Ipv4Packet): HostOutput {
+  // Senza segnale sul cavo non si spedisce nulla.
+  if (!host.linkUp) return NOTHING;
+
   // A chi lo consegno, sulla mia LAN? Alla destinazione o al gateway.
   const nextHop = nextHopFor(host, packet.dstIp);
   if (nextHop === null || host.ip === null) return NOTHING;

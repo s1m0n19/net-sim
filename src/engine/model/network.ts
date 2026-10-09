@@ -22,6 +22,8 @@ export interface Link {
   id: string;
   a: PortRef;
   b: PortRef;
+  // false = il cavo è staccato: c'è, ma non porta nulla.
+  connected: boolean;
 }
 
 // Un pacchetto IP che non può ancora partire: l'host sta aspettando di
@@ -49,6 +51,9 @@ export interface Host {
   mask: Ipv4Address | null;
   gateway: Ipv4Address | null;
   // Stato di esecuzione: cambia mentre la rete funziona.
+  // La scheda di rete sente il segnale sul cavo? Lo tiene aggiornato il
+  // simulatore. Senza segnale l'host sa di non poter trasmettere.
+  linkUp: boolean;
   arpTable: Map<Ipv4Address, MacAddress>;
   // Numero di sequenza del prossimo echo request: cresce a ogni ping.
   nextEchoSequence: number;
@@ -78,6 +83,7 @@ export type SwitchConfig = Pick<Switch, "id" | "name" | "ports">;
 /**
  * Crea un host appena acceso: con la configurazione data e lo stato di
  * esecuzione iniziale (tabella ARP vuota, nessun pacchetto in attesa).
+ * Finché non entra in una simulazione, l'host risulta senza segnale sul cavo.
  *
  * @param config - identificativo, nome, porte e configurazione IP
  * @returns l'host pronto per essere messo in una rete
@@ -86,6 +92,7 @@ export function createHost(config: HostConfig): Host {
   return {
     kind: "host",
     ...config,
+    linkUp: false,
     arpTable: new Map(),
     nextEchoSequence: 1,
     pendingPackets: [],
@@ -128,6 +135,34 @@ export function findDevice(network: Network, deviceId: string): Device {
     throw new Error(`Dispositivo inesistente: ${deviceId}`);
   }
   return device;
+}
+
+/**
+ * Cerca un collegamento della rete a partire dal suo identificativo.
+ *
+ * @param network - la rete in cui cercare
+ * @param linkId - l'identificativo del collegamento
+ * @returns il collegamento trovato
+ * @throws Error se nessun collegamento ha quell'identificativo
+ */
+export function findLink(network: Network, linkId: string): Link {
+  const link = network.links.find((l) => l.id === linkId);
+  if (link === undefined) {
+    throw new Error(`Collegamento inesistente: ${linkId}`);
+  }
+  return link;
+}
+
+/**
+ * Cerca il cavo attaccato a una porta.
+ *
+ * @param network - la rete in cui cercare
+ * @param port - la porta
+ * @returns il collegamento che ha quella porta a un capo, staccato o no;
+ *   null se alla porta non è attaccato nessun cavo
+ */
+export function linkAt(network: Network, port: PortRef): Link | null {
+  return network.links.find((l) => samePort(l.a, port) || samePort(l.b, port)) ?? null;
 }
 
 function samePort(p: PortRef, q: PortRef): boolean {

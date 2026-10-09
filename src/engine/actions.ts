@@ -4,7 +4,8 @@ import { DEFAULT_PING_COUNT } from "./protocols/icmp";
 // Le azioni sono l'unico modo in cui l'esterno comanda il motore.
 export type Action =
   | { kind: "ping"; deviceId: string; targetIp: Ipv4Address; count: number }
-  | { kind: "resolve-address"; deviceId: string; targetIp: Ipv4Address };
+  | { kind: "resolve-address"; deviceId: string; targetIp: Ipv4Address }
+  | { kind: "set-link-connected"; linkId: string; connected: boolean };
 
 /**
  * Crea l'azione "questo host fa ping a questo indirizzo IP".
@@ -32,4 +33,24 @@ export function ping(
  */
 export function resolveAddress(deviceId: string, targetIp: Ipv4Address): Action {
   return { kind: "resolve-address", deviceId, targetIp };
+}
+
+/**
+ * Crea l'azione "stacca questo cavo".
+ *
+ * @param linkId - identificativo del collegamento
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function disconnectLink(linkId: string): Action {
+  return { kind: "set-link-connected", linkId, connected: false };
+}
+
+/**
+ * Crea l'azione "riattacca questo cavo".
+ *
+ * @param linkId - identificativo del collegamento
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function connectLink(linkId: string): Action {
+  return { kind: "set-link-connected", linkId, connected: true };
 }

@@ -20,8 +20,12 @@ import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
 import {
   findDevice,
+  findLink,
+  hostsOf,
+  linkAt,
   otherEndOf,
   type Host,
+  type Link,
   type Network,
   type PortRef,
   type Switch,
@@ -120,6 +124,17 @@ export type Trace =
       conversationId: number;
     }
   | {
+      // Un frame in viaggio è andato perso: il cavo è stato staccato.
+      time: number;
+      kind: "frame-lost";
+      frameId: number;
+      from: PortRef;
+      to: PortRef;
+      frame: EthernetFrame;
+      conversationId: number;
+    }
+  | { time: number; kind: "link-changed"; linkId: string; connected: boolean }
+  | {
       // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
       time: number;
       kind: "simulation-suspended";
@@ -143,10 +158,11 @@ export class Simulator {
    * Crea un simulatore fermo all'istante zero, con la coda vuota.
    *
    * @param network - la rete da simulare; il simulatore ne modifica lo stato
-   *   di esecuzione (tabelle ARP e tabelle MAC)
+   *   di esecuzione (tabelle ARP e tabelle MAC, segnale sui cavi)
    */
   constructor(network: Network) {
     this.network = network;
+    this.refreshLinkState([]);
   }
 
   /**
@@ -154,14 +170,29 @@ export class Simulator {
    *
    * @param action - l'azione da eseguire
    * @returns le tracce prodotte da questa azione
-   * @throws Error se la simulazione è sospesa, o se l'azione indica un
-   *   dispositivo che non esiste o che non è un host
+   * @throws Error se la simulazione è sospesa; se l'azione indica un
+   *   dispositivo o un collegamento che non esiste; se chiede a uno switch
+   *   qualcosa che solo un host può fare
    */
   dispatch(action: Action): Trace[] {
     if (this.suspended) {
       throw new Error("La simulazione è sospesa: non accetta altre azioni.");
     }
     const produced: Trace[] = [];
+    if (action.kind === "set-link-connected") {
+      this.setLinkConnected(findLink(this.network, action.linkId), action.connected, produced);
+    } else {
+      this.runHostAction(action, produced);
+    }
+    this.traces.push(...produced);
+    return produced;
+  }
+
+  // Esegue un'azione che riguarda un host: ping o richiesta ARP.
+  private runHostAction(
+    action: Extract<Action, { deviceId: string }>,
+    produced: Trace[],
+  ): void {
     const host = findDevice(this.network, action.deviceId);
     if (host.kind !== "host") {
       throw new Error(`${host.name} non è un host: non può eseguire questa azione.`);
@@ -192,8 +223,64 @@ export class Simulator {
       const conversationId = this.nextConversationId++;
       this.apply(host, output, conversationId, produced);
     }
-    this.traces.push(...produced);
-    return produced;
+  }
+
+  // Stacca o riattacca un cavo.
+  private setLinkConnected(link: Link, connected: boolean, produced: Trace[]): void {
+    if (link.connected === connected) return;
+    link.connected = connected;
+    produced.push({ time: this.time, kind: "link-changed", linkId: link.id, connected });
+
+    if (!connected) {
+      this.loseFramesOn(link, produced);
+    }
+    this.refreshLinkState(produced);
+  }
+
+  // I frame che stavano viaggiando su un cavo staccato non arrivano più.
+  private loseFramesOn(link: Link, produced: Trace[]): void {
+    const kept: SimEvent[] = [];
+    for (const event of this.queue) {
+      const onThisLink =
+        event.kind === "frame-arrival" && linkAt(this.network, event.to)?.id === link.id;
+      if (!onThisLink) {
+        kept.push(event);
+        continue;
+      }
+      const { frameId, from, to, frame, conversationId } = event;
+      produced.push({ time: this.time, kind: "frame-lost", frameId, from, to, frame, conversationId });
+    }
+    this.queue = kept;
+  }
+
+  // Una porta sente il segnale se le è attaccato un cavo e il cavo non è staccato.
+  private hasCarrier(port: PortRef): boolean {
+    const link = linkAt(this.network, port);
+    return link !== null && link.connected;
+  }
+
+  // Dopo un guasto o una riparazione, aggiorna ciò che i dispositivi sanno
+  // dei propri cavi.
+  private refreshLinkState(produced: Trace[]): void {
+    // Ogni host sa se la sua scheda sente il segnale.
+    for (const host of hostsOf(this.network)) {
+      host.linkUp = this.hasCarrier({ deviceId: host.id, portName: host.ports[0].name });
+    }
+    // Uno switch dimentica i MAC imparati su una porta rimasta senza segnale:
+    // chi stava lì dietro non è più raggiungibile da quella parte.
+    for (const device of this.network.devices) {
+      if (device.kind !== "switch") continue;
+      let changed = false;
+      for (const [mac, portName] of device.macTable) {
+        if (!this.hasCarrier({ deviceId: device.id, portName })) {
+          device.macTable.delete(mac);
+          changed = true;
+        }
+      }
+      if (changed) {
+        produced.push({ time: this.time, kind: "table-changed", deviceId: device.id, table: "mac" });
+      }
+    }
   }
 
   /**
@@ -329,8 +416,9 @@ export class Simulator {
     hops: number,
     produced: Trace[],
   ): void {
+    // Senza cavo, o con il cavo staccato, il frame non parte.
     const to = otherEndOf(this.network, from);
-    if (to === null) return; // nessun cavo: il frame non parte
+    if (to === null || !this.hasCarrier(from)) return;
 
     const frameId = this.nextFrameId++;
     produced.push({ time: this.time, kind: "frame-sent", frameId, from, to, frame, conversationId });

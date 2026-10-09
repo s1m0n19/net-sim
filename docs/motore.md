@@ -80,6 +80,7 @@ interface Link {       // il cavo tra due porte
   id: string;
   a: PortRef;
   b: PortRef;
+  connected: boolean;  // false = il cavo è staccato
 }
 
 type Device = Host | Switch;
@@ -98,6 +99,7 @@ interface Host {
   mask: Ipv4Address | null;
   gateway: Ipv4Address | null;
   // stato di esecuzione
+  linkUp: boolean;                  // la scheda sente il segnale sul cavo?
   arpTable: Map<Ipv4Address, MacAddress>;
   nextEchoSequence: number;         // numero di sequenza del prossimo echo request
   pendingPackets: PendingPacket[];  // pacchetti in attesa della risposta ARP
@@ -211,8 +213,9 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | --- | --- |
 | `ping(deviceId, targetIp, count)` | L'host manda `count` echo request, uno alla volta. Se `count` manca, quattro |
 | `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
+| `disconnectLink(linkId)`, `connectLink(linkId)` | Stacca o riattacca un cavo |
 
-Un'azione rivolta a uno switch o a un dispositivo inesistente viene rifiutata con un errore, e così qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
+Un ping rivolto a uno switch, e qualsiasi azione su un dispositivo o un collegamento inesistente, vengono rifiutati con un errore. Così anche qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
 
 ### Tracce
 
@@ -226,6 +229,8 @@ Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` r
 | `table-changed` | È cambiata una tabella, `arp` o `mac` |
 | `packet-dropped` | Un host ha rinunciato a un pacchetto che teneva in attesa |
 | `ping-result` | Un echo request si è concluso. Contiene l'esito e quanti ne restano |
+| `frame-lost` | Un frame in viaggio è andato perso perché il cavo è stato staccato |
+| `link-changed` | Un cavo è stato staccato o riattaccato |
 | `simulation-suspended` | Il simulatore si è fermato per una tempesta di broadcast. Contiene quanti frame erano in viaggio |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
@@ -270,6 +275,8 @@ Lo switch (`devices/switch.ts`) è più semplice: `receiveFrameOnSwitch(sw, inPo
    - La destinazione è nella mia rete (stesso indirizzo di rete, data la mia maschera): il prossimo salto è la destinazione.
    - È in un'altra rete e ho un gateway: il prossimo salto è il gateway.
    - È in un'altra rete e non ho un gateway, oppure non ho indirizzo o maschera: non c'è un prossimo salto, il pacchetto non può partire.
+
+   Prima ancora: se la scheda non sente il segnale sul cavo, il pacchetto non può partire.
 2. **Conosco il MAC del prossimo salto?** Si guarda la tabella ARP.
    - Sì: il pacchetto viene incapsulato in un frame e parte.
    - No: il pacchetto va in attesa. Se per quell'indirizzo non c'è già una richiesta ARP in corso, ne parte una, insieme a un'attesa di 20 tick.
@@ -300,9 +307,9 @@ Ogni echo request si conclude con uno di quattro esiti, gli stessi che stampa il
 | Risposta | `reply` | È arrivato l'echo reply |
 | Richiesta scaduta | `timeout` | L'echo request è partito, ma dopo 40 tick non è tornato nulla |
 | Host di destinazione non raggiungibile | `unreachable` | C'era un prossimo salto, ma non ha risposto all'ARP entro 20 tick |
-| Trasmissione non riuscita | `transmit-failed` | Non c'era un prossimo salto: l'echo request non è nemmeno partito |
+| Trasmissione non riuscita | `transmit-failed` | L'host non ha nemmeno potuto provarci: non sente il segnale sul cavo, oppure non c'era un prossimo salto |
 
-Gli ultimi due si distinguono apposta: il primo indica un problema sulla propria LAN, il secondo un problema di configurazione IP o di rotte.
+Gli ultimi due si distinguono apposta: il primo indica un problema altrove sulla propria LAN, il secondo un problema del PC stesso, cioè il suo cavo, la sua configurazione IP o le sue rotte.
 
 **Ping a se stessi (loopback).** Se la destinazione è l'host stesso, cioè il suo indirizzo oppure un qualsiasi 127.x.x.x, l'echo request non passa dalla rete: l'esito è subito "risposta" e sul cavo non esce nulla. Per gli indirizzi 127.x.x.x vale anche su un host senza configurazione IP. È il primo controllo di ogni diagnosi: se fallisce questo, il problema è nel PC e non nella rete.
 
@@ -337,8 +344,8 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 
 | Che cosa | Nella realtà | In net-sim |
 | --- | --- | --- |
-| Tabella ARP | Le voci scadono dopo qualche minuto | Non scadono mai |
-| Tabella MAC | Le voci scadono dopo 5 minuti | Non scadono mai |
+| Tabella ARP | Le voci scadono dopo qualche minuto, e Windows le cancella se il cavo viene staccato | Non scadono mai, nemmeno a cavo staccato |
+| Tabella MAC | Le voci scadono dopo 5 minuti, e spariscono subito se la porta perde il segnale | Non scadono mai, ma spariscono se la porta perde il segnale |
 | Richiesta ARP ricevuta da chi non è il destinatario | Può aggiornare una voce già presente | Viene scartata senza effetti |
 | Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta: dopo 20 tick i pacchetti in attesa sono scartati |
 | ARP gratuito, rilevamento di indirizzi duplicati | Presenti | Assenti |
@@ -350,6 +357,29 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
 | TTL | Diminuisce a ogni router | Resta 128: non esistono ancora router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11) |
+
+## Guasti
+
+Oggi esiste un guasto: il **cavo staccato**. Un collegamento ha il campo `connected`; le azioni `disconnectLink` e `connectLink` lo cambiano.
+
+Il concetto su cui si regge tutto è il **segnale sul cavo**. Una porta sente il segnale se le è attaccato un cavo e il cavo non è staccato. Il simulatore lo ricalcola dopo ogni guasto o riparazione, e aggiorna ciò che i dispositivi sanno:
+
+- **Host.** Il campo `linkUp` dice se la scheda sente il segnale. Senza segnale l'host sa di non poter trasmettere: un ping finisce subito con "trasmissione non riuscita", senza che parta nulla. È ciò che fa un PC vero con il cavo staccato.
+- **Switch.** Dimentica i MAC che aveva imparato sulla porta rimasta senza segnale, e su quella porta non inoltra più nulla.
+
+I frame che stavano viaggiando sul cavo al momento del distacco vanno persi (traccia `frame-lost`).
+
+Staccare un cavo produce così tre esiti diversi del ping, secondo dove sta il guasto e che cosa sanno i dispositivi:
+
+| Situazione | Esito | Perché |
+| --- | --- | --- |
+| Il cavo staccato è quello di chi fa il ping | Trasmissione non riuscita | Il PC non sente il segnale e non prova nemmeno |
+| È quello della destinazione, e chi fa il ping non ne conosce il MAC | Host di destinazione non raggiungibile | La richiesta ARP parte, ma nessuno risponde |
+| È quello della destinazione, e chi fa il ping ne conosce già il MAC | Richiesta scaduta | L'echo request parte, lo switch non sa più dove mandarlo e lo inoltra agli altri, che lo scartano |
+
+Le attese di un host non vengono toccate da un guasto: un ping in corso si conclude comunque, con l'esito che gli spetta.
+
+*Previsto:* dispositivo spento e porta spenta.
 
 ## Tempesta di broadcast
 
@@ -379,7 +409,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 
 Non ancora nel codice:
 
-- **Guasti** (requisiti SIM-6 e SIM-7): cavo staccato, dispositivo spento, porta spenta. Richiederanno nuovi campi nel modello e nel file.
+- **Gli altri guasti** (requisiti SIM-6 e SIM-7): dispositivo spento, porta spenta. Il cavo staccato esiste nel motore, ma non ancora nei file né nella pagina.
 - **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
 - **Azioni di modifica della rete**: aggiungere, togliere, collegare, configurare.
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
@@ -428,5 +458,6 @@ I file di test, uno per argomento:
 | `ping-series.test.ts` | Più echo request per ping |
 | `loopback.test.ts` | Ping al proprio indirizzo e a 127.x.x.x |
 | `storm.test.ts` | Tempesta di broadcast e sospensione |
+| `link-faults.test.ts` | Cavo staccato |
 
 I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.

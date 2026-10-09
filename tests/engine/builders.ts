@@ -40,6 +40,7 @@ export function buildTwoHosts(): { sim: Simulator; pc1: Host; pc2: Host } {
         id: "l1",
         a: { deviceId: "d1", portName: "Fa0" },
         b: { deviceId: "d2", portName: "Fa0" },
+        connected: true,
       },
     ],
   };
@@ -51,6 +52,7 @@ function linkToSwitch(id: string, hostId: string, switchPort: string): Link {
     id,
     a: { deviceId: hostId, portName: "Fa0" },
     b: { deviceId: "s1", portName: switchPort },
+    connected: true,
   };
 }
 
@@ -94,6 +96,7 @@ function cable(id: string, fromId: string, fromPort: string, toId: string, toPor
     id,
     a: { deviceId: fromId, portName: fromPort },
     b: { deviceId: toId, portName: toPort },
+    connected: true,
   };
 }
 
