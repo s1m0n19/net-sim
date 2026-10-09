@@ -2,7 +2,7 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** bozza. Del codice esiste solo lo scheletro (scambio ARP tra due PC).
+- **Stato:** bozza. Del codice esiste solo lo scheletro (PC, switch e scambio ARP, in passo-passo).
 - **Ultimo aggiornamento:** 9 ottobre 2026.
 - **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
 - **Documentazione tecnica:** [docs/](docs/README.md).

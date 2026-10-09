@@ -6,9 +6,9 @@ Il nome è provvisorio.
 
 ## Stato
 
-Il progetto è all'inizio. Oggi esiste solo uno **scheletro**: due PC collegati da un cavo e lo scambio ARP tra loro, da far avanzare un passo alla volta.
+Il progetto è all'inizio. Oggi esiste solo uno **scheletro**: PC e switch, e lo scambio ARP tra i PC, da far avanzare un passo alla volta.
 
-Mancano ancora switch, ping, editor della rete, salvataggio e grafica curata. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
+Mancano ancora ping, editor della rete, salvataggio e grafica curata. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
 
 ## Requisiti
 
@@ -26,17 +26,24 @@ Poi si apre http://localhost:5173 nel browser.
 
 ## Cosa si può fare
 
-La pagina carica la rete di esempio [examples/due-pc.netsim.json](examples/due-pc.netsim.json): PC1 (192.168.1.10) e PC2 (192.168.1.11) collegati direttamente.
+La pagina offre due reti di esempio, nella rete 192.168.1.0/24:
 
-| Pulsante | Effetto |
+| Rete | Contenuto | File |
+| --- | --- | --- |
+| **LAN con switch** | Lo switch SW1 con PC1, PC2 e PC3 | [examples/lan-switch.netsim.json](examples/lan-switch.netsim.json) |
+| **Due PC** | PC1 e PC2 collegati direttamente | [examples/due-pc.netsim.json](examples/due-pc.netsim.json) |
+
+| Comando | Effetto |
 | --- | --- |
-| **PC1 cerca il MAC di 192.168.1.11** | PC1 invia una richiesta ARP in broadcast |
+| **Rete** | Sceglie la rete di esempio e la carica con le tabelle vuote |
+| ***host* cerca il MAC di *indirizzo*** | Sceglie chi fa la richiesta ARP e quale indirizzo IP cerca |
+| **Invia richiesta ARP** | L'host scelto invia la richiesta in broadcast |
 | **Passo** | La rete avanza al prossimo istante in cui succede qualcosa. È disattivato quando non ci sono frame in viaggio |
-| **Ricomincia** | Ricarica la rete di esempio, con le tabelle vuote |
+| **Ricomincia** | Ricarica la rete attuale, con le tabelle vuote |
 
-Per vedere lo scambio completo: un clic sul primo pulsante, poi due clic su "Passo". Le tabelle ARP dei due PC passano da vuote a una riga ciascuna.
+Per vedere lo scambio completo nella LAN con switch: "Invia richiesta ARP", poi quattro clic su "Passo". Lo switch inoltra la richiesta a tutti gli altri PC, risponde solo quello cercato, e la risposta torna su una sola porta.
 
-Sotto il disegno compaiono le tabelle ARP e l'elenco degli eventi, con il contenuto di ogni frame.
+Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC e l'elenco degli eventi, con il contenuto di ogni frame.
 
 ## Comandi
 
