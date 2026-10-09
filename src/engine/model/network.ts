@@ -1,4 +1,5 @@
 import type { Ipv4Address, MacAddress } from "./addresses";
+import type { Ipv4Packet } from "./frames";
 
 export interface Network {
   devices: Device[];
@@ -23,6 +24,13 @@ export interface Link {
   b: PortRef;
 }
 
+// Un pacchetto IP che non può ancora partire: l'host sta aspettando di
+// conoscere il MAC del prossimo salto.
+export interface PendingPacket {
+  nextHop: Ipv4Address;
+  packet: Ipv4Packet;
+}
+
 export interface Host {
   kind: "host";
   id: string;
@@ -36,6 +44,8 @@ export interface Host {
   arpTable: Map<Ipv4Address, MacAddress>;
   // Numero di sequenza del prossimo echo request: cresce a ogni ping.
   nextEchoSequence: number;
+  // Pacchetti in attesa della risposta ARP.
+  pendingPackets: PendingPacket[];
 }
 
 export interface Switch {
@@ -57,13 +67,19 @@ export type SwitchConfig = Pick<Switch, "id" | "name" | "ports">;
 
 /**
  * Crea un host appena acceso: con la configurazione data e lo stato di
- * esecuzione iniziale (tabella ARP vuota).
+ * esecuzione iniziale (tabella ARP vuota, nessun pacchetto in attesa).
  *
  * @param config - identificativo, nome, porte e configurazione IP
  * @returns l'host pronto per essere messo in una rete
  */
 export function createHost(config: HostConfig): Host {
-  return { kind: "host", ...config, arpTable: new Map(), nextEchoSequence: 1 };
+  return {
+    kind: "host",
+    ...config,
+    arpTable: new Map(),
+    nextEchoSequence: 1,
+    pendingPackets: [],
+  };
 }
 
 /**

@@ -29,13 +29,15 @@ const PING_IDENTIFIER = 1;
 /**
  * Prepara un ping: un echo request verso un indirizzo IP.
  * Non lo spedisce: è il simulatore a metterlo sul cavo.
- * Fa avanzare il numero di sequenza dell'host.
+ * Fa avanzare il numero di sequenza dell'host e, se il MAC del prossimo
+ * salto non è noto, mette il pacchetto in attesa.
  *
  * @param host - l'host che fa il ping
  * @param targetIp - l'indirizzo IP da raggiungere
- * @returns i frame da inviare; nessuno se l'host non ha un indirizzo IP,
- *   se la destinazione è in un'altra rete e manca il gateway, oppure se
- *   l'host non conosce ancora il MAC del prossimo salto
+ * @returns i frame da inviare: l'echo request se il MAC del prossimo salto
+ *   è noto, altrimenti la richiesta ARP per scoprirlo; nessuno se l'host
+ *   non ha un indirizzo IP, o se la destinazione è in un'altra rete e
+ *   manca il gateway
  * @throws Error se `targetIp` non è un indirizzo IPv4 valido
  */
 export function startPing(host: Host, targetIp: Ipv4Address): EthernetFrame[] {
@@ -62,9 +64,10 @@ export function startArpResolution(host: Host, targetIp: Ipv4Address): EthernetF
 
 /**
  * Decide che cosa fa un host quando gli arriva un frame.
- * Può aggiornare la tabella ARP dell'host.
+ * Può aggiornare la tabella ARP dell'host e i suoi pacchetti in attesa.
  *
- * @param host - l'host che riceve; la sua tabella ARP può essere modificata
+ * @param host - l'host che riceve; tabella ARP e pacchetti in attesa
+ *   possono essere modificati
  * @param frame - il frame arrivato alla sua porta
  * @returns la reazione: frame da inviare, motivo dell'eventuale scarto,
  *   e se la tabella ARP è cambiata
@@ -92,12 +95,18 @@ function receiveArp(host: Host, arp: ArpPacket): HostReaction {
     }
     // Chi ha chiesto vorrà parlarmi: tanto vale ricordare subito il suo MAC.
     const tableChanged = learn(host, arp.senderIp, arp.senderMac);
-    return { send: [makeArpReply(arp, host.ports[0].mac)], dropped: null, tableChanged };
+    const reply = makeArpReply(arp, host.ports[0].mac);
+    return {
+      send: [reply, ...releasePendingPackets(host, arp.senderIp)],
+      dropped: null,
+      tableChanged,
+    };
   }
 
   // È una risposta: contiene il MAC che stavo cercando.
+  // I pacchetti che lo aspettavano ora possono partire.
   const tableChanged = learn(host, arp.senderIp, arp.senderMac);
-  return { send: [], dropped: null, tableChanged };
+  return { send: releasePendingPackets(host, arp.senderIp), dropped: null, tableChanged };
 }
 
 function receiveIpv4(host: Host, packet: Ipv4Packet): HostReaction {
@@ -118,18 +127,38 @@ function receiveIpv4(host: Host, packet: Ipv4Packet): HostReaction {
   return { send: [], dropped: null, tableChanged: false };
 }
 
-// Incapsula un pacchetto IP in un frame Ethernet diretto al prossimo salto.
-// Restituisce i frame da inviare: nessuno se il pacchetto non può partire.
+// Spedisce un pacchetto IP: lo incapsula in un frame Ethernet diretto al
+// prossimo salto. Restituisce i frame da inviare.
 function sendIpv4Packet(host: Host, packet: Ipv4Packet): EthernetFrame[] {
   // A chi lo consegno, sulla mia LAN? Alla destinazione o al gateway.
   const nextHop = nextHopFor(host, packet.dstIp);
-  if (nextHop === null) return [];
+  if (nextHop === null || host.ip === null) return [];
 
   // Il frame ha bisogno del MAC del prossimo salto.
   const nextHopMac = host.arpTable.get(nextHop);
-  if (nextHopMac === undefined) return [];
+  if (nextHopMac === undefined) {
+    // Non lo conosco: il pacchetto aspetta, e intanto parte la richiesta ARP.
+    host.pendingPackets.push({ nextHop, packet });
+    return [makeArpRequest(host.ports[0].mac, host.ip, nextHop)];
+  }
 
-  return [{ dstMac: nextHopMac, srcMac: host.ports[0].mac, etherType: "IPv4", payload: packet }];
+  return [encapsulate(host, nextHopMac, packet)];
+}
+
+// Fa partire i pacchetti che aspettavano il MAC di `ip`, ora in tabella.
+// Restituisce i frame da inviare e toglie quei pacchetti dall'attesa.
+function releasePendingPackets(host: Host, ip: Ipv4Address): EthernetFrame[] {
+  const mac = host.arpTable.get(ip);
+  if (mac === undefined) return [];
+
+  const ready = host.pendingPackets.filter((pending) => pending.nextHop === ip);
+  host.pendingPackets = host.pendingPackets.filter((pending) => pending.nextHop !== ip);
+  return ready.map((pending) => encapsulate(host, mac, pending.packet));
+}
+
+// Mette un pacchetto IP dentro un frame Ethernet.
+function encapsulate(host: Host, dstMac: MacAddress, packet: Ipv4Packet): EthernetFrame {
+  return { dstMac, srcMac: host.ports[0].mac, etherType: "IPv4", payload: packet };
 }
 
 // Scrive una riga nella tabella ARP. Restituisce true se la tabella è cambiata.
