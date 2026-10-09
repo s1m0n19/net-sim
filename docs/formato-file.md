@@ -102,36 +102,48 @@ La posizione riguarda il disegno, non la rete: il lettore la restituisce a parte
 
 ## Controlli all'apertura
 
-Un file può arrivare modificato a mano o danneggiato. Se un controllo fallisce, il lettore non apre il file e dice che cosa non va. Non tenta di riparare.
+Un file può arrivare modificato a mano o danneggiato. Se un controllo fallisce, il lettore non apre il file e dice che cosa non va, nominando il dispositivo o il collegamento. Non tenta di riparare.
 
-Controlli che il lettore fa oggi:
-
-| Controllo | Messaggio |
+| Controllo | Esempio di messaggio |
 | --- | --- |
 | Il testo è JSON valido | «Il file non è JSON valido.» |
 | `format` vale `"net-sim"` | «Il file non è una rete di net-sim.» |
-| `version` è quella conosciuta | «Versione del file non supportata: …» |
-| Ogni dispositivo ha un `kind` conosciuto | «Tipo di dispositivo non supportato: …» |
-| La subnet mask di ogni host è valida | «PC1 ha una subnet mask non valida: …» |
-| Ogni collegamento indica un dispositivo e una porta che esistono | «Il collegamento l1 indica una porta inesistente: …» |
+| `version` è quella conosciuta | «Versione del file non supportata: 99.» |
+| Ci sono l'elenco dei dispositivi e quello dei collegamenti | «Il file non contiene l'elenco dei dispositivi e dei collegamenti.» |
+| Ogni dispositivo ha tutti i campi richiesti, del tipo giusto | «PC1: il campo "gateway" manca o non è un testo.» |
+| Ogni dispositivo ha un `kind` conosciuto | «Tipo di dispositivo non supportato: tostapane.» |
+| Ogni dispositivo ha almeno una porta | «PC1: deve avere almeno una porta.» |
+| Ogni indirizzo MAC è scritto correttamente e non è il broadcast | «PC1 Fa0: indirizzo MAC non valido: 02:00:00:00:00.» |
+| I nomi delle porte di un dispositivo sono diversi tra loro | «SW1: nome di porta duplicato: Fa0/1.» |
+| Gli identificativi dei dispositivi sono unici | «Identificativo di dispositivo duplicato: d1.» |
+| Gli indirizzi MAC sono unici in tutta la rete | «Indirizzo MAC duplicato: 02:00:00:00:00:01.» |
+| La configurazione IP di ogni host è accettabile (vedi sotto) | «PC1: subnet mask non valida: 255.0.255.0.» |
+| Ogni collegamento ha i due capi, e indicano porte che esistono | «Collegamento l1: indica una porta inesistente: d2 Fa9.» |
+| Nessun collegamento unisce una porta a se stessa | «Il collegamento l1 unisce una porta a se stessa.» |
+| Gli identificativi dei collegamenti sono unici | «Identificativo di collegamento duplicato: l1.» |
+| Nessuna porta ha più di un collegamento | «La porta Fa0/1 di SW1 ha più di un collegamento.» |
 
-Una subnet mask è valida se, scritta in binario, ha tutti i bit a 1 seguiti da tutti i bit a 0. Una maschera come 255.0.255.0 fa rifiutare il file (decisione D-17).
+Gli indirizzi MAC sono assegnati dall'app e l'utente non li cambia: due uguali indicano un file danneggiato, non una rete da diagnosticare. Il confronto non distingue maiuscole e minuscole.
 
-Controlli decisi (D-28, requisiti CFG-7 e FILE-4) e **non ancora fatti**:
+Un cavo tra due porte dello stesso switch è ammesso: è un ciclo, ma è una rete possibile.
 
-| Controllo | Oggi |
+### Configurazione IP degli host
+
+La configurazione IP è accettata o rifiutata come farebbe Windows (decisione D-28, requisito CFG-7). Il controllo è la funzione `checkIpConfig` in `src/engine/model/ip-config.ts`, che servirà anche al pannello di configurazione.
+
+| Regola | Esempio rifiutato |
 | --- | --- |
-| Ogni dispositivo ha tutti i campi richiesti, del tipo giusto | Un campo mancante può produrre un errore poco chiaro |
-| Gli identificativi sono unici | Non controllato |
-| Gli indirizzi MAC sono unici | Non controllato |
-| Nessuna porta ha più di un collegamento | Non controllato |
-| `ip` e `gateway` sono indirizzi IPv4 scritti correttamente | Non controllato: l'errore compare al primo calcolo |
-| `ip` e `mask` sono presenti entrambi, o nessuno dei due | Non controllato |
-| `ip` e `gateway` non sono indirizzi che Windows rifiuterebbe: indirizzo di rete o di broadcast della sottorete, 0.0.0.0, 127.x.x.x, da 224 in su | Non controllato |
+| `ip` e `mask` sono presenti entrambi, oppure sono entrambi `null` | indirizzo senza maschera |
+| `gateway` può esserci solo se c'è `ip` | gateway su un host non configurato |
+| `ip` e `gateway` sono indirizzi IPv4 scritti correttamente | `192.168.1.256` |
+| `mask` ha i bit a 1 contigui | `255.0.255.0` |
+| `ip` e `gateway` non sono 0.0.0.0, né 127.x.x.x, né da 224 in su | `127.0.0.1`, `224.0.0.5` |
+| `ip` non è l'indirizzo di rete né quello di broadcast della propria sottorete | `192.168.1.0` e `192.168.1.255` con maschera /24 |
+| `gateway`, se sta nella sottorete dell'host, non ne è l'indirizzo di rete né di broadcast | `192.168.1.255` |
 
-Gli indirizzi MAC sono assegnati dall'app e l'utente non li cambia: due uguali indicano un file danneggiato, non una rete da diagnosticare.
+Con le maschere /31 e /32 la regola su rete e broadcast non si applica: quelle sottoreti non li hanno.
 
-Ciò che **non** verrà mai controllato: la coerenza della configurazione IP tra dispositivi. Una rete con indirizzi IP duplicati, con host nella stessa LAN ma con maschere diverse, o con un gateway fuori dalla sottorete, è una rete valida, anche se non funziona (requisito SIM-8).
+Ciò che **non** viene controllato, di proposito: la coerenza della configurazione IP tra dispositivi. Una rete con indirizzi IP duplicati, con host nella stessa LAN ma con maschere diverse, o con un gateway fuori dalla sottorete, è una rete valida, anche se non funziona. Sono errori che lo studente deve saper diagnosticare (requisito SIM-8).
 
 ## Previsto
 

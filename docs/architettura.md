@@ -65,7 +65,7 @@ net-sim/
 ├── src/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
-│   │   ├── model/             addresses.ts, frames.ts, network.ts
+│   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
 │   │   ├── devices/           host.ts, switch.ts
 │   │   ├── simulator.ts       coda degli eventi, tempo, tracce

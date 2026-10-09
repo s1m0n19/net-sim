@@ -21,7 +21,7 @@ Il motore del rilascio 1 è quasi completo: host, switch di livello 2, ARP, IPv4
 
 L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. Mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
 
-Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Tre difetti noti hanno la correzione già decisa ma non ancora scritta (tabella in `SPEC.md`, sezione 9; dettagli in `docs/motore.md`): un ciclo tra switch non si ferma mai (SIM-15), un ping al proprio indirizzo fallisce (SIM-14), la configurazione IP e la struttura dei file non sono controllate (CFG-7, FILE-4).
+Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Due difetti noti hanno la correzione già decisa ma non ancora scritta (tabella in `SPEC.md`, sezione 9; dettagli in `docs/motore.md`): un ciclo tra switch non si ferma mai (SIM-15) e un ping al proprio indirizzo fallisce (SIM-14).
 
 ## Comandi
 
@@ -66,6 +66,8 @@ Ogni frame e ogni attesa portano un `conversationId`: ciò che nasce elaborandol
 ### Configurazione e stato di esecuzione
 
 Ogni dispositivo ha una parte di configurazione (indirizzi, porte, salvati nel file) e una di stato di esecuzione (tabelle, pacchetti in attesa, echo in sospeso). Il file contiene solo la prima: una rete appena aperta ha le tabelle vuote. `createHost` e `createSwitch` in `model/network.ts` creano un dispositivo "appena acceso" e sono l'unico punto in cui si definisce lo stato iniziale: un campo di stato nuovo va aggiunto lì. Le posizioni sul disegno stanno fuori dal modello del motore (`LoadedFile.positions`).
+
+La configurazione IP di un host si controlla con `checkIpConfig` (`model/ip-config.ts`), che applica le regole di Windows. Oggi la usa il lettore dei file; qualsiasi futuro punto di ingresso della configurazione (pannello, CLI) deve passare da lì.
 
 ### Aggiungere un protocollo o un dispositivo
 

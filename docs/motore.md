@@ -38,6 +38,23 @@ Tre funzioni fanno i calcoli sugli indirizzi:
 | `isValidMask(mask)` | Dice se una subnet mask è valida: scritta in binario, tutti i bit a 1 seguiti da tutti i bit a 0 |
 | `sameNetwork(a, b, mask)` | Dice se due indirizzi hanno lo stesso indirizzo di rete. Rifiuta una maschera non valida |
 
+### Configurazione IP (`ip-config.ts`)
+
+`checkIpConfig({ ip, mask, gateway })` dice se la configurazione IP di un host è accettabile, e se non lo è restituisce una frase che spiega perché. Le regole sono quelle di Windows (decisione D-28): ciò che Windows non lascerebbe impostare viene rifiutato.
+
+| Regola | Esempio rifiutato |
+| --- | --- |
+| Indirizzo e maschera si impostano insieme, o nessuno dei due | indirizzo senza maschera |
+| Il gateway richiede un indirizzo | gateway su un host non configurato |
+| Indirizzo e gateway sono indirizzi IPv4 scritti correttamente | `192.168.1.256` |
+| La maschera ha i bit a 1 contigui | `255.0.255.0` |
+| Non sono ammessi 0.0.0.0, gli indirizzi 127.x.x.x e quelli da 224 in su | `127.0.0.1`, `224.0.0.5` |
+| L'indirizzo non è quello di rete né quello di broadcast della sottorete | `192.168.1.0` e `192.168.1.255` con maschera /24 |
+
+Tutto il resto resta ammesso anche se sbagliato per quella rete: indirizzi duplicati, host della stessa LAN con maschere diverse, un gateway fuori dalla sottorete. Sono errori che lo studente deve saper diagnosticare (requisito SIM-8).
+
+Oggi la funzione è usata dal lettore dei file. La userà anche il pannello di configurazione, quando esisterà.
+
 Gli indirizzi MAC non sono generati dal motore: oggi arrivano dal file di rete.
 
 ### Rete, dispositivi, collegamenti (`network.ts`)
@@ -327,7 +344,7 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 
 ## Difetti noti, con la correzione già decisa
 
-Questi comportamenti sono nel codice di oggi ma sono sbagliati. Per ciascuno la correzione è decisa e registrata in [SPEC.md](../SPEC.md); nessuna è ancora realizzata.
+Questi comportamenti sono nel codice di oggi ma sono sbagliati. Per ciascuno la correzione è decisa e registrata in [SPEC.md](../SPEC.md), ma non ancora realizzata.
 
 ### Un ciclo tra switch non si ferma mai
 
@@ -341,25 +358,9 @@ L'host tratta il proprio indirizzo come quello di un vicino: lo cerca con ARP, n
 
 **Correzione decisa** (D-27, requisito SIM-14): un ping al proprio indirizzo o a un indirizzo 127.x.x.x riceve risposta subito, senza che alcun frame esca sul cavo. Per 127.x.x.x vale anche su un host senza configurazione IP.
 
-### La configurazione IP degli host non è controllata
-
-Oggi l'unico controllo è sulla forma della subnet mask. Un host con un indirizzo scritto male viene caricato, e l'errore compare solo quando quell'indirizzo entra in un calcolo. Un host può avere l'indirizzo senza la maschera.
-
-**Correzione decisa** (D-28, requisito CFG-7): la configurazione è accettata o rifiutata come farebbe Windows.
-
-| Regola | Esempio rifiutato |
-| --- | --- |
-| Indirizzo e gateway devono essere indirizzi IPv4 scritti correttamente | `192.168.1.256` |
-| Indirizzo e maschera si impostano insieme, o nessuno dei due | indirizzo senza maschera |
-| La maschera ha i bit a 1 contigui (già in vigore) | `255.0.255.0` |
-| L'indirizzo non può essere quello di rete né quello di broadcast della sottorete | `192.168.1.0` e `192.168.1.255` con maschera /24 |
-| Non sono ammessi 0.0.0.0, gli indirizzi 127.x.x.x e quelli da 224 in su | `127.0.0.1`, `224.0.0.5` |
-
-Le stesse regole valgono per il gateway. Tutto il resto resta ammesso anche se sbagliato per quella rete: indirizzi duplicati, host della stessa LAN con maschere diverse, un gateway fuori dalla sottorete. Sono errori che lo studente deve saper diagnosticare (requisito SIM-8).
-
 ## Previsto
 
-Non ancora nel codice, oltre alle tre correzioni qui sopra:
+Non ancora nel codice, oltre alle due correzioni qui sopra:
 
 - **Guasti** (requisiti SIM-6 e SIM-7): cavo staccato, dispositivo spento, porta spenta. Richiederanno nuovi campi nel modello e nel file.
 - **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
@@ -403,6 +404,7 @@ I file di test, uno per argomento:
 | `switch.test.ts` | Apprendimento e inoltro dello switch, isolati |
 | `lan.test.ts` | Scambio ARP attraverso lo switch |
 | `ipv4.test.ts` | Indirizzi, maschere, stessa rete, prossimo salto |
+| `ip-config.test.ts` | Configurazioni IP accettate e rifiutate |
 | `ping.test.ts` | Ping a caldo e a freddo, casi in cui non parte o non arriva |
 | `timers.test.ts` | Attesa della risposta ARP |
 | `ping-results.test.ts` | I quattro esiti |

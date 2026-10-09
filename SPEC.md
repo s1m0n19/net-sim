@@ -284,7 +284,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-25 | 9 ott 2026 | Il file contiene sempre la configurazione; le tabelle MAC e ARP solo se chi salva lo chiede. Pacchetti in viaggio, attese e tempo non si salvano mai | Serve a preparare lezioni che partono da una rete già calda ed esercizi con una riga ARP sbagliata. Lasciare fuori ciò che è in movimento tiene i file semplici e stabili tra versioni dell'app | Confermata, da realizzare |
 | D-26 | 9 ott 2026 | Un ciclo tra switch produce una tempesta di broadcast; oltre una soglia di frame in viaggio la simulazione si sospende con un avviso che ne spiega la causa. Lo spanning tree arriverà in una tappa futura | Mostrare la tempesta fa capire a che cosa serve lo spanning tree; la sospensione impedisce che l'app si blocchi. L'avviso spiega la causa, in deroga a D-8, perché altrimenti sembrerebbe un difetto dell'app | Confermata, da realizzare |
 | D-27 | 9 ott 2026 | Un host risponde da solo a un ping verso il proprio indirizzo o verso 127.x.x.x, senza frame sul cavo | È il comportamento reale, e permette di spiegare il loopback e il primo controllo di ogni diagnosi | Confermata, da realizzare |
-| D-28 | 9 ott 2026 | La configurazione IP di un host è accettata o rifiutata come farebbe Windows; indirizzo e maschera vanno insieme. Gli indirizzi MAC duplicati sono sempre rifiutati. All'apertura un file viene controllato anche nella struttura | Ciò che Windows non lascia impostare non è un errore da diagnosticare: non si può fare. I MAC li assegna l'app, quindi due uguali sono un file danneggiato | Confermata, da realizzare |
+| D-28 | 9 ott 2026 | La configurazione IP di un host è accettata o rifiutata come farebbe Windows; indirizzo e maschera vanno insieme. Gli indirizzi MAC duplicati sono sempre rifiutati. All'apertura un file viene controllato anche nella struttura | Ciò che Windows non lascia impostare non è un errore da diagnosticare: non si può fare. I MAC li assegna l'app, quindi due uguali sono un file danneggiato | Confermata |
 | D-29 | 9 ott 2026 | Tra un echo request e il successivo c'è una pausa solo in tempo reale, ed è l'interfaccia a farla, non il motore | In passo-passo una pausa sarebbe un clic a vuoto; in tempo reale serve a distinguere i quattro giri. Tenerla fuori dal motore lo lascia identico nelle due modalità | Confermata, da realizzare |
 
 ## 9. Stato di avanzamento
@@ -304,10 +304,10 @@ Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dal
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · UI-3 lingua · UI-4 mouse e tastiera · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore |
+| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · UI-3 lingua · UI-4 mouse e tastiera · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
 | **Fatto in forma provvisoria** | VIS-3 tabelle aggiornate dal vivo · VIS-9 elenco degli eventi · VIS-1 pacchetti animati, senza colore per protocollo · VIS-6 indirizzi IP e MAC sempre visibili, senza porte né interruttori · SIM-5 ping da pulsante e menu, non con il mouse sulla topologia |
-| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 solo lettura delle reti di esempio · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no |
-| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · CFG-7 controlli sulla configurazione IP (oggi solo la maschera) · SIM-3 velocità · SIM-6 guasti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-16 pausa tra gli echo in tempo reale · FILE-4 controlli all'apertura (oggi solo in parte) · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · VIS-8 stato delle porte · UI-1 disposizione a pannelli · UI-2 stile grafico · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili |
+| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 solo lettura delle reti di esempio · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
+| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · SIM-3 velocità · SIM-6 guasti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-16 pausa tra gli echo in tempo reale · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · VIS-8 stato delle porte · UI-1 disposizione a pannelli · UI-2 stile grafico · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
 
@@ -326,7 +326,7 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 ### Che cosa esiste oltre ai requisiti
 
-- 99 test automatici su motore e lettura dei file.
+- 137 test automatici su motore e lettura dei file.
 - Due reti di esempio in `examples/`.
 - Una pagina provvisoria in `src/ui/`, descritta in [README.md](README.md): serve a vedere il motore funzionare, e verrà sostituita dall'interfaccia definitiva.
 
@@ -336,6 +336,5 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 | --- | --- | --- |
 | Un ciclo tra switch fa girare un broadcast all'infinito e nulla lo interrompe | D-26: sospensione oltre una soglia, con avviso | SIM-15 |
 | Un ping al proprio indirizzo conclude "host di destinazione non raggiungibile" | D-27: l'host risponde da solo | SIM-14 |
-| Un file con indirizzi IP scritti male, identificativi o MAC duplicati, campi mancanti o una porta con due cavi viene aperto lo stesso | D-28: controlli completi all'apertura | CFG-7, FILE-4 |
 
-Nessuna delle tre correzioni è ancora nel codice. I dettagli sono in [docs/motore.md](docs/motore.md) e [docs/formato-file.md](docs/formato-file.md).
+Nessuna delle due correzioni è ancora nel codice. La terza decisa il 9 ottobre, i controlli su configurazione IP e file (D-28), è stata realizzata. I dettagli sono in [docs/motore.md](docs/motore.md) e [docs/formato-file.md](docs/formato-file.md).
