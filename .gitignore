@@ -1,0 +1,34 @@
+# Dipendenze
+node_modules/
+
+# Risultato della costruzione (Vite, service worker)
+dist/
+dev-dist/
+.svelte-kit/
+*.tsbuildinfo
+
+# Test e copertura
+coverage/
+
+# Variabili d'ambiente locali
+.env
+.env.*
+!.env.example
+
+# Log
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# Impostazioni locali di Claude Code
+.claude/settings.local.json
