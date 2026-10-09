@@ -37,6 +37,7 @@ Tre funzioni fanno i calcoli sugli indirizzi:
 | `ipToNumber(ip)` | Trasforma un indirizzo nel numero a 32 bit corrispondente. Rifiuta ciò che non è un indirizzo IPv4 |
 | `isValidMask(mask)` | Dice se una subnet mask è valida: scritta in binario, tutti i bit a 1 seguiti da tutti i bit a 0 |
 | `sameNetwork(a, b, mask)` | Dice se due indirizzi hanno lo stesso indirizzo di rete. Rifiuta una maschera non valida |
+| `isLoopbackAddress(ip)` | Dice se un indirizzo è uno dei 127.x.x.x |
 
 ### Configurazione IP (`ip-config.ts`)
 
@@ -298,6 +299,8 @@ Ogni echo request si conclude con uno di quattro esiti, gli stessi che stampa il
 
 Gli ultimi due si distinguono apposta: il primo indica un problema sulla propria LAN, il secondo un problema di configurazione IP o di rotte.
 
+**Ping a se stessi (loopback).** Se la destinazione è l'host stesso, cioè il suo indirizzo oppure un qualsiasi 127.x.x.x, l'echo request non passa dalla rete: l'esito è subito "risposta" e sul cavo non esce nulla. Per gli indirizzi 127.x.x.x vale anche su un host senza configurazione IP. È il primo controllo di ogni diagnosi: se fallisce questo, il problema è nel PC e non nella rete.
+
 Durate tipiche, nella LAN di esempio con uno switch:
 
 | Caso | Durata |
@@ -307,6 +310,7 @@ Durate tipiche, nella LAN di esempio con uno switch:
 | Quattro echo request, tabelle vuote | 20 tick |
 | Quattro echo request verso un indirizzo che nessuno ha | 80 tick: ognuno ripete l'ARP e aspetta 20 tick |
 | Quattro echo request senza una strada | 0 tick: quattro esiti immediati, nessun frame |
+| Quattro echo request a se stessi | 0 tick: quattro risposte immediate, nessun frame |
 
 ### Switch
 
@@ -344,7 +348,7 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 
 ## Difetti noti, con la correzione già decisa
 
-Questi comportamenti sono nel codice di oggi ma sono sbagliati. Per ciascuno la correzione è decisa e registrata in [SPEC.md](../SPEC.md), ma non ancora realizzata.
+Questo comportamento è nel codice di oggi ma è sbagliato. La correzione è decisa e registrata in [SPEC.md](../SPEC.md), ma non ancora realizzata.
 
 ### Un ciclo tra switch non si ferma mai
 
@@ -352,15 +356,9 @@ Senza spanning tree, due switch collegati ad anello fanno girare un broadcast al
 
 **Correzione decisa** (D-26, requisito SIM-15): la tempesta avviene, ma quando i frame in viaggio superano una soglia il simulatore si sospende e lo segnala. L'avviso dirà che ci sono troppi frame in viaggio e che la causa è un ciclo tra switch: è l'unico caso in cui l'app spiega una causa, perché altrimenti sembrerebbe un suo difetto. La soglia proposta è di 200 frame, circa quattro volte il massimo di una rete senza cicli da 50 dispositivi. Lo spanning tree vero arriverà in una tappa futura.
 
-### Un ping al proprio indirizzo non funziona
-
-L'host tratta il proprio indirizzo come quello di un vicino: lo cerca con ARP, non riceve risposta e conclude "host di destinazione non raggiungibile". Un ping a 127.0.0.1 conclude invece "trasmissione non riuscita", perché l'indirizzo sembra appartenere a un'altra rete.
-
-**Correzione decisa** (D-27, requisito SIM-14): un ping al proprio indirizzo o a un indirizzo 127.x.x.x riceve risposta subito, senza che alcun frame esca sul cavo. Per 127.x.x.x vale anche su un host senza configurazione IP.
-
 ## Previsto
 
-Non ancora nel codice, oltre alle due correzioni qui sopra:
+Non ancora nel codice, oltre alla correzione qui sopra:
 
 - **Guasti** (requisiti SIM-6 e SIM-7): cavo staccato, dispositivo spento, porta spenta. Richiederanno nuovi campi nel modello e nel file.
 - **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
@@ -409,5 +407,6 @@ I file di test, uno per argomento:
 | `timers.test.ts` | Attesa della risposta ARP |
 | `ping-results.test.ts` | I quattro esiti |
 | `ping-series.test.ts` | Più echo request per ping |
+| `loopback.test.ts` | Ping al proprio indirizzo e a 127.x.x.x |
 
 I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.

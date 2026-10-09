@@ -50,6 +50,7 @@ Con le quattro richieste di Windows lo stesso ping dura venti passi: otto per la
 Altre prove possibili scrivendo l'indirizzo a mano:
 
 - `192.168.1.99`, che nessuno ha: la richiesta ARP resta senza risposta. Quando non viaggia più nulla, il passo successivo salta alla scadenza dell'attesa (20 tick): il PC rinuncia all'echo request, che finisce con "host di destinazione non raggiungibile". Con più richieste, ognuna ripete la richiesta ARP e aspetta altri 20 tick.
+- `127.0.0.1`, oppure l'indirizzo del PC che fa il ping: il PC si risponde da solo, subito, e sul cavo non passa nulla.
 - `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla e tutte le richieste finiscono subito con "trasmissione non riuscita".
 
 Ogni echo request si conclude con un esito, scritto nell'elenco degli eventi come lo scriverebbe il comando `ping`:
@@ -66,7 +67,6 @@ Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC co
 ## Limiti noti
 
 - **Venti clic per un ping completo.** Con le quattro richieste di Windows e senza avanzamento automatico, un ping nella LAN richiede venti passi. Per una dimostrazione conviene impostare una richiesta sola.
-- **Un ping al proprio indirizzo fallisce** con "host di destinazione non raggiungibile". Un PC vero si risponde da solo: la correzione è decisa, non ancora fatta.
 - **Un ciclo tra switch non si ferma.** Le reti di esempio non ne hanno; anche qui la correzione è decisa (sospensione con avviso), non ancora fatta.
 - **Le reti sono solo quelle di esempio.** Per provarne un'altra bisogna modificare un file in `examples/`.
 - **Non si può ancora provocare la "richiesta scaduta"** dalla pagina: serve un guasto, e i guasti non esistono ancora.

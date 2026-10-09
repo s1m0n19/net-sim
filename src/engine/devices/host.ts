@@ -8,6 +8,7 @@
 import {
   BROADCAST_MAC,
   ipToNumber,
+  isLoopbackAddress,
   type Ipv4Address,
   type MacAddress,
 } from "../model/addresses";
@@ -110,10 +111,12 @@ const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [], pingR
  * @param count - quanti echo request mandare in tutto
  * @returns che cosa fare per il primo echo request: inviarlo se il MAC del
  *   prossimo salto è noto, altrimenti inviare la richiesta ARP; in entrambi
- *   i casi avviare l'attesa dell'echo reply. Se l'host non ha un indirizzo
- *   IP, o se la destinazione è in un'altra rete e manca il gateway, nessun
- *   echo request può partire: il risultato contiene solo gli esiti
- *   "transmit-failed", uno per ciascuno
+ *   i casi avviare l'attesa dell'echo reply. Se la destinazione è l'host
+ *   stesso (il suo indirizzo, o un 127.x.x.x) non parte nulla e il
+ *   risultato contiene solo gli esiti "reply", uno per ciascun echo
+ *   request. Se l'host non ha un indirizzo IP, o se la destinazione è in
+ *   un'altra rete e manca il gateway, nessun echo request può partire: il
+ *   risultato contiene solo gli esiti "transmit-failed"
  * @throws Error se `targetIp` non è un indirizzo IPv4 valido, o se `count`
  *   non è un numero intero maggiore di zero
  */
@@ -129,6 +132,12 @@ export function startPing(host: Host, targetIp: Ipv4Address, count: number): Hos
 function sendEchoRequest(host: Host, targetIp: Ipv4Address, remaining: number): HostOutput {
   const echo: AwaitedEcho = { targetIp, sequence: host.nextEchoSequence, remaining };
   host.nextEchoSequence += 1;
+
+  // Un ping a se stessi non passa dalla rete: l'host si risponde da solo,
+  // subito, e sul cavo non esce nulla.
+  if (isOwnAddress(host, targetIp)) {
+    return concludeEcho(host, echo, "reply");
+  }
 
   // Senza un indirizzo, o senza una strada verso la destinazione,
   // l'echo request non può nemmeno partire.
@@ -146,6 +155,14 @@ function sendEchoRequest(host: Host, targetIp: Ipv4Address, remaining: number): 
       { delay: ECHO_TIMEOUT_TICKS, timer: { kind: "echo-timeout", sequence: echo.sequence } },
     ],
   };
+}
+
+// Dice se un indirizzo indica l'host stesso: è un indirizzo di loopback
+// (127.x.x.x), che vale anche per un host non configurato, oppure è
+// l'indirizzo dell'host.
+function isOwnAddress(host: Host, ip: Ipv4Address): boolean {
+  if (isLoopbackAddress(ip)) return true;
+  return host.ip !== null && ipToNumber(host.ip) === ipToNumber(ip);
 }
 
 // Chiude un echo request con il suo esito. Se il ping ne prevede altri,

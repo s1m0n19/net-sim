@@ -21,7 +21,7 @@ Il motore del rilascio 1 è quasi completo: host, switch di livello 2, ARP, IPv4
 
 L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. Mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
 
-Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Due difetti noti hanno la correzione già decisa ma non ancora scritta (tabella in `SPEC.md`, sezione 9; dettagli in `docs/motore.md`): un ciclo tra switch non si ferma mai (SIM-15) e un ping al proprio indirizzo fallisce (SIM-14).
+Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Un difetto noto ha la correzione già decisa ma non ancora scritta (tabella in `SPEC.md`, sezione 9; dettagli in `docs/motore.md`): un ciclo tra switch non si ferma mai (SIM-15).
 
 ## Comandi
 

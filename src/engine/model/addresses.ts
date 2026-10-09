@@ -30,6 +30,18 @@ export function ipToNumber(ip: Ipv4Address): number {
 }
 
 /**
+ * Dice se un indirizzo è di loopback, cioè uno dei 127.x.x.x: indirizzi
+ * con cui un dispositivo parla con se stesso, senza passare dalla rete.
+ *
+ * @param ip - l'indirizzo da controllare
+ * @returns true se il primo numero è 127
+ * @throws Error se il testo non è un indirizzo IPv4 valido
+ */
+export function isLoopbackAddress(ip: Ipv4Address): boolean {
+  return Math.floor(ipToNumber(ip) / 2 ** 24) === 127;
+}
+
+/**
  * Dice se un testo è una subnet mask valida: scritta in binario deve avere
  * tutti i bit a 1 (la parte di rete) seguiti da tutti i bit a 0 (la parte
  * di host), senza alternanze. È la regola della notazione CIDR.
