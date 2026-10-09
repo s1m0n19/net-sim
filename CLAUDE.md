@@ -17,7 +17,7 @@ I documenti in `docs/` sono nati prima del codice e in alcuni punti lo precedono
 
 ## Stato attuale
 
-Esiste solo lo scheletro: host, switch di livello 2 e lo scambio ARP tra gli host, in passo-passo. Mancano ICMP, timer, tempo reale, editor, salvataggio, stile grafico. Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch).
+Esiste solo lo scheletro: host, switch di livello 2, ARP e ping (un solo echo request, con ARP automatico e pacchetti in attesa), in passo-passo. Mancano timer, tempo reale, editor, salvataggio, stile grafico. Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch).
 
 ## Comandi
 

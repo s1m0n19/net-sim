@@ -1,7 +1,7 @@
 <script lang="ts">
   import twoPcFile from "../../examples/due-pc.netsim.json?raw";
   import lanFile from "../../examples/lan-switch.netsim.json?raw";
-  import { resolveAddress } from "../engine/actions";
+  import { ping } from "../engine/actions";
   import type { EthernetFrame } from "../engine/model/frames";
   import { findDevice, hostsOf, type PortRef } from "../engine/model/network";
   import { Simulator, type Trace } from "../engine/simulator";
@@ -20,10 +20,12 @@
   // da quelli della precedente, che ripartono dallo stesso numero.
   let generation = 0;
 
-  // L'azione disponibile: un host cerca il MAC di un indirizzo IP.
+  // L'azione disponibile: un host fa ping a un indirizzo IP.
+  // L'indirizzo si può scegliere dall'elenco o scrivere a mano.
   const firstHosts = hostsOf(loaded.network);
   let sourceId = $state(firstHosts[0].id);
   let targetIp = $state(firstHosts[1].ip ?? "");
+  let inputError = $state("");
 
   // Il simulatore non sa nulla di Svelte: dopo ogni comando se ne legge
   // lo stato e lo si copia in `view`, che è tutto ciò che la pagina disegna.
@@ -44,6 +46,9 @@
         mac: host.ports[0].mac,
         at: position(host.id),
         arpRows: [...host.arpTable],
+        pending: host.pendingPackets.map(
+          (p) => `${p.packet.payload.type.replace("-", " ")} per ${p.packet.dstIp}, in attesa del MAC di ${p.nextHop}`,
+        ),
       })),
       switches: sim.network.devices
         .filter((device) => device.kind === "switch")
@@ -79,10 +84,18 @@
     load(index);
     sourceId = view.hosts[0].id;
     targetIp = view.hosts[1].ip ?? "";
+    inputError = "";
   }
 
-  function resolve() {
-    sim.dispatch(resolveAddress(sourceId, targetIp));
+  function sendPing() {
+    // Un testo che non è un indirizzo non è un errore di rete: è un errore
+    // di battitura, e va detto subito.
+    try {
+      sim.dispatch(ping(sourceId, targetIp.trim()));
+      inputError = "";
+    } catch (error) {
+      inputError = error instanceof Error ? error.message : String(error);
+    }
     view = readState();
   }
 
@@ -140,18 +153,22 @@
 </p>
 
 <p>
-  <select bind:value={sourceId} aria-label="Host che fa la richiesta">
+  <select bind:value={sourceId} aria-label="Host che fa il ping">
     {#each view.hosts as host (host.id)}
       <option value={host.id}>{host.name}</option>
     {/each}
   </select>
-  cerca il MAC di
-  <select bind:value={targetIp} aria-label="Indirizzo IP cercato">
+  fa ping a
+  <input bind:value={targetIp} list="known-addresses" size="15" aria-label="Indirizzo IP di destinazione" />
+  <datalist id="known-addresses">
     {#each view.hosts as host (host.id)}
-      <option value={host.ip}>{host.ip} ({host.name})</option>
+      <option value={host.ip}>{host.name}</option>
     {/each}
-  </select>
-  <button onclick={resolve}>Invia richiesta ARP</button>
+  </datalist>
+  <button onclick={sendPing}>Ping</button>
+  {#if inputError !== ""}
+    <strong role="alert">{inputError}</strong>
+  {/if}
 </p>
 
 <p>
@@ -220,6 +237,9 @@
       </tbody>
     </table>
   {/if}
+  {#each host.pending as waiting}
+    <p>In attesa: {waiting}</p>
+  {/each}
 {/each}
 
 <h2>Eventi</h2>

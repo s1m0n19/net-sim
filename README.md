@@ -6,9 +6,9 @@ Il nome è provvisorio.
 
 ## Stato
 
-Il progetto è all'inizio. Oggi esiste solo uno **scheletro**: PC e switch, e lo scambio ARP tra i PC, da far avanzare un passo alla volta.
+Il progetto è all'inizio. Oggi esiste solo uno **scheletro**: PC e switch, con ARP e ping funzionanti, da far avanzare un passo alla volta.
 
-Mancano ancora ping, editor della rete, salvataggio e grafica curata. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
+Mancano ancora editor della rete, salvataggio, terminale e grafica curata. Un ping manda un solo echo request, e se resta senza risposta non scade. Che cosa è previsto, e in che ordine, è scritto in [SPEC.md](SPEC.md).
 
 ## Requisiti
 
@@ -36,14 +36,19 @@ La pagina offre due reti di esempio, nella rete 192.168.1.0/24:
 | Comando | Effetto |
 | --- | --- |
 | **Rete** | Sceglie la rete di esempio e la carica con le tabelle vuote |
-| ***host* cerca il MAC di *indirizzo*** | Sceglie chi fa la richiesta ARP e quale indirizzo IP cerca |
-| **Invia richiesta ARP** | L'host scelto invia la richiesta in broadcast |
+| ***host* fa ping a *indirizzo*** | Sceglie chi fa il ping e verso quale indirizzo IP. L'indirizzo si sceglie dall'elenco o si scrive a mano |
+| **Ping** | L'host scelto invia un echo request. Se non conosce il MAC della destinazione, prima parte da sola la richiesta ARP |
 | **Passo** | La rete avanza al prossimo istante in cui succede qualcosa. È disattivato quando non ci sono frame in viaggio |
 | **Ricomincia** | Ricarica la rete attuale, con le tabelle vuote |
 
-Per vedere lo scambio completo nella LAN con switch: "Invia richiesta ARP", poi quattro clic su "Passo". Lo switch inoltra la richiesta a tutti gli altri PC, risponde solo quello cercato, e la risposta torna su una sola porta.
+Per vedere un ping completo nella LAN con switch: "Ping", poi otto clic su "Passo". I primi quattro passi sono lo scambio ARP, gli altri quattro l'echo request e l'echo reply. Un secondo ping dura solo quattro passi, perché le tabelle sono già piene.
 
-Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC e l'elenco degli eventi, con il contenuto di ogni frame.
+Altre prove possibili scrivendo l'indirizzo a mano:
+
+- `192.168.1.99`, che nessuno ha: la richiesta ARP resta senza risposta e l'echo request rimane in attesa.
+- `10.0.0.5`, in un'altra rete: i PC di esempio non hanno un gateway, quindi non parte nulla.
+
+Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC con gli eventuali pacchetti in attesa, e l'elenco degli eventi con il contenuto di ogni frame.
 
 ## Comandi
 

@@ -2,7 +2,7 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** bozza. Del codice esiste solo lo scheletro (PC, switch e scambio ARP, in passo-passo).
+- **Stato:** bozza. Del codice esiste solo lo scheletro (PC, switch, ARP e ping, in passo-passo).
 - **Ultimo aggiornamento:** 9 ottobre 2026.
 - **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
 - **Documentazione tecnica:** [docs/](docs/README.md).
@@ -263,3 +263,6 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-15 | 9 ott 2026 | Identificatori in inglese, commenti e messaggi in italiano | I nomi dei campi dei protocolli sono in inglese ovunque; i commenti devono essere letti dagli studenti | Adottata |
 | D-16 | 9 ott 2026 | TypeScript fermo alla versione 6 | Lo strumento di controllo dei componenti Svelte non supporta ancora la 7 | Adottata |
 | D-17 | 9 ott 2026 | Le subnet mask devono avere i bit a 1 contigui (notazione CIDR); le altre sono rifiutate | Una maschera con bit alternati non è una configurazione sbagliata da diagnosticare: non è una maschera | Confermata |
+| D-18 | 9 ott 2026 | Un ping manda un solo echo request, finché non esistono i timer | Mandarne quattro di seguito, come Windows, richiede di attendere ogni risposta fino a una scadenza | Confermata |
+| D-19 | 9 ott 2026 | I pacchetti IP partono con TTL 128 | È il valore di Windows, coerente con il terminale degli host in stile Windows | Confermata |
+| D-20 | 9 ott 2026 | Ogni pacchetto messo in attesa fa partire una richiesta ARP; i pacchetti in attesa non scadono | Senza timer è il modo più semplice per non lasciare mai un ping in silenzio. Da rivedere con i timer | Adottata |

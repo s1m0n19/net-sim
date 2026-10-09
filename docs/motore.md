@@ -69,7 +69,8 @@ interface Host {
   gateway: Ipv4Address | null;
   // stato di esecuzione
   arpTable: Map<Ipv4Address, MacAddress>;
-  pendingPackets: Ipv4Packet[];   // in attesa della risposta ARP
+  nextEchoSequence: number;          // numero di sequenza del prossimo ping
+  pendingPackets: PendingPacket[];   // in attesa della risposta ARP, ciascuno con il suo prossimo salto
 }
 
 interface Switch {
@@ -225,6 +226,9 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Collisioni, velocità, duplex | Dipendono dal mezzo fisico | Assenti: ogni collegamento è punto-punto e senza errori |
 | Dimensione dei frame, MTU, frammentazione | Presenti | Assenti |
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
+| Ping | Windows manda quattro echo request e attende ciascuna risposta fino a una scadenza | Un solo echo request, senza scadenza (finché non esistono i timer) |
+| Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta; i pacchetti restano in attesa (finché non esistono i timer) |
+| Più pacchetti in attesa dello stesso MAC | Una sola richiesta ARP | Una richiesta ARP per ogni pacchetto |
 | Spanning tree | Elimina i cicli tra switch | Assente (vedi sotto) |
 
 ### Cicli tra switch
