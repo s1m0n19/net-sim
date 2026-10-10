@@ -4,13 +4,14 @@
   // sta ogni area: i componenti non sanno in quale posizione si trovano.
   import Palette from "./layout/Palette.svelte";
   import TopBar from "./layout/TopBar.svelte";
+  import { preferences } from "./preferences.svelte";
   import SidePanel from "./panels/SidePanel.svelte";
   import { session } from "./session.svelte";
   import BottomStrip from "./strip/BottomStrip.svelte";
   import Topology from "./topology/Topology.svelte";
 </script>
 
-<div class="shell">
+<div class="shell" class:presenting={preferences.presenting} style="--ui-scale: {preferences.scale}">
   <div class="top"><TopBar /></div>
   {#if session.error !== null}
     <div class="error" role="alert">
@@ -18,7 +19,12 @@
       <button class="btn" onclick={() => (session.error = null)}>Chiudi</button>
     </div>
   {/if}
-  <Palette />
+  <!-- In presentazione la colonna dei dispositivi non c'è. -->
+  {#if preferences.presenting}
+    <span></span>
+  {:else}
+    <Palette />
+  {/if}
   <Topology />
   <SidePanel />
   <div class="bottom"><BottomStrip /></div>
@@ -56,5 +62,22 @@
   }
   .bottom {
     grid-row: 4;
+  }
+  /* In presentazione barre, pannello e fascia si ingrandiscono. Il disegno
+     no: lì crescono i singoli elementi, e lo decide Topology. */
+  .presenting {
+    grid-template-rows: calc(46px * var(--ui-scale)) auto minmax(0, 1fr) auto;
+  }
+  .presenting > span {
+    grid-row: 3;
+  }
+  .presenting > .top,
+  .presenting > .error,
+  .presenting > .bottom,
+  .presenting > :global(aside),
+  .presenting :global(.canvas > .bar),
+  .presenting :global(.canvas > .messages),
+  .presenting :global(.canvas > .zoom) {
+    zoom: var(--ui-scale);
   }
 </style>

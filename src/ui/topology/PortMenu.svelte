@@ -1,6 +1,7 @@
 <svelte:options namespace="svg" />
 
 <script lang="ts">
+  import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import type { LinkView } from "../view";
   import { portLabelPoint } from "./geometry";
@@ -20,7 +21,7 @@
   // Il riquadro sta subito sotto il nome della porta; nella metà bassa
   // del disegno sta sopra, per non finire sotto la barra della simulazione.
   const origin = $derived.by(() => {
-    const label = portLabelPoint(link.from, link.to, end);
+    const label = portLabelPoint(link.from, link.to, end, preferences.scale);
     const bounds = session.view.bounds;
     const below = label.y < bounds.y + bounds.height / 2;
     return {

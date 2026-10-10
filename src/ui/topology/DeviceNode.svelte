@@ -111,7 +111,7 @@
   class="device"
   class:off={!device.powered}
   data-device-id={device.id}
-  transform="translate({device.x} {device.y})"
+  transform="translate({device.x} {device.y}) scale({preferences.scale})"
   role="button"
   tabindex="0"
   aria-label="{device.name}{selected ? ', selezionato' : ''}"

@@ -11,8 +11,8 @@
   const selected = $derived(session.selection?.kind === "link" && session.selection.id === link.id);
 
   // I pallini del segnale stanno sul cavo, poco fuori dal dispositivo.
-  const signalFrom = $derived(pointNear(link.from, link.to, 42));
-  const signalTo = $derived(pointNear(link.to, link.from, 42));
+  const signalFrom = $derived(pointNear(link.from, link.to, 42 * preferences.scale));
+  const signalTo = $derived(pointNear(link.to, link.from, 42 * preferences.scale));
 
   // I nomi delle due porte. Si vedono se le etichette sono accese, e
   // comunque sul cavo selezionato: è da lì che si cambia porta.
@@ -21,7 +21,7 @@
       end,
       name: end === "a" ? link.fromPort : link.toPort,
       deviceName: end === "a" ? link.fromName : link.toName,
-      at: portLabelPoint(link.from, link.to, end),
+      at: portLabelPoint(link.from, link.to, end, preferences.scale),
       open: session.portMenu?.linkId === link.id && session.portMenu.end === end,
     })),
   );
@@ -53,8 +53,8 @@
 
 {#if link.signal}
   <!-- Un pallino a ogni capo che sente il segnale. -->
-  <circle class="signal" cx={signalFrom.x} cy={signalFrom.y} r="4" />
-  <circle class="signal" cx={signalTo.x} cy={signalTo.y} r="4" />
+  <circle class="signal" cx={signalFrom.x} cy={signalFrom.y} r={4 * preferences.scale} />
+  <circle class="signal" cx={signalTo.x} cy={signalTo.y} r={4 * preferences.scale} />
 {/if}
 
 <!-- Una riga larga e invisibile sopra il cavo: lo rende facile da cliccare. -->
@@ -98,7 +98,7 @@
 <style>
   .wire {
     stroke: var(--muted);
-    stroke-width: 2.5;
+    stroke-width: calc(2.5px * var(--k, 1));
   }
   .wire.down {
     stroke: var(--down);
@@ -106,13 +106,13 @@
   }
   .selection {
     stroke: var(--accent);
-    stroke-width: 9;
+    stroke-width: calc(9px * var(--k, 1));
     stroke-linecap: round;
     opacity: 0.45;
   }
   .hit {
     stroke: transparent;
-    stroke-width: 18;
+    stroke-width: calc(18px * var(--k, 1));
     cursor: pointer;
     outline: none;
   }
@@ -122,7 +122,7 @@
   }
   .cross {
     stroke: var(--down);
-    stroke-width: 2.5;
+    stroke-width: calc(2.5px * var(--k, 1));
     stroke-linecap: round;
     fill: none;
   }
@@ -132,7 +132,7 @@
   .port {
     fill: var(--muted);
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: calc(11px * var(--k, 1));
     text-anchor: middle;
     cursor: pointer;
     outline: none;

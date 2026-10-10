@@ -329,6 +329,9 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-58 | 10 ott 2026 | La rete risulta modificata quando il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Con modifiche non salvate, Nuova, Apri e la chiusura della pagina chiedono conferma | Confrontare i file è più semplice e più giusto che contare le modifiche: annullare tutto riporta a "salvata", e il traffico non conta. La conferma evita di perdere con un clic una rete costruita in classe | Confermata |
 | D-59 | 10 ott 2026 | L'inquadratura è automatica (il foglio di base, D-49) finché l'utente non ingrandisce, sposta la vista o preme Adatta; da lì è un rettangolo fisso che cambia solo lui. Nuova torna a quella automatica | Chi costruisce una rete da zero non deve pensare alla vista; chi l'ha scelta non deve vedersela cambiare da un dispositivo posato | Confermata |
 | D-60 | 10 ott 2026 | Un file appena aperto viene inquadrato per intero, come con Adatta. Adatta lascia margine per etichette e barra della simulazione, e non ingrandisce oltre un riquadro minimo | Con il solo foglio di base le reti di esempio apparivano piccole. Senza il riquadro minimo un PC da solo riempirebbe lo schermo | Confermata |
+| D-61 | 10 ott 2026 | In presentazione l'ingrandimento è un solo fattore, regolabile dal 100% al 200% (di partenza 140%). Barre, pannello e fascia si ingrandiscono per intero; nel disegno crescono dispositivi, scritte, buste, tabelle e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete | Un fattore solo è facile da regolare guardando dal fondo dell'aula. Ingrandire gli elementi e non le distanze è ciò che rende leggibile una rete grande, che altrimenti verrebbe solo rimpicciolita dall'inquadratura | Adottata |
+| D-62 | 10 ott 2026 | In presentazione spariscono i comandi per costruire (colonna, file, annulla, etichette, Collega, Elimina, tasto Canc); restano guasti, ping, terminale, tabelle appuntate, spostamento dei dispositivi e modifica di nome e indirizzi dal pannello | Durante una dimostrazione servono i guasti e il cambio di un indirizzo (criterio di accettazione, punto 7); eliminare un dispositivo per sbaglio davanti alla classe no | Adottata |
+| D-63 | 10 ott 2026 | Le scorciatoie Spazio, Freccia destra, E e T valgono solo in presentazione, e mai mentre si scrive in una casella o nel terminale. Esc prima lascia andare un gesto a metà, poi esce | Fuori dalla presentazione quei tasti si premono per altri motivi. Così UI-14 è rispettato senza sorprese | Adottata |
 
 ## 9. Stato di avanzamento
 
@@ -337,20 +340,20 @@ Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul la
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
-| Rilascio 1 intero | circa 95% |
+| Rilascio 1 intero | circa 98%: costruito, da provare in aula |
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sette: l'ultimo, l'editor, si è chiuso con annulla e ripristina. Anche l'ottavo è fatto (Nuova, Salva, zoom e spostamento della vista); resta la modalità presentazione con le scorciatoie (passaggio 9).
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sette: l'ultimo, l'editor, si è chiuso con annulla e ripristina. Sono fatti anche l'ottavo (Nuova, Salva, zoom e spostamento della vista) e il nono (modalità presentazione e scorciatoie). Ciò che resta del rilascio 1 è la prova: in aula, su LIM o proiettore, e con reti grandi.
 
 ### Requisiti del rilascio 1
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | FILE-1 aprire e salvare · ED-3 spostare, ingrandire e scorrere · UI-13 rotella, sfondo e pulsanti dell'inquadratura · DEV-1 PC · DEV-2 switch · ED-4 rinominare ed eliminare · ED-5 annulla e ripristina · CFG-1 pannello di configurazione · CFG-7 regole di Windows, per i file e per il pannello · CFG-8 conferma del campo e maschera proposta · ED-2 cavi nuovi e scelta della porta · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
+| **Fatto** | ED-1 posare PC e switch dalla colonna · UI-8 selezione e barretta · UI-7 colore più un secondo segno · VIS-7 modalità presentazione · UI-14 scorciatoie e ingrandimento regolabile · FILE-1 aprire e salvare · ED-3 spostare, ingrandire e scorrere · UI-13 rotella, sfondo e pulsanti dell'inquadratura · DEV-1 PC · DEV-2 switch · ED-4 rinominare ed eliminare · ED-5 annulla e ripristina · CFG-1 pannello di configurazione · CFG-7 regole di Windows, per i file e per il pannello · CFG-8 conferma del campo e maschera proposta · ED-2 cavi nuovi e scelta della porta · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
 | **Fatto in parte** | VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
-| **A metà** | ED-1 si posano PC e switch dalla colonna · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no |
-| **Da fare** | VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · UI-9 · UI-14 |
+| **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
+| **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
 
@@ -359,7 +362,7 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 | Punto | Stato |
 | --- | --- |
 | 1. Aprire un file con uno switch e tre PC | Funziona nella nuova interfaccia |
-| 2. Lanciare il ping dal terminale, in modalità presentazione | Il ping dal terminale funziona; manca la modalità presentazione |
+| 2. Lanciare il ping dal terminale, in modalità presentazione | Funziona |
 | 3. Richiesta ARP in broadcast, flooding, tabella MAC | Funziona |
 | 4. PC2 risponde, PC3 scarta, le tabelle si aggiornano | Funziona |
 | 5. Echo request su una sola porta, echo reply | Funziona |
@@ -369,7 +372,7 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 ### Che cosa esiste oltre ai requisiti
 
-- 448 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
+- 463 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
 - La nuova interfaccia, al sesto dei nove passaggi (ora anche con le tabelle appuntate e il terminale degli host): apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping, provocare guasti e seguire gli eventi con un filtro.
 

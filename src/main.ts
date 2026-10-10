@@ -9,6 +9,7 @@ import { mount, tick } from "svelte";
 import App from "./ui/App.svelte";
 import { preferences } from "./ui/preferences.svelte";
 import { session } from "./ui/session.svelte";
+import { enterPresentation } from "./ui/presentation";
 import { start } from "./ui/simulation/playback";
 
 mount(App, { target: document.getElementById("app")! });
@@ -120,6 +121,9 @@ if (import.meta.env.DEV) {
         if (params.get("nascondi") === "ICMP") session.protocols.ICMP = false;
         if (params.has("pannello-chiuso")) preferences.sideOpen = false;
         if (params.has("avvia")) start();
+        // &presenta, &ingrandimento=1.8             entra in modalità presentazione
+        if (params.has("ingrandimento")) preferences.magnification = Number(params.get("ingrandimento"));
+        if (params.has("presenta")) enterPresentation();
       });
   }
 }

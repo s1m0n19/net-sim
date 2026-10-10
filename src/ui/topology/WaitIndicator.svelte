@@ -1,6 +1,7 @@
 <svelte:options namespace="svg" />
 
 <script lang="ts">
+  import { preferences } from "../preferences.svelte";
   import type { DeviceView } from "../view";
 
   // Un dispositivo che aspetta una risposta: un anello che si svuota.
@@ -11,7 +12,7 @@
   const circumference = 2 * Math.PI * RADIUS;
 </script>
 
-<g transform="translate({device.x + 34} {device.y - 30})">
+<g transform="translate({device.x + 34 * preferences.scale} {device.y - 30 * preferences.scale}) scale({preferences.scale})">
   <title>{device.name} sta aspettando una risposta</title>
   <circle class="track" r={RADIUS} />
   <circle

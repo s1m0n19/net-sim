@@ -29,8 +29,11 @@ export function pointNear(start: Point, other: Point, distance: number, sideways
  * @param from il capo `a` del cavo
  * @param to   il capo `b` del cavo
  * @param end  di quale capo si vuole l'etichetta
+ * @param scale di quanto è ingrandito il disegno: l'etichetta si allontana
+ *   dal dispositivo quanto lui cresce
  */
-export function portLabelPoint(from: Point, to: Point, end: "a" | "b"): Point {
-  const point = end === "a" ? pointNear(from, to, 62, 13) : pointNear(to, from, 62, -13);
-  return { x: point.x, y: point.y + 4 };
+export function portLabelPoint(from: Point, to: Point, end: "a" | "b", scale = 1): Point {
+  const point =
+    end === "a" ? pointNear(from, to, 62 * scale, 13 * scale) : pointNear(to, from, 62 * scale, -13 * scale);
+  return { x: point.x, y: point.y + 4 * scale };
 }

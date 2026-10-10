@@ -3,6 +3,8 @@
   import { session } from "../session.svelte";
   import SimulationBar from "../simulation/SimulationBar.svelte";
   import ActionBar, { type BarAction } from "./ActionBar.svelte";
+  import { untrack } from "svelte";
+  import { presentationKey } from "../presentation";
   import { panned, zoomed, ZOOM_STEP } from "./camera";
   import DeviceNode from "./DeviceNode.svelte";
   import LinkLine from "./LinkLine.svelte";
@@ -21,8 +23,25 @@
 
   // Dove sta ogni tabella appuntata, come rettangolo del disegno.
   const pinnedBoxes = $derived(
-    pinned.map(({ pin, device }) => ({ x: device.x + pin.dx, y: device.y + pin.dy, ...pinnedSize(device) })),
+    pinned.map(({ pin, device }) => {
+      const size = pinnedSize(device);
+      const k = preferences.scale;
+      return { x: device.x + pin.dx * k, y: device.y + pin.dy * k, width: size.width * k, height: size.height * k };
+    }),
   );
+
+  // In presentazione dispositivi e scritte si ingrandiscono: quando
+  // l'ingrandimento cambia, la rete viene inquadrata di nuovo per intero.
+  // Lo stesso vale entrando in presentazione, anche a ingrandimento 1.
+  let lastLook = "";
+  $effect(() => {
+    const scale = preferences.scale;
+    const look = `${preferences.presenting} ${scale}`;
+    if (look === lastLook) return;
+    const first = lastLook === "";
+    lastLook = look;
+    if (!first && preferences.presenting) untrack(() => session.fitView(pinnedBoxes, scale));
+  });
 
   // L'inquadratura. Se l'utente l'ha scelta, è quella. Altrimenti è
   // automatica: il foglio di base, allargato quanto serve per far stare
@@ -76,12 +95,15 @@
           run: () => session.armPing(device.id),
         });
       }
-      actions.push({
-        icon: "link",
-        label: `Collega ${device.name}: poi fai clic sull'altro dispositivo`,
-        active: session.linkFrom === device.id,
-        run: () => session.armLink(device.id),
-      });
+      // In presentazione i comandi per costruire la rete non ci sono.
+      if (!preferences.presenting) {
+        actions.push({
+          icon: "link",
+          label: `Collega ${device.name}: poi fai clic sull'altro dispositivo`,
+          active: session.linkFrom === device.id,
+          run: () => session.armLink(device.id),
+        });
+      }
       if (device.kind === "host") {
         actions.push({
           icon: "terminal",
@@ -106,8 +128,8 @@
         active: session.isPinned(device.id),
         run: () => session.togglePin(device.id),
       });
-      actions.push(removeDevice);
-      return { x: device.x, y: device.y - 42, actions };
+      if (!preferences.presenting) actions.push(removeDevice);
+      return { x: device.x, y: device.y - 42 * preferences.scale, actions };
     }
 
     if (selection.kind === "link") {
@@ -122,7 +144,9 @@
             label: link.connected ? "Stacca il cavo" : "Riattacca il cavo",
             run: () => session.toggleLink(link.id),
           },
-          { icon: "remove", label: "Elimina il cavo", run: () => session.removeSelection() },
+          ...(preferences.presenting
+            ? []
+            : [{ icon: "remove" as const, label: "Elimina il cavo", run: () => session.removeSelection() }]),
         ],
       };
     }
@@ -154,6 +178,8 @@
   }
 
   function onKey(event: KeyboardEvent) {
+    // In presentazione alcuni tasti comandano la simulazione.
+    if (presentationKey(event)) return;
     // Ctrl+Z annulla, Ctrl+Maiusc+Z o Ctrl+Y ripristina (Cmd su Mac). In
     // una casella di testo restano quelli del testo che si sta scrivendo.
     const letter = event.key.toLowerCase();
@@ -182,7 +208,7 @@
       }
       return;
     }
-    if ((event.key === "Delete" || event.key === "Backspace") && !isTyping(event)) {
+    if ((event.key === "Delete" || event.key === "Backspace") && !isTyping(event) && !preferences.presenting) {
       session.removeSelection();
     }
   }
@@ -221,6 +247,10 @@
   function zoomButton(factor: number) {
     const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
     session.camera = zoomed(bounds, factor, centre);
+  }
+
+  function fit() {
+    session.fitView(pinnedBoxes, preferences.scale);
   }
 
   // Trascinando lo sfondo si sposta la vista. Come per i dispositivi, si
@@ -294,6 +324,7 @@
   class:aiming={session.pingFrom !== null || session.cabling || session.linkFrom !== null}
   class:placing={session.placing !== null}
   class:panning
+  class:presenting={preferences.presenting}
   ondragover={onDragOver}
   ondrop={onDrop}
   role="presentation"
@@ -305,6 +336,7 @@
   <svg
     bind:this={drawing}
     viewBox="{bounds.x} {bounds.y} {bounds.width} {bounds.height}"
+    style="--k: {preferences.scale}"
     role="group"
     aria-label="Topologia della rete"
     onclick={onBackgroundClick}
@@ -386,7 +418,7 @@
   <div class="zoom" role="group" aria-label="Inquadratura">
     <button class="btn" title="Rimpicciolisci" aria-label="Rimpicciolisci" onclick={() => zoomButton(1 / ZOOM_STEP)}>−</button>
     <button class="btn" title="Ingrandisci" aria-label="Ingrandisci" onclick={() => zoomButton(ZOOM_STEP)}>+</button>
-    <button class="btn" title="Inquadra tutta la rete" onclick={() => session.fitView(pinnedBoxes)}>Adatta</button>
+    <button class="btn" title="Inquadra tutta la rete" onclick={fit}>Adatta</button>
   </div>
 
   <SimulationBar />
@@ -435,6 +467,12 @@
     bottom: 14px;
     display: flex;
     gap: 4px;
+  }
+  /* In presentazione la barra della simulazione è più larga: i pulsanti
+     salgono nell'angolo in alto, dove non la incontrano. */
+  .presenting .zoom {
+    bottom: auto;
+    top: 14px;
   }
   .zoom .btn {
     min-width: 30px;

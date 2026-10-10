@@ -243,9 +243,10 @@ class Session {
    *
    * @param extras - altri rettangoli del disegno da tenere dentro, come le
    *   tabelle appuntate
+   * @param scale - di quanto è ingrandito il disegno (in presentazione più di 1)
    */
-  fitView(extras: Bounds[] = []): void {
-    this.camera = fitted(this.view.devices, extras);
+  fitView(extras: Bounds[] = [], scale = 1): void {
+    this.camera = fitted(this.view.devices, extras, scale);
   }
 
   /**

@@ -61,16 +61,21 @@ export function panned(box: Bounds, dx: number, dy: number): Bounds {
  *
  * @param devices - le posizioni dei dispositivi
  * @param extras - altri rettangoli da tenere dentro, come le tabelle appuntate
+ * @param scale - di quanto sono ingranditi dispositivi ed etichette (in
+ *   presentazione più di 1): i margini crescono con loro
  * @returns l'inquadratura, oppure null se non c'è nulla da inquadrare
  */
-export function fitted(devices: Point[], extras: Bounds[] = []): Bounds | null {
+export function fitted(devices: Point[], extras: Bounds[] = [], scale = 1): Bounds | null {
   if (devices.length === 0) return null;
-  let left = Math.min(...devices.map((d) => d.x - FIT_MARGIN.side), ...extras.map((e) => e.x - 20));
-  let top = Math.min(...devices.map((d) => d.y - FIT_MARGIN.top), ...extras.map((e) => e.y - 20));
-  let right = Math.max(...devices.map((d) => d.x + FIT_MARGIN.side), ...extras.map((e) => e.x + e.width + 20));
-  let bottom = Math.max(...devices.map((d) => d.y + FIT_MARGIN.bottom), ...extras.map((e) => e.y + e.height + 20));
+  const margin = { side: FIT_MARGIN.side * scale, top: FIT_MARGIN.top * scale, bottom: FIT_MARGIN.bottom * scale };
+  let left = Math.min(...devices.map((d) => d.x - margin.side), ...extras.map((e) => e.x - 20));
+  let top = Math.min(...devices.map((d) => d.y - margin.top), ...extras.map((e) => e.y - 20));
+  let right = Math.max(...devices.map((d) => d.x + margin.side), ...extras.map((e) => e.x + e.width + 20));
+  let bottom = Math.max(...devices.map((d) => d.y + margin.bottom), ...extras.map((e) => e.y + e.height + 20));
 
   // Una rete piccola resta al centro di un riquadro di dimensione minima.
+  // Il riquadro minimo non cresce con l'ingrandimento: altrimenti in
+  // presentazione una rete piccola non si vedrebbe più grande.
   const missingWidth = Math.max(0, FIT_MIN.width - (right - left));
   const missingHeight = Math.max(0, FIT_MIN.height - (bottom - top));
   left -= missingWidth / 2;

@@ -64,9 +64,10 @@ Dopo i primi sei passaggi:
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
-- l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica.
+- l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica;
+- la **modalità presentazione**, con l'ingrandimento regolabile e le scorciatoie da tastiera.
 
-Presenta è visibile ma spento.
+Con questo i nove passaggi del piano sono fatti.
 
 ## File
 
@@ -297,22 +298,26 @@ Ogni riga dice che cosa è successo, non perché: "PC3 scarta ARP request", senz
 
 ## Modalità presentazione
 
-Si attiva dal pulsante Presenta e si lascia con Esc.
+Si attiva dal pulsante Presenta e si lascia con Esc o con il pulsante Esci, che ne prende il posto.
 
-- Spariscono la colonna dei dispositivi e i comandi di file, annulla ed etichette.
-- Testo, icone, buste e spessore delle linee aumentano, e la rete viene inquadrata per riempire lo spazio. Il fattore di ingrandimento è regolabile.
-- La fascia in basso parte chiusa.
-- Restano il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate.
+- **Che cosa sparisce** (D-62): la colonna dei dispositivi; nella barra in alto Nuova, Apri, Salva, annulla e le etichette; sulla barretta Collega ed Elimina. Il tasto Canc e Ctrl+S non fanno nulla.
+- **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello.
+- **Ingrandimento** (D-61): un solo fattore, di partenza 140%, regolabile dal 100% al 200% con A− e A+ nella barra in alto. Barre, pannello e fascia si ingrandiscono per intero. Nel disegno crescono dispositivi, scritte, buste, tabelle appuntate e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete. La barretta delle azioni non cresce.
+- **Inquadratura**: entrando, e a ogni cambio di ingrandimento, la rete viene inquadrata per intero. I pulsanti −, + e Adatta salgono nell'angolo in alto a destra del disegno, perché in basso la barra della simulazione è più larga.
+- **La fascia in basso parte chiusa.**
+- **All'uscita** fascia e inquadratura tornano com'erano prima di entrare.
 
-Scorciatoie da tastiera, per condurre la dimostrazione senza cercare i pulsanti:
+Lo schermo intero resta quello del browser (F11): l'app non lo chiede da sola.
+
+Scorciatoie da tastiera, per condurre la dimostrazione senza cercare i pulsanti (D-63). Valgono solo in presentazione, e non mentre si scrive in una casella o nel terminale:
 
 | Tasto | Effetto |
 | --- | --- |
-| Spazio | Avvia o mette in pausa |
+| Spazio | Avvia o mette in pausa. Su un pulsante o su un dispositivo con il fuoco resta un clic |
 | Freccia destra | Un passo |
-| E | Apre o chiude la scheda Eventi |
-| T | Apre o chiude i terminali |
-| Esc | Esce dalla presentazione |
+| E | Apre la fascia sulla scheda Eventi; se è già lì, la chiude |
+| T | Apre la fascia sul terminale in primo piano, o sull'ultimo aperto; se è già lì, la chiude. Senza terminali aperti, apre quello del PC selezionato |
+| Esc | Lascia andare un gesto a metà (ping da puntare, elenco delle porte); altrimenti esce dalla presentazione |
 
 ## Aspetto
 
@@ -361,7 +366,8 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `preferences.svelte.ts` | Ciò che riguarda solo chi guarda: tema, etichette accese, pannelli aperti |
 | `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
-| `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
+| `layout/` | Barra in alto e colonna dei dispositivi |
+| `presentation.ts` | Modalità presentazione: entrare, uscire, scorciatoie. L'ingrandimento sta in `preferences` |
 | `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi, pulsanti dell'inquadratura. `camera.ts` e `geometry.ts` contengono i calcoli, senza schermo |
 | `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
@@ -394,6 +400,6 @@ Nove passaggi, ciascuno verificabile da solo nel browser.
 | 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
 | 7 | **Fatto.** Editor: azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta; nome e configurazione dal pannello; annulla e ripristina | Si costruisce una rete da zero |
 | 8 | **Fatto.** Nuova, Salva e Salva con nome; zoom, spostamento della vista e Adatta | Si prepara una rete a casa e la si riapre in aula |
-| 9 | Modalità presentazione e scorciatoie | Il rilascio 1 è completo |
+| 9 | **Fatto.** Modalità presentazione e scorciatoie | Il rilascio 1 è completo |
 
 Dopo il passaggio 3 l'app è già proiettabile per la lezione su ARP e ping, su una rete preparata come file.

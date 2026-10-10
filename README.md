@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti otto. Oggi apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Manca ancora la modalità presentazione.
+L'interfaccia del rilascio 1 è costruita: tutti e nove i passaggi previsti sono fatti, e resta da provarla in aula. Oggi apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Con Presenta si proietta in aula.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -52,6 +52,20 @@ Selezionato un dispositivo, nel pannello a destra si cambiano il **nome** e, per
 - Cambiare la configurazione di un PC ne svuota la tabella ARP, come riavviare la scheda di rete.
 
 **Muoversi sul disegno.** La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore; trascinando lo sfondo si sposta la vista. Nell'angolo in basso a destra del disegno ci sono **−**, **+** e **Adatta**, che inquadra tutta la rete. Un file appena aperto viene inquadrato per intero.
+
+**Presentare.** **Presenta**, in alto a destra, prepara la schermata per il proiettore: spariscono la colonna dei dispositivi e i comandi di file, annulla, etichette ed eliminazione; testo, icone, buste e linee si ingrandiscono; la rete viene inquadrata per intero e la fascia in basso si chiude. Con **A−** e **A+** regoli l'ingrandimento dal 100% al 200%, guardando dal fondo dell'aula. Si esce con **Esci** o con Esc, e fascia e inquadratura tornano com'erano.
+
+In presentazione la simulazione si comanda anche da tastiera:
+
+| Tasto | Effetto |
+| --- | --- |
+| Spazio | Avvia o mette in pausa |
+| Freccia destra | Un passo |
+| E | Apre o chiude la scheda Eventi |
+| T | Apre o chiude i terminali; se non ce ne sono, apre quello del PC selezionato |
+| Esc | Esce dalla presentazione |
+
+Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannello restano disponibili. Per lo schermo intero usa il comando del browser (F11).
 
 **Salvare.** **Salva**, o Ctrl+S (Cmd+S su Mac), scrive la rete in un file `.netsim.json`: dispositivi, cavi, indirizzi, posizioni e guasti. Tabelle e pacchetti in viaggio non si salvano: una rete riaperta è una rete appena accesa.
 
@@ -119,7 +133,7 @@ I messaggi sono in inglese. L'output di `ping` cresce mentre la simulazione avan
 
 I pacchetti sono buste colorate con la sigla sopra: ambra per ARP, viola per ICMP. Quando non viaggia nulla e un PC sta aspettando una risposta che non arriva, accanto a lui compare un anello con una clessidra che si svuota in due o tre secondi; poi il tempo salta alla scadenza.
 
-Presenta e le voci Router e Server della colonna si vedono ma non sono ancora attivi.
+Le voci Router e Server della colonna si vedono ma non sono ancora attive.
 
 Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una certa situazione. Nel sito pubblicato queste scorciatoie non esistono.
 

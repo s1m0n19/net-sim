@@ -1,6 +1,7 @@
 <svelte:options namespace="svg" />
 
 <script lang="ts">
+  import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import type { PacketView } from "../view";
 
@@ -19,8 +20,10 @@
     const dx = packet.to.x - packet.from.x;
     const dy = packet.to.y - packet.from.y;
     const length = Math.hypot(dx, dy) || 1;
-    const travel = Math.max(0, length - 2 * EDGE);
-    const distance = EDGE + travel * progress;
+    // Con i dispositivi ingranditi, anche i loro bordi sono più lontani.
+    const edge = EDGE * preferences.scale;
+    const travel = Math.max(0, length - 2 * edge);
+    const distance = edge + travel * progress;
     return { x: packet.from.x + (dx / length) * distance, y: packet.from.y + (dy / length) * distance };
   });
 
@@ -45,7 +48,7 @@
   class="packet"
   class:arp={packet.protocol === "ARP"}
   class:icmp={packet.protocol === "ICMP"}
-  transform="translate({position.x} {position.y})"
+  transform="translate({position.x} {position.y}) scale({preferences.scale})"
   role="button"
   tabindex="0"
   aria-label="{packet.description}, da {packet.fromName} a {packet.toName}{selected ? ', selezionato' : ''}"

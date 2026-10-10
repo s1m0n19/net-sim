@@ -31,6 +31,7 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import { preferences } from "../preferences.svelte";
   import { session, type Pin } from "../session.svelte";
 
   // Una tabella tenuta in vista sul disegno, accanto al suo dispositivo.
@@ -39,14 +40,17 @@
 
   const rows = $derived(rowsOf(device));
   const size = $derived(pinnedSize(device));
-  const x = $derived(device.x + pin.dx);
-  const y = $derived(device.y + pin.dy);
+  // In presentazione tutto è ingrandito: il riquadro, e la sua distanza
+  // dal dispositivo, che è cresciuto anche lui.
+  const k = $derived(preferences.scale);
+  const x = $derived(device.x + pin.dx * k);
+  const y = $derived(device.y + pin.dy * k);
 
   // La linea che lega il riquadro al dispositivo arriva al punto del bordo
   // più vicino.
   const anchor = $derived({
-    x: Math.min(Math.max(device.x, x), x + size.width),
-    y: Math.min(Math.max(device.y, y), y + size.height),
+    x: Math.min(Math.max(device.x, x), x + size.width * k),
+    y: Math.min(Math.max(device.y, y), y + size.height * k),
   });
 
   // Dalla parte del dispositivo la linea non parte dal centro: comincia
@@ -56,7 +60,7 @@
     const dy = anchor.y - device.y;
     const length = Math.hypot(dx, dy);
     const goesDown = dy > 0 && Math.abs(dy) >= Math.abs(dx);
-    const clearance = goesDown ? (device.kind === "host" ? 72 : 54) : 40;
+    const clearance = (goesDown ? (device.kind === "host" ? 72 : 54) : 40) * k;
     if (length <= clearance) return anchor; // il riquadro è già vicino: nessuna linea
     return { x: device.x + (dx / length) * clearance, y: device.y + (dy / length) * clearance };
   });
@@ -102,8 +106,8 @@
     if (drag === null) return;
     session.movePin(
       device.id,
-      drag.dx + (event.clientX - drag.startX) / drag.scale,
-      drag.dy + (event.clientY - drag.startY) / drag.scale,
+      drag.dx + (event.clientX - drag.startX) / (drag.scale * k),
+      drag.dy + (event.clientY - drag.startY) / (drag.scale * k),
     );
   }
 
@@ -125,7 +129,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <g
   class="table"
-  transform="translate({x} {y})"
+  transform="translate({x} {y}) scale({k})"
   onpointerdown={down}
   onpointermove={move}
   onpointerup={up}

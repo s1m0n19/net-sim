@@ -6,6 +6,7 @@
     type FileHandle,
   } from "../../storage/browser-files";
   import { preferences } from "../preferences.svelte";
+  import { enterPresentation, exitPresentation } from "../presentation";
   import { FILE_EXTENSION, session } from "../session.svelte";
 
   // Il file su disco da cui viene la rete, quando il browser lo lascia
@@ -55,6 +56,8 @@
   }
 
   function onKey(event: KeyboardEvent) {
+    // In presentazione i comandi di file non ci sono, nemmeno da tastiera.
+    if (preferences.presenting) return;
     // Ctrl+S (Cmd+S su Mac) salva, invece di salvare la pagina; con
     // Maiusc, salva con nome.
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
@@ -75,12 +78,14 @@
 <header>
   <span class="name">net-sim</span>
 
-  <button class="btn" onclick={startNew}>Nuova</button>
-  <button class="btn" onclick={open}>Apri</button>
-  <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un file (Ctrl+S)" onclick={() => save()}>Salva</button>
-  <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un altro file (Ctrl+Maiusc+S)" onclick={() => save(true)}>Salva con nome</button>
-  <button class="btn" disabled={!session.canUndo} title="Annulla l'ultima modifica (Ctrl+Z)" aria-label="Annulla" onclick={() => session.undo()}>↶</button>
-  <button class="btn" disabled={!session.canRedo} title="Ripristina la modifica annullata (Ctrl+Maiusc+Z)" aria-label="Ripristina" onclick={() => session.redo()}>↷</button>
+  {#if !preferences.presenting}
+    <button class="btn" onclick={startNew}>Nuova</button>
+    <button class="btn" onclick={open}>Apri</button>
+    <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un file (Ctrl+S)" onclick={() => save()}>Salva</button>
+    <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un altro file (Ctrl+Maiusc+S)" onclick={() => save(true)}>Salva con nome</button>
+    <button class="btn" disabled={!session.canUndo} title="Annulla l'ultima modifica (Ctrl+Z)" aria-label="Annulla" onclick={() => session.undo()}>↶</button>
+    <button class="btn" disabled={!session.canRedo} title="Ripristina la modifica annullata (Ctrl+Maiusc+Z)" aria-label="Ripristina" onclick={() => session.redo()}>↷</button>
+  {/if}
 
   {#if session.fileName !== null}
     <span class="file mono">{session.fileName}</span>
@@ -93,13 +98,25 @@
 
   <span class="spacer"></span>
 
-  <span class="label">Etichette</span>
-  <button class="btn" class:on={preferences.labels.ip} aria-pressed={preferences.labels.ip} onclick={() => (preferences.labels.ip = !preferences.labels.ip)}>IP</button>
-  <button class="btn" class:on={preferences.labels.mac} aria-pressed={preferences.labels.mac} onclick={() => (preferences.labels.mac = !preferences.labels.mac)}>MAC</button>
-  <button class="btn" class:on={preferences.labels.ports} aria-pressed={preferences.labels.ports} onclick={() => (preferences.labels.ports = !preferences.labels.ports)}>Porte</button>
+  {#if preferences.presenting}
+    <!-- Quanto ingrandire tutto, da regolare guardando dal fondo dell'aula. -->
+    <span class="label">Ingrandimento</span>
+    <button class="btn" title="Rimpicciolisci testo e disegno" aria-label="Rimpicciolisci testo e disegno" disabled={preferences.magnification <= 1} onclick={() => preferences.magnify(-1)}>A−</button>
+    <span class="mono">{Math.round(preferences.magnification * 100)}%</span>
+    <button class="btn" title="Ingrandisci testo e disegno" aria-label="Ingrandisci testo e disegno" disabled={preferences.magnification >= 2} onclick={() => preferences.magnify(1)}>A+</button>
+  {:else}
+    <span class="label">Etichette</span>
+    <button class="btn" class:on={preferences.labels.ip} aria-pressed={preferences.labels.ip} onclick={() => (preferences.labels.ip = !preferences.labels.ip)}>IP</button>
+    <button class="btn" class:on={preferences.labels.mac} aria-pressed={preferences.labels.mac} onclick={() => (preferences.labels.mac = !preferences.labels.mac)}>MAC</button>
+    <button class="btn" class:on={preferences.labels.ports} aria-pressed={preferences.labels.ports} onclick={() => (preferences.labels.ports = !preferences.labels.ports)}>Porte</button>
+  {/if}
 
   <button class="btn" onclick={() => preferences.toggleTheme()}>Tema</button>
-  <button class="btn primary" disabled title="Non ancora disponibile">Presenta</button>
+  {#if preferences.presenting}
+    <button class="btn primary" title="Esci dalla presentazione (Esc)" onclick={exitPresentation}>Esci</button>
+  {:else}
+    <button class="btn primary" title="Modalità presentazione: per proiettare in aula" onclick={enterPresentation}>Presenta</button>
+  {/if}
 </header>
 
 <style>
