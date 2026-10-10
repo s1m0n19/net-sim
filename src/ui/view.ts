@@ -7,14 +7,7 @@
 
 import { maskToPrefix } from "../engine/model/addresses";
 import type { EthernetFrame } from "../engine/model/frames";
-import {
-  findDevice,
-  findLink,
-  linkCarriesSignal,
-  otherEndOf,
-  type Device,
-  type Network,
-} from "../engine/model/network";
+import { linkCarriesSignal, otherEndOf, type Device, type Network } from "../engine/model/network";
 import type { Conversation, Simulator, Trace } from "../engine/simulator";
 import type { Position } from "../storage/load";
 
@@ -204,8 +197,8 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     id: link.id,
     from: at(link.a.deviceId),
     to: at(link.b.deviceId),
-    fromName: findDevice(network, link.a.deviceId).name,
-    toName: findDevice(network, link.b.deviceId).name,
+    fromName: nameOf(network, link.a.deviceId),
+    toName: nameOf(network, link.b.deviceId),
     fromPort: link.a.portName,
     toPort: link.b.portName,
     connected: link.connected,
@@ -260,8 +253,18 @@ export function describeFrame(frame: EthernetFrame): string {
   return `ICMP ${frame.payload.payload.type.replace("-", " ")}`;
 }
 
+// Il nome di un dispositivo. L'elenco degli eventi parla anche di
+// dispositivi che nel frattempo sono stati tolti dalla rete: di quelli
+// resta solo l'identificativo.
 function nameOf(network: Network, deviceId: string): string {
-  return findDevice(network, deviceId).name;
+  return network.devices.find((device) => device.id === deviceId)?.name ?? `${deviceId} (eliminato)`;
+}
+
+// I due dispositivi collegati da un cavo, per nome: "PC1 e SW1".
+function endsOf(network: Network, linkId: string): string {
+  const link = network.links.find((l) => l.id === linkId);
+  if (link === undefined) return "due dispositivi (cavo eliminato)";
+  return `${nameOf(network, link.a.deviceId)} e ${nameOf(network, link.b.deviceId)}`;
 }
 
 function detailsOf(id: number, frame: EthernetFrame, fromName: string, toName: string): PacketDetails {
@@ -294,7 +297,8 @@ function describeTrace(network: Network, trace: Trace, index: number): EventView
   const row = (deviceId: string | null, text: string, extra: Partial<EventView> = {}): EventView => ({
     index,
     time: trace.time,
-    deviceId,
+    // Una riga non può rimandare a un dispositivo che non c'è più.
+    deviceId: network.devices.some((device) => device.id === deviceId) ? deviceId : null,
     deviceName: deviceId === null ? "" : nameOf(network, deviceId),
     text,
     protocol: null,
@@ -333,11 +337,20 @@ function describeTrace(network: Network, trace: Trace, index: number): EventView
       return row(trace.deviceId, OUTCOMES[trace.outcome](trace.targetIp), { protocol: "ICMP" });
     case "power-changed":
       return row(trace.deviceId, trace.powered ? "viene acceso" : "viene spento");
-    case "link-changed": {
-      const link = findLink(network, trace.linkId);
-      const ends = `${nameOf(network, link.a.deviceId)} e ${nameOf(network, link.b.deviceId)}`;
-      return row(null, `cavo tra ${ends} ${trace.connected ? "riattaccato" : "staccato"}`);
-    }
+    case "link-changed":
+      return row(null, `cavo tra ${endsOf(network, trace.linkId)} ${trace.connected ? "riattaccato" : "staccato"}`);
+    case "device-added":
+      return row(trace.deviceId, "viene aggiunto alla rete");
+    case "device-removed":
+      return row(null, `${trace.name} viene tolto dalla rete`);
+    case "link-added":
+      return row(null, `nuovo cavo tra ${endsOf(network, trace.linkId)}`);
+    case "link-removed":
+      return row(null, `cavo tra ${trace.between[0]} e ${trace.between[1]} tolto`);
+    case "device-renamed":
+      return row(trace.deviceId, `cambia nome: prima era ${trace.from}`);
+    case "host-configured":
+      return row(trace.deviceId, "cambia configurazione IP");
     case "simulation-suspended":
       return row(null, "simulazione sospesa: tempesta di broadcast");
   }

@@ -56,7 +56,7 @@ Tutto il resto resta ammesso anche se sbagliato per quella rete: indirizzi dupli
 
 Oggi la funzione è usata dal lettore dei file. La userà anche il pannello di configurazione, quando esisterà.
 
-Gli indirizzi MAC non sono generati dal motore: oggi arrivano dal file di rete.
+Gli indirizzi MAC di una rete aperta da file arrivano dal file; quelli di un dispositivo nuovo li sceglie il motore (vedi "Modificare la rete").
 
 ### Rete, dispositivi, collegamenti (`network.ts`)
 
@@ -217,6 +217,12 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
 | `disconnectLink(linkId)`, `connectLink(linkId)` | Stacca o riattacca un cavo |
 | `powerOff(deviceId)`, `powerOn(deviceId)` | Spegne o accende un dispositivo |
+| `addHost()`, `addSwitch(portCount)` | Aggiunge un PC, o uno switch con quel numero di porte |
+| `removeDevice(deviceId)` | Toglie un dispositivo, con i cavi che gli erano attaccati |
+| `addLink(a, b)`, `removeLink(linkId)` | Collega due porte con un cavo nuovo, o toglie un cavo |
+| `moveLinkEnd(linkId, end, portName)` | Sposta un capo di un cavo su un'altra porta dello stesso dispositivo |
+| `renameDevice(deviceId, name)` | Cambia il nome di un dispositivo |
+| `configureHost(deviceId, config)` | Cambia indirizzo, maschera e gateway di un host |
 
 Un ping rivolto a uno switch o lanciato da un host spento, e qualsiasi azione su un dispositivo o un collegamento inesistente, vengono rifiutati con un errore. Così anche qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
 
@@ -236,6 +242,7 @@ Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` r
 | `link-changed` | Un cavo è stato staccato o riattaccato |
 | `power-changed` | Un dispositivo è stato spento o acceso |
 | `simulation-suspended` | Il simulatore si è fermato per una tempesta di broadcast. Contiene quanti frame erano in viaggio |
+| `device-added`, `device-removed`, `link-added`, `link-removed`, `device-renamed`, `host-configured` | La rete è stata modificata. Le tracce di ciò che è stato tolto ne portano il nome, perché dopo non lo si può più leggere dalla rete |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
 
@@ -402,6 +409,47 @@ I guasti fanno parte della configurazione: un file può contenere un dispositivo
 
 *Previsto:* porta spenta (requisito SIM-7, rilascio 2).
 
+## Modificare la rete
+
+Le modifiche stanno in `src/engine/editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. Il simulatore le chiama e poi tiene in ordine la simulazione.
+
+### Ciò che il motore sceglie da solo
+
+Chi aggiunge un dispositivo dice solo che cosa vuole: un PC, oppure uno switch con un certo numero di porte. Il resto lo sceglie il motore, sempre allo stesso modo:
+
+| Che cosa | Come viene scelto | Esempio |
+| --- | --- | --- |
+| Identificativo | Il primo libero della serie | `d1`, `d2` per gli host; `s1` per gli switch; `l1` per i cavi |
+| Nome | Il primo libero della serie | `PC1`, `PC2`; `SW1` |
+| Porte | Una per un PC, numerate per uno switch | `Fa0`; `Fa0/1` … `Fa0/24` |
+| Indirizzi MAC | I primi non ancora usati nella rete | `02:00:00:00:00:01`, `02:00:00:00:00:02` |
+
+I MAC cominciano per `02`, il prefisso degli indirizzi assegnati localmente e non da un produttore. Un nome liberato da un dispositivo eliminato viene riusato.
+
+Un PC nuovo nasce acceso, senza cavi e senza configurazione IP.
+
+### Che cosa viene rifiutato
+
+| Modifica | Rifiutata se |
+| --- | --- |
+| Aggiungere un cavo | Una porta non esiste, è già occupata, o i due capi sono la stessa porta |
+| Spostare un capo | La nuova porta non esiste o è occupata |
+| Rinominare | Il nome è vuoto, o un altro dispositivo si chiama già così (senza distinguere maiuscole e minuscole) |
+| Configurare un host | La configurazione non supera `checkIpConfig`, o il dispositivo è uno switch |
+
+Una modifica rifiutata non cambia nulla: la rete resta com'era.
+
+### Che cosa succede alla simulazione
+
+Si può modificare la rete mentre il traffico viaggia.
+
+- **Togliere un cavo**, o spostarne un capo: i frame che ci stavano viaggiando vanno persi.
+- **Togliere un dispositivo**: vanno persi i frame da lui e verso di lui, spariscono le sue attese e i suoi cavi. Un ping che aveva in corso finisce lì, senza esito.
+- **Configurare un host**: l'host riparte da capo, come dopo un riavvio della scheda. Dimentica la tabella ARP e ciò che stava aspettando. Gli altri host invece ricordano ancora il suo vecchio indirizzo: un ping verso quello parte, arriva, e viene scartato.
+- Dopo ogni modifica ogni dispositivo torna a sapere quali cavi ha: gli host se sentono il segnale, gli switch quali MAC dimenticare.
+
+A simulazione sospesa le modifiche sono rifiutate, come ogni altra azione.
+
 ## Tempesta di broadcast
 
 Senza spanning tree, un ciclo tra switch fa girare un broadcast all'infinito: ogni switch lo inoltra al successivo, che lo inoltra al successivo, fino a tornare al primo. È ciò che accade davvero, e il motore lo lascia accadere, perché vederlo fa capire a che cosa serve lo spanning tree. Poi però si ferma da solo, altrimenti la simulazione non finirebbe mai.
@@ -432,7 +480,6 @@ Non ancora nel codice:
 
 - **Porta spenta** (requisito SIM-7, rilascio 2).
 - **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
-- **Azioni di modifica della rete**: aggiungere, togliere, collegare, configurare.
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
 - **Router**, con più porte ciascuna con il proprio indirizzo, tabella di routing e decremento del TTL (rilascio 2).
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
@@ -481,5 +528,6 @@ I file di test, uno per argomento:
 | `storm.test.ts` | Tempesta di broadcast e sospensione |
 | `link-faults.test.ts` | Cavo staccato |
 | `power-faults.test.ts` | Dispositivo spento |
+| `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
 
 I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.

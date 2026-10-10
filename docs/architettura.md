@@ -46,12 +46,12 @@ In pratica, dentro `src/engine/` sono vietati `document`, `window`, `setTimeout`
 
 ## Come comunicano le due parti
 
-1. L'interfaccia invia al motore un'**azione** con `Simulator.dispatch()`. Oggi le azioni sono due: `ping` (un host fa ping a un indirizzo, con un certo numero di echo request) e `resolve-address` (un host lancia una richiesta ARP; serve ai test, non è nella pagina).
+1. L'interfaccia invia al motore un'**azione** con `Simulator.dispatch()`. Le azioni sono di tre tipi: traffico (`ping`, più `resolve-address` che serve solo ai test), guasti (staccare un cavo, spegnere un dispositivo) e modifiche alla rete.
 2. L'interfaccia fa avanzare il tempo con `Simulator.step()`.
 3. Entrambe le chiamate restituiscono le **tracce** di ciò che è successo: frame inviati, ricevuti e scartati, tabelle cambiate, pacchetti a cui un host ha rinunciato, esiti dei ping.
 4. L'interfaccia legge lo stato del simulatore e lo copia in una propria variabile, che è ciò che la pagina disegna. Non osserva il simulatore e non ne modifica mai lo stato direttamente.
 
-*Previsto:* le azioni di modifica della rete (aggiungere un dispositivo, collegare due porte, cambiare un indirizzo). Pannello grafico e CLI passeranno dalle stesse azioni, ed è questo che li terrà sincronizzati (requisito CFG-5).
+Anche le modifiche alla rete sono azioni: aggiungere un dispositivo, collegare due porte, cambiare un indirizzo. Oggi esistono nel motore, ma l'interfaccia non le usa ancora. Pannello grafico e CLI passeranno dalle stesse azioni, ed è questo che li terrà sincronizzati (requisito CFG-5).
 
 ## Struttura delle cartelle
 
@@ -69,6 +69,7 @@ net-sim/
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
 │   │   ├── devices/           host.ts, switch.ts
 │   │   ├── simulator.ts       coda degli eventi, tempo, tracce
+│   │   ├── editing.ts         modifiche alla rete: aggiungere, togliere, collegare, configurare
 │   │   └── actions.ts         le azioni accettate dal motore
 │   ├── storage/
 │   │   └── load.ts            lettura dei file di rete

@@ -82,6 +82,10 @@ Ogni dispositivo ha una parte di configurazione (indirizzi, porte, salvati nel f
 
 La configurazione IP di un host si controlla con `checkIpConfig` (`model/ip-config.ts`), che applica le regole di Windows. Oggi la usa il lettore dei file; qualsiasi futuro punto di ingresso della configurazione (pannello, CLI) deve passare da lì.
 
+### Modificare la rete
+
+Aggiungere e togliere dispositivi e cavi, rinominare, configurare: sono azioni come le altre. La logica sta in `src/engine/editing.ts`, che cambia solo la configurazione; `Simulator.edit` la chiama e poi sistema la simulazione (frame persi, attese tolte, segnale ricalcolato). Identificativi, nomi e MAC dei dispositivi nuovi li sceglie il motore. Chi mostra le tracce non può dare per scontato che un dispositivo o un cavo citato esista ancora.
+
 ### Aggiungere un protocollo o un dispositivo
 
 L'ordine previsto in `docs/motore.md`: tipo dell'unità dati in `model/`, comportamento in un nuovo file di `protocols/`, collegamento ai dispositivi in `devices/`, test in `tests/engine/`, aggiornamento della tabella delle semplificazioni in `docs/motore.md`.

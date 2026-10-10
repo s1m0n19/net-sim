@@ -5,6 +5,7 @@
 // scade") e a ogni passo salta al prossimo istante in cui succede qualcosa.
 
 import type { Action } from "./actions";
+import * as editing from "./editing";
 import {
   receiveFrame,
   sameTimer,
@@ -147,6 +148,14 @@ export type Trace =
     }
   | { time: number; kind: "link-changed"; linkId: string; connected: boolean }
   | { time: number; kind: "power-changed"; deviceId: string; powered: boolean }
+  // La rete è stata modificata. Le tracce di ciò che è stato tolto ne
+  // portano il nome, perché dopo non lo si può più andare a leggere.
+  | { time: number; kind: "device-added"; deviceId: string }
+  | { time: number; kind: "device-removed"; deviceId: string; name: string }
+  | { time: number; kind: "link-added"; linkId: string }
+  | { time: number; kind: "link-removed"; linkId: string; between: [string, string] }
+  | { time: number; kind: "device-renamed"; deviceId: string; from: string }
+  | { time: number; kind: "host-configured"; deviceId: string }
   | {
       // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
       time: number;
@@ -214,9 +223,86 @@ export class Simulator {
       case "set-device-powered":
         this.setDevicePowered(findDevice(this.network, action.deviceId), action.powered, produced);
         break;
+      default:
+        this.edit(action, produced);
     }
     this.traces.push(...produced);
     return produced;
+  }
+
+  // Esegue una modifica alla rete e tiene in ordine la simulazione: ciò
+  // che viaggiava su un cavo tolto va perso, chi cambia configurazione
+  // riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
+  private edit(action: Exclude<Action, { kind: "ping" | "resolve-address" | "set-link-connected" | "set-device-powered" }>, produced: Trace[]): void {
+    const time = this.time;
+    switch (action.kind) {
+      case "add-device": {
+        const device = editing.addDevice(this.network, action.template);
+        produced.push({ time, kind: "device-added", deviceId: device.id });
+        break;
+      }
+      case "remove-device": {
+        const { name } = findDevice(this.network, action.deviceId);
+        // Prima si perdono i frame, finché i cavi ci sono ancora.
+        this.loseFrames(
+          (arrival) => arrival.to.deviceId === action.deviceId || arrival.from.deviceId === action.deviceId,
+          produced,
+        );
+        this.forgetTimersOf(action.deviceId);
+        const links = editing.removeDevice(this.network, action.deviceId);
+        for (const link of links) {
+          produced.push({ time, kind: "link-removed", linkId: link.id, between: this.namesAt(link, action.deviceId, name) });
+        }
+        produced.push({ time, kind: "device-removed", deviceId: action.deviceId, name });
+        break;
+      }
+      case "add-link": {
+        const link = editing.addLink(this.network, action.a, action.b);
+        produced.push({ time, kind: "link-added", linkId: link.id });
+        break;
+      }
+      case "remove-link": {
+        const link = findLink(this.network, action.linkId);
+        this.loseFramesOn(link, produced);
+        editing.removeLink(this.network, action.linkId);
+        produced.push({ time, kind: "link-removed", linkId: link.id, between: this.namesAt(link) });
+        break;
+      }
+      case "move-link-end": {
+        // Spostare un capo vuol dire staccarlo e riattaccarlo altrove.
+        this.loseFramesOn(findLink(this.network, action.linkId), produced);
+        editing.moveLinkEnd(this.network, action.linkId, action.end, action.portName);
+        break;
+      }
+      case "rename-device": {
+        const from = findDevice(this.network, action.deviceId).name;
+        editing.renameDevice(this.network, action.deviceId, action.name);
+        produced.push({ time, kind: "device-renamed", deviceId: action.deviceId, from });
+        break;
+      }
+      case "configure-host": {
+        const host = editing.configureHost(this.network, action.deviceId, action.config);
+        // Con un indirizzo nuovo, ciò che l'host sapeva e aspettava non vale più.
+        this.forgetTimersOf(host.id);
+        clearRuntimeState(host);
+        produced.push({ time, kind: "host-configured", deviceId: host.id });
+        break;
+      }
+    }
+    this.refreshLinkState(produced);
+  }
+
+  // I nomi dei dispositivi ai due capi di un cavo. Se uno dei due è appena
+  // stato tolto dalla rete, il suo nome va passato a parte.
+  private namesAt(link: Link, removedId?: string, removedName?: string): [string, string] {
+    const nameOf = (deviceId: string) =>
+      deviceId === removedId ? (removedName ?? "") : findDevice(this.network, deviceId).name;
+    return [nameOf(link.a.deviceId), nameOf(link.b.deviceId)];
+  }
+
+  // Toglie dalla coda tutte le attese di un dispositivo.
+  private forgetTimersOf(deviceId: string): void {
+    this.queue = this.queue.filter((event) => !(event.kind === "timer" && event.deviceId === deviceId));
   }
 
   // Esegue un'azione che riguarda un host: ping o richiesta ARP.
@@ -287,9 +373,7 @@ export class Simulator {
       // Un dispositivo spento non riceve più nulla, non aspetta più nulla
       // e dimentica tutto ciò che aveva imparato.
       this.loseFrames((arrival) => arrival.to.deviceId === device.id, produced);
-      this.queue = this.queue.filter(
-        (event) => !(event.kind === "timer" && event.deviceId === device.id),
-      );
+      this.forgetTimersOf(device.id);
       clearRuntimeState(device);
     }
     this.refreshLinkState(produced);

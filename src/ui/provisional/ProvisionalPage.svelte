@@ -183,6 +183,8 @@
         return `${findDevice(sim.network, trace.deviceId).name} ${trace.powered ? "acceso" : "spento"}`;
       case "link-changed":
         return `Cavo ${trace.linkId} ${trace.connected ? "riattaccato" : "staccato"}`;
+      default:
+        return trace.kind; // la pagina provvisoria non conosce le modifiche alla rete
       case "simulation-suspended":
         return `Simulazione sospesa: tempesta di broadcast, ${trace.framesInFlight} frame in viaggio`;
       case "table-changed":
