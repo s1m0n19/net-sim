@@ -354,6 +354,24 @@ export class Simulator {
   }
 
   /**
+   * Riporta la rete allo stato di una appena accesa: tempo a zero, nessun
+   * frame in viaggio, nessuna attesa, tabelle vuote, tracce cancellate.
+   * La configurazione resta, guasti compresi: un cavo staccato resta
+   * staccato e un dispositivo spento resta spento. Toglie anche la
+   * sospensione dovuta a una tempesta di broadcast.
+   */
+  reset(): void {
+    this.time = 0;
+    this.queue = [];
+    this.traces = [];
+    this.suspended = false;
+    for (const device of this.network.devices) {
+      clearRuntimeState(device);
+    }
+    this.refreshLinkState([]);
+  }
+
+  /**
    * Dice se c'è ancora qualcosa da far avanzare.
    *
    * @returns true se la coda contiene eventi e la simulazione non è sospesa

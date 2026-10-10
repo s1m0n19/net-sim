@@ -12,8 +12,8 @@ L'interfaccia è in costruzione, e per ora ce ne sono due:
 
 | Indirizzo | Che cos'è | Che cosa fa oggi |
 | --- | --- | --- |
-| http://localhost:5173 | La **nuova interfaccia**, al primo passaggio di nove | Apre una rete da file e la disegna, nei temi chiaro e scuro |
-| http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Tutto il resto: ping, passo-passo, guasti, tempesta di broadcast |
+| http://localhost:5173 | La **nuova interfaccia**, al secondo passaggio di nove | Apre una rete da file, la disegna e mostra un ping che viaggia, in tempo reale o a passi |
+| http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Ciò che la nuova non ha ancora: guasti, tabelle MAC e ARP, elenco degli eventi |
 
 La pagina provvisoria verrà cancellata quando la nuova interfaccia saprà fare le stesse cose. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -46,9 +46,29 @@ All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quell
 
 Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento".
 
+Aperta una rete, in basso al centro del disegno compare la **barra della simulazione**:
+
+| Comando | Effetto |
+| --- | --- |
+| **Ricomincia** | Riporta la rete allo stato di una appena accesa: tabelle vuote, nessun pacchetto, tempo a zero. Guasti e configurazione restano |
+| **Avvia / Pausa** | Fa scorrere il tempo da solo, o lo ferma. Avviato, resta in ascolto: un ping lanciato dopo parte subito |
+| **Passo** | Fa arrivare a destinazione i pacchetti in viaggio e si ferma. Disponibile a tempo fermo |
+| **1×** | Cambia la velocità: 0,5×, 1×, 2×. A 1× un pacchetto impiega circa un secondo e mezzo a percorrere un cavo |
+
+Per lanciare un ping c'è, nel pannello di destra, un **ping di prova** provvisorio: host di partenza, indirizzo, numero di richieste. Verrà sostituito dal pulsante Ping sul dispositivo.
+
+I pacchetti sono buste colorate con la sigla sopra: ambra per ARP, viola per ICMP. Quando non viaggia nulla e un PC sta aspettando una risposta che non arriva, accanto a lui compare un anello con una clessidra che si svuota in due o tre secondi; poi il tempo salta alla scadenza.
+
 Salva, annulla, Presenta e le voci della colonna si vedono ma non sono ancora attivi.
 
-Durante lo sviluppo c'è una scorciatoia: l'indirizzo `http://localhost:5173/?esempio=lan-switch` apre subito il file `examples/lan-switch.netsim.json`. Nel sito pubblicato non esiste.
+Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una certa situazione. Nel sito pubblicato queste scorciatoie non esistono.
+
+| Parametro | Effetto |
+| --- | --- |
+| `?esempio=lan-switch` | Apre `examples/lan-switch.netsim.json` |
+| `&ping=PC1>192.168.1.11` | Lancia un ping; con `&richieste=4` manda quattro richieste |
+| `&passi=3` | Avanza subito di tre istanti |
+| `&avvia` | Fa scorrere il tempo |
 
 ## La pagina provvisoria
 

@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, è fatto il primo: ossatura, temi, disegno della rete, apertura di un file. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto.
+**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi due: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -42,7 +42,7 @@ La disposizione è una decisione presa con riserva: i pannelli sono componenti i
 
 ## Che cosa c'è già
 
-Dopo il primo passaggio:
+Dopo i primi due passaggi:
 
 - l'ossatura completa, con la colonna e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
@@ -50,9 +50,13 @@ Dopo il primo passaggio:
 - **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, e **Nuova**, che torna al foglio vuoto;
 - il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
 - gli interruttori delle etichette IP, MAC e Porte;
-- la rete sempre inquadrata per intero.
+- la rete sempre inquadrata per intero;
+- la **barra della simulazione**: Ricomincia, Avvia e Pausa, Passo, velocità, tick;
+- le **buste** in viaggio, con colore e sigla del protocollo;
+- in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
+- l'avviso della tempesta di broadcast.
 
-Non c'è ancora nulla che si muova o si possa selezionare: Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti.
+Non si può ancora selezionare nulla. Per avere qualcosa da guardare, nel pannello laterale c'è un **ping di prova** provvisorio: sparirà quando arriverà la barretta delle azioni. Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti.
 
 ## All'avvio
 
@@ -90,7 +94,7 @@ Un pacchetto in viaggio è una **busta colorata con sopra la sigla del protocoll
 | ARP | ambra | ARP |
 | ICMP | viola | ICMP |
 
-A velocità normale una busta impiega circa un secondo a percorrere un cavo.
+A velocità normale una busta impiega 1,4 secondi a percorrere un cavo. Il valore è la costante `TICK_SECONDS` in `src/ui/simulation/playback.ts`.
 
 ### Selezione e barretta delle azioni
 
@@ -132,6 +136,10 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 | Passo | Avanza di un istante. Disponibile a simulazione ferma |
 | Velocità | 0,5×, 1×, 2× |
 | Tempo | Il tick corrente |
+
+**Tempo a schermo e tempo simulato.** Il motore avanza a scatti, da un istante al successivo. A schermo invece le buste scivolano: l'orologio dell'interfaccia tiene un tempo che sta tra un istante e l'altro, e la posizione di una busta sul cavo dipende da quello. Quando il tempo a schermo raggiunge il prossimo istante, l'orologio chiede al motore di elaborarlo. Avvia non si spegne quando la rete resta ferma: resta in ascolto, e un ping lanciato dopo parte da solo.
+
+**Passo.** Fa arrivare a destinazione le buste in viaggio, un po' più svelto del tempo reale, e si ferma. Le buste nate in quell'istante restano accanto a chi le ha spedite, in attesa del passo successivo.
 
 **Attese.** In tempo reale, quando non viaggia nulla e c'è solo un'attesa in corso (una risposta ARP o un echo reply che non arrivano), non si aspetta davvero: sul dispositivo che aspetta compare un piccolo indicatore che si svuota in due o tre secondi, qualunque sia la durata in tick, poi il tempo salta alla scadenza. Si vede chi sta aspettando, senza tempi morti.
 
@@ -261,10 +269,11 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
-| `topology/` | Il disegno: dispositivi e cavi. *Previsto:* buste, selezione, barretta, tabelle appuntate, zoom |
-| `panels/` | Il pannello laterale. Oggi dice solo che cosa comparirà |
+| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa. *Previsto:* selezione, barretta, tabelle appuntate, zoom |
+| `panels/` | Il pannello laterale. Oggi dice che cosa comparirà e ospita il ping di prova |
 | `strip/` | La fascia in basso. Oggi ha la sola scheda Eventi, vuota. *Previsto:* terminali, eventi e filtro |
-| `simulation/` | *Previsto:* barra della simulazione e orologio del tempo reale |
+| `simulation/SimulationBar.svelte` | La barra della simulazione |
+| `simulation/playback.ts` | L'orologio: fa scorrere il tempo a schermo e chiede al motore di avanzare. Ha i suoi test, con un orologio finto |
 | `provisional/` | La pagina provvisoria di prima. Verrà cancellata |
 
 I caratteri IBM Plex sono inclusi nel sito, non scaricati da un servizio esterno: l'app deve funzionare anche senza rete e dietro il filtro della scuola.
@@ -285,7 +294,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria 
 | N. | Passaggio | Che cosa si vede alla fine |
 | --- | --- | --- |
 | 1 | **Fatto.** Ossatura, temi, disegno della rete nel nuovo stile, apertura di un file | Si apre un file di esempio e lo si vede disegnato con il nuovo aspetto, nei due temi |
-| 2 | Barra della simulazione: passo, tempo reale, velocità, buste animate con sigla, attese, avviso di sospensione | Un ping si guarda scorrere da solo |
+| 2 | **Fatto.** Barra della simulazione: passo, tempo reale, velocità, buste animate con sigla, attese, avviso di sospensione | Un ping si guarda scorrere da solo |
 | 3 | Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
 | 4 | Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |

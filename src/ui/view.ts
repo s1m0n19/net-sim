@@ -1,12 +1,14 @@
 // Che cosa disegnare: una descrizione della rete già pronta per lo schermo.
 //
 // Il motore non sa nulla di coordinate o di etichette. Questa funzione legge
-// la rete e le posizioni e prepara ciò che serve ai componenti del disegno,
-// così i componenti non fanno calcoli e questa parte si può provare senza
-// un browser.
+// il simulatore e le posizioni e prepara ciò che serve ai componenti, così
+// i componenti non fanno calcoli e questa parte si può provare senza un
+// browser.
 
 import { maskToPrefix } from "../engine/model/addresses";
-import { linkCarriesSignal, type Device, type Network } from "../engine/model/network";
+import type { EthernetFrame } from "../engine/model/frames";
+import { linkCarriesSignal, type Device } from "../engine/model/network";
+import type { Simulator } from "../engine/simulator";
 import type { Position } from "../storage/load";
 
 export interface DeviceView {
@@ -18,7 +20,8 @@ export interface DeviceView {
   powered: boolean;
   // Solo per gli host: "192.168.1.10/24", oppure null se non è configurato.
   ipLabel: string | null;
-  // Solo per gli host: l'indirizzo MAC della scheda.
+  // Solo per gli host: l'indirizzo IP da solo, e il MAC della scheda.
+  ip: string | null;
   mac: string | null;
 }
 
@@ -33,6 +36,29 @@ export interface LinkView {
   signal: boolean;
 }
 
+export type Protocol = "ARP" | "ICMP";
+
+// Un frame in viaggio su un cavo.
+export interface PacketView {
+  id: number;
+  from: Position;
+  to: Position;
+  protocol: Protocol;
+  // Che cos'è, in parole: "ARP request", "ICMP echo reply".
+  description: string;
+  // Tra quali istanti viaggia. La sua posizione sul cavo dipende da quanto
+  // tempo è passato tra i due.
+  departure: number;
+  arrival: number;
+}
+
+// La prossima cosa che succederà.
+export interface NextEventView {
+  time: number;
+  // I dispositivi che in quell'istante hanno un'attesa che scade.
+  waitingDeviceIds: string[];
+}
+
 // Il rettangolo che contiene tutta la rete, margini compresi.
 export interface Bounds {
   x: number;
@@ -44,33 +70,49 @@ export interface Bounds {
 export interface NetworkView {
   devices: DeviceView[];
   links: LinkView[];
+  packets: PacketView[];
   bounds: Bounds;
+  // Stato della simulazione.
+  time: number;
+  nextEvent: NextEventView | null;
+  suspended: boolean;
 }
 
 export const EMPTY_VIEW: NetworkView = {
   devices: [],
   links: [],
+  packets: [],
   bounds: { x: 0, y: 0, width: 800, height: 500 },
+  time: 0,
+  nextEvent: null,
+  suspended: false,
 };
 
 /**
- * Prepara la descrizione della rete da disegnare.
+ * Prepara la descrizione di ciò che va disegnato.
  *
- * @param network - la rete, con il suo stato attuale
+ * @param simulator - il simulatore, con la rete e il suo stato attuale
  * @param positions - dove sta ogni dispositivo sul disegno
- * @returns dispositivi e cavi pronti per i componenti, e il rettangolo
- *   che li contiene tutti
+ * @returns dispositivi, cavi e pacchetti in viaggio pronti per i
+ *   componenti, il rettangolo che contiene la rete e lo stato della
+ *   simulazione
  */
-export function buildView(network: Network, positions: Map<string, Position>): NetworkView {
+export function buildView(simulator: Simulator, positions: Map<string, Position>): NetworkView {
+  const network = simulator.network;
   const at = (deviceId: string): Position => positions.get(deviceId) ?? { x: 0, y: 0 };
 
   const devices = network.devices.map((device): DeviceView => {
     const { x, y } = at(device.id);
     const base = { id: device.id, kind: device.kind, name: device.name, x, y, powered: device.powered };
     if (device.kind === "switch") {
-      return { ...base, ipLabel: null, mac: null };
+      return { ...base, ipLabel: null, ip: null, mac: null };
     }
-    return { ...base, ipLabel: ipLabelOf(device.ip, device.mask), mac: device.ports[0].mac };
+    return {
+      ...base,
+      ipLabel: ipLabelOf(device.ip, device.mask),
+      ip: device.ip,
+      mac: device.ports[0].mac,
+    };
   });
 
   const links = network.links.map((link): LinkView => ({
@@ -83,7 +125,62 @@ export function buildView(network: Network, positions: Map<string, Position>): N
     signal: linkCarriesSignal(network, link),
   }));
 
-  return { devices, links, bounds: boundsOf(devices) };
+  const packets: PacketView[] = [];
+  for (const event of simulator.queue) {
+    if (event.kind !== "frame-arrival") continue;
+    packets.push({
+      id: event.frameId,
+      from: at(event.from.deviceId),
+      to: at(event.to.deviceId),
+      protocol: protocolOf(event.frame),
+      description: describeFrame(event.frame),
+      // Un frame resta sul cavo per un tick: è partito un tick prima di arrivare.
+      departure: event.time - 1,
+      arrival: event.time,
+    });
+  }
+
+  return {
+    devices,
+    links,
+    packets,
+    bounds: boundsOf(devices),
+    time: simulator.time,
+    nextEvent: nextEventOf(simulator),
+    suspended: simulator.suspended,
+  };
+}
+
+/**
+ * Dice che cosa contiene un frame, con le parole che si usano a voce.
+ *
+ * @param frame - il frame da descrivere
+ * @returns per esempio "ARP request" oppure "ICMP echo reply"
+ */
+export function describeFrame(frame: EthernetFrame): string {
+  if (frame.etherType === "ARP") {
+    return `ARP ${frame.payload.operation}`;
+  }
+  return `ICMP ${frame.payload.payload.type.replace("-", " ")}`;
+}
+
+// Il protocollo più interno: è quello che dà colore e sigla alla busta.
+function protocolOf(frame: EthernetFrame): Protocol {
+  return frame.etherType === "ARP" ? "ARP" : "ICMP";
+}
+
+function nextEventOf(simulator: Simulator): NextEventView | null {
+  if (!simulator.canStep()) return null;
+
+  const time = simulator.queue[0].time;
+  const waitingDeviceIds: string[] = [];
+  for (const event of simulator.queue) {
+    if (event.time !== time) break;
+    if (event.kind === "timer" && !waitingDeviceIds.includes(event.deviceId)) {
+      waitingDeviceIds.push(event.deviceId);
+    }
+  }
+  return { time, waitingDeviceIds };
 }
 
 // L'indirizzo come lo si scrive sotto un dispositivo: con il prefisso.

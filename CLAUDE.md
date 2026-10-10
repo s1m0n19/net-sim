@@ -20,7 +20,7 @@ I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ci
 
 Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti, loopback), guasti (cavo staccato, dispositivo spento), sospensione della tempesta di broadcast, in passo-passo.
 
-L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; è fatto il primo (ossatura, temi, disegno della rete, apertura di un file). La pagina provvisoria di prima sta in `src/ui/provisional/`, si apre all'indirizzo `/#provvisoria` ed è ancora l'unico posto da cui lanciare ping e guasti: non va rifinita, e si cancella quando la nuova la sostituisce.
+L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; sono fatti i primi due (ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste, attese). Il ping si lancia per ora da un modulo provvisorio nel pannello laterale. La pagina provvisoria di prima sta in `src/ui/provisional/`, si apre all'indirizzo `/#provvisoria` ed è ancora l'unico posto da cui provocare guasti e leggere tabelle ed eventi: non va rifinita, e si cancella quando la nuova la sostituisce.
 
 Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Non ci sono difetti noti aperti.
 
@@ -47,7 +47,7 @@ Per vedere davvero la pagina, con il server di sviluppo acceso:
   "http://localhost:5173/?esempio=lan-switch"
 ```
 
-`?esempio=nome` apre `examples/nome.netsim.json` ed esiste solo in sviluppo. Aggiungere `--blink-settings=preferredColorScheme=1` forza il tema chiaro. Lo screenshot va fatto e guardato prima di dire all'utente che una modifica a schermo funziona. Se il server serve una versione vecchia di un file spostato o ricreato, va riavviato.
+`?esempio=nome` apre `examples/nome.netsim.json` ed esiste solo in sviluppo, come `&ping=PC1>192.168.1.11`, `&richieste=4`, `&passi=3`, `&avanti=0.5` (sposta le buste di mezzo tratto) e `&avvia` (vedi `src/main.ts`). Aggiungere `--blink-settings=preferredColorScheme=1` forza il tema chiaro. Chrome senza finestra non fa scorrere le animazioni: lo screenshot mostra sempre un istante fermo, quindi una situazione va preparata con `passi` e `avanti`. Il movimento si verifica con i test dell'orologio (`tests/ui/playback.test.ts`), che usano un orologio finto. Lo screenshot va fatto e guardato prima di dire all'utente che una modifica a schermo funziona. Se il server serve una versione vecchia di un file spostato o ricreato, va riavviato.
 
 TypeScript è fermo alla versione 6 perché `svelte-check` non supporta ancora la 7.
 

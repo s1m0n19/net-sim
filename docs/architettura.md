@@ -79,12 +79,12 @@ net-sim/
 │       ├── view.ts            prepara ciò che il disegno mostra
 │       ├── preferences.svelte.ts  tema, etichette, pannelli aperti
 │       ├── theme/             colori, caratteri, sagome dei dispositivi
-│       ├── layout/  topology/  panels/  strip/
+│       ├── layout/  topology/  panels/  strip/  simulation/
 │       └── provisional/       la pagina provvisoria, da cancellare
 └── tests/
     ├── engine/                un file per argomento, più builders.ts con le reti di prova
     ├── storage/               lettura dei file
-    └── ui/                    preparazione del disegno (view.ts)
+    └── ui/                    preparazione del disegno e orologio del tempo reale
 ```
 
 Cartelle *previste* e non ancora esistenti:
@@ -118,4 +118,4 @@ Cartelle *previste* e non ancora esistenti:
 
 ## Cosa non è coperto da test
 
-I test riguardano il motore, la lettura dei file e `src/ui/view.ts`, che prepara il disegno senza usare il browser. I componenti a schermo non hanno test automatici: si verificano nel browser, a occhio o con uno screenshot. Non esiste un controllo automatico che esegua i test a ogni invio al repository.
+I test riguardano il motore, la lettura dei file e le due parti dell'interfaccia che non hanno bisogno di uno schermo: `view.ts`, che prepara il disegno, e `simulation/playback.ts`, l'orologio. I componenti a schermo non hanno test automatici: si verificano nel browser, a occhio o con uno screenshot. Non esiste un controllo automatico che esegua i test a ogni invio al repository.

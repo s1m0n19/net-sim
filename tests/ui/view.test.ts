@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import lanFile from "../../examples/lan-switch.netsim.json?raw";
-import { disconnectLink, powerOff } from "../../src/engine/actions";
+import { disconnectLink, ping, powerOff } from "../../src/engine/actions";
 import { Simulator } from "../../src/engine/simulator";
 import { loadNetworkFile } from "../../src/storage/load";
 import { buildView, EMPTY_VIEW } from "../../src/ui/view";
@@ -9,7 +9,7 @@ import { buildView, EMPTY_VIEW } from "../../src/ui/view";
 function lan() {
   const { network, positions } = loadNetworkFile(lanFile);
   const sim = new Simulator(network);
-  return { sim, network, positions, view: () => buildView(network, positions) };
+  return { sim, network, positions, view: () => buildView(sim, positions) };
 }
 
 describe("dispositivi da disegnare", () => {
@@ -115,9 +115,84 @@ describe("inquadratura", () => {
   });
 
   test("una rete senza dispositivi ha un'inquadratura di ripiego", () => {
-    const view = buildView({ devices: [], links: [] }, new Map());
+    const view = buildView(new Simulator({ devices: [], links: [] }), new Map());
 
     expect(view.devices).toEqual([]);
     expect(view.bounds).toEqual(EMPTY_VIEW.bounds);
+  });
+});
+
+describe("pacchetti in viaggio", () => {
+  test("in una rete ferma non ce ne sono, e non c'è un prossimo evento", () => {
+    const { view } = lan();
+
+    expect(view().packets).toEqual([]);
+    expect(view().nextEvent).toBeNull();
+    expect(view().time).toBe(0);
+  });
+
+  test("un ping a freddo mette in viaggio una richiesta ARP da PC1 allo switch", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+
+    expect(view().packets).toEqual([
+      {
+        id: 1,
+        from: { x: 100, y: 150 },
+        to: { x: 350, y: 150 },
+        protocol: "ARP",
+        description: "ARP request",
+        departure: 0,
+        arrival: 1,
+      },
+    ]);
+  });
+
+  test("dopo un passo lo switch ha inoltrato due copie, che viaggiano tra il tick 1 e il 2", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+    sim.step();
+
+    expect(view().time).toBe(1);
+    expect(view().packets.map((p) => [p.to, p.departure, p.arrival])).toEqual([
+      [{ x: 600, y: 60 }, 1, 2],
+      [{ x: 600, y: 240 }, 1, 2],
+    ]);
+  });
+
+  test("l'echo request è un pacchetto ICMP", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+    for (let i = 0; i < 4; i++) sim.step(); // lo scambio ARP è finito
+
+    expect(view().packets.map((p) => [p.protocol, p.description])).toEqual([["ICMP", "ICMP echo request"]]);
+  });
+});
+
+describe("prossimo evento", () => {
+  test("finché viaggia un pacchetto, è il suo arrivo, e nessuno sta solo aspettando", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+
+    expect(view().nextEvent).toEqual({ time: 1, waitingDeviceIds: [] });
+  });
+
+  test("quando non viaggia più nulla, è la scadenza dell'attesa di chi ha chiesto", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.99", 1)); // nessuno risponderà
+    sim.step();
+    sim.step();
+
+    expect(view().packets).toEqual([]);
+    expect(view().nextEvent).toEqual({ time: 20, waitingDeviceIds: ["d1"] });
+  });
+
+  test("a simulazione sospesa non c'è un prossimo evento", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+    sim.suspended = true;
+
+    expect(view().nextEvent).toBeNull();
+    expect(view().suspended).toBe(true);
   });
 });
