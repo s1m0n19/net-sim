@@ -12,8 +12,8 @@ L'interfaccia è in costruzione, e per ora ce ne sono due:
 
 | Indirizzo | Che cos'è | Che cosa fa oggi |
 | --- | --- | --- |
-| http://localhost:5173 | La **nuova interfaccia**, al terzo passaggio di nove | Apre una rete da file e permette di condurre una dimostrazione: ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle |
-| http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Ciò che la nuova non ha ancora: l'elenco degli eventi |
+| http://localhost:5173 | La **nuova interfaccia**, al quarto passaggio di nove | Apre una rete da file e permette di condurre una dimostrazione: ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi |
+| http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Ciò che la nuova non ha ancora: il ping con quattro richieste |
 
 La pagina provvisoria verrà cancellata quando la nuova interfaccia saprà fare le stesse cose. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -64,6 +64,12 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 
 **Ping.** Seleziona il PC di partenza, premi Ping sulla barretta (la freccia), poi fai clic sul dispositivo di destinazione. Parte un solo echo request. Esc rinuncia.
+
+**Eventi.** La fascia in basso elenca ciò che succede, una riga per fatto: tempo, dispositivo, sigla del protocollo, descrizione. L'ultima riga di un ping è il suo esito.
+
+- Passando con il mouse su una riga, sul disegno si evidenziano con un contorno tratteggiato il dispositivo e la busta di cui parla.
+- Un clic su una riga apre nel pannello di destra il pacchetto, o il dispositivo se la riga non riguarda un pacchetto.
+- In cima, il **filtro**: "Conversazione" per seguire un solo ping tra quelli lanciati, e gli interruttori ARP e ICMP. Ciò che il filtro nasconde sparisce anche dal disegno.
 
 I pacchetti sono buste colorate con la sigla sopra: ambra per ARP, viola per ICMP. Quando non viaggia nulla e un PC sta aspettando una risposta che non arriva, accanto a lui compare un anello con una clessidra che si svuota in due o tre secondi; poi il tempo salta alla scadenza.
 

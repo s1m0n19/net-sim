@@ -104,7 +104,15 @@ export type Trace =
       reason: DropReason | SwitchDropReason;
       conversationId: number;
     }
-  | { time: number; kind: "table-changed"; deviceId: string; table: "arp" | "mac" }
+  | {
+      time: number;
+      kind: "table-changed";
+      deviceId: string;
+      table: "arp" | "mac";
+      // La conversazione che l'ha fatta cambiare; null se è cambiata per
+      // un guasto, che non appartiene a nessuna conversazione.
+      conversationId: number | null;
+    }
   | {
       // Un host ha rinunciato a spedire un pacchetto che teneva in attesa.
       time: number;
@@ -147,6 +155,12 @@ export type Trace =
       framesInFlight: number;
     };
 
+// Una conversazione: tutto ciò che un'azione dell'utente provoca.
+export interface Conversation {
+  id: number;
+  action: Action;
+}
+
 export class Simulator {
   readonly network: Network;
   time = 0;
@@ -157,6 +171,10 @@ export class Simulator {
   suspended = false;
 
   private nextFrameId = 1;
+  // Le conversazioni cominciate finora: per ciascuna, l'azione che l'ha
+  // fatta nascere. Serve a chi vuole seguirne una sola.
+  conversations: Conversation[] = [];
+
   private nextConversationId = 1;
 
   /**
@@ -237,6 +255,7 @@ export class Simulator {
     if (somethingToDo) {
       // Tutto ciò che questa azione provoca avrà lo stesso numero.
       const conversationId = this.nextConversationId++;
+      this.conversations.push({ id: conversationId, action });
       this.apply(host, output, conversationId, produced);
     }
   }
@@ -316,7 +335,13 @@ export class Simulator {
         }
       }
       if (changed) {
-        produced.push({ time: this.time, kind: "table-changed", deviceId: device.id, table: "mac" });
+        produced.push({
+          time: this.time,
+          kind: "table-changed",
+          deviceId: device.id,
+          table: "mac",
+          conversationId: null,
+        });
       }
     }
   }
@@ -355,7 +380,8 @@ export class Simulator {
 
   /**
    * Riporta la rete allo stato di una appena accesa: tempo a zero, nessun
-   * frame in viaggio, nessuna attesa, tabelle vuote, tracce cancellate.
+   * frame in viaggio, nessuna attesa, tabelle vuote, tracce e conversazioni
+   * cancellate.
    * La configurazione resta, guasti compresi: un cavo staccato resta
    * staccato e un dispositivo spento resta spento. Toglie anche la
    * sospensione dovuta a una tempesta di broadcast.
@@ -364,6 +390,7 @@ export class Simulator {
     this.time = 0;
     this.queue = [];
     this.traces = [];
+    this.conversations = [];
     this.suspended = false;
     for (const device of this.network.devices) {
       clearRuntimeState(device);
@@ -520,7 +547,13 @@ export class Simulator {
 
     produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
     if (reaction.tableChanged) {
-      produced.push({ time: this.time, kind: "table-changed", deviceId: host.id, table: "arp" });
+      produced.push({
+        time: this.time,
+        kind: "table-changed",
+        deviceId: host.id,
+        table: "arp",
+        conversationId,
+      });
     }
     // Ciò che nasce da un frame appartiene alla stessa conversazione.
     this.apply(host, reaction, conversationId, produced);
@@ -533,7 +566,13 @@ export class Simulator {
     // Lo switch impara dal frame anche quando poi lo scarta.
     produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
     if (reaction.tableChanged) {
-      produced.push({ time: this.time, kind: "table-changed", deviceId: sw.id, table: "mac" });
+      produced.push({
+        time: this.time,
+        kind: "table-changed",
+        deviceId: sw.id,
+        table: "mac",
+        conversationId,
+      });
     }
 
     if (reaction.dropped !== null) {

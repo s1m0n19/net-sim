@@ -14,6 +14,7 @@ describe("ricominciare", () => {
     expect(sim.time).toBe(0);
     expect(sim.queue).toEqual([]);
     expect(sim.traces).toEqual([]);
+    expect(sim.conversations).toEqual([]);
     expect(sw.macTable.size).toBe(0);
     expect(pc1.arpTable.size).toBe(0);
     expect(pc2.arpTable.size).toBe(0);

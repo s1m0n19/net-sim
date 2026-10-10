@@ -231,3 +231,103 @@ describe("prossimo evento", () => {
     expect(view().suspended).toBe(true);
   });
 });
+
+describe("elenco degli eventi", () => {
+  // Un ping a freddo, portato fino in fondo.
+  function afterPing() {
+    const net = lan();
+    net.sim.dispatch(ping("d1", "192.168.1.11", 1));
+    while (net.sim.canStep()) net.sim.step();
+    return net;
+  }
+
+  test("ha una riga per ogni fatto, con il tempo, il dispositivo e che cosa è successo", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+    sim.step();
+
+    expect(view().events.map((e) => [e.time, e.deviceName, e.text])).toEqual([
+      [0, "PC1", "invia ARP request dalla porta Fa0, destinazione ff:ff:ff:ff:ff:ff"],
+      [1, "SW1", "riceve ARP request sulla porta Fa0/1"],
+      [1, "SW1", "aggiorna la tabella MAC"],
+      [1, "SW1", "invia ARP request dalla porta Fa0/2, destinazione ff:ff:ff:ff:ff:ff"],
+      [1, "SW1", "invia ARP request dalla porta Fa0/3, destinazione ff:ff:ff:ff:ff:ff"],
+    ]);
+  });
+
+  test("l'ultima riga di un ping riuscito è il suo esito", () => {
+    const last = afterPing().view().events.at(-1)!;
+
+    expect([last.time, last.deviceName, last.text]).toEqual([8, "PC1", "ping: risposta da 192.168.1.11"]);
+  });
+
+  test("dice che un frame è stato scartato, ma non perché", () => {
+    const dropped = afterPing().view().events.find((e) => e.text.startsWith("scarta"))!;
+
+    expect([dropped.deviceName, dropped.text]).toEqual(["PC3", "scarta ARP request"]);
+  });
+
+  test("le righe che parlano di un frame ne portano il protocollo e il contenuto", () => {
+    const events = afterPing().view().events;
+    const received = events.find((e) => e.text === "riceve ARP request sulla porta Fa0/1")!;
+    const echo = events.find((e) => e.text.startsWith("invia ICMP echo request"))!;
+
+    expect(received.protocol).toBe("ARP");
+    expect(received.packet).toMatchObject({ fromName: "PC1", toName: "SW1", description: "ARP request" });
+    expect(echo.protocol).toBe("ICMP");
+    expect(echo.packet!.frame).toMatchObject({ etherType: "IPv4" });
+  });
+
+  test("un cambio di tabella non ha protocollo né frame, ma appartiene alla conversazione", () => {
+    const change = afterPing().view().events.find((e) => e.text === "aggiorna la tabella MAC")!;
+
+    expect([change.protocol, change.packet, change.conversationId]).toEqual([null, null, 1]);
+  });
+
+  test("gli altri esiti del ping hanno le parole di Windows", () => {
+    const unreachable = lan();
+    unreachable.sim.dispatch(ping("d1", "192.168.1.99", 1));
+    while (unreachable.sim.canStep()) unreachable.sim.step();
+    const failed = lan();
+    failed.sim.dispatch(ping("d1", "10.0.0.5", 1));
+
+    expect(unreachable.view().events.at(-1)!.text).toBe("ping: host di destinazione non raggiungibile");
+    expect(unreachable.view().events.some((e) => e.text === "rinuncia a spedire echo request per 192.168.1.99")).toBe(true);
+    expect(failed.view().events.at(-1)!.text).toBe("ping: trasmissione non riuscita");
+  });
+
+  test("i guasti compaiono nell'elenco e non appartengono a nessuna conversazione", () => {
+    const { sim, view } = lan();
+    sim.dispatch(disconnectLink("l2"));
+    sim.dispatch(powerOff("d3"));
+
+    expect(view().events.map((e) => [e.deviceName, e.text, e.conversationId])).toEqual([
+      ["", "cavo tra PC2 e SW1 staccato", null],
+      ["PC3", "viene spento", null],
+    ]);
+  });
+});
+
+describe("conversazioni tra cui scegliere", () => {
+  test("ognuna prende il nome dall'azione che l'ha fatta nascere", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+    sim.dispatch(ping("d3", "192.168.1.10", 1));
+
+    expect(view().conversations).toEqual([
+      { id: 1, label: "ping PC1 → 192.168.1.11" },
+      { id: 2, label: "ping PC3 → 192.168.1.10" },
+    ]);
+  });
+
+  test("ogni busta in viaggio sa a quale conversazione appartiene", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+    sim.dispatch(ping("d3", "192.168.1.10", 1));
+
+    expect(view().packets.map((p) => [p.fromName, p.conversationId])).toEqual([
+      ["PC1", 1],
+      ["PC3", 2],
+    ]);
+  });
+});

@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi tre: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto: oggi le manca solo l'elenco degli eventi.
+**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi quattro: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto: oggi le manca solo il ping con quattro richieste, che arriverà con il terminale.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -44,7 +44,7 @@ La disposizione è una decisione presa con riserva: i pannelli sono componenti i
 
 ## Che cosa c'è già
 
-Dopo i primi tre passaggi:
+Dopo i primi quattro passaggi:
 
 - l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
@@ -60,7 +60,8 @@ Dopo i primi tre passaggi:
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
 - la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi e Ping sui dispositivi, stacca o riattacca sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
-- il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto.
+- il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto;
+- la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo.
 
 Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti. Sulla barretta mancano Collega, Terminale, Appunta ed Elimina, che arriveranno con i passaggi a cui appartengono.
 
@@ -212,7 +213,16 @@ Una riga per ogni fatto: tempo, dispositivo, che cosa è successo. Sono in itali
 - Passando su una riga, sul disegno si evidenziano il dispositivo e il pacchetto coinvolti.
 - Un clic sulla riga apre il pacchetto nel pannello laterale.
 
-In cima c'è il **filtro**: un selettore della conversazione (tutte, oppure una, per esempio "ping PC1 → 192.168.1.11") e un interruttore per protocollo. Ciò che il filtro nasconde sparisce sia dall'elenco sia dal disegno.
+In cima c'è il **filtro**: un selettore della conversazione (tutte, oppure una, per esempio "ping PC1 → 192.168.1.11") e un interruttore per protocollo. Ciò che il filtro nasconde sparisce sia dall'elenco sia dal disegno. A destra, quante righe si vedono sul totale.
+
+Alcune regole del filtro:
+
+- un guasto non appartiene a nessuna conversazione, quindi si vede sempre;
+- un cambio di tabella appartiene alla conversazione che lo ha provocato, e non ha protocollo: spegnere ARP non lo nasconde;
+- l'esito di un ping conta come ICMP;
+- ricominciando si torna a "tutte", perché le conversazioni di prima non esistono più.
+
+Ogni riga dice che cosa è successo, non perché: "PC3 scarta ARP request", senza il motivo. L'elenco scorre da solo fino all'ultima riga.
 
 ## Modalità presentazione
 
@@ -283,7 +293,7 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
 | `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, messaggi. *Previsto:* tabelle appuntate, zoom |
 | `panels/` | Il pannello laterale, in sola lettura, e gli strati annidati del pacchetto. *Previsto:* modifica della configurazione |
-| `strip/` | La fascia in basso. Oggi ha la sola scheda Eventi, vuota. *Previsto:* terminali, eventi e filtro |
+| `strip/` | La fascia in basso, con la scheda Eventi e il suo filtro. *Previsto:* terminali |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
 | `simulation/playback.ts` | L'orologio: fa scorrere il tempo a schermo e chiede al motore di avanzare. Ha i suoi test, con un orologio finto |
 | `provisional/` | La pagina provvisoria di prima. Verrà cancellata |
@@ -301,14 +311,14 @@ Serviranno parti nuove fuori da `src/ui/`:
 
 ## Piano di costruzione
 
-Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` finché la nuova interfaccia non sa fare tutto ciò che fa lei: le manca l'elenco degli eventi, che arriva al passaggio 4.
+Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` finché la nuova interfaccia non sa fare tutto ciò che fa lei: le manca il ping con quattro richieste, che arriva con il terminale al passaggio 6.
 
 | N. | Passaggio | Che cosa si vede alla fine |
 | --- | --- | --- |
 | 1 | **Fatto.** Ossatura, temi, disegno della rete nel nuovo stile, apertura di un file | Si apre un file di esempio e lo si vede disegnato con il nuovo aspetto, nei due temi |
 | 2 | **Fatto.** Barra della simulazione: passo, tempo reale, velocità, buste animate con sigla, attese, avviso di sospensione | Un ping si guarda scorrere da solo |
 | 3 | **Fatto.** Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
-| 4 | Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
+| 4 | **Fatto.** Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
 | 7 | Editor: azioni di modifica nel motore, colonna, strumento Cavo, configurazione dal pannello, annulla e ripristina | Si costruisce una rete da zero |

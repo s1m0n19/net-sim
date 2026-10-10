@@ -60,6 +60,11 @@
     return null;
   });
 
+  // Le buste che il filtro lascia vedere.
+  const packets = $derived(
+    session.view.packets.filter((packet) => session.shows(packet.conversationId, packet.protocol)),
+  );
+
   const pingSource = $derived(session.view.devices.find((device) => device.id === session.pingFrom));
 
   function onKey(event: KeyboardEvent) {
@@ -96,7 +101,7 @@
       {#each session.view.devices as device (device.id)}
         <DeviceNode {device} />
       {/each}
-      {#each session.view.packets as packet (`${session.generation}-${packet.id}`)}
+      {#each packets as packet (`${session.generation}-${packet.id}`)}
         <PacketEnvelope {packet} />
       {/each}
       {#each waiting as device (device.id)}

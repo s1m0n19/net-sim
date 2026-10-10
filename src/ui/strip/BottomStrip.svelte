@@ -1,6 +1,7 @@
 <script lang="ts">
   import { preferences } from "../preferences.svelte";
   import Chevron from "../theme/Chevron.svelte";
+  import EventsTab from "./EventsTab.svelte";
 </script>
 
 <footer>
@@ -17,7 +18,7 @@
     </button>
   </div>
   {#if preferences.stripOpen}
-    <div class="body">Nessun evento: l'elenco degli eventi non è ancora disponibile in questa interfaccia.</div>
+    <div class="body"><EventsTab /></div>
   {/if}
 </footer>
 
@@ -57,11 +58,9 @@
     align-self: center;
   }
   .body {
-    height: 132px;
-    box-sizing: border-box;
-    background: var(--surface-2);
-    padding: 10px 12px;
-    color: var(--muted);
-    overflow: auto;
+    height: 190px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 </style>

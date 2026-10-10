@@ -364,3 +364,28 @@ describe("ping che non arriva o non parte", () => {
     expect(() => sim.dispatch(ping("d1", "pc2", 1))).toThrow("non valido");
   });
 });
+
+describe("conversazioni", () => {
+  test("ogni azione che produce traffico apre una conversazione, e la ricorda", () => {
+    const { sim } = buildLan();
+
+    sim.dispatch(ping("d1", PC2_IP, 1));
+    sim.dispatch(ping("d3", PC1_IP, 2));
+
+    expect(sim.conversations).toEqual([
+      { id: 1, action: { kind: "ping", deviceId: "d1", targetIp: PC2_IP, count: 1 } },
+      { id: 2, action: { kind: "ping", deviceId: "d3", targetIp: PC1_IP, count: 2 } },
+    ]);
+  });
+
+  test("un cambio di tabella appartiene alla conversazione che lo ha provocato", () => {
+    const { sim } = buildLan();
+    sim.dispatch(ping("d1", PC2_IP, 1));
+    runToEnd(sim);
+
+    const changes = sim.traces.filter((t) => t.kind === "table-changed");
+
+    expect(changes.length).toBeGreaterThan(0);
+    expect(changes.every((t) => t.conversationId === 1)).toBe(true);
+  });
+});

@@ -33,6 +33,8 @@ mount(provisional ? ProvisionalPage : App, { target: document.getElementById("ap
 //   &seleziona=PC1 | l2 | pacchetto            seleziona un dispositivo, un cavo o la prima busta
 //   &stacca                                    stacca il cavo selezionato
 //   &mira                                      preme Ping sul dispositivo selezionato
+//   &segui=1                                   segue solo la prima conversazione
+//   &nascondi=ARP | ICMP                       spegne un protocollo nel filtro
 //   &fascia-chiusa, &pannello-chiuso           chiude la fascia in basso o il pannello laterale
 if (import.meta.env.DEV && !provisional) {
   const params = new URLSearchParams(location.search);
@@ -62,6 +64,9 @@ if (import.meta.env.DEV && !provisional) {
         if (params.has("stacca") && link !== undefined) session.toggleLink(link.id);
         if (params.has("mira") && device !== undefined) session.armPing(device.id);
         if (params.has("fascia-chiusa")) preferences.stripOpen = false;
+        if (params.has("segui")) session.followed = Number(params.get("segui"));
+        if (params.get("nascondi") === "ARP") session.protocols.ARP = false;
+        if (params.get("nascondi") === "ICMP") session.protocols.ICMP = false;
         if (params.has("pannello-chiuso")) preferences.sideOpen = false;
         if (params.has("avvia")) start();
       });

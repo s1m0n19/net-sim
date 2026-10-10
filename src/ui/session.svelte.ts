@@ -7,7 +7,13 @@
 import { connectLink, disconnectLink, ping, powerOff, powerOn, type Action } from "../engine/actions";
 import { Simulator, type Trace } from "../engine/simulator";
 import { loadNetworkFile, type Position } from "../storage/load";
-import { buildView, EMPTY_VIEW, type NetworkView, type PacketView } from "./view";
+import {
+  buildView,
+  EMPTY_VIEW,
+  type NetworkView,
+  type PacketDetails,
+  type Protocol,
+} from "./view";
 
 // Ciò che l'utente ha selezionato sul disegno. Di un pacchetto si tiene
 // una copia: così il pannello può continuare a mostrarlo anche dopo che è
@@ -15,7 +21,7 @@ import { buildView, EMPTY_VIEW, type NetworkView, type PacketView } from "./view
 export type Selection =
   | { kind: "device"; id: string }
   | { kind: "link"; id: string }
-  | { kind: "packet"; id: number; packet: PacketView };
+  | { kind: "packet"; id: number; packet: PacketDetails };
 
 class Session {
   // Il nome del file aperto, senza estensione; null se la rete è nuova.
@@ -48,6 +54,14 @@ class Session {
   pingFrom = $state<string | null>(null);
   // Un messaggio breve quando un comando non si può eseguire.
   notice = $state<string | null>(null);
+
+  // --- Filtro del traffico --------------------------------------------------
+  // Quale conversazione si sta seguendo; null = tutte.
+  followed = $state<number | null>(null);
+  // Quali protocolli sono visibili.
+  protocols = $state<Record<Protocol, boolean>>({ ARP: true, ICMP: true });
+  // Ciò su cui sta il mouse nell'elenco degli eventi: va evidenziato sul disegno.
+  highlight = $state.raw<{ deviceId: string | null; packetId: number | null } | null>(null);
 
   private simulator: Simulator | null = null;
   private positions = new Map<string, Position>();
@@ -100,6 +114,22 @@ class Session {
     this.selection = selection;
     this.pingFrom = null;
     this.notice = null;
+  }
+
+  /**
+   * Dice se il filtro lascia vedere qualcosa. Vale per le righe dell'elenco
+   * degli eventi e per le buste sul disegno.
+   *
+   * @param conversationId - la conversazione a cui appartiene; null se a nessuna
+   * @param protocol - il suo protocollo; null se non ne ha uno
+   * @returns true se va mostrato
+   */
+  shows(conversationId: number | null, protocol: Protocol | null): boolean {
+    // Ciò che non appartiene a una conversazione, come un guasto, si vede sempre.
+    if (this.followed !== null && conversationId !== null && conversationId !== this.followed) {
+      return false;
+    }
+    return protocol === null || this.protocols[protocol];
   }
 
   /** Spegne un dispositivo acceso, o accende uno spento. */
@@ -201,6 +231,9 @@ class Session {
     this.waitProgress = null;
     this.pingFrom = null;
     this.notice = null;
+    this.highlight = null;
+    // Le conversazioni di prima non esistono più.
+    this.followed = null;
     this.refresh();
   }
 

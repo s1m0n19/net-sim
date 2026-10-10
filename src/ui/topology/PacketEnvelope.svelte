@@ -26,6 +26,8 @@
 
   const selected = $derived(session.selection?.kind === "packet" && session.selection.id === packet.id);
 
+  const highlighted = $derived(session.highlight?.packetId === packet.id);
+
   function choose() {
     session.select({ kind: "packet", id: packet.id, packet });
   }
@@ -56,6 +58,8 @@
   <title>{packet.description}</title>
   {#if selected}
     <rect class="selection" x="-20" y="-28" width="40" height="44" rx="6" />
+  {:else if highlighted}
+    <rect class="selection dashed" x="-20" y="-28" width="40" height="44" rx="6" />
   {/if}
   <text y="-14">{packet.protocol}</text>
   <rect x="-13" y="-9" width="26" height="18" rx="3" />
@@ -71,6 +75,10 @@
     fill: none;
     stroke: var(--accent);
     stroke-width: 2.5;
+  }
+  .selection.dashed {
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
   }
   .packet:focus-visible rect:not(.selection) {
     stroke: var(--accent);

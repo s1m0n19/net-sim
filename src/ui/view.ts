@@ -7,8 +7,15 @@
 
 import { maskToPrefix } from "../engine/model/addresses";
 import type { EthernetFrame } from "../engine/model/frames";
-import { findDevice, linkCarriesSignal, type Device } from "../engine/model/network";
-import type { Simulator } from "../engine/simulator";
+import {
+  findDevice,
+  findLink,
+  linkCarriesSignal,
+  otherEndOf,
+  type Device,
+  type Network,
+} from "../engine/model/network";
+import type { Conversation, Simulator, Trace } from "../engine/simulator";
 import type { Position } from "../storage/load";
 
 export interface DeviceView {
@@ -50,23 +57,51 @@ export interface LinkView {
 
 export type Protocol = "ARP" | "ICMP";
 
-// Un frame in viaggio su un cavo.
-export interface PacketView {
+// Ciò che di un frame serve al pannello laterale per mostrarne il contenuto.
+export interface PacketDetails {
   id: number;
-  from: Position;
-  to: Position;
-  // I nomi dei dispositivi tra cui sta viaggiando.
+  // I nomi dei dispositivi tra cui viaggia.
   fromName: string;
   toName: string;
-  // Il contenuto, da mostrare a strati quando la busta è selezionata.
+  // Il contenuto, da mostrare a strati.
   frame: EthernetFrame;
   protocol: Protocol;
   // Che cos'è, in parole: "ARP request", "ICMP echo reply".
   description: string;
+}
+
+// Un frame in viaggio su un cavo.
+export interface PacketView extends PacketDetails {
+  from: Position;
+  to: Position;
+  conversationId: number;
   // Tra quali istanti viaggia. La sua posizione sul cavo dipende da quanto
   // tempo è passato tra i due.
   departure: number;
   arrival: number;
+}
+
+// Una riga dell'elenco degli eventi: un fatto, con chi lo ha compiuto.
+export interface EventView {
+  // La posizione nell'elenco: fa da identificativo.
+  index: number;
+  time: number;
+  // Il dispositivo a cui il fatto si riferisce; null per i fatti che non
+  // riguardano un dispositivo solo (un cavo staccato, la sospensione).
+  deviceId: string | null;
+  deviceName: string;
+  text: string;
+  // Se il fatto riguarda un frame: il suo protocollo e il suo contenuto.
+  protocol: Protocol | null;
+  packet: PacketDetails | null;
+  // A quale conversazione appartiene; null se a nessuna (i guasti).
+  conversationId: number | null;
+}
+
+// Una conversazione tra cui scegliere nel filtro.
+export interface ConversationView {
+  id: number;
+  label: string;
 }
 
 // La prossima cosa che succederà.
@@ -88,6 +123,8 @@ export interface NetworkView {
   devices: DeviceView[];
   links: LinkView[];
   packets: PacketView[];
+  events: EventView[];
+  conversations: ConversationView[];
   bounds: Bounds;
   // Stato della simulazione.
   time: number;
@@ -99,6 +136,8 @@ export const EMPTY_VIEW: NetworkView = {
   devices: [],
   links: [],
   packets: [],
+  events: [],
+  conversations: [],
   bounds: { x: 0, y: 0, width: 800, height: 500 },
   time: 0,
   nextEvent: null,
@@ -168,14 +207,10 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
   for (const event of simulator.queue) {
     if (event.kind !== "frame-arrival") continue;
     packets.push({
-      id: event.frameId,
+      ...detailsOf(event.frameId, event.frame, nameOf(network, event.from.deviceId), nameOf(network, event.to.deviceId)),
       from: at(event.from.deviceId),
       to: at(event.to.deviceId),
-      fromName: findDevice(network, event.from.deviceId).name,
-      toName: findDevice(network, event.to.deviceId).name,
-      frame: event.frame,
-      protocol: protocolOf(event.frame),
-      description: describeFrame(event.frame),
+      conversationId: event.conversationId,
       // Un frame resta sul cavo per un tick: è partito un tick prima di arrivare.
       departure: event.time - 1,
       arrival: event.time,
@@ -186,6 +221,11 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     devices,
     links,
     packets,
+    events: simulator.traces.map((trace, index) => describeTrace(network, trace, index)),
+    conversations: simulator.conversations.map((conversation) => ({
+      id: conversation.id,
+      label: labelOf(network, conversation),
+    })),
     bounds: boundsOf(devices),
     time: simulator.time,
     nextEvent: nextEventOf(simulator),
@@ -204,6 +244,89 @@ export function describeFrame(frame: EthernetFrame): string {
     return `ARP ${frame.payload.operation}`;
   }
   return `ICMP ${frame.payload.payload.type.replace("-", " ")}`;
+}
+
+function nameOf(network: Network, deviceId: string): string {
+  return findDevice(network, deviceId).name;
+}
+
+function detailsOf(id: number, frame: EthernetFrame, fromName: string, toName: string): PacketDetails {
+  return { id, fromName, toName, frame, protocol: protocolOf(frame), description: describeFrame(frame) };
+}
+
+// Come si chiama una conversazione nel filtro: l'azione che l'ha fatta nascere.
+function labelOf(network: Network, conversation: Conversation): string {
+  const { action } = conversation;
+  switch (action.kind) {
+    case "ping":
+      return `ping ${nameOf(network, action.deviceId)} → ${action.targetIp}`;
+    case "resolve-address":
+      return `ARP ${nameOf(network, action.deviceId)} → ${action.targetIp}`;
+    default:
+      return `conversazione ${conversation.id}`;
+  }
+}
+
+const OUTCOMES = {
+  reply: (targetIp: string) => `ping: risposta da ${targetIp}`,
+  timeout: () => "ping: richiesta scaduta",
+  unreachable: () => "ping: host di destinazione non raggiungibile",
+  "transmit-failed": () => "ping: trasmissione non riuscita",
+};
+
+// Trasforma una traccia del motore in una riga dell'elenco degli eventi.
+// Dice che cosa è successo, non perché: l'app si comporta come una rete vera.
+function describeTrace(network: Network, trace: Trace, index: number): EventView {
+  const row = (deviceId: string | null, text: string, extra: Partial<EventView> = {}): EventView => ({
+    index,
+    time: trace.time,
+    deviceId,
+    deviceName: deviceId === null ? "" : nameOf(network, deviceId),
+    text,
+    protocol: null,
+    packet: null,
+    conversationId: "conversationId" in trace ? trace.conversationId : null,
+    ...extra,
+  });
+  // Per un frame arrivato a una porta, chi lo ha mandato sta all'altro capo del cavo.
+  const senderOf = (at: { deviceId: string; portName: string }): string => {
+    const other = otherEndOf(network, at);
+    return other === null ? "?" : nameOf(network, other.deviceId);
+  };
+
+  switch (trace.kind) {
+    case "frame-sent": {
+      const packet = detailsOf(trace.frameId, trace.frame, nameOf(network, trace.from.deviceId), nameOf(network, trace.to.deviceId));
+      return row(trace.from.deviceId, `invia ${packet.description} dalla porta ${trace.from.portName}, destinazione ${trace.frame.dstMac}`, { protocol: packet.protocol, packet });
+    }
+    case "frame-received": {
+      const packet = detailsOf(trace.frameId, trace.frame, senderOf(trace.at), nameOf(network, trace.at.deviceId));
+      return row(trace.at.deviceId, `riceve ${packet.description} sulla porta ${trace.at.portName}`, { protocol: packet.protocol, packet });
+    }
+    case "frame-dropped": {
+      const packet = detailsOf(trace.frameId, trace.frame, senderOf(trace.at), nameOf(network, trace.at.deviceId));
+      return row(trace.at.deviceId, `scarta ${packet.description}`, { protocol: packet.protocol, packet });
+    }
+    case "frame-lost": {
+      const packet = detailsOf(trace.frameId, trace.frame, nameOf(network, trace.from.deviceId), nameOf(network, trace.to.deviceId));
+      return row(trace.from.deviceId, `${packet.description} verso ${packet.toName} va perso`, { protocol: packet.protocol, packet });
+    }
+    case "table-changed":
+      return row(trace.deviceId, `aggiorna la tabella ${trace.table === "arp" ? "ARP" : "MAC"}`);
+    case "packet-dropped":
+      return row(trace.deviceId, `rinuncia a spedire ${trace.packet.payload.type.replace("-", " ")} per ${trace.packet.dstIp}`, { protocol: "ICMP" });
+    case "ping-result":
+      return row(trace.deviceId, OUTCOMES[trace.outcome](trace.targetIp), { protocol: "ICMP" });
+    case "power-changed":
+      return row(trace.deviceId, trace.powered ? "viene acceso" : "viene spento");
+    case "link-changed": {
+      const link = findLink(network, trace.linkId);
+      const ends = `${nameOf(network, link.a.deviceId)} e ${nameOf(network, link.b.deviceId)}`;
+      return row(null, `cavo tra ${ends} ${trace.connected ? "riattaccato" : "staccato"}`);
+    }
+    case "simulation-suspended":
+      return row(null, "simulazione sospesa: tempesta di broadcast");
+  }
 }
 
 // Il protocollo più interno: è quello che dà colore e sigla alla busta.

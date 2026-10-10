@@ -11,6 +11,8 @@
   // Lo switch è un po' più largo di un PC.
   const halfWidth = $derived(device.kind === "switch" ? 30 : 26);
   const selected = $derived(session.selection?.kind === "device" && session.selection.id === device.id);
+  // Il mouse è su una riga dell'elenco degli eventi che parla di questo dispositivo.
+  const highlighted = $derived(session.highlight?.deviceId === device.id);
 
   // Un clic seleziona. Se però è stato premuto Ping su un altro
   // dispositivo, il clic sceglie la destinazione del ping.
@@ -45,6 +47,9 @@
 >
   {#if selected}
     <rect class="selection" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
+  {/if}
+  {#if highlighted && !selected}
+    <rect class="highlight" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
   {/if}
   <rect class="box" x={-halfWidth} y="-26" width={halfWidth * 2} height="52" rx="10" />
   <g class="icon"><DeviceIcon kind={device.kind} /></g>
@@ -88,6 +93,13 @@
     fill: none;
     stroke: var(--accent);
     stroke-width: 2.5;
+  }
+  /* Evidenziato dall'elenco degli eventi: stesso contorno, ma tratteggiato. */
+  .highlight {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
   }
   .icon {
     color: var(--ink);
