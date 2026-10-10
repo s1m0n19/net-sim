@@ -20,7 +20,7 @@ I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ci
 
 Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti, loopback), guasti (cavo staccato, dispositivo spento), sospensione della tempesta di broadcast, in passo-passo.
 
-L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; sono fatti i primi quattro (ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste, attese; selezione, barretta delle azioni, pannello laterale in sola lettura; scheda Eventi con filtro; tabelle appuntate sul disegno). La pagina provvisoria di prima sta in `src/ui/provisional/`, si apre all'indirizzo `/#provvisoria` ed è ancora l'unico posto da cui lanciare un ping con quattro richieste: non va rifinita, e si cancella quando la nuova la sostituisce.
+L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; sono fatti i primi quattro (ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste, attese; selezione, barretta delle azioni, pannello laterale in sola lettura; scheda Eventi con filtro; tabelle appuntate sul disegno; terminale degli host). La pagina provvisoria di prima sta in `src/ui/provisional/`, si apre all'indirizzo `/#provvisoria` e non offre più nulla che la nuova non abbia: non va rifinita, e va cancellata appena l'utente lo conferma.
 
 Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Non ci sono difetti noti aperti.
 
@@ -47,7 +47,7 @@ Per vedere davvero la pagina, con il server di sviluppo acceso:
   "http://localhost:5173/?esempio=lan-switch"
 ```
 
-`?esempio=nome` apre `examples/nome.netsim.json` ed esiste solo in sviluppo, come `&ping=PC1>192.168.1.11`, `&richieste=4`, `&passi=3`, `&avanti=0.5` (sposta le buste di mezzo tratto), `&seleziona=PC1` (o un cavo come `l2`, o `pacchetto`), `&appunta=SW1,PC1`, `&stacca`, `&mira` e `&avvia` (vedi `src/main.ts`). Aggiungere `--blink-settings=preferredColorScheme=1` forza il tema chiaro. Chrome senza finestra non fa scorrere le animazioni: lo screenshot mostra sempre un istante fermo, quindi una situazione va preparata con `passi` e `avanti`. Il movimento si verifica con i test dell'orologio (`tests/ui/playback.test.ts`), che usano un orologio finto. Lo screenshot va fatto e guardato prima di dire all'utente che una modifica a schermo funziona. Se il server serve una versione vecchia di un file spostato o ricreato, va riavviato.
+`?esempio=nome` apre `examples/nome.netsim.json` ed esiste solo in sviluppo, come `&ping=PC1>192.168.1.11`, `&richieste=4`, `&passi=3`, `&avanti=0.5` (sposta le buste di mezzo tratto), `&seleziona=PC1` (o un cavo come `l2`, o `pacchetto`), `&appunta=SW1,PC1`, `&terminale=PC1&comando=arp%20-a` (con `&poi=8` per avanzare dopo i comandi), `&stacca`, `&mira` e `&avvia` (vedi `src/main.ts`). Aggiungere `--blink-settings=preferredColorScheme=1` forza il tema chiaro. Chrome senza finestra non fa scorrere le animazioni: lo screenshot mostra sempre un istante fermo, quindi una situazione va preparata con `passi` e `avanti`. Il movimento si verifica con i test dell'orologio (`tests/ui/playback.test.ts`), che usano un orologio finto. Lo screenshot va fatto e guardato prima di dire all'utente che una modifica a schermo funziona. Se il server serve una versione vecchia di un file spostato o ricreato, va riavviato.
 
 TypeScript è fermo alla versione 6 perché `svelte-check` non supporta ancora la 7.
 
@@ -58,7 +58,7 @@ Due parti che non si mescolano:
 - **Motore** (`src/engine/`): tutta la logica di rete, in TypeScript puro senza dipendenze.
 - **Interfaccia** (`src/ui/`): componenti Svelte 5 (rune) che mostrano e comandano il motore.
 
-Accanto a queste, `src/storage/` legge i file di rete e, in futuro, `src/shell/` conterrà gli interpreti dei comandi (prompt Windows, CLI IOS).
+Accanto a queste, `src/storage/` legge i file di rete e `src/shell/` contiene gli interpreti dei comandi: oggi il prompt Windows degli host (`windows.ts`, solo testo: non conosce né il simulatore né lo schermo), in futuro la CLI IOS.
 
 ### Regola di dipendenza
 

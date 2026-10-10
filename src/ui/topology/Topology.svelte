@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import SimulationBar from "../simulation/SimulationBar.svelte";
   import ActionBar, { type BarAction } from "./ActionBar.svelte";
@@ -62,6 +63,16 @@
           label: `Ping da ${device.name}: poi fai clic sulla destinazione`,
           active: session.pingFrom === device.id,
           run: () => session.armPing(device.id),
+        });
+      }
+      if (device.kind === "host") {
+        actions.push({
+          icon: "terminal",
+          label: `Apri il terminale di ${device.name}`,
+          run: () => {
+            session.openTerminal(device.id);
+            preferences.stripOpen = true;
+          },
         });
       }
       const table = device.kind === "host" ? "ARP" : "MAC";

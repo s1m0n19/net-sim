@@ -34,6 +34,8 @@ mount(provisional ? ProvisionalPage : App, { target: document.getElementById("ap
 //   &stacca                                    stacca il cavo selezionato
 //   &mira                                      preme Ping sul dispositivo selezionato
 //   &appunta=SW1,PC1                           appunta le tabelle di quei dispositivi
+//   &terminale=PC1&comando=arp -a              apre un terminale ed esegue un comando (ripetibile)
+//   &poi=8                                     avanza di otto istanti dopo i comandi
 //   &segui=1                                   segue solo la prima conversazione
 //   &nascondi=ARP | ICMP                       spegne un protocollo nel filtro
 //   &fascia-chiusa, &pannello-chiuso           chiude la fascia in basso o il pannello laterale
@@ -67,6 +69,12 @@ if (import.meta.env.DEV && !provisional) {
         for (const name of (params.get("appunta") ?? "").split(",")) {
           const pinned = session.view.devices.find((d) => d.name === name);
           if (pinned !== undefined) session.togglePin(pinned.id);
+        }
+        const terminalHost = session.view.devices.find((d) => d.name === params.get("terminale"));
+        if (terminalHost !== undefined) {
+          session.openTerminal(terminalHost.id);
+          for (const line of params.getAll("comando")) session.execute(terminalHost.id, line);
+          for (let i = 0; i < Number(params.get("poi") ?? 0); i++) session.step();
         }
         if (params.has("fascia-chiusa")) preferences.stripOpen = false;
         if (params.has("segui")) session.followed = Number(params.get("segui"));

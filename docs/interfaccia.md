@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi cinque: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro; tabelle appuntate. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto: oggi le manca solo il ping con quattro richieste, che arriverà con il terminale.
+**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi sei: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro; tabelle appuntate; terminale degli host. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` ma la nuova interfaccia ormai fa tutto ciò che faceva lei: si può cancellare.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -44,7 +44,7 @@ La disposizione è una decisione presa con riserva: i pannelli sono componenti i
 
 ## Che cosa c'è già
 
-Dopo i primi cinque passaggi:
+Dopo i primi sei passaggi:
 
 - l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
@@ -58,13 +58,14 @@ Dopo i primi cinque passaggi:
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
 - l'avviso della tempesta di broadcast;
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
-- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping e Appunta sui dispositivi, stacca o riattacca sui cavi;
+- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping, Terminale e Appunta sui dispositivi, stacca o riattacca sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
 - il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
-- le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare.
+- le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
+- il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`.
 
-Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti. Sulla barretta mancano Collega, Terminale ed Elimina, che arriveranno con i passaggi a cui appartengono.
+Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti. Sulla barretta mancano Collega ed Elimina, che arriveranno con l'editor.
 
 ## All'avvio
 
@@ -207,7 +208,34 @@ Ogni terminale aperto dalla barretta di un host diventa una **scheda**, con il n
 
 Questa scelta è presa con riserva: se si rivelasse macchinosa, si passerà a un solo terminale che segue il dispositivo selezionato.
 
-I comandi sono quelli di Windows (`ipconfig`, `ping`, `arp -a`) e i **messaggi sono in inglese**, come sui libri e in rete: `Reply from 192.168.1.11`, `Request timed out.`, `Destination host unreachable.`, `PING: transmit failed. General failure.`
+I comandi sono quelli di Windows e i **messaggi sono in inglese**, come sui libri e in rete.
+
+| Comando | Che cosa fa |
+| --- | --- |
+| `ipconfig` | Mostra indirizzo, maschera e gateway. Con il cavo staccato mostra solo `Media disconnected` |
+| `ping indirizzo` | Manda quattro echo request. `ping -n 2 indirizzo` ne manda due |
+| `arp -a` | Mostra la tabella ARP, con i MAC scritti con i trattini come su Windows |
+| `cls` | Pulisce lo schermo |
+| `help` | Elenca i comandi disponibili |
+
+L'output di `ping` cresce mentre la simulazione avanza: una riga per ogni echo request che si conclude, poi le statistiche. Finché il ping non è finito il prompt non torna, come su un PC vero.
+
+| Esito | Riga stampata |
+| --- | --- |
+| Risposta | `Reply from 192.168.1.11: bytes=32 time=8 ticks TTL=128` |
+| Richiesta scaduta | `Request timed out.` |
+| Host non raggiungibile | `Reply from 192.168.1.10: Destination host unreachable.` (l'indirizzo è quello del PC che fa ping, come su Windows) |
+| Trasmissione non riuscita | `PING: transmit failed. General failure.` |
+
+La durata è scritta in tick, perché è l'unità del tempo simulato: Windows scriverebbe `time<1ms`. Una risposta immediata, come dal loopback, è `time<1 tick`.
+
+Altre cose da sapere:
+
+- freccia su e freccia giù richiamano i comandi già scritti;
+- un ping lanciato dal terminale compare tra le conversazioni del filtro, come quelli lanciati dalla barretta;
+- ricominciando la simulazione i terminali restano aperti ma si svuotano: i PC sono come appena accesi;
+- il terminale di un PC spento non accetta comandi;
+- un nome al posto di un indirizzo non viene trovato: non esiste ancora un DNS.
 
 ### Eventi
 
@@ -296,7 +324,7 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
 | `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, tabelle appuntate, messaggi. *Previsto:* zoom |
 | `panels/` | Il pannello laterale, in sola lettura, e gli strati annidati del pacchetto. *Previsto:* modifica della configurazione |
-| `strip/` | La fascia in basso, con la scheda Eventi e il suo filtro. *Previsto:* terminali |
+| `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
 | `simulation/playback.ts` | L'orologio: fa scorrere il tempo a schermo e chiede al motore di avanzare. Ha i suoi test, con un orologio finto |
 | `provisional/` | La pagina provvisoria di prima. Verrà cancellata |
@@ -305,16 +333,17 @@ I caratteri IBM Plex sono inclusi nel sito, non scaricati da un servizio esterno
 
 Restano valide le regole di [architettura.md](architettura.md): l'interfaccia comanda il motore solo con le azioni e ne legge lo stato dopo ogni comando. Ciò che riguarda solo lo schermo (selezione, tabelle appuntate, inquadratura, tema, filtro, terminali aperti) è stato della vista, e il motore non lo conosce.
 
+Il prompt dei comandi sta fuori da `src/ui/`, in `src/shell/windows.ts`: lì il testo diventa un comando e il risultato di un comando diventa testo, senza sapere nulla né del simulatore né dello schermo. È `session` a eseguire il comando e a tenere ciò che ogni terminale ha stampato.
+
 Serviranno parti nuove fuori da `src/ui/`:
 
 - **azioni di modifica** nel motore: aggiungere, spostare, collegare, eliminare, rinominare, configurare;
 - **generazione degli indirizzi MAC** per i dispositivi nuovi;
-- **`src/shell/`**: l'interprete dei comandi del terminale;
 - **scrittura dei file** in `src/storage/`.
 
 ## Piano di costruzione
 
-Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` finché la nuova interfaccia non sa fare tutto ciò che fa lei: le manca il ping con quattro richieste, che arriva con il terminale al passaggio 6.
+Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` ma dal passaggio 6 la nuova interfaccia fa tutto ciò che faceva lei.
 
 | N. | Passaggio | Che cosa si vede alla fine |
 | --- | --- | --- |
@@ -323,7 +352,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria 
 | 3 | **Fatto.** Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
 | 4 | **Fatto.** Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
-| 6 | Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
+| 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
 | 7 | Editor: azioni di modifica nel motore, colonna, strumento Cavo, configurazione dal pannello, annulla e ripristina | Si costruisce una rete da zero |
 | 8 | Nuova e Salva, zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |
 | 9 | Modalità presentazione e scorciatoie | Il rilascio 1 è completo |

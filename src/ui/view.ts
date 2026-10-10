@@ -98,6 +98,13 @@ export interface EventView {
   conversationId: number | null;
 }
 
+// Un echo request concluso: serve al terminale per stampare l'output di ping.
+export interface PingResultView {
+  conversationId: number;
+  time: number;
+  outcome: "reply" | "timeout" | "unreachable" | "transmit-failed";
+}
+
 // Una conversazione tra cui scegliere nel filtro.
 export interface ConversationView {
   id: number;
@@ -125,6 +132,7 @@ export interface NetworkView {
   packets: PacketView[];
   events: EventView[];
   conversations: ConversationView[];
+  pingResults: PingResultView[];
   bounds: Bounds;
   // Stato della simulazione.
   time: number;
@@ -138,6 +146,7 @@ export const EMPTY_VIEW: NetworkView = {
   packets: [],
   events: [],
   conversations: [],
+  pingResults: [],
   bounds: { x: 0, y: 0, width: 800, height: 500 },
   time: 0,
   nextEvent: null,
@@ -226,6 +235,11 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
       id: conversation.id,
       label: labelOf(network, conversation),
     })),
+    pingResults: simulator.traces.flatMap((trace) =>
+      trace.kind === "ping-result"
+        ? [{ conversationId: trace.conversationId, time: trace.time, outcome: trace.outcome }]
+        : [],
+    ),
     bounds: boundsOf(devices),
     time: simulator.time,
     nextEvent: nextEventOf(simulator),

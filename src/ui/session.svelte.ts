@@ -6,6 +6,13 @@
 
 import { connectLink, disconnectLink, ping, powerOff, powerOn, type Action } from "../engine/actions";
 import { Simulator, type Trace } from "../engine/simulator";
+import {
+  formatArpTable,
+  formatHelp,
+  formatIpconfig,
+  formatPing,
+  parseCommand,
+} from "../shell/windows";
 import { loadNetworkFile, type Position } from "../storage/load";
 import {
   buildView,
@@ -24,6 +31,29 @@ export interface Pin {
   // Dove sta l'angolo in alto a sinistra, rispetto al centro del dispositivo.
   dx: number;
   dy: number;
+}
+
+// Ciò che un comando ha lasciato sullo schermo di un terminale.
+export type TerminalEntry =
+  // Un comando che ha stampato subito tutto il suo output.
+  | { kind: "text"; command: string; lines: string[] }
+  // Un ping: il suo output cresce man mano che gli echo si concludono,
+  // quindi si ricorda che cosa si aspetta, non le righe.
+  | {
+      kind: "ping";
+      command: string;
+      target: string;
+      count: number;
+      startTime: number;
+      conversationId: number;
+    };
+
+// Il prompt dei comandi aperto su un host.
+export interface Terminal {
+  deviceId: string;
+  entries: TerminalEntry[];
+  // I comandi scritti finora, per richiamarli con le frecce.
+  history: string[];
 }
 
 export type Selection =
@@ -68,6 +98,13 @@ class Session {
   // distanza da lui. Riguardano solo lo schermo e non si salvano nel file.
   pins = $state<Pin[]>([]);
 
+  // --- Terminali --------------------------------------------------------------
+  // I terminali aperti, uno per host, nell'ordine in cui sono stati aperti.
+  terminals = $state<Terminal[]>([]);
+  // La scheda in primo piano nella fascia in basso: "events", oppure
+  // l'identificativo dell'host di cui si vede il terminale.
+  activeTab = $state("events");
+
   // --- Filtro del traffico --------------------------------------------------
   // Quale conversazione si sta seguendo; null = tutte.
   followed = $state<number | null>(null);
@@ -96,6 +133,8 @@ class Session {
       this.error = null;
       this.selection = null;
       this.pins = [];
+      this.terminals = [];
+      this.activeTab = "events";
       this.rewind();
     } catch (problem) {
       this.error = messageOf(problem);
@@ -110,6 +149,8 @@ class Session {
     this.error = null;
     this.selection = null;
     this.pins = [];
+    this.terminals = [];
+    this.activeTab = "events";
     this.rewind();
   }
 
@@ -121,6 +162,8 @@ class Session {
     this.simulator?.reset();
     // I pacchetti di prima non esistono più; dispositivi e cavi sì.
     if (this.selection?.kind === "packet") this.selection = null;
+    // I PC sono come appena accesi: i terminali restano aperti, ma vuoti.
+    for (const terminal of this.terminals) terminal.entries = [];
     this.rewind();
   }
 
@@ -145,6 +188,99 @@ class Session {
       return false;
     }
     return protocol === null || this.protocols[protocol];
+  }
+
+  /**
+   * Apre il terminale di un host e lo porta in primo piano. Se era già
+   * aperto, lo porta soltanto in primo piano.
+   */
+  openTerminal(deviceId: string): void {
+    if (!this.terminals.some((terminal) => terminal.deviceId === deviceId)) {
+      this.terminals.push({ deviceId, entries: [], history: [] });
+    }
+    this.activeTab = deviceId;
+  }
+
+  /** Chiude il terminale di un host. Il suo contenuto va perso. */
+  closeTerminal(deviceId: string): void {
+    this.terminals = this.terminals.filter((terminal) => terminal.deviceId !== deviceId);
+    if (this.activeTab === deviceId) this.activeTab = "events";
+  }
+
+  /**
+   * Esegue una riga scritta al prompt di un host.
+   *
+   * @param deviceId - l'host su cui gira il terminale
+   * @param line - ciò che l'utente ha scritto
+   */
+  execute(deviceId: string, line: string): void {
+    const terminal = this.terminals.find((t) => t.deviceId === deviceId);
+    const host = this.view.devices.find((d) => d.id === deviceId);
+    if (terminal === undefined || host === undefined || this.simulator === null) return;
+
+    const command = parseCommand(line);
+    if (line.trim() !== "") terminal.history.push(line.trim());
+    const print = (lines: string[]) => terminal.entries.push({ kind: "text", command: line, lines });
+
+    switch (command.kind) {
+      case "empty":
+        print([]);
+        break;
+      case "cls":
+        terminal.entries = [];
+        break;
+      case "help":
+        print(formatHelp());
+        break;
+      case "error":
+        print(command.lines);
+        break;
+      case "ipconfig":
+        print(formatIpconfig(host));
+        break;
+      case "arp":
+        print(formatArpTable(host));
+        break;
+      case "ping": {
+        // Il ping apre una conversazione: il terminale ne ricorda il numero
+        // e ne leggerà gli esiti man mano che arrivano.
+        const before = this.simulator.conversations.length;
+        const problem = this.ping(deviceId, command.target, command.count);
+        const conversation = this.simulator.conversations.at(-1);
+        if (problem !== null || conversation === undefined || this.simulator.conversations.length === before) {
+          print([problem ?? "PING: transmit failed. General failure."]);
+          break;
+        }
+        terminal.entries.push({
+          kind: "ping",
+          command: line,
+          target: command.target,
+          count: command.count,
+          startTime: this.view.time,
+          conversationId: conversation.id,
+        });
+        break;
+      }
+    }
+  }
+
+  /**
+   * Le righe che un comando ha stampato finora. Per un ping crescono man
+   * mano che gli echo request si concludono.
+   */
+  outputOf(deviceId: string, entry: TerminalEntry): string[] {
+    if (entry.kind === "text") return entry.lines;
+    const results = this.view.pingResults.filter((r) => r.conversationId === entry.conversationId);
+    const ownIp = this.view.devices.find((d) => d.id === deviceId)?.ip ?? null;
+    return formatPing(entry.target, entry.count, entry.startTime, results, ownIp);
+  }
+
+  /** Dice se un terminale sta ancora eseguendo un ping, e non accetta comandi. */
+  isBusy(terminal: Terminal): boolean {
+    const last = terminal.entries.at(-1);
+    if (last === undefined || last.kind !== "ping") return false;
+    const done = this.view.pingResults.filter((r) => r.conversationId === last.conversationId).length;
+    return done < last.count;
   }
 
   /** Dice se la tabella di un dispositivo è appuntata sul disegno. */

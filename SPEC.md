@@ -254,7 +254,6 @@ Punti ancora da decidere:
 - [ ] Destinatari: solo le classi del docente, i colleghi, oppure pubblica e open source. Nel terzo caso servono una licenza e attenzione a marchi e sintassi Cisco.
 - [ ] Sottoinsieme dei comandi IOS (proposta nella sezione 3.3).
 - [ ] Dove pubblicare il sito, verificando che il filtro della scuola non lo blocchi.
-- [ ] Come scrivere la durata nell'output di `ping`: Windows scrive `time<1ms`, ma il tempo simulato è in tick.
 - [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
 - [ ] Se aggiungere test automatici della pagina e un controllo automatico dei test a ogni invio al repository. Oggi la pagina è verificata solo a occhio.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
@@ -312,6 +311,8 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-41 | 10 ott 2026 | All'avvio sempre un foglio vuoto; nessuna rete ricordata e nessun esempio integrato | Prevedibile, e adatto ai PC del laboratorio che vengono ripuliti | Confermata, da realizzare |
 | D-42 | 10 ott 2026 | I caratteri dell'interfaccia sono inclusi nel sito, non caricati da un servizio esterno | L'app deve funzionare offline e dietro il filtro della scuola | Adottata |
 | D-43 | 10 ott 2026 | Durante la costruzione della nuova interfaccia la pagina provvisoria resta raggiungibile all'indirizzo `/#provvisoria` | Finché la nuova non sa lanciare un ping, togliere la vecchia lascerebbe l'app senza modo di mostrare la simulazione | Adottata |
+| D-44 | 10 ott 2026 | Nell'output di `ping` la durata è scritta in tick: `time=8 ticks`, e `time<1 tick` per una risposta immediata | È l'unità del tempo simulato; scrivere millisecondi sarebbe inventare un numero | Adottata |
+| D-45 | 10 ott 2026 | Ricominciando la simulazione i terminali restano aperti ma si svuotano | I PC tornano come appena accesi; l'output di prima parlerebbe di una rete che non esiste più | Adottata |
 
 ## 9. Stato di avanzamento
 
@@ -320,20 +321,20 @@ Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul la
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
-| Rilascio 1 intero | circa 70% |
+| Rilascio 1 intero | circa 75% |
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi cinque.
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sei.
 
 ### Requisiti del rilascio 1
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
+| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
 | **Fatto in forma provvisoria** | VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
-| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · FILE-1 si apre un file dal disco; manca il salvataggio · UI-1 l'ossatura c'è tutta; nella fascia mancano i terminali · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
-| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · UI-9 · UI-11 · UI-13 · UI-14 |
+| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file · FILE-1 si apre un file dal disco; manca il salvataggio · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
+| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · UI-9 · UI-13 · UI-14 |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
 
@@ -342,7 +343,7 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 | Punto | Stato |
 | --- | --- |
 | 1. Aprire un file con uno switch e tre PC | Funziona nella nuova interfaccia |
-| 2. Lanciare il ping dal terminale, in modalità presentazione | Il ping parte dalla barretta del PC; mancano terminale e modalità presentazione |
+| 2. Lanciare il ping dal terminale, in modalità presentazione | Il ping dal terminale funziona; manca la modalità presentazione |
 | 3. Richiesta ARP in broadcast, flooding, tabella MAC | Funziona |
 | 4. PC2 risponde, PC3 scarta, le tabelle si aggiornano | Funziona |
 | 5. Echo request su una sola porta, echo reply | Funziona |
@@ -352,10 +353,10 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 ### Che cosa esiste oltre ai requisiti
 
-- 270 test automatici su motore, lettura dei file, preparazione del disegno e orologio del tempo reale.
+- 308 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
-- La nuova interfaccia, al quinto dei nove passaggi (ora anche con le tabelle appuntate sul disegno): apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping, provocare guasti e seguire gli eventi con un filtro.
-- La pagina provvisoria di prima, all'indirizzo `/#provvisoria`: è ancora l'unico posto da cui lanciare un ping con quattro richieste. Verrà cancellata quando la nuova interfaccia la sostituisce.
+- La nuova interfaccia, al sesto dei nove passaggi (ora anche con le tabelle appuntate e il terminale degli host): apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping, provocare guasti e seguire gli eventi con un filtro.
+- La pagina provvisoria di prima, all'indirizzo `/#provvisoria`: non offre più nulla che la nuova interfaccia non abbia: si può cancellare. Verrà cancellata quando la nuova interfaccia la sostituisce.
 
 ### Difetti noti
 

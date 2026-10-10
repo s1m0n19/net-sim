@@ -72,6 +72,8 @@ net-sim/
 │   │   └── actions.ts         le azioni accettate dal motore
 │   ├── storage/
 │   │   └── load.ts            lettura dei file di rete
+│   ├── shell/
+│   │   └── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
 │   ├── storage/…              (più browser-files.ts: scelta di un file nel browser)
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
@@ -83,13 +85,14 @@ net-sim/
 │       └── provisional/       la pagina provvisoria, da cancellare
 └── tests/
     ├── engine/                un file per argomento, più builders.ts con le reti di prova
+    ├── shell/                 comandi del prompt e loro output
     ├── storage/               lettura dei file
     └── ui/                    preparazione del disegno e orologio del tempo reale
 ```
 
 Cartelle *previste* e non ancora esistenti:
 
-- `src/shell/`: interpreti dei comandi (prompt Windows degli host, CLI IOS). Starà fuori dal motore perché traduce testo in azioni: è un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
+- In `src/shell/`, accanto al prompt degli host che esiste già, la CLI in stile IOS di switch e router (rilascio 2). Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
 - Scrittura dei file e migrazioni di versione in `src/storage/`.
 
 ## Convenzioni del codice
