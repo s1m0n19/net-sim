@@ -7,6 +7,7 @@
 
 import { maskToPrefix } from "../engine/model/addresses";
 import type { EthernetFrame } from "../engine/model/frames";
+import { freePortsOf } from "../engine/editing";
 import { linkCarriesSignal, otherEndOf, type Device, type Network } from "../engine/model/network";
 import type { Conversation, Simulator, Trace } from "../engine/simulator";
 import type { Position } from "../storage/load";
@@ -43,6 +44,10 @@ export interface LinkView {
   toName: string;
   fromPort: string;
   toPort: string;
+  // Le porte su cui ogni capo potrebbe stare: quella attuale e quelle
+  // libere dello stesso dispositivo, nell'ordine del dispositivo.
+  fromChoices: string[];
+  toChoices: string[];
   connected: boolean;
   // Sul cavo passa il segnale: è collegato e i due dispositivi sono accesi.
   signal: boolean;
@@ -201,6 +206,8 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     toName: nameOf(network, link.b.deviceId),
     fromPort: link.a.portName,
     toPort: link.b.portName,
+    fromChoices: portChoices(network, link.a.deviceId, link.a.portName),
+    toChoices: portChoices(network, link.b.deviceId, link.b.portName),
     connected: link.connected,
     signal: linkCarriesSignal(network, link),
   }));
@@ -373,6 +380,16 @@ function nextEventOf(simulator: Simulator): NextEventView | null {
     }
   }
   return { time, waitingDeviceIds };
+}
+
+// Le porte di un dispositivo su cui un cavo può stare: quella che occupa
+// già, più quelle libere.
+function portChoices(network: Network, deviceId: string, current: string): string[] {
+  const free = freePortsOf(network, deviceId);
+  const device = network.devices.find((d) => d.id === deviceId);
+  return (device?.ports ?? [])
+    .map((port) => port.name)
+    .filter((name) => name === current || free.includes(name));
 }
 
 // L'indirizzo come lo si scrive sotto un dispositivo: con il prefisso.

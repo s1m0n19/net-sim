@@ -4,7 +4,7 @@
   // La barretta delle azioni: compare accanto a ciò che è selezionato e
   // mostra, come icone, quello che ci si può fare. Tutto è visibile: non
   // esiste un menu nascosto.
-  export type ActionIcon = "power" | "ping" | "terminal" | "pin" | "unplug" | "replug" | "remove";
+  export type ActionIcon = "power" | "ping" | "link" | "terminal" | "pin" | "unplug" | "replug" | "remove";
 
   export interface BarAction {
     icon: ActionIcon;
@@ -23,6 +23,8 @@
   const paths: Record<ActionIcon, string> = {
     power: "M16 9V16M11 12a7 7 0 1 0 10 0",
     ping: "M10 22L22 10M15 10H22V17",
+    // Un cavo con un connettore a ogni capo.
+    link: "M11 21C16 21 16 11 21 11M9 19H11V23H9ZM21 9H23V13H21Z",
     terminal: "M9 11L14 16L9 21M16 21H23",
     pin: "M9 10H23V22H9ZM9 16H23M16 10V22",
     unplug: "M7 16H12M20 16H25M12 11V21M20 11V21",

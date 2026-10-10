@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sei, e il settimo è a metà. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. Dell'editor c'è l'inizio: si posano, si spostano e si eliminano i dispositivi. Mancano ancora i cavi nuovi, la configurazione degli indirizzi, il salvataggio e la modalità presentazione.
+L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sei, e il settimo è a metà. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. Dell'editor c'è più di metà: si posano, si spostano, si collegano e si eliminano i dispositivi. Mancano ancora la configurazione degli indirizzi, il salvataggio e la modalità presentazione.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -37,7 +37,14 @@ All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quell
 
 Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con il cestino sulla sua barretta o con il tasto Canc.
 
-Non si possono ancora tirare cavi nuovi né scrivere indirizzi: per ora una rete funzionante si ottiene solo aprendo un file.
+Per collegare due dispositivi ci sono due modi:
+
+- lo strumento **Cavo** della colonna: finché è acceso, trascinare da un dispositivo a un altro tira un cavo invece di spostare; in alternativa, un clic sul primo e uno sul secondo. Si spegne con Esc o con un altro clic sulla voce;
+- il pulsante **Collega** sulla barretta di un dispositivo, seguito da un clic sull'altro.
+
+Il cavo occupa su ciascun dispositivo la prima porta libera. Per cambiarla, fai clic sul nome della porta accanto al cavo e scegli dall'elenco, che mostra solo le porte libere. I nomi delle porte si vedono sul cavo selezionato, oppure su tutti accendendo l'etichetta **Porte**.
+
+Non si possono ancora scrivere indirizzi: per ora una rete che risponde al ping si ottiene solo aprendo un file.
 
 | Comando | Effetto |
 | --- | --- |
@@ -104,7 +111,7 @@ Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una 
 
 ## Limiti noti
 
-- **Le reti non si possono ancora costruire per intero né salvare.** Si posano i dispositivi, ma mancano i cavi nuovi e gli indirizzi; per preparare una rete funzionante bisogna ancora scrivere il JSON a mano, partendo da un esempio.
+- **Le reti non si possono ancora costruire per intero né salvare.** Si posano e si collegano i dispositivi, ma mancano gli indirizzi; per preparare una rete funzionante bisogna ancora scrivere il JSON a mano, partendo da un esempio.
 - **Un ping completo, a passi, richiede molti clic.** Con le quattro richieste di Windows sono venti. Con Avvia scorre da solo.
 
 ## Comandi

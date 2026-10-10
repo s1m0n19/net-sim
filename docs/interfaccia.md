@@ -58,15 +58,15 @@ Dopo i primi sei passaggi:
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
 - l'avviso della tempesta di broadcast;
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
-- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
+- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping, Collega, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
 - il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
-- dell'**editor**, la prima metà: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi. Mancano i cavi nuovi, la configurazione dal pannello e l'annulla.
+- dell'**editor**, le prime tre parti: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta. Mancano la configurazione dal pannello e l'annulla.
 
-Salva, annulla, Presenta e lo strumento Cavo sono visibili ma spenti. Sulla barretta manca Collega.
+Salva, annulla e Presenta sono visibili ma spenti.
 
 ## All'avvio
 
@@ -76,7 +76,7 @@ L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: tr
 
 - **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte) si scelgono prima di posare: passando sulla voce si apre il loro elenco.
 - **Posare.** In due modi: trascinando la voce sul disegno, per posarne uno; oppure con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare, finché non si preme Esc. Nel secondo modo la voce resta evidenziata, il puntatore cambia e una riga in alto sul disegno dice che cosa fare. Il dispositivo appena posato viene selezionato.
-- **Strumento Cavo.** Finché è attivo, trascinare da un dispositivo a un altro tira un cavo invece di spostare. Si disattiva con Esc o con un secondo clic.
+- **Strumento Cavo.** Finché è attivo, trascinare da un dispositivo a un altro tira un cavo invece di spostare; lo stesso si ottiene con un clic sul primo dispositivo e uno sul secondo (D-51). Mentre si trascina, una linea tratteggiata segue il mouse. Si disattiva con Esc o con un secondo clic sulla voce.
 - I tipi non ancora disponibili (router, server) compaiono attenuati.
 
 Un dispositivo appena posato riceve un nome progressivo (PC1, PC2, SW1) e i suoi indirizzi MAC. Un PC nasce senza configurazione IP.
@@ -126,7 +126,9 @@ Mentre si aspetta il clic sulla destinazione, il pulsante Ping resta premuto, il
 
 **A simulazione sospesa** la barretta non compare: da una tempesta di broadcast si esce solo con Ricomincia.
 
-**Collega dalla barretta.** Si preme Collega e poi si fa clic sul dispositivo di destinazione: tira un cavo senza attivare lo strumento.
+**Collega dalla barretta.** Si preme Collega e poi si fa clic sul dispositivo di destinazione: tira un cavo senza attivare lo strumento. Un clic sullo stesso dispositivo, o Esc, annulla.
+
+**Porte.** Il cavo nuovo occupa su ciascun capo la prima porta libera, e viene selezionato. Se un dispositivo non ha porte libere il cavo non nasce, e una riga in alto lo dice. I nomi delle due porte sono scritti accanto al cavo: su quello selezionato sempre, sugli altri quando è accesa l'etichetta Porte (D-50). Un clic su un nome apre l'elenco delle porte su cui quel capo può stare, cioè l'attuale e quelle libere dello stesso dispositivo, e un clic su una voce sposta il capo. L'elenco si apre sotto il nome, oppure sopra nella metà bassa del disegno, e si chiude con Esc o con un altro clic sul nome.
 
 ### Tabelle appuntate
 
@@ -363,7 +365,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser.
 | 4 | **Fatto.** Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
-| 7 | Editor: azioni di modifica nel motore, colonna, strumento Cavo, configurazione dal pannello, annulla e ripristina | Si costruisce una rete da zero |
+| 7 | **Fatte le parti a, b e c** (azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta). Restano la configurazione dal pannello e annulla e ripristina | Si costruisce una rete da zero |
 | 8 | Nuova e Salva, zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |
 | 9 | Modalità presentazione e scorciatoie | Il rilascio 1 è completo |
 

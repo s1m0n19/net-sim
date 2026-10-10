@@ -41,6 +41,20 @@ if (import.meta.env.DEV) {
     session.addDevice(template, { x, y });
   }
   if (params.has("scegli")) session.placing = { kind: "host" };
+  // &collega=PC1>SW1;PC2>SW1                  tira cavi tra i dispositivi posati
+  const named = (name: string | null) => session.view.devices.find((device) => device.name === name);
+  for (const pair of (params.get("collega") ?? "").split(";").filter((text) => text !== "")) {
+    const [from, to] = pair.split(">").map(named);
+    if (from !== undefined && to !== undefined) session.connect(from.id, to.id);
+  }
+  // &cavo, &da=PC1                            accende lo strumento Cavo; comincia un cavo da PC1
+  if (params.has("cavo")) session.cabling = true;
+  const cableFrom = named(params.get("da"));
+  if (cableFrom !== undefined) session.armLink(cableFrom.id);
+  // &porta=2b                                 apre l'elenco delle porte: secondo cavo, capo b
+  const portOf = /^(\d+)([ab])$/.exec(params.get("porta") ?? "");
+  const cable = portOf === null ? undefined : session.view.links[Number(portOf[1]) - 1];
+  if (portOf !== null && cable !== undefined) session.openPortMenu(cable.id, portOf[2] as "a" | "b");
 
   const example = params.get("esempio");
   if (example !== null) {

@@ -6,6 +6,7 @@
   import DeviceNode from "./DeviceNode.svelte";
   import LinkLine from "./LinkLine.svelte";
   import PinnedTable, { pinnedSize } from "./PinnedTable.svelte";
+  import PortMenu from "./PortMenu.svelte";
   import PacketEnvelope from "./PacketEnvelope.svelte";
   import WaitIndicator from "./WaitIndicator.svelte";
 
@@ -67,6 +68,12 @@
           run: () => session.armPing(device.id),
         });
       }
+      actions.push({
+        icon: "link",
+        label: `Collega ${device.name}: poi fai clic sull'altro dispositivo`,
+        active: session.linkFrom === device.id,
+        run: () => session.armLink(device.id),
+      });
       if (device.kind === "host") {
         actions.push({
           icon: "terminal",
@@ -120,6 +127,16 @@
   );
 
   const pingSource = $derived(session.view.devices.find((device) => device.id === session.pingFrom));
+  const linkSource = $derived(session.view.devices.find((device) => device.id === session.linkFrom));
+
+  // Il cavo che si sta tirando con il mouse: dal dispositivo al puntatore.
+  const rubber = $derived.by(() => {
+    const from = session.view.devices.find((device) => device.id === session.rubber?.fromId);
+    return from === undefined || session.rubber === null ? null : { from, to: session.rubber.to };
+  });
+
+  // Il cavo di cui è aperto l'elenco delle porte.
+  const portMenuLink = $derived(session.view.links.find((link) => link.id === session.portMenu?.linkId));
 
   // Chi sta scrivendo in una casella di testo, o nel terminale, non vuole
   // che i tasti agiscano sul disegno.
@@ -130,10 +147,17 @@
 
   function onKey(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      // Esc lascia andare, nell'ordine: la voce scelta nella colonna, il
+      // Esc lascia andare, nell'ordine: l'elenco delle porte, la voce
+      // scelta nella colonna, il cavo cominciato, lo strumento Cavo, il
       // ping in attesa della destinazione, la selezione.
-      if (session.placing !== null) {
+      if (session.portMenu !== null) {
+        session.portMenu = null;
+      } else if (session.placing !== null) {
         session.placing = null;
+      } else if (session.linkFrom !== null) {
+        session.linkFrom = null;
+      } else if (session.cabling) {
+        session.cabling = false;
       } else if (session.pingFrom !== null) {
         session.pingFrom = null;
       } else {
@@ -189,7 +213,7 @@
 
 <div
   class="canvas"
-  class:aiming={session.pingFrom !== null}
+  class:aiming={session.pingFrom !== null || session.cabling || session.linkFrom !== null}
   class:placing={session.placing !== null}
   ondragover={onDragOver}
   ondrop={onDrop}
@@ -221,8 +245,14 @@
       {#each waiting as device (device.id)}
         <WaitIndicator {device} progress={session.waitProgress ?? 0} />
       {/each}
-      {#if bar !== null}
+      {#if rubber !== null}
+        <line class="rubber" x1={rubber.from.x} y1={rubber.from.y} x2={rubber.to.x} y2={rubber.to.y} />
+      {/if}
+      {#if bar !== null && session.portMenu === null}
         <ActionBar x={bar.x} y={bar.y} actions={bar.actions} />
+      {/if}
+      {#if portMenuLink !== undefined && session.portMenu !== null}
+        <PortMenu link={portMenuLink} end={session.portMenu.end} />
       {/if}
   </svg>
 
@@ -246,6 +276,17 @@
         <div class="message" role="status">
           <strong>{session.placing.kind === "host" ? "PC" : `Switch a ${session.placing.portCount} porte`}.</strong>
           Fai clic sul disegno per posarne uno; puoi posarne altri. Esc per finire.
+        </div>
+      {/if}
+      {#if linkSource !== undefined}
+        <div class="message" role="status">
+          <strong>Cavo da {linkSource.name}.</strong> Fai clic sul dispositivo da collegare. Esc per
+          annullare.
+        </div>
+      {:else if session.cabling}
+        <div class="message" role="status">
+          <strong>Cavo.</strong> Trascina da un dispositivo a un altro, oppure fai clic sul primo e poi
+          sul secondo. Esc per finire.
         </div>
       {/if}
       {#if pingSource !== undefined}
@@ -276,7 +317,16 @@
     height: 100%;
     outline: none;
   }
-  /* In attesa della destinazione di un ping: il puntatore lo fa capire. */
+  /* Il cavo che si sta tirando: tratteggiato, e trasparente ai clic, così
+     si capisce su quale dispositivo viene lasciato. */
+  .rubber {
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-dasharray: 6 5;
+    pointer-events: none;
+  }
+  /* In attesa di un dispositivo, per un ping o per un cavo: il puntatore
+     lo fa capire. */
   .aiming :global(svg),
   .aiming :global(.device) {
     cursor: crosshair;

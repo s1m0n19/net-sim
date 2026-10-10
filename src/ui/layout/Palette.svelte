@@ -25,7 +25,17 @@
   function choose(template: DeviceTemplate) {
     const same = JSON.stringify(session.placing) === JSON.stringify(template);
     session.placing = same ? null : template;
+    session.cabling = false;
+    session.linkFrom = null;
     switchMenuOpen = false;
+  }
+
+  // Lo strumento Cavo resta attivo finché non lo si spegne, con un altro
+  // clic o con Esc.
+  function toggleCable() {
+    session.cabling = !session.cabling;
+    session.placing = null;
+    session.linkFrom = null;
   }
 
   // Trascinando, il disegno legge da qui che cosa sta arrivando.
@@ -93,10 +103,16 @@
     </div>
 
     <div class="caption">Strumenti</div>
-    <div class="tile soon" title="Non ancora disponibile">
+    <button
+      class="tile tool"
+      class:active={session.cabling}
+      aria-pressed={session.cabling}
+      title="Cavo: trascina da un dispositivo a un altro"
+      onclick={toggleCable}
+    >
       <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="cable" /></svg>
       Cavo
-    </div>
+    </button>
 
     <button class="fold" title="Chiudi la colonna" aria-label="Chiudi la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = false)}>
       <Chevron direction="left" />
@@ -151,6 +167,9 @@
   }
   button.tile {
     cursor: grab;
+  }
+  button.tool {
+    cursor: pointer;
   }
   button.tile:hover {
     border-color: var(--muted);

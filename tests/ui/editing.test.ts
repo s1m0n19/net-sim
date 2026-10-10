@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import lanFile from "../../examples/lan-switch.netsim.json?raw";
+import { configureHost } from "../../src/engine/actions";
 import { session } from "../../src/ui/session.svelte";
 
 const PC = { kind: "host" } as const;
@@ -188,5 +189,156 @@ describe("eliminare", () => {
     expect(session.selection).toEqual({ kind: "device", id: "d2" });
     expect(session.isPinned("d2")).toBe(true);
     expect(session.view.devices.find((d) => d.id === "d2")).toMatchObject({ x: 600, y: 60 });
+  });
+});
+
+describe("cavi", () => {
+  // Due PC e uno switch a 8 porte, non ancora collegati.
+  function threeDevices(): { pc1: string; pc2: string; sw: string } {
+    session.addDevice(PC, { x: 150, y: 250 });
+    session.addDevice(PC, { x: 650, y: 250 });
+    session.addDevice(SWITCH_8, { x: 400, y: 250 });
+    const [pc1, pc2, sw] = session.view.devices.map((device) => device.id);
+    return { pc1, pc2, sw };
+  }
+
+  test("collegare due dispositivi usa la prima porta libera di ciascuno", () => {
+    const { pc1, pc2, sw } = threeDevices();
+
+    session.connect(pc1, sw);
+    session.connect(pc2, sw);
+
+    expect(session.view.links.map((l) => [l.fromName, l.fromPort, l.toName, l.toPort])).toEqual([
+      ["PC1", "Fa0", "SW1", "Fa0/1"],
+      ["PC2", "Fa0", "SW1", "Fa0/2"],
+    ]);
+  });
+
+  test("il cavo nuovo viene selezionato, e i due capi sentono il segnale", () => {
+    const { pc1, sw } = threeDevices();
+
+    session.connect(pc1, sw);
+
+    const cable = session.view.links[0];
+    expect(session.selection).toEqual({ kind: "link", id: cable.id });
+    expect(cable.signal).toBe(true);
+    expect(session.view.devices.find((d) => d.id === pc1)!.linkUp).toBe(true);
+  });
+
+  test("un dispositivo senza porte libere non si può collegare, e lo dice", () => {
+    const { pc1, pc2, sw } = threeDevices();
+    session.connect(pc1, sw);
+
+    session.connect(pc1, pc2);
+
+    expect(session.notice).toBe("PC1 non ha porte libere.");
+    expect(session.view.links).toHaveLength(1);
+  });
+
+  test("un dispositivo non si collega a sé stesso", () => {
+    const { sw } = threeDevices();
+
+    session.connect(sw, sw);
+
+    expect(session.notice).toBe("Un cavo unisce due dispositivi diversi.");
+    expect(session.view.links).toHaveLength(0);
+  });
+
+  test("Collega: si sceglie il primo dispositivo, poi il secondo", () => {
+    const { pc1, sw } = threeDevices();
+
+    session.armLink(pc1);
+    expect(session.linkFrom).toBe(pc1);
+    session.connectTo(sw);
+
+    expect(session.linkFrom).toBeNull();
+    expect(session.view.links).toHaveLength(1);
+  });
+
+  test("indicare di nuovo il dispositivo di partenza annulla", () => {
+    const { pc1 } = threeDevices();
+    session.armLink(pc1);
+
+    session.connectTo(pc1);
+
+    expect(session.linkFrom).toBeNull();
+    expect(session.notice).toBeNull();
+    expect(session.view.links).toHaveLength(0);
+  });
+
+  test("premere Ping lascia andare il cavo cominciato, e viceversa", () => {
+    const { pc1 } = threeDevices();
+
+    session.armLink(pc1);
+    session.armPing(pc1);
+    expect(session.linkFrom).toBeNull();
+
+    session.armLink(pc1);
+    expect(session.pingFrom).toBeNull();
+  });
+
+  test("a ogni capo si può scegliere tra la porta attuale e quelle libere", () => {
+    const { pc1, pc2, sw } = threeDevices();
+    session.connect(pc1, sw);
+    session.connect(pc2, sw);
+
+    const [first, second] = session.view.links;
+
+    expect(first.fromChoices).toEqual(["Fa0"]);
+    expect(first.toChoices).toEqual(["Fa0/1", "Fa0/3", "Fa0/4", "Fa0/5", "Fa0/6", "Fa0/7", "Fa0/8"]);
+    expect(second.toChoices).toEqual(["Fa0/2", "Fa0/3", "Fa0/4", "Fa0/5", "Fa0/6", "Fa0/7", "Fa0/8"]);
+  });
+
+  test("cambiare porta sposta quel capo e libera la porta di prima", () => {
+    const { pc1, sw } = threeDevices();
+    session.connect(pc1, sw);
+    const id = session.view.links[0].id;
+
+    session.changePort(id, "b", "Fa0/5");
+
+    const cable = session.view.links[0];
+    expect(cable.toPort).toBe("Fa0/5");
+    expect(cable.toChoices).toContain("Fa0/1");
+    expect(session.selection).toEqual({ kind: "link", id });
+  });
+
+  test("una porta occupata viene rifiutata, e lo dice", () => {
+    const { pc1, pc2, sw } = threeDevices();
+    session.connect(pc1, sw);
+    session.connect(pc2, sw);
+
+    session.changePort(session.view.links[1].id, "b", "Fa0/1");
+
+    expect(session.notice).not.toBeNull();
+    expect(session.view.links[1].toPort).toBe("Fa0/2");
+  });
+
+  test("l'elenco delle porte si apre su un capo, seleziona il cavo, e si richiude", () => {
+    const { pc1, sw } = threeDevices();
+    session.connect(pc1, sw);
+    const id = session.view.links[0].id;
+    session.select(null);
+
+    session.openPortMenu(id, "b");
+    expect(session.portMenu).toEqual({ linkId: id, end: "b" });
+    expect(session.selection).toEqual({ kind: "link", id });
+
+    session.openPortMenu(id, "b");
+    expect(session.portMenu).toBeNull();
+  });
+
+  test("su una rete costruita a mano il ping arriva", () => {
+    const { pc1, pc2, sw } = threeDevices();
+    session.connect(pc1, sw);
+    session.connect(pc2, sw);
+    // La configurazione dal pannello non c'è ancora: si passa dal motore.
+    const simulator = (session as any).simulator;
+    simulator.dispatch(configureHost(pc1, { ip: "192.168.1.10", mask: "255.255.255.0", gateway: null }));
+    simulator.dispatch(configureHost(pc2, { ip: "192.168.1.11", mask: "255.255.255.0", gateway: null }));
+
+    session.ping(pc1, "192.168.1.11", 1);
+    while (session.view.nextEvent !== null) session.step();
+
+    expect(session.view.pingResults.map((r) => r.outcome)).toEqual(["reply"]);
   });
 });

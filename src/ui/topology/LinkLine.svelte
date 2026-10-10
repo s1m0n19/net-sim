@@ -4,22 +4,27 @@
   import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import type { LinkView } from "../view";
+  import { pointNear, portLabelPoint } from "./geometry";
 
   let { link }: { link: LinkView } = $props();
 
   const selected = $derived(session.selection?.kind === "link" && session.selection.id === link.id);
 
-  // Un punto del cavo a una certa distanza da un capo, spostato di lato:
-  // serve a mettere pallini ed etichette vicino al dispositivo, senza
-  // finirci sopra.
-  function near(end: "from" | "to", distance: number, sideways = 0) {
-    const start = end === "from" ? link.from : link.to;
-    const other = end === "from" ? link.to : link.from;
-    const length = Math.hypot(other.x - start.x, other.y - start.y) || 1;
-    const ux = (other.x - start.x) / length;
-    const uy = (other.y - start.y) / length;
-    return { x: start.x + ux * distance - uy * sideways, y: start.y + uy * distance + ux * sideways };
-  }
+  // I pallini del segnale stanno sul cavo, poco fuori dal dispositivo.
+  const signalFrom = $derived(pointNear(link.from, link.to, 42));
+  const signalTo = $derived(pointNear(link.to, link.from, 42));
+
+  // I nomi delle due porte. Si vedono se le etichette sono accese, e
+  // comunque sul cavo selezionato: è da lì che si cambia porta.
+  const ports = $derived(
+    (["a", "b"] as const).map((end) => ({
+      end,
+      name: end === "a" ? link.fromPort : link.toPort,
+      deviceName: end === "a" ? link.fromName : link.toName,
+      at: portLabelPoint(link.from, link.to, end),
+      open: session.portMenu?.linkId === link.id && session.portMenu.end === end,
+    })),
+  );
 
   const middle = $derived({ x: (link.from.x + link.to.x) / 2, y: (link.from.y + link.to.y) / 2 });
 
@@ -27,10 +32,10 @@
     session.select({ kind: "link", id: link.id });
   }
 
-  function onKey(event: KeyboardEvent) {
+  function onKey(event: KeyboardEvent, action: () => void = choose) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      choose();
+      action();
     }
   }
 </script>
@@ -48,13 +53,8 @@
 
 {#if link.signal}
   <!-- Un pallino a ogni capo che sente il segnale. -->
-  <circle class="signal" cx={near("from", 42).x} cy={near("from", 42).y} r="4" />
-  <circle class="signal" cx={near("to", 42).x} cy={near("to", 42).y} r="4" />
-{/if}
-
-{#if preferences.labels.ports}
-  <text class="port" x={near("from", 62, 13).x} y={near("from", 62, 13).y + 4}>{link.fromPort}</text>
-  <text class="port" x={near("to", 62, -13).x} y={near("to", 62, -13).y + 4}>{link.toPort}</text>
+  <circle class="signal" cx={signalFrom.x} cy={signalFrom.y} r="4" />
+  <circle class="signal" cx={signalTo.x} cy={signalTo.y} r="4" />
 {/if}
 
 <!-- Una riga larga e invisibile sopra il cavo: lo rende facile da cliccare. -->
@@ -71,8 +71,29 @@
     event.stopPropagation();
     choose();
   }}
-  onkeydown={onKey}
+  onkeydown={(event) => onKey(event)}
 />
+
+<!-- Un clic sul nome di una porta apre l'elenco delle porte libere. -->
+{#if preferences.labels.ports || selected}
+  {#each ports as port (port.end)}
+    <text
+      class="port"
+      class:open={port.open}
+      x={port.at.x}
+      y={port.at.y}
+      role="button"
+      tabindex="0"
+      aria-label="Porta {port.name} di {port.deviceName}: cambia porta"
+      aria-expanded={port.open}
+      onclick={(event) => {
+        event.stopPropagation();
+        session.openPortMenu(link.id, port.end);
+      }}
+      onkeydown={(event) => onKey(event, () => session.openPortMenu(link.id, port.end))}
+    >{port.name}</text>
+  {/each}
+{/if}
 
 <style>
   .wire {
@@ -113,5 +134,13 @@
     font-family: var(--font-mono);
     font-size: 11px;
     text-anchor: middle;
+    cursor: pointer;
+    outline: none;
+  }
+  .port:hover,
+  .port:focus-visible,
+  .port.open {
+    fill: var(--accent);
+    text-decoration: underline;
   }
 </style>

@@ -6,9 +6,11 @@
 
 import {
   addHost,
+  addLink,
   addSwitch,
   connectLink,
   disconnectLink,
+  moveLinkEnd,
   ping,
   powerOff,
   powerOn,
@@ -16,7 +18,7 @@ import {
   removeLink,
   type Action,
 } from "../engine/actions";
-import type { DeviceTemplate } from "../engine/editing";
+import { freePortsOf, type DeviceTemplate } from "../engine/editing";
 import { Simulator, type Trace } from "../engine/simulator";
 import {
   formatArpTable,
@@ -130,6 +132,17 @@ class Session {
   // Il tipo di dispositivo scelto nella colonna: finché non è null, ogni
   // clic sul disegno ne posa uno.
   placing = $state.raw<DeviceTemplate | null>(null);
+  // Lo strumento Cavo è attivo: trascinare da un dispositivo a un altro, o
+  // fare clic sul primo e poi sul secondo, tira un cavo.
+  cabling = $state(false);
+  // Il dispositivo da cui partirà il cavo: è stato scelto, e il prossimo
+  // clic su un dispositivo ne sceglie l'altro capo.
+  linkFrom = $state<string | null>(null);
+  // Il cavo che si sta tirando trascinando: da quale dispositivo, e fin
+  // dove è arrivato il mouse.
+  rubber = $state.raw<{ fromId: string; to: Position } | null>(null);
+  // L'elenco delle porte aperto sul disegno: di quale cavo e di quale capo.
+  portMenu = $state.raw<{ linkId: string; end: "a" | "b" } | null>(null);
   // Mentre si trascina un dispositivo l'inquadratura resta ferma, altrimenti
   // il disegno si muoverebbe sotto il mouse.
   frozenBounds = $state.raw<Bounds | null>(null);
@@ -193,7 +206,67 @@ class Session {
   select(selection: Selection | null): void {
     this.selection = selection;
     this.pingFrom = null;
+    this.linkFrom = null;
+    this.portMenu = null;
     this.notice = null;
+  }
+
+  /** Apre l'elenco delle porte di un capo di un cavo, e seleziona il cavo. */
+  openPortMenu(linkId: string, end: "a" | "b"): void {
+    const same = this.portMenu?.linkId === linkId && this.portMenu.end === end;
+    this.select({ kind: "link", id: linkId });
+    // Un secondo clic sullo stesso nome richiude l'elenco.
+    this.portMenu = same ? null : { linkId, end };
+  }
+
+  /**
+   * Sceglie il dispositivo da cui parte un cavo: il prossimo dispositivo
+   * cliccato sarà l'altro capo.
+   */
+  armLink(deviceId: string): void {
+    this.linkFrom = deviceId;
+    this.pingFrom = null;
+    this.notice = null;
+  }
+
+  /**
+   * Conclude il cavo cominciato con `armLink`, verso il dispositivo indicato.
+   * Indicare di nuovo il dispositivo di partenza annulla.
+   */
+  connectTo(targetId: string): void {
+    const from = this.linkFrom;
+    this.linkFrom = null;
+    if (from !== null && from !== targetId) this.connect(from, targetId);
+  }
+
+  /**
+   * Collega due dispositivi con un cavo nuovo, usando su ciascuno la prima
+   * porta libera, e seleziona il cavo: da lì si può cambiare porta.
+   */
+  connect(fromId: string, toId: string): void {
+    if (this.simulator === null) return;
+    if (fromId === toId) {
+      this.notice = "Un cavo unisce due dispositivi diversi.";
+      return;
+    }
+    const ends = [fromId, toId].map((deviceId) => ({
+      deviceId,
+      portName: freePortsOf(this.simulator!.network, deviceId)[0],
+    }));
+    const full = ends.find((end) => end.portName === undefined);
+    if (full !== undefined) {
+      const name = this.view.devices.find((d) => d.id === full.deviceId)?.name ?? "Il dispositivo";
+      this.notice = `${name} non ha porte libere.`;
+      return;
+    }
+    const traces = this.run(addLink(ends[0], ends[1]));
+    const added = traces.find((trace) => trace.kind === "link-added");
+    if (added !== undefined) this.selection = { kind: "link", id: added.linkId };
+  }
+
+  /** Sposta un capo di un cavo su un'altra porta dello stesso dispositivo. */
+  changePort(linkId: string, end: "a" | "b", portName: string): void {
+    this.run(moveLinkEnd(linkId, end, portName));
   }
 
   /**
@@ -412,6 +485,7 @@ class Session {
    */
   armPing(deviceId: string): void {
     this.pingFrom = deviceId;
+    this.linkFrom = null;
     this.notice = null;
   }
 
@@ -431,16 +505,19 @@ class Session {
     this.notice = this.ping(from, target.ip, 1);
   }
 
-  // Esegue un'azione sul simulatore; se viene rifiutata lo dice in `notice`.
-  private run(action: Action): void {
-    if (this.simulator === null) return;
+  // Esegue un'azione sul simulatore e ne restituisce le tracce. Se viene
+  // rifiutata lo dice in `notice`, e le tracce sono vuote.
+  private run(action: Action): Trace[] {
+    if (this.simulator === null) return [];
+    let traces: Trace[] = [];
     try {
-      this.simulator.dispatch(action);
+      traces = this.simulator.dispatch(action);
       this.notice = null;
     } catch (problem) {
       this.notice = messageOf(problem);
     }
     this.refresh();
+    return traces;
   }
 
   /** Dice se c'è almeno un dispositivo da disegnare. */
@@ -492,6 +569,10 @@ class Session {
     this.pingFrom = null;
     this.notice = null;
     this.placing = null;
+    this.cabling = false;
+    this.linkFrom = null;
+    this.rubber = null;
+    this.portMenu = null;
     this.frozenBounds = null;
     this.highlight = null;
     // Le conversazioni di prima non esistono più.

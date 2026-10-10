@@ -14,11 +14,19 @@
   // Il mouse è su una riga dell'elenco degli eventi che parla di questo dispositivo.
   const highlighted = $derived(session.highlight?.deviceId === device.id);
 
+  // Da qui sta per partire un cavo.
+  const linking = $derived(session.linkFrom === device.id);
+
   // Un clic seleziona. Se però è stato premuto Ping su un altro
-  // dispositivo, il clic sceglie la destinazione del ping.
+  // dispositivo, il clic sceglie la destinazione del ping; e se si sta
+  // tirando un cavo, ne sceglie un capo.
   function choose() {
     if (session.pingFrom !== null) {
       session.pingTo(device.id);
+    } else if (session.linkFrom !== null) {
+      session.connectTo(device.id);
+    } else if (session.cabling) {
+      session.armLink(device.id);
     } else {
       session.select({ kind: "device", id: device.id });
     }
@@ -32,11 +40,13 @@
   }
 
   // --- Trascinamento -------------------------------------------------------
-  // Tenendo premuto e muovendo il mouse il dispositivo si sposta. Un clic
-  // senza movimento resta un clic: per distinguerli si aspetta che il
-  // mouse si sia mosso di qualche pixel.
+  // Tenendo premuto e muovendo il mouse il dispositivo si sposta; con lo
+  // strumento Cavo attivo, invece, si tira un cavo fino a un altro
+  // dispositivo. Un clic senza movimento resta un clic: per distinguerli
+  // si aspetta che il mouse si sia mosso di qualche pixel.
   const THRESHOLD = 4;
-  let press: { clientX: number; clientY: number; x: number; y: number; scale: number } | null = null;
+  let press: { clientX: number; clientY: number; x: number; y: number; scale: number; cable: boolean } | null =
+    null;
   let dragging = false;
   // Dopo un trascinamento il browser manda comunque un clic: va ignorato.
   let justDragged = false;
@@ -46,7 +56,14 @@
     const group = event.currentTarget as SVGGElement;
     // Di quanti pixel dello schermo è fatta un'unità del disegno.
     const scale = group.ownerSVGElement?.getScreenCTM()?.a ?? 1;
-    press = { clientX: event.clientX, clientY: event.clientY, x: device.x, y: device.y, scale };
+    press = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: device.x,
+      y: device.y,
+      scale,
+      cable: session.cabling,
+    };
     group.setPointerCapture?.(event.pointerId);
   }
 
@@ -57,13 +74,31 @@
     if (!dragging) {
       if (Math.hypot(dx, dy) < THRESHOLD) return;
       dragging = true;
-      session.holdBounds(true);
+      if (!press.cable) session.holdBounds(true);
     }
-    session.moveDevice(device.id, { x: press.x + dx / press.scale, y: press.y + dy / press.scale });
+    if (press.cable) {
+      // Il cavo parte dal centro del dispositivo e segue il mouse.
+      const group = event.currentTarget as SVGGElement;
+      const matrix = group.ownerSVGElement?.getScreenCTM();
+      if (!matrix) return;
+      const to = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+      session.rubber = { fromId: device.id, to: { x: to.x, y: to.y } };
+    } else {
+      session.moveDevice(device.id, { x: press.x + dx / press.scale, y: press.y + dy / press.scale });
+    }
   }
 
-  function up() {
-    if (dragging) {
+  function up(event: PointerEvent) {
+    if (dragging && press?.cable) {
+      session.rubber = null;
+      // Il dispositivo su cui il mouse è stato lasciato, se ce n'è uno.
+      const under = document.elementFromPoint?.(event.clientX, event.clientY);
+      const targetId = under?.closest("[data-device-id]")?.getAttribute("data-device-id");
+      if (event.type === "pointerup" && targetId && targetId !== device.id) {
+        session.connect(device.id, targetId);
+      }
+      justDragged = true;
+    } else if (dragging) {
       session.holdBounds(false);
       justDragged = true;
     }
@@ -75,6 +110,7 @@
 <g
   class="device"
   class:off={!device.powered}
+  data-device-id={device.id}
   transform="translate({device.x} {device.y})"
   role="button"
   tabindex="0"
@@ -96,7 +132,7 @@
   {#if selected}
     <rect class="selection" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
   {/if}
-  {#if highlighted && !selected}
+  {#if (highlighted && !selected) || linking}
     <rect class="highlight" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
   {/if}
   <rect class="box" x={-halfWidth} y="-26" width={halfWidth * 2} height="52" rx="10" />
