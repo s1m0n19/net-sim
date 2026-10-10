@@ -7,19 +7,11 @@ import "./ui/theme/tokens.css";
 
 import { mount } from "svelte";
 import App from "./ui/App.svelte";
-import ProvisionalPage from "./ui/provisional/ProvisionalPage.svelte";
 import { preferences } from "./ui/preferences.svelte";
 import { session } from "./ui/session.svelte";
 import { start } from "./ui/simulation/playback";
 
-// La pagina provvisoria resta raggiungibile all'indirizzo /#provvisoria
-// finché la nuova interfaccia non sa fare tutto ciò che fa lei.
-const provisional = location.hash === "#provvisoria";
-document.body.classList.toggle("provisional", provisional);
-// La pagina provvisoria ha colori fissi, pensati per lo sfondo chiaro.
-if (provisional) document.documentElement.dataset.theme = "light";
-
-mount(provisional ? ProvisionalPage : App, { target: document.getElementById("app")! });
+mount(App, { target: document.getElementById("app")! });
 
 // Solo durante lo sviluppo: l'indirizzo può aprire un esempio e mettere la
 // rete in una certa situazione, senza toccare il mouse. Serve a provare
@@ -39,7 +31,7 @@ mount(provisional ? ProvisionalPage : App, { target: document.getElementById("ap
 //   &segui=1                                   segue solo la prima conversazione
 //   &nascondi=ARP | ICMP                       spegne un protocollo nel filtro
 //   &fascia-chiusa, &pannello-chiuso           chiude la fascia in basso o il pannello laterale
-if (import.meta.env.DEV && !provisional) {
+if (import.meta.env.DEV) {
   const params = new URLSearchParams(location.search);
   const example = params.get("esempio");
   if (example !== null) {

@@ -20,7 +20,7 @@ I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ci
 
 Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti, loopback), guasti (cavo staccato, dispositivo spento), sospensione della tempesta di broadcast, in passo-passo.
 
-L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; sono fatti i primi quattro (ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste, attese; selezione, barretta delle azioni, pannello laterale in sola lettura; scheda Eventi con filtro; tabelle appuntate sul disegno; terminale degli host). La pagina provvisoria di prima sta in `src/ui/provisional/`, si apre all'indirizzo `/#provvisoria` e non offre più nulla che la nuova non abbia: non va rifinita, e va cancellata appena l'utente lo conferma.
+L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; sono fatti i primi quattro (ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste, attese; selezione, barretta delle azioni, pannello laterale in sola lettura; scheda Eventi con filtro; tabelle appuntate sul disegno; terminale degli host).
 
 Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Non ci sono difetti noti aperti.
 

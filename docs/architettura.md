@@ -7,7 +7,7 @@ L'app è divisa in due parti che non si mescolano: un **motore di simulazione**,
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Interfaccia (Svelte)                                     │
-│   oggi: una pagina provvisoria                           │
+│   Topologia      Pannelli              Terminali         │
 └──────────────┬───────────────────────────▲───────────────┘
                │ azioni dell'utente        │ tracce e stato
 ┌──────────────▼───────────────────────────┴───────────────┐
@@ -82,8 +82,7 @@ net-sim/
 │       ├── view.ts            prepara ciò che il disegno mostra
 │       ├── preferences.svelte.ts  tema, etichette, pannelli aperti
 │       ├── theme/             colori, caratteri, sagome dei dispositivi
-│       ├── layout/  topology/  panels/  strip/  simulation/
-│       └── provisional/       la pagina provvisoria, da cancellare
+│       └── layout/  topology/  panels/  strip/  simulation/
 └── tests/
     ├── engine/                un file per argomento, più builders.ts con le reti di prova
     ├── shell/                 comandi del prompt e loro output

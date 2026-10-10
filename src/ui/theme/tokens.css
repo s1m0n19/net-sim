@@ -78,12 +78,6 @@ body {
   line-height: 1.4;
 }
 
-/* La pagina provvisoria non ha un'impaginazione sua: le basta un margine. */
-body.provisional {
-  padding: 8px 16px;
-  font-size: 15px;
-}
-
 button {
   font: inherit;
   color: inherit;

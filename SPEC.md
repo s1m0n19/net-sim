@@ -2,7 +2,7 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** in sviluppo. Il motore del rilascio 1 è quasi completo; l'interfaccia è ancora una pagina provvisoria. Il dettaglio è nella sezione 9.
+- **Stato:** in sviluppo. Il motore del rilascio 1 è completo; l'interfaccia è in costruzione, a due terzi del piano. Il dettaglio è nella sezione 9.
 - **Ultimo aggiornamento:** 10 ottobre 2026.
 - **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
 - **Documentazione tecnica:** [docs/](docs/README.md).
@@ -310,7 +310,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-40 | 10 ott 2026 | Un campo di configurazione ha effetto alla conferma; la maschera viene proposta in base alla classe dell'indirizzo | Evita stati intermedi mentre si scrive, e permette di rispettare la regola "indirizzo e maschera insieme" un campo alla volta | Confermata, da realizzare |
 | D-41 | 10 ott 2026 | All'avvio sempre un foglio vuoto; nessuna rete ricordata e nessun esempio integrato | Prevedibile, e adatto ai PC del laboratorio che vengono ripuliti | Confermata, da realizzare |
 | D-42 | 10 ott 2026 | I caratteri dell'interfaccia sono inclusi nel sito, non caricati da un servizio esterno | L'app deve funzionare offline e dietro il filtro della scuola | Adottata |
-| D-43 | 10 ott 2026 | Durante la costruzione della nuova interfaccia la pagina provvisoria resta raggiungibile all'indirizzo `/#provvisoria` | Finché la nuova non sa lanciare un ping, togliere la vecchia lascerebbe l'app senza modo di mostrare la simulazione | Adottata |
+| D-43 | 10 ott 2026 | Durante la costruzione della nuova interfaccia la pagina provvisoria resta raggiungibile all'indirizzo `/#provvisoria` | Finché la nuova non sa lanciare un ping, togliere la vecchia lascerebbe l'app senza modo di mostrare la simulazione | Superata: la pagina provvisoria è stata cancellata quando la nuova interfaccia l'ha sostituita |
 | D-44 | 10 ott 2026 | Nell'output di `ping` la durata è scritta in tick: `time=8 ticks`, e `time<1 tick` per una risposta immediata | È l'unità del tempo simulato; scrivere millisecondi sarebbe inventare un numero | Adottata |
 | D-45 | 10 ott 2026 | Ricominciando la simulazione i terminali restano aperti ma si svuotano | I PC tornano come appena accesi; l'output di prima parlerebbe di una rete che non esiste più | Adottata |
 | D-46 | 10 ott 2026 | Identificativi, nomi, porte e indirizzi MAC di un dispositivo nuovo li sceglie il motore, prendendo il primo libero della serie | L'utente dice solo che cosa vuole aggiungere; la scelta è sempre la stessa a parità di rete, quindi i test restano ripetibili | Adottata |
@@ -335,7 +335,7 @@ Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dal
 | Stato | Requisiti |
 | --- | --- |
 | **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
-| **Fatto in forma provvisoria** | VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
+| **Fatto in parte** | VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
 | **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file · FILE-1 si apre un file dal disco; manca il salvataggio · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
 | **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · UI-9 · UI-13 · UI-14 |
 
@@ -359,7 +359,6 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 - 337 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
 - La nuova interfaccia, al sesto dei nove passaggi (ora anche con le tabelle appuntate e il terminale degli host): apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping, provocare guasti e seguire gli eventi con un filtro.
-- La pagina provvisoria di prima, all'indirizzo `/#provvisoria`: non offre più nulla che la nuova interfaccia non abbia: si può cancellare. Verrà cancellata quando la nuova interfaccia la sostituisce.
 
 ### Difetti noti
 

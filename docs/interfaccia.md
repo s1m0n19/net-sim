@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi sei: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro; tabelle appuntate; terminale degli host. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` ma la nuova interfaccia ormai fa tutto ciò che faceva lei: si può cancellare.
+**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi sei: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro; tabelle appuntate; terminale degli host. Tutto il resto è descritto qui ma non esiste ancora. La pagina provvisoria usata all'inizio è stata cancellata.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -327,7 +327,6 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
 | `simulation/playback.ts` | L'orologio: fa scorrere il tempo a schermo e chiede al motore di avanzare. Ha i suoi test, con un orologio finto |
-| `provisional/` | La pagina provvisoria di prima. Verrà cancellata |
 
 I caratteri IBM Plex sono inclusi nel sito, non scaricati da un servizio esterno: l'app deve funzionare anche senza rete e dietro il filtro della scuola.
 
@@ -343,13 +342,13 @@ Serviranno parti nuove fuori da `src/ui/`:
 
 ## Piano di costruzione
 
-Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` ma dal passaggio 6 la nuova interfaccia fa tutto ciò che faceva lei.
+Nove passaggi, ciascuno verificabile da solo nel browser.
 
 | N. | Passaggio | Che cosa si vede alla fine |
 | --- | --- | --- |
 | 1 | **Fatto.** Ossatura, temi, disegno della rete nel nuovo stile, apertura di un file | Si apre un file di esempio e lo si vede disegnato con il nuovo aspetto, nei due temi |
 | 2 | **Fatto.** Barra della simulazione: passo, tempo reale, velocità, buste animate con sigla, attese, avviso di sospensione | Un ping si guarda scorrere da solo |
-| 3 | **Fatto.** Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
+| 3 | **Fatto.** Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping |
 | 4 | **Fatto.** Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
