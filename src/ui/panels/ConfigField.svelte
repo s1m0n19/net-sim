@@ -1,0 +1,121 @@
+<script lang="ts">
+  // Un campo della configurazione nel pannello laterale. Ha effetto quando
+  // lo si conferma, con Invio o uscendo dal campo; se il valore viene
+  // rifiutato il campo si segna in rosso, con il motivo scritto sotto, e
+  // la rete conserva il valore di prima.
+  let {
+    label,
+    name,
+    value,
+    apply,
+    mono = true,
+    placeholder = "",
+  }: {
+    label: string;
+    // Nome del campo nella pagina: serve a ritrovarlo, e a dare un id.
+    name: string;
+    // Il valore che la rete ha adesso; null se non è impostato.
+    value: string | null;
+    // Prova ad applicare il testo scritto: restituisce il motivo del
+    // rifiuto, oppure null se è andata bene.
+    apply: (text: string) => string | null;
+    mono?: boolean;
+    placeholder?: string;
+  } = $props();
+
+  let draft = $state("");
+  let problem = $state<string | null>(null);
+
+  // Quando la rete cambia valore (anche per un altro campo, come la
+  // maschera proposta) il campo lo mostra. Si passa da un valore derivato
+  // perché cambia solo se il valore è davvero diverso: altrimenti ogni
+  // aggiornamento del disegno cancellerebbe ciò che si sta scrivendo, e
+  // il motivo di un rifiuto.
+  const current = $derived(value ?? "");
+  $effect(() => {
+    draft = current;
+    problem = null;
+  });
+
+  function confirm() {
+    // Uscire dal campo senza aver cambiato nulla non fa nulla.
+    if (draft.trim() === current) {
+      draft = current;
+      problem = null;
+      return;
+    }
+    problem = apply(draft);
+  }
+
+  function onKey(event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      confirm();
+    } else if (event.key === "Escape") {
+      // Esc rimette il valore della rete, e non toglie la selezione.
+      event.stopPropagation();
+      draft = current;
+      problem = null;
+    }
+  }
+</script>
+
+<label for="field-{name}">{label}</label>
+<div class="field">
+  <input
+    id="field-{name}"
+    data-field={name}
+    class:mono
+    class:invalid={problem !== null}
+    type="text"
+    autocomplete="off"
+    spellcheck="false"
+    {placeholder}
+    aria-invalid={problem !== null}
+    aria-describedby={problem !== null ? `problem-${name}` : undefined}
+    bind:value={draft}
+    onkeydown={onKey}
+    onblur={confirm}
+  />
+  {#if problem !== null}
+    <!-- Rosso più un segno: il colore da solo non basta. -->
+    <p id="problem-{name}" class="problem" role="alert"><span aria-hidden="true">✕</span> {problem}</p>
+  {/if}
+</div>
+
+<style>
+  label {
+    color: var(--muted);
+    align-self: start;
+    padding-top: 4px;
+  }
+  .field {
+    min-width: 0;
+  }
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 3px 6px;
+    font: inherit;
+    color: var(--ink);
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  input.mono {
+    font-family: var(--font-mono);
+  }
+  input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  input.invalid {
+    border-color: var(--down);
+    border-width: 2px;
+    padding: 2px 5px;
+  }
+  .problem {
+    margin: 3px 0 0;
+    color: var(--down);
+    font-size: 0.92em;
+  }
+</style>

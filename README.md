@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sei, e il settimo è a metà. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. Dell'editor c'è più di metà: si posano, si spostano, si collegano e si eliminano i dispositivi. Mancano ancora la configurazione degli indirizzi, il salvataggio e la modalità presentazione.
+L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sei, e il settimo è a metà. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è quasi completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi; manca solo l'annulla. Mancano ancora il salvataggio e la modalità presentazione.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -44,7 +44,12 @@ Per collegare due dispositivi ci sono due modi:
 
 Il cavo occupa su ciascun dispositivo la prima porta libera. Per cambiarla, fai clic sul nome della porta accanto al cavo e scegli dall'elenco, che mostra solo le porte libere. I nomi delle porte si vedono sul cavo selezionato, oppure su tutti accendendo l'etichetta **Porte**.
 
-Non si possono ancora scrivere indirizzi: per ora una rete che risponde al ping si ottiene solo aprendo un file.
+Selezionato un dispositivo, nel pannello a destra si cambiano il **nome** e, per un PC, **indirizzo IP**, **subnet mask** e **gateway**. Un campo ha effetto quando premi Invio o esci dal campo; Esc rimette il valore di prima.
+
+- Scritto l'indirizzo su un PC senza maschera, la maschera viene proposta da sola: è quella della classe dell'indirizzo (255.255.255.0 per 192.168.1.10), come fa Windows. Si può cambiare.
+- Un valore non accettabile, per esempio l'indirizzo di broadcast della sottorete o un nome già usato, segna il campo in rosso con il motivo sotto, e la rete conserva il valore di prima.
+- Svuotare l'indirizzo toglie tutta la configurazione del PC.
+- Cambiare la configurazione di un PC ne svuota la tabella ARP, come riavviare la scheda di rete.
 
 | Comando | Effetto |
 | --- | --- |
@@ -111,7 +116,7 @@ Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una 
 
 ## Limiti noti
 
-- **Le reti non si possono ancora costruire per intero né salvare.** Si posano e si collegano i dispositivi, ma mancano gli indirizzi; per preparare una rete funzionante bisogna ancora scrivere il JSON a mano, partendo da un esempio.
+- **Le reti costruite non si possono ancora salvare.** Una rete fatta nell'app si perde chiudendo la pagina; per conservarne una bisogna ancora scrivere il JSON a mano, partendo da un esempio.
 - **Un ping completo, a passi, richiede molti clic.** Con le quattro richieste di Windows sono venti. Con Avvia scorre da solo.
 
 ## Comandi

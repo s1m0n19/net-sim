@@ -8,6 +8,7 @@ import {
   addHost,
   addLink,
   addSwitch,
+  configureHost,
   connectLink,
   disconnectLink,
   moveLinkEnd,
@@ -16,9 +17,11 @@ import {
   powerOn,
   removeDevice,
   removeLink,
+  renameDevice,
   type Action,
 } from "../engine/actions";
 import { freePortsOf, type DeviceTemplate } from "../engine/editing";
+import { checkIpConfig, defaultMaskFor, type IpConfig } from "../engine/model/ip-config";
 import { Simulator, type Trace } from "../engine/simulator";
 import {
   formatArpTable,
@@ -503,6 +506,66 @@ class Session {
       return;
     }
     this.notice = this.ping(from, target.ip, 1);
+  }
+
+  /**
+   * Cambia il nome di un dispositivo, come scritto nel pannello laterale.
+   *
+   * @returns null se il nome è stato accettato, altrimenti il motivo del
+   *   rifiuto, da scrivere sotto il campo
+   */
+  rename(deviceId: string, name: string): string | null {
+    return this.attempt(renameDevice(deviceId, name));
+  }
+
+  /**
+   * Cambia un campo della configurazione IP di un host, come scritto nel
+   * pannello laterale. Un testo vuoto toglie il valore.
+   *
+   * Due aiuti, perché indirizzo e maschera vanno impostati insieme:
+   * scritto l'indirizzo su un host senza maschera, la maschera diventa
+   * quella della classe dell'indirizzo; svuotato l'indirizzo, si svuotano
+   * anche maschera e gateway.
+   *
+   * @returns null se il valore è stato accettato, altrimenti il motivo del
+   *   rifiuto, da scrivere sotto il campo; in quel caso la rete non cambia
+   */
+  configure(deviceId: string, field: keyof IpConfig, text: string): string | null {
+    const host = this.view.devices.find((device) => device.id === deviceId);
+    if (host === undefined || host.kind !== "host") return "Questo dispositivo non ha una configurazione IP.";
+
+    const value = text.trim() === "" ? null : text.trim();
+    let config: IpConfig = { ip: host.ip, mask: host.mask, gateway: host.gateway, [field]: value };
+    if (field === "ip" && value === null) {
+      config = { ip: null, mask: null, gateway: null };
+    } else if (field === "ip" && value !== null && host.mask === null) {
+      config.mask = defaultMaskFor(value);
+    }
+
+    let problem = checkIpConfig(config);
+    if (problem !== null && config.ip !== null && config.mask === null) {
+      // Non c'è una maschera da proporre perché l'indirizzo è scritto male
+      // o non si può assegnare: il motivo da dire è quello, e lo si
+      // ottiene controllando l'indirizzo con una maschera qualsiasi.
+      problem = checkIpConfig({ ...config, mask: "255.255.255.0" }) ?? problem;
+    }
+    if (problem !== null) return `${problem[0].toUpperCase()}${problem.slice(1)}.`;
+    return this.attempt(configureHost(deviceId, config));
+  }
+
+  // Esegue un'azione il cui rifiuto va scritto accanto a ciò che l'utente
+  // ha digitato, e non in alto sul disegno: restituisce il motivo, o null.
+  private attempt(action: Action): string | null {
+    if (this.simulator === null) return null;
+    let problem: string | null = null;
+    try {
+      this.simulator.dispatch(action);
+      this.notice = null;
+    } catch (thrown) {
+      problem = messageOf(thrown);
+    }
+    this.refresh();
+    return problem;
   }
 
   // Esegue un'azione sul simulatore e ne restituisce le tracce. Se viene

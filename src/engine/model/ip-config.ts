@@ -92,3 +92,24 @@ function checkAssignable(
 
   return null;
 }
+
+/**
+ * La subnet mask che Windows propone per un indirizzo, quella della sua
+ * classe: 255.0.0.0 per la classe A (primo numero da 1 a 126),
+ * 255.255.0.0 per la B (da 128 a 191), 255.255.255.0 per la C (da 192 a 223).
+ *
+ * È solo una proposta: le classi non decidono più dove finisce una rete,
+ * e la maschera si può cambiare.
+ *
+ * @param ip - l'indirizzo scritto dall'utente
+ * @returns la maschera della classe, oppure null se l'indirizzo è scritto
+ *   male o non appartiene alle classi A, B o C
+ */
+export function defaultMaskFor(ip: Ipv4Address): Ipv4Address | null {
+  if (!isValidIp(ip)) return null;
+  const first = Number(ip.split(".")[0]);
+  if (first >= 1 && first <= 126) return "255.0.0.0";
+  if (first >= 128 && first <= 191) return "255.255.0.0";
+  if (first >= 192 && first <= 223) return "255.255.255.0";
+  return null;
+}

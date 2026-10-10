@@ -342,3 +342,121 @@ describe("cavi", () => {
     expect(session.view.pingResults.map((r) => r.outcome)).toEqual(["reply"]);
   });
 });
+
+describe("configurare dal pannello", () => {
+  let pc: string;
+
+  function host() {
+    return session.view.devices.find((device) => device.id === pc)!;
+  }
+
+  beforeEach(() => {
+    session.addDevice(PC, { x: 200, y: 200 });
+    pc = session.view.devices[0].id;
+  });
+
+  test("scritto l'indirizzo, la maschera proposta è quella della sua classe", () => {
+    expect(session.configure(pc, "ip", "192.168.1.10")).toBeNull();
+
+    expect(host()).toMatchObject({ ip: "192.168.1.10", mask: "255.255.255.0", ipLabel: "192.168.1.10/24" });
+  });
+
+  test("la maschera proposta si può cambiare, e poi non viene più toccata", () => {
+    session.configure(pc, "ip", "10.0.0.5");
+    session.configure(pc, "mask", "255.255.255.0");
+
+    session.configure(pc, "ip", "172.16.0.9");
+
+    expect(host()).toMatchObject({ ip: "172.16.0.9", mask: "255.255.255.0" });
+  });
+
+  test("un valore rifiutato restituisce il motivo, e la rete tiene quello di prima", () => {
+    session.configure(pc, "ip", "192.168.1.10");
+
+    expect(session.configure(pc, "ip", "192.168.1.255")).toBe(
+      "L'indirizzo 192.168.1.255 è l'indirizzo di broadcast della sottorete.",
+    );
+    expect(session.configure(pc, "mask", "255.0.255.0")).toBe("Subnet mask non valida: 255.0.255.0.");
+    expect(session.configure(pc, "gateway", "192.168.1")).toBe("Gateway non valido: 192.168.1.");
+
+    expect(host()).toMatchObject({ ip: "192.168.1.10", mask: "255.255.255.0", gateway: null });
+    expect(session.notice).toBeNull(); // il motivo sta sotto il campo, non in alto
+  });
+
+  test("un indirizzo senza maschera da proporre viene rifiutato per il suo vero difetto", () => {
+    expect(session.configure(pc, "ip", "192.168.1.300")).toBe("Indirizzo IP non valido: 192.168.1.300.");
+    expect(session.configure(pc, "ip", "224.0.0.1")).toContain("L'indirizzo 224.0.0.1");
+    expect(session.configure(pc, "ip", "127.0.0.1")).toContain("L'indirizzo 127.0.0.1");
+    expect(host().ip).toBeNull();
+  });
+
+  test("il gateway si imposta e si toglie", () => {
+    session.configure(pc, "ip", "192.168.1.10");
+
+    expect(session.configure(pc, "gateway", " 192.168.1.1 ")).toBeNull();
+    expect(host().gateway).toBe("192.168.1.1");
+
+    expect(session.configure(pc, "gateway", "")).toBeNull();
+    expect(host().gateway).toBeNull();
+  });
+
+  test("svuotare l'indirizzo toglie tutta la configurazione", () => {
+    session.configure(pc, "ip", "192.168.1.10");
+    session.configure(pc, "gateway", "192.168.1.1");
+
+    expect(session.configure(pc, "ip", "")).toBeNull();
+
+    expect(host()).toMatchObject({ ip: null, mask: null, gateway: null, ipLabel: null });
+  });
+
+  test("svuotare la sola maschera viene rifiutato", () => {
+    session.configure(pc, "ip", "192.168.1.10");
+
+    expect(session.configure(pc, "mask", "")).toBe("Indirizzo IP e subnet mask vanno impostati insieme.");
+    expect(host().mask).toBe("255.255.255.0");
+  });
+
+  test("uno switch non ha una configurazione IP", () => {
+    session.addDevice(SWITCH_8, { x: 400, y: 200 });
+
+    expect(session.configure(session.view.devices[1].id, "ip", "192.168.1.1")).not.toBeNull();
+  });
+
+  test("due PC posati, collegati e configurati a mano si rispondono", () => {
+    session.addDevice(PC, { x: 500, y: 200 });
+    const other = session.view.devices[1].id;
+    session.connect(pc, other);
+    session.configure(pc, "ip", "192.168.1.10");
+    session.configure(other, "ip", "192.168.1.11");
+
+    session.ping(pc, "192.168.1.11", 1);
+    while (session.view.nextEvent !== null) session.step();
+
+    expect(session.view.pingResults.map((r) => r.outcome)).toEqual(["reply"]);
+  });
+});
+
+describe("rinominare dal pannello", () => {
+  beforeEach(() => {
+    session.addDevice(PC, { x: 200, y: 200 });
+    session.addDevice(PC, { x: 400, y: 200 });
+  });
+
+  test("il nome nuovo compare sul disegno e nella scheda del terminale", () => {
+    const id = session.view.devices[0].id;
+    session.openTerminal(id);
+
+    expect(session.rename(id, "  Segreteria ")).toBeNull();
+
+    expect(names()).toEqual(["Segreteria", "PC2"]);
+  });
+
+  test("un nome vuoto o già usato viene rifiutato, con il motivo", () => {
+    const id = session.view.devices[0].id;
+
+    expect(session.rename(id, "   ")).toBe("Il nome non può essere vuoto.");
+    expect(session.rename(id, "pc2")).toBe("Esiste già un dispositivo di nome pc2.");
+
+    expect(names()).toEqual(["PC1", "PC2"]);
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { checkIpConfig, isValidIp } from "../../src/engine/model/ip-config";
+import { checkIpConfig, defaultMaskFor, isValidIp } from "../../src/engine/model/ip-config";
 
 const MASK_24 = "255.255.255.0";
 
@@ -122,4 +122,24 @@ describe("indirizzo scritto correttamente", () => {
     expect(isValidIp("192.168.1")).toBe(false);
     expect(isValidIp("ciao")).toBe(false);
   });
+});
+
+describe("maschera proposta, quella della classe dell'indirizzo", () => {
+  test.each([
+    ["10.0.0.5", "255.0.0.0"],
+    ["126.1.1.1", "255.0.0.0"],
+    ["172.16.0.1", "255.255.0.0"],
+    ["191.255.0.1", "255.255.0.0"],
+    ["192.168.1.10", "255.255.255.0"],
+    ["223.0.0.1", "255.255.255.0"],
+  ])("per %s si propone %s", (ip, mask) => {
+    expect(defaultMaskFor(ip)).toBe(mask);
+  });
+
+  test.each(["0.0.0.1", "127.0.0.1", "224.0.0.1", "255.255.255.255", "192.168.1", "ciao"])(
+    "per %s non si propone nulla",
+    (ip) => {
+      expect(defaultMaskFor(ip)).toBeNull();
+    },
+  );
 });

@@ -1,6 +1,6 @@
 # Architettura
 
-**Stato:** descrive il codice al 9 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
+**Stato:** descrive il codice al 10 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
 
 L'app è divisa in due parti che non si mescolano: un **motore di simulazione**, che contiene tutta la logica di rete, e un'**interfaccia**, che lo mostra e lo comanda. Il motore non sa di essere disegnato su uno schermo.
 
@@ -51,7 +51,7 @@ In pratica, dentro `src/engine/` sono vietati `document`, `window`, `setTimeout`
 3. Entrambe le chiamate restituiscono le **tracce** di ciò che è successo: frame inviati, ricevuti e scartati, tabelle cambiate, pacchetti a cui un host ha rinunciato, esiti dei ping.
 4. L'interfaccia legge lo stato del simulatore e lo copia in una propria variabile, che è ciò che la pagina disegna. Non osserva il simulatore e non ne modifica mai lo stato direttamente.
 
-Anche le modifiche alla rete sono azioni: aggiungere un dispositivo, collegare due porte, cambiare un indirizzo. Oggi esistono nel motore, ma l'interfaccia non le usa ancora. Pannello grafico e CLI passeranno dalle stesse azioni, ed è questo che li terrà sincronizzati (requisito CFG-5).
+Anche le modifiche alla rete sono azioni: aggiungere un dispositivo, collegare due porte, cambiare un indirizzo. L'interfaccia le usa per posare, collegare, rinominare, configurare ed eliminare. Pannello grafico e CLI passano dalle stesse azioni, ed è questo che li terrà sincronizzati (requisito CFG-5).
 
 ## Struttura delle cartelle
 

@@ -5,7 +5,7 @@ import "@fontsource/ibm-plex-mono/latin-400.css";
 import "@fontsource/ibm-plex-mono/latin-500.css";
 import "./ui/theme/tokens.css";
 
-import { mount } from "svelte";
+import { mount, tick } from "svelte";
 import App from "./ui/App.svelte";
 import { preferences } from "./ui/preferences.svelte";
 import { session } from "./ui/session.svelte";
@@ -51,6 +51,21 @@ if (import.meta.env.DEV) {
   if (params.has("cavo")) session.cabling = true;
   const cableFrom = named(params.get("da"));
   if (cableFrom !== undefined) session.armLink(cableFrom.id);
+  // &seleziona=PC1                            (senza esempio) seleziona un dispositivo posato
+  const picked = named(params.get("seleziona"));
+  if (params.get("esempio") === null && picked !== undefined) session.select({ kind: "device", id: picked.id });
+  // &scrivi=ip:192.168.1.10;gateway:10.0.0.1  scrive nei campi del pannello, e conferma con Invio
+  void tick().then(async () => {
+    for (const item of (params.get("scrivi") ?? "").split(";").filter((text) => text !== "")) {
+      const [field, text] = item.split(":");
+      const input = document.querySelector<HTMLInputElement>(`[data-field="${field}"]`);
+      if (input === null) continue;
+      input.value = text;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      await tick();
+    }
+  });
   // &porta=2b                                 apre l'elenco delle porte: secondo cavo, capo b
   const portOf = /^(\d+)([ab])$/.exec(params.get("porta") ?? "");
   const cable = portOf === null ? undefined : session.view.links[Number(portOf[1]) - 1];

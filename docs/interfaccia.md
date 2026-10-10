@@ -60,11 +60,11 @@ Dopo i primi sei passaggi:
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
 - la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping, Collega, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
-- il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto;
+- il **pannello laterale**: nome e configurazione IP del dispositivo, che si cambiano da lì, le sue tabelle, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
-- dell'**editor**, le prime tre parti: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta. Mancano la configurazione dal pannello e l'annulla.
+- dell'**editor**, le prime tre parti: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello. Manca l'annulla.
 
 Salva, annulla e Presenta sono visibili ma spenti.
 
@@ -183,12 +183,16 @@ Mostra l'ultima cosa selezionata. Si chiude con la freccia nell'angolo in alto a
 
 ### Dispositivo
 
-Nome, tipo, stato (acceso o spento, segnale presente o assente), e per un host i campi della configurazione IP: indirizzo, subnet mask, gateway. Sotto, le sue tabelle, ciascuna con il pulsante per appuntarla.
+Nome, tipo, stato (acceso o spento, segnale presente o assente), e per un host i campi della configurazione IP: indirizzo, subnet mask, gateway. Sotto, le sue tabelle, ciascuna con il pulsante per appuntarla. Il nome si cambia dal suo campo, con le stesse regole di conferma della configurazione; un nome vuoto o già usato viene rifiutato.
 
 **Modificare la configurazione.** Un campo ha effetto quando lo si conferma, con Invio o uscendo dal campo. Il valore viene controllato con le regole di `checkIpConfig`:
 
 - se è accettabile, viene applicato;
-- se non lo è, il campo si segna in rosso e sotto compare il motivo, per esempio "è l'indirizzo di broadcast della sottorete". La rete conserva il valore di prima.
+- se non lo è, il campo si segna in rosso e sotto compare il motivo, per esempio "è l'indirizzo di broadcast della sottorete". La rete conserva il valore di prima, e ciò che si è scritto resta nel campo per correggerlo (D-53).
+
+Esc, dentro un campo, rimette il valore della rete senza togliere la selezione. Uscire da un campo senza averlo cambiato non fa nulla: in particolare non svuota la tabella ARP dell'host (D-48).
+
+**Togliere la configurazione.** Svuotare l'indirizzo svuota anche maschera e gateway (D-52). Svuotare la sola maschera viene rifiutato.
 
 **Maschera proposta.** Scritto l'indirizzo su un host senza maschera, la maschera si compila da sola con quella della classe dell'indirizzo (255.255.255.0 per 192.168.1.10), come fa Windows. Si può cambiare. Senza questo aiuto il primo indirizzo verrebbe rifiutato, perché indirizzo e maschera vanno impostati insieme.
 
@@ -336,7 +340,7 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
 | `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, tabelle appuntate, messaggi. *Previsto:* zoom |
-| `panels/` | Il pannello laterale, in sola lettura, e gli strati annidati del pacchetto. *Previsto:* modifica della configurazione |
+| `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
 | `simulation/playback.ts` | L'orologio: fa scorrere il tempo a schermo e chiede al motore di avanzare. Ha i suoi test, con un orologio finto |
@@ -365,7 +369,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser.
 | 4 | **Fatto.** Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
-| 7 | **Fatte le parti a, b e c** (azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta). Restano la configurazione dal pannello e annulla e ripristina | Si costruisce una rete da zero |
+| 7 | **Fatte le parti a, b, c e d** (azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta; nome e configurazione dal pannello). Resta annulla e ripristina | Si costruisce una rete da zero |
 | 8 | Nuova e Salva, zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |
 | 9 | Modalità presentazione e scorciatoie | Il rilascio 1 è completo |
 

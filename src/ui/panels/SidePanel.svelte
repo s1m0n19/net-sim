@@ -1,9 +1,11 @@
 <script lang="ts">
   // Il pannello laterale mostra l'ultima cosa selezionata: un dispositivo,
-  // un cavo o un pacchetto. Per ora è in sola lettura.
+  // un cavo o un pacchetto. Di un dispositivo si cambiano da qui il nome e
+  // la configurazione IP.
   import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import Chevron from "../theme/Chevron.svelte";
+  import ConfigField from "./ConfigField.svelte";
   import PacketLayers from "./PacketLayers.svelte";
 
   const selection = $derived(session.selection);
@@ -55,16 +57,18 @@
     </header>
 
     {#if device.kind === "host"}
-      <dl class="fields">
-        <dt>Indirizzo IP</dt>
-        <dd>{device.ip ?? "—"}</dd>
-        <dt>Subnet mask</dt>
-        <dd>{device.mask ?? "—"}</dd>
-        <dt>Gateway</dt>
-        <dd>{device.gateway ?? "—"}</dd>
-        <dt>MAC</dt>
-        <dd>{device.mac}</dd>
-      </dl>
+      <!-- I campi si ricreano quando cambia il dispositivo selezionato:
+           ciò che si stava scrivendo su uno non passa all'altro. -->
+      {#key device.id}
+        <div class="fields">
+          <ConfigField label="Nome" name="name" mono={false} value={device.name} apply={(text) => session.rename(device.id, text)} />
+          <ConfigField label="Indirizzo IP" name="ip" value={device.ip} apply={(text) => session.configure(device.id, "ip", text)} />
+          <ConfigField label="Subnet mask" name="mask" value={device.mask} apply={(text) => session.configure(device.id, "mask", text)} />
+          <ConfigField label="Gateway" name="gateway" value={device.gateway} apply={(text) => session.configure(device.id, "gateway", text)} />
+          <span class="label">MAC</span>
+          <span class="value">{device.mac}</span>
+        </div>
+      {/key}
 
       <h3>
         Tabella ARP
@@ -94,10 +98,13 @@
         </ul>
       {/if}
     {:else}
-      <dl class="fields">
-        <dt>Porte</dt>
-        <dd>{device.portCount}</dd>
-      </dl>
+      {#key device.id}
+        <div class="fields">
+          <ConfigField label="Nome" name="name" mono={false} value={device.name} apply={(text) => session.rename(device.id, text)} />
+          <span class="label">Porte</span>
+          <span class="value">{device.portCount}</span>
+        </div>
+      {/key}
 
       <h3>
         Tabella MAC
@@ -192,13 +199,22 @@
     grid-template-columns: auto minmax(0, 1fr);
     gap: 4px 12px;
   }
-  dt {
+  div.fields {
+    gap: 6px 12px;
+  }
+  dt,
+  .label {
     color: var(--muted);
   }
-  dd {
+  dd,
+  .value {
     margin: 0;
     font-family: var(--font-mono);
     overflow-wrap: anywhere;
+  }
+  /* I valori che non si cambiano stanno allineati al testo dei campi. */
+  .value {
+    padding-left: 7px;
   }
   table {
     border-collapse: collapse;
