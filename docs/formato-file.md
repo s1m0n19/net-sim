@@ -1,12 +1,14 @@
 # Formato dei file
 
-**Stato:** descrive il codice al 9 ottobre 2026. Oggi l'app sa solo **leggere** i file, e solo le tre reti di esempio della cartella `examples/`. Apertura di un file scelto dall'utente e salvataggio sono *previsti* (requisito FILE-1).
+**Stato:** descrive il codice al 10 ottobre 2026. L'app legge e scrive i file (requisito FILE-1); le tabelle nel file e le migrazioni di versione sono *previste*.
 
 Una rete sta in un file di testo in formato JSON: si può leggere, confrontare con un altro e distribuire con qualsiasi mezzo.
 
 - **Estensione provvisoria:** `.netsim.json`. Cambierà con il nome definitivo dell'app.
 - **Codifica:** UTF-8.
 - **Lettura:** `loadNetworkFile` in `src/storage/load.ts`.
+- **Scrittura:** `serializeNetwork` in `src/storage/save.ts`. Ciò che scrive, il lettore lo rilegge uguale: i test salvano e riaprono le tre reti di esempio.
+- **Sul disco:** `src/storage/browser-files.ts` fa scegliere il file all'utente e lo legge o lo scrive.
 
 ## Che cosa contiene
 
@@ -157,9 +159,14 @@ Con le maschere /31 e /32 la regola su rete e broadcast non si applica: quelle s
 
 Ciò che **non** viene controllato, di proposito: la coerenza della configurazione IP tra dispositivi. Una rete con indirizzi IP duplicati, con host nella stessa LAN ma con maschere diverse, o con un gateway fuori dalla sottorete, è una rete valida, anche se non funziona. Sono errori che lo studente deve saper diagnosticare (requisito SIM-8).
 
+## Salvare
+
+`serializeNetwork` scrive dispositivi, cavi, posizioni e guasti. I campi facoltativi dei guasti (`powered`, `connected`) compaiono solo quando valgono `false`. Lo stato di esecuzione non viene scritto.
+
+Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere in un file scelto dall'utente (File System Access API): la prima volta Salva chiede dove, poi aggiorna lo stesso file, e lo stesso vale per un file aperto con Apri. Salva con nome chiede sempre dove. Dove questa funzione manca, il file viene scaricato ogni volta (D-57).
+
 ## Previsto
 
-- **Aprire un file scelto dall'utente e salvare.** Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere direttamente in un file scelto dall'utente (File System Access API): dopo il primo salvataggio, "Salva" aggiornerà lo stesso file. Dove questa funzione manca, si ripiegherà sullo scaricamento.
 - **Versioni.** Il numero di versione crescerà di uno ogni volta che il formato cambia in modo incompatibile (requisito FILE-2). Un file più vecchio verrà aggiornato in memoria con una funzione di migrazione per ogni salto di versione; un file più nuovo dell'app verrà rifiutato con l'invito ad aggiornarla. Aggiungere un campo facoltativo non richiederà una nuova versione.
 - **Tabelle MAC e ARP**, facoltative (D-25, requisito FILE-5): ogni dispositivo potrà portare con sé le proprie tabelle già compilate.
 - **Porta spenta** (requisito SIM-7, rilascio 2).

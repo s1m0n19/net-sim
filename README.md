@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sette. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Mancano ancora il salvataggio e la modalità presentazione.
+L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sette, e dell'ottavo la prima metà. Oggi apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Mancano ancora lo zoom del disegno e la modalità presentazione.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -50,6 +50,13 @@ Selezionato un dispositivo, nel pannello a destra si cambiano il **nome** e, per
 - Un valore non accettabile, per esempio l'indirizzo di broadcast della sottorete o un nome già usato, segna il campo in rosso con il motivo sotto, e la rete conserva il valore di prima.
 - Svuotare l'indirizzo toglie tutta la configurazione del PC.
 - Cambiare la configurazione di un PC ne svuota la tabella ARP, come riavviare la scheda di rete.
+
+**Salvare.** **Salva**, o Ctrl+S (Cmd+S su Mac), scrive la rete in un file `.netsim.json`: dispositivi, cavi, indirizzi, posizioni e guasti. Tabelle e pacchetti in viaggio non si salvano: una rete riaperta è una rete appena accesa.
+
+- In Chrome ed Edge la prima volta scegli dove salvare; da lì in poi Salva aggiorna lo stesso file. Vale anche per un file aperto con Apri: il browser chiede una volta il permesso di scriverci.
+- **Salva con nome**, o Ctrl+Maiusc+S, chiede sempre dove salvare e lascia intatto il file di partenza: da lì in poi Salva aggiorna il file nuovo.
+- In Firefox e Safari ogni Salva scarica il file nella cartella dei download; Salva con nome chiede prima il nome.
+- Accanto al nome compare «● modificata» finché ci sono modifiche non salvate. In quel caso **Nuova**, **Apri** e la chiusura della pagina chiedono conferma.
 
 **Annulla e ripristina.** Le due frecce nella barra in alto, oppure Ctrl+Z e Ctrl+Maiusc+Z (anche Ctrl+Y; Cmd su Mac), annullano e rifanno le modifiche alla rete, una alla volta, fino a cento:
 
@@ -110,7 +117,7 @@ I messaggi sono in inglese. L'output di `ping` cresce mentre la simulazione avan
 
 I pacchetti sono buste colorate con la sigla sopra: ambra per ARP, viola per ICMP. Quando non viaggia nulla e un PC sta aspettando una risposta che non arriva, accanto a lui compare un anello con una clessidra che si svuota in due o tre secondi; poi il tempo salta alla scadenza.
 
-Salva, Presenta e le voci Router e Server della colonna si vedono ma non sono ancora attivi.
+Presenta e le voci Router e Server della colonna si vedono ma non sono ancora attivi.
 
 Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una certa situazione. Nel sito pubblicato queste scorciatoie non esistono.
 
@@ -123,7 +130,7 @@ Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una 
 
 ## Limiti noti
 
-- **Le reti costruite non si possono ancora salvare.** Una rete fatta nell'app si perde chiudendo la pagina; per conservarne una bisogna ancora scrivere il JSON a mano, partendo da un esempio.
+- **Salvare funziona al meglio in Chrome ed Edge.** Lì Salva scrive nel file scelto e poi sempre nello stesso; in Firefox e Safari ogni salvataggio scarica una copia nuova nella cartella dei download.
 - **Un ping completo, a passi, richiede molti clic.** Con le quattro richieste di Windows sono venti. Con Avvia scorre da solo.
 
 ## Comandi

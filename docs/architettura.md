@@ -14,7 +14,7 @@ L'app è divisa in due parti che non si mescolano: un **motore di simulazione**,
 │ Motore di simulazione (TypeScript puro)                  │
 │   Dispositivi    Protocolli            Coda degli eventi │
 └──────────────────────────────────────────▲───────────────┘
-                                           │ apri (salva: previsto)
+                                           │ apri e salva          
           ┌────────────────────────────────┴────┐
           │ File della rete (JSON)              │
           └─────────────────────────────────────┘
@@ -73,10 +73,11 @@ net-sim/
 │   │   ├── snapshot.ts        fotografia della configurazione, per annullare e ripristinare
 │   │   └── actions.ts         le azioni accettate dal motore
 │   ├── storage/
-│   │   └── load.ts            lettura dei file di rete
+│   │   ├── load.ts            lettura dei file di rete
+│   │   ├── save.ts            scrittura dei file di rete
+│   │   └── browser-files.ts   scelta, lettura e scrittura di un file nel browser
 │   ├── shell/
 │   │   └── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
-│   ├── storage/…              (più browser-files.ts: scelta di un file nel browser)
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore
@@ -87,14 +88,14 @@ net-sim/
 └── tests/
     ├── engine/                un file per argomento, più builders.ts con le reti di prova
     ├── shell/                 comandi del prompt e loro output
-    ├── storage/               lettura dei file
+    ├── storage/               lettura e scrittura dei file
     └── ui/                    preparazione del disegno e orologio del tempo reale
 ```
 
 Cartelle *previste* e non ancora esistenti:
 
 - In `src/shell/`, accanto al prompt degli host che esiste già, la CLI in stile IOS di switch e router (rilascio 2). Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
-- Scrittura dei file e migrazioni di versione in `src/storage/`.
+- Migrazioni di versione dei file in `src/storage/`.
 
 ## Convenzioni del codice
 

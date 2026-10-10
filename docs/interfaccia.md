@@ -49,7 +49,7 @@ Dopo i primi sei passaggi:
 - l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
 - il foglio vuoto all'avvio;
-- **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, e **Nuova**, che torna al foglio vuoto;
+- **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, **Nuova**, che torna al foglio vuoto, **Salva** e **Salva con nome**, che scrivono la rete in un file;
 - il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
 - gli interruttori delle etichette IP, MAC e Porte;
 - la rete sempre inquadrata per intero, su un foglio di base che si allarga solo se serve;
@@ -66,7 +66,15 @@ Dopo i primi sei passaggi:
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
 - l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica.
 
-Salva e Presenta sono visibili ma spenti.
+Presenta è visibile ma spento. Mancano zoom e spostamento della vista.
+
+## File
+
+- **Salva** (Ctrl+S, Cmd+S su Mac) scrive la rete nel file da cui viene, quello aperto o quello dell'ultimo salvataggio; se non ce n'è uno chiede dove, proponendo il nome della rete. Dove il browser non lo permette, scarica il file (D-57). È spento sul foglio vuoto.
+- **Salva con nome** (Ctrl+Maiusc+S) chiede sempre dove, e da lì in poi il file della rete è quello nuovo: serve a non sovrascrivere il file di partenza. Dove il browser può solo scaricare, chiede il nome.
+- Accanto al nome della rete, **«● modificata»** dice che ci sono modifiche non salvate: il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Contano le modifiche alla rete, gli spostamenti e i guasti; non il traffico. Annullare tutto riporta a "salvata".
+- Con modifiche non salvate, **Nuova**, **Apri** e la chiusura della pagina chiedono conferma (D-58). Per ora la conferma, come la richiesta del nome, è una finestrella del browser; prima del rilascio completo diventeranno riquadri nello stile dell'app.
+- Salvare non tocca la simulazione, la selezione né la cronologia.
 
 ## All'avvio
 
@@ -379,7 +387,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser.
 | 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
 | 7 | **Fatto.** Editor: azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta; nome e configurazione dal pannello; annulla e ripristina | Si costruisce una rete da zero |
-| 8 | Nuova e Salva, zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |
+| 8 | **Fatti Nuova, Salva e Salva con nome.** Restano zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |
 | 9 | Modalità presentazione e scorciatoie | Il rilascio 1 è completo |
 
 Dopo il passaggio 3 l'app è già proiettabile per la lezione su ARP e ping, su una rete preparata come file.

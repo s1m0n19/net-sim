@@ -20,7 +20,7 @@ I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ci
 
 Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti, loopback), guasti (cavo staccato, dispositivo spento), sospensione della tempesta di broadcast, in passo-passo.
 
-L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; sono fatti i primi sei (ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste, attese; selezione, barretta delle azioni, pannello laterale in sola lettura; scheda Eventi con filtro; tabelle appuntate sul disegno; terminale degli host). Del settimo, l'editor, sono fatte le parti 7a (modifiche nel motore), 7b (posare, spostare, eliminare), 7c (cavi e scelta della porta), 7d (nome e configurazione dal pannello laterale) e 7e (annulla e ripristina): l'editor è completo. Restano i passaggi 8 (Nuova e Salva, zoom) e 9 (modalità presentazione, scorciatoie).
+L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; sono fatti i primi sei (ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste, attese; selezione, barretta delle azioni, pannello laterale in sola lettura; scheda Eventi con filtro; tabelle appuntate sul disegno; terminale degli host). Del settimo, l'editor, sono fatte le parti 7a (modifiche nel motore), 7b (posare, spostare, eliminare), 7c (cavi e scelta della porta), 7d (nome e configurazione dal pannello laterale) e 7e (annulla e ripristina): l'editor è completo. Del passaggio 8 sono fatti Nuova e Salva; restano zoom e spostamento della vista, e il passaggio 9 (modalità presentazione, scorciatoie).
 
 Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Non ci sono difetti noti aperti.
 
@@ -58,7 +58,7 @@ Due parti che non si mescolano:
 - **Motore** (`src/engine/`): tutta la logica di rete, in TypeScript puro senza dipendenze.
 - **Interfaccia** (`src/ui/`): componenti Svelte 5 (rune) che mostrano e comandano il motore.
 
-Accanto a queste, `src/storage/` legge i file di rete e `src/shell/` contiene gli interpreti dei comandi: oggi il prompt Windows degli host (`windows.ts`, solo testo: non conosce né il simulatore né lo schermo), in futuro la CLI IOS.
+Accanto a queste, `src/storage/` legge e scrive i file di rete (`load.ts`, `save.ts`, e `browser-files.ts` per la scelta del file nel browser) e `src/shell/` contiene gli interpreti dei comandi: oggi il prompt Windows degli host (`windows.ts`, solo testo: non conosce né il simulatore né lo schermo), in futuro la CLI IOS.
 
 ### Regola di dipendenza
 

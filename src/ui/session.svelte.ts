@@ -33,6 +33,7 @@ import {
   parseCommand,
 } from "../shell/windows";
 import { loadNetworkFile, type Position } from "../storage/load";
+import { serializeNetwork } from "../storage/save";
 import {
   buildView,
   EMPTY_VIEW,
@@ -41,6 +42,13 @@ import {
   type PacketDetails,
   type Protocol,
 } from "./view";
+
+// L'estensione dei file di rete, e il nome di un file senza di lei.
+export const FILE_EXTENSION = ".netsim.json";
+
+function baseName(fileName: string): string {
+  return fileName.replace(/(\.netsim)?\.json$/i, "");
+}
 
 // Un punto della cronologia: la configurazione della rete e le posizioni
 // dei dispositivi sul disegno.
@@ -94,6 +102,10 @@ export type Selection =
 class Session {
   // Il nome del file aperto, senza estensione; null se la rete è nuova.
   fileName = $state<string | null>(null);
+  /** La rete è diversa da quella aperta o salvata l'ultima volta. */
+  dirty = $state(false);
+  // Il testo del file com'era all'ultima apertura o all'ultimo salvataggio.
+  private savedText = "";
   // Un messaggio per l'utente quando un file non si può aprire.
   error = $state<string | null>(null);
   // Ciò che il disegno mostra. Si aggiorna dopo ogni comando.
@@ -190,8 +202,9 @@ class Session {
       const loaded = loadNetworkFile(text);
       this.simulator = new Simulator(loaded.network);
       this.positions = loaded.positions;
+      this.savedText = this.serialize();
       this.forgetHistory();
-      this.fileName = name.replace(/(\.netsim)?\.json$/i, "");
+      this.fileName = baseName(name);
       this.error = null;
       this.selection = null;
       this.pins = [];
@@ -207,6 +220,7 @@ class Session {
   clear(): void {
     this.simulator = new Simulator({ devices: [], links: [] });
     this.positions = new Map();
+    this.savedText = this.serialize();
     this.forgetHistory();
     this.fileName = null;
     this.error = null;
@@ -772,6 +786,32 @@ class Session {
   // Rilegge lo stato del simulatore e aggiorna ciò che il disegno mostra.
   private refresh(): void {
     this.view = this.simulator === null ? EMPTY_VIEW : buildView(this.simulator, this.positions);
+    // La rete è "modificata" se il file che ne uscirebbe adesso è diverso
+    // dall'ultimo aperto o salvato: tornare indietro con Annulla la
+    // riporta a "salvata".
+    this.dirty = this.serialize() !== this.savedText;
+  }
+
+  /**
+   * Il contenuto del file che descrive la rete com'è adesso: configurazione,
+   * posizioni e guasti, senza tabelle né pacchetti.
+   */
+  serialize(): string {
+    const network = this.simulator?.network ?? { devices: [], links: [] };
+    return serializeNetwork(network, this.positions);
+  }
+
+  /**
+   * Da chiamare dopo che il file è stato scritto: la rete prende il nome
+   * del file e torna a risultare salvata.
+   *
+   * @param name - il nome del file scritto, con o senza estensione
+   * @param text - il contenuto che è stato scritto
+   */
+  markSaved(name: string, text: string): void {
+    this.fileName = baseName(name);
+    this.savedText = text;
+    this.dirty = this.serialize() !== this.savedText;
   }
 }
 

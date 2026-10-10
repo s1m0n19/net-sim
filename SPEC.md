@@ -259,6 +259,7 @@ Punti ancora da decidere:
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
 - [ ] In quale rilascio collocare il salvataggio facoltativo delle tabelle (FILE-5). Proposta: R2.
+- [ ] Prima del rilascio completo: sostituire le finestrelle del browser (la conferma per le modifiche non salvate, la richiesta del nome in Salva con nome) con riquadri nello stile dell'app, che seguano il tema. Chiesto dall'utente il 10 ottobre 2026.
 
 ## 8. Decisioni
 
@@ -319,11 +320,13 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-49 | 10 ott 2026 | Il disegno parte da un foglio di base e l'inquadratura si allarga solo quando un dispositivo ne esce | Se l'inquadratura seguisse sempre la rete, il disegno si sposterebbe a ogni dispositivo posato o trascinato. Lo zoom manuale arriverà con il passaggio 8 | Adottata |
 | D-50 | 10 ott 2026 | I nomi delle porte di un cavo selezionato si vedono sempre, anche con l'etichetta Porte spenta | Cambiare porta parte da un clic sul nome: se il nome non si vedesse, non ci sarebbe modo di farlo. Sugli altri cavi resta l'etichetta a decidere | Confermata |
 | D-51 | 10 ott 2026 | Con lo strumento Cavo attivo un cavo si tira anche con due clic, sul primo dispositivo e poi sul secondo, oltre che trascinando | Su una LIM o con un touchpad trascinare è scomodo. È lo stesso gesto del pulsante Collega | Confermata |
-| D-52 | 10 ott 2026 | Svuotare il campo dell'indirizzo IP toglie anche subnet mask e gateway | Indirizzo e maschera vanno impostati insieme (CFG-7): modificando un campo alla volta non ci sarebbe modo di togliere la configurazione a un host, perché ogni passo intermedio verrebbe rifiutato | Adottata |
-| D-53 | 10 ott 2026 | Il motivo per cui un campo del pannello viene rifiutato sta sotto il campo, non nella riga in alto sul disegno | Va letto accanto a ciò che si è scritto, e deve restare finché non lo si corregge | Adottata |
-| D-54 | 10 ott 2026 | Annullare vuol dire tornare a una fotografia della configurazione, eseguendo le modifiche che la separano dalla rete di adesso. La simulazione non viene riavviata | Una copia della configurazione per ogni modifica è più semplice da capire di un meccanismo che inverte le singole operazioni; ed eseguire le differenze come normali modifiche fa trattare la simulazione in corso con le stesse regole di sempre, senza perdere le tabelle di chi non è stato toccato | Adottata |
-| D-55 | 10 ott 2026 | Si annullano le modifiche alla rete e gli spostamenti sul disegno; guasti e traffico no | ED-5 parla di topologia e configurazioni. Spegnere un dispositivo o staccare un cavo fa parte della dimostrazione, e ha già il suo comando per tornare indietro | Adottata |
-| D-56 | 10 ott 2026 | Un dispositivo che torna con un annullamento è appena acceso: stesso nome, stessi indirizzi e stessi cavi, tabelle vuote | Lo stato di esecuzione non fa parte della configurazione, ed è ciò che succederebbe rimettendo a mano lo stesso dispositivo | Adottata |
+| D-52 | 10 ott 2026 | Svuotare il campo dell'indirizzo IP toglie anche subnet mask e gateway | Indirizzo e maschera vanno impostati insieme (CFG-7): modificando un campo alla volta non ci sarebbe modo di togliere la configurazione a un host, perché ogni passo intermedio verrebbe rifiutato | Confermata |
+| D-53 | 10 ott 2026 | Il motivo per cui un campo del pannello viene rifiutato sta sotto il campo, non nella riga in alto sul disegno | Va letto accanto a ciò che si è scritto, e deve restare finché non lo si corregge | Confermata |
+| D-54 | 10 ott 2026 | Annullare vuol dire tornare a una fotografia della configurazione, eseguendo le modifiche che la separano dalla rete di adesso. La simulazione non viene riavviata | Una copia della configurazione per ogni modifica è più semplice da capire di un meccanismo che inverte le singole operazioni; ed eseguire le differenze come normali modifiche fa trattare la simulazione in corso con le stesse regole di sempre, senza perdere le tabelle di chi non è stato toccato | Confermata |
+| D-55 | 10 ott 2026 | Si annullano le modifiche alla rete e gli spostamenti sul disegno; guasti e traffico no | ED-5 parla di topologia e configurazioni. Spegnere un dispositivo o staccare un cavo fa parte della dimostrazione, e ha già il suo comando per tornare indietro | Confermata |
+| D-56 | 10 ott 2026 | Un dispositivo che torna con un annullamento è appena acceso: stesso nome, stessi indirizzi e stessi cavi, tabelle vuote | Lo stato di esecuzione non fa parte della configurazione, ed è ciò che succederebbe rimettendo a mano lo stesso dispositivo | Confermata |
+| D-57 | 10 ott 2026 | Salva scrive nel file da cui la rete viene (aperto o già salvato), altrimenti chiede dove; Salva con nome chiede sempre dove, e da lì in poi il file della rete è quello nuovo. Dove il browser non permette di scrivere in un file scelto, il file viene scaricato | È il comportamento di un programma da scrivania. Salva con nome serve a non sovrascrivere il file di partenza, per esempio una rete di esempio | Confermata |
+| D-58 | 10 ott 2026 | La rete risulta modificata quando il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Con modifiche non salvate, Nuova, Apri e la chiusura della pagina chiedono conferma | Confrontare i file è più semplice e più giusto che contare le modifiche: annullare tutto riporta a "salvata", e il traffico non conta. La conferma evita di perdere con un clic una rete costruita in classe | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -332,19 +335,19 @@ Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul la
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
-| Rilascio 1 intero | circa 90% |
+| Rilascio 1 intero | circa 93% |
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sette: l'ultimo, l'editor, si è chiuso con annulla e ripristina. Restano Nuova e Salva con lo zoom (passaggio 8) e la modalità presentazione con le scorciatoie (passaggio 9).
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sette: l'ultimo, l'editor, si è chiuso con annulla e ripristina. Dell'ottavo sono fatti Nuova e Salva; restano lo zoom e lo spostamento della vista e la modalità presentazione con le scorciatoie (passaggio 9).
 
 ### Requisiti del rilascio 1
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | DEV-1 PC · DEV-2 switch · ED-4 rinominare ed eliminare · ED-5 annulla e ripristina · CFG-1 pannello di configurazione · CFG-7 regole di Windows, per i file e per il pannello · CFG-8 conferma del campo e maschera proposta · ED-2 cavi nuovi e scelta della porta · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
+| **Fatto** | FILE-1 aprire e salvare · DEV-1 PC · DEV-2 switch · ED-4 rinominare ed eliminare · ED-5 annulla e ripristina · CFG-1 pannello di configurazione · CFG-7 regole di Windows, per i file e per il pannello · CFG-8 conferma del campo e maschera proposta · ED-2 cavi nuovi e scelta della porta · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
 | **Fatto in parte** | VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
-| **A metà** | ED-1 si posano PC e switch dalla colonna · ED-3 i dispositivi si spostano; mancano zoom e scorrimento · FILE-1 si apre un file dal disco; manca il salvataggio · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no |
+| **A metà** | ED-1 si posano PC e switch dalla colonna · ED-3 i dispositivi si spostano; mancano zoom e scorrimento · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no |
 | **Da fare** | VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · UI-9 · UI-13 · UI-14 |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
@@ -359,12 +362,12 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 | 4. PC2 risponde, PC3 scarta, le tabelle si aggiornano | Funziona |
 | 5. Echo request su una sola porta, echo reply | Funziona |
 | 6. Selezionare un pacchetto e vederne gli strati | Funziona |
-| 7. Staccare un cavo; cambiare un indirizzo | Staccare un cavo funziona, con un clic. Manca la modifica della configurazione |
-| 8. Salvare la rete | Manca |
+| 7. Staccare un cavo; cambiare un indirizzo | Funzionano entrambi: il cavo con un clic, l'indirizzo dal pannello laterale |
+| 8. Salvare la rete | Funziona; la finestra di salvataggio va provata nei browser dell'aula |
 
 ### Che cosa esiste oltre ai requisiti
 
-- 418 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
+- 435 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
 - La nuova interfaccia, al sesto dei nove passaggi (ora anche con le tabelle appuntate e il terminale degli host): apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping, provocare guasti e seguire gli eventi con un filtro.
 
