@@ -4,10 +4,18 @@
 // leggono `session.view` e chiamano i metodi di `session`; nessuno di loro
 // tocca il simulatore direttamente.
 
-import { ping } from "../engine/actions";
+import { connectLink, disconnectLink, ping, powerOff, powerOn, type Action } from "../engine/actions";
 import { Simulator, type Trace } from "../engine/simulator";
 import { loadNetworkFile, type Position } from "../storage/load";
-import { buildView, EMPTY_VIEW, type NetworkView } from "./view";
+import { buildView, EMPTY_VIEW, type NetworkView, type PacketView } from "./view";
+
+// Ciò che l'utente ha selezionato sul disegno. Di un pacchetto si tiene
+// una copia: così il pannello può continuare a mostrarlo anche dopo che è
+// arrivato a destinazione e non è più in viaggio.
+export type Selection =
+  | { kind: "device"; id: string }
+  | { kind: "link"; id: string }
+  | { kind: "packet"; id: number; packet: PacketView };
 
 class Session {
   // Il nome del file aperto, senza estensione; null se la rete è nuova.
@@ -33,6 +41,14 @@ class Session {
   // da 0 a 1. null se non si sta aspettando.
   waitProgress = $state<number | null>(null);
 
+  // --- Selezione ---------------------------------------------------------
+  selection = $state.raw<Selection | null>(null);
+  // L'host da cui partirà il ping: è stato premuto Ping sulla sua barretta,
+  // e il prossimo clic su un dispositivo ne sceglie la destinazione.
+  pingFrom = $state<string | null>(null);
+  // Un messaggio breve quando un comando non si può eseguire.
+  notice = $state<string | null>(null);
+
   private simulator: Simulator | null = null;
   private positions = new Map<string, Position>();
 
@@ -51,6 +67,7 @@ class Session {
       this.positions = loaded.positions;
       this.fileName = name.replace(/(\.netsim)?\.json$/i, "");
       this.error = null;
+      this.selection = null;
       this.rewind();
     } catch (problem) {
       this.error = messageOf(problem);
@@ -63,6 +80,7 @@ class Session {
     this.positions = new Map();
     this.fileName = null;
     this.error = null;
+    this.selection = null;
     this.rewind();
   }
 
@@ -72,7 +90,67 @@ class Session {
    */
   restart(): void {
     this.simulator?.reset();
+    // I pacchetti di prima non esistono più; dispositivi e cavi sì.
+    if (this.selection?.kind === "packet") this.selection = null;
     this.rewind();
+  }
+
+  /** Seleziona un dispositivo, un cavo o un pacchetto; null toglie la selezione. */
+  select(selection: Selection | null): void {
+    this.selection = selection;
+    this.pingFrom = null;
+    this.notice = null;
+  }
+
+  /** Spegne un dispositivo acceso, o accende uno spento. */
+  togglePower(deviceId: string): void {
+    const device = this.view.devices.find((d) => d.id === deviceId);
+    if (device === undefined) return;
+    this.run(device.powered ? powerOff(deviceId) : powerOn(deviceId));
+  }
+
+  /** Stacca un cavo collegato, o riattacca uno staccato. */
+  toggleLink(linkId: string): void {
+    const link = this.view.links.find((l) => l.id === linkId);
+    if (link === undefined) return;
+    this.run(link.connected ? disconnectLink(linkId) : connectLink(linkId));
+  }
+
+  /**
+   * Prepara un ping dalla barretta: il prossimo dispositivo cliccato sarà
+   * la destinazione.
+   */
+  armPing(deviceId: string): void {
+    this.pingFrom = deviceId;
+    this.notice = null;
+  }
+
+  /**
+   * Conclude il ping preparato con `armPing`, verso il dispositivo indicato.
+   * Manda un solo echo request.
+   */
+  pingTo(targetId: string): void {
+    const from = this.pingFrom;
+    const target = this.view.devices.find((d) => d.id === targetId);
+    this.pingFrom = null;
+    if (from === null || target === undefined) return;
+    if (target.ip === null) {
+      this.notice = `${target.name} non ha un indirizzo IP a cui fare ping.`;
+      return;
+    }
+    this.notice = this.ping(from, target.ip, 1);
+  }
+
+  // Esegue un'azione sul simulatore; se viene rifiutata lo dice in `notice`.
+  private run(action: Action): void {
+    if (this.simulator === null) return;
+    try {
+      this.simulator.dispatch(action);
+      this.notice = null;
+    } catch (problem) {
+      this.notice = messageOf(problem);
+    }
+    this.refresh();
   }
 
   /** Dice se c'è almeno un dispositivo da disegnare. */
@@ -121,6 +199,8 @@ class Session {
     this.displayTime = 0;
     this.running = false;
     this.waitProgress = null;
+    this.pingFrom = null;
+    this.notice = null;
     this.refresh();
   }
 

@@ -123,3 +123,27 @@ button {
 .mono {
   font-family: var(--font-mono);
 }
+
+/* Il pulsante che apre o chiude un pannello: una freccia, senza parole,
+   uguale per la colonna, il pannello laterale e la fascia in basso. */
+.fold {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.fold:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.fold:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

@@ -320,20 +320,20 @@ Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul la
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
-| Rilascio 1 intero | circa 50% |
+| Rilascio 1 intero | circa 60% |
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi due.
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi tre.
 
 ### Requisiti del rilascio 1
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-6 due temi · UI-10 barra della simulazione · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
-| **Fatto in forma provvisoria** | VIS-3 tabelle aggiornate dal vivo · VIS-9 elenco degli eventi · SIM-5 ping da pulsante e menu, non con il mouse sulla topologia · VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
-| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · FILE-1 si apre un file dal disco; manca il salvataggio · UI-1 l'ossatura c'è tutta, ma pannello laterale e fascia sono ancora vuoti · UI-2 lo stile è applicato a dispositivi, cavi e pacchetti; pannelli e fascia sono ancora vuoti · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
-| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · VIS-10 · UI-8 · UI-9 · UI-11 · UI-13 · UI-14 |
+| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
+| **Fatto in forma provvisoria** | VIS-9 elenco degli eventi, solo nella pagina provvisoria · VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
+| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · FILE-1 si apre un file dal disco; manca il salvataggio · UI-1 l'ossatura c'è tutta; la fascia in basso è ancora vuota · UI-2 lo stile è applicato a disegno e pannello laterale; manca la fascia · UI-8 selezione e barretta, con le sole azioni che esistono · VIS-4 animazione e contenuto del pacchetto si vedono insieme; le tabelle solo selezionando il dispositivo, finché non si possono appuntare · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
+| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · VIS-10 · UI-9 · UI-11 · UI-13 · UI-14 |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
 
@@ -342,20 +342,20 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 | Punto | Stato |
 | --- | --- |
 | 1. Aprire un file con uno switch e tre PC | Funziona nella nuova interfaccia |
-| 2. Lanciare il ping dal terminale, in modalità presentazione | Il ping parte da un pulsante; mancano terminale e modalità presentazione |
+| 2. Lanciare il ping dal terminale, in modalità presentazione | Il ping parte dalla barretta del PC; mancano terminale e modalità presentazione |
 | 3. Richiesta ARP in broadcast, flooding, tabella MAC | Funziona |
 | 4. PC2 risponde, PC3 scarta, le tabelle si aggiornano | Funziona |
 | 5. Echo request su una sola porta, echo reply | Funziona |
-| 6. Selezionare un pacchetto e vederne gli strati | Il contenuto si vede solo come testo grezzo nell'elenco degli eventi |
+| 6. Selezionare un pacchetto e vederne gli strati | Funziona |
 | 7. Staccare un cavo; cambiare un indirizzo | Staccare un cavo funziona, con un clic. Manca la modifica della configurazione |
 | 8. Salvare la rete | Manca |
 
 ### Che cosa esiste oltre ai requisiti
 
-- 241 test automatici su motore, lettura dei file, preparazione del disegno e orologio del tempo reale.
+- 244 test automatici su motore, lettura dei file, preparazione del disegno e orologio del tempo reale.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
-- La nuova interfaccia, al secondo dei nove passaggi: apre una rete, la disegna e ne mostra la simulazione, in tempo reale o a passi. Il ping si lancia da un modulo provvisorio.
-- La pagina provvisoria di prima, all'indirizzo `/#provvisoria`: è ancora l'unico posto da cui provocare guasti e leggere tabelle ed eventi. Verrà cancellata quando la nuova interfaccia la sostituisce.
+- La nuova interfaccia, al terzo dei nove passaggi: apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, e permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping e provocare guasti.
+- La pagina provvisoria di prima, all'indirizzo `/#provvisoria`: è ancora l'unico posto in cui leggere l'elenco degli eventi. Verrà cancellata quando la nuova interfaccia la sostituisce.
 
 ### Difetti noti
 

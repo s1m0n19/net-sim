@@ -7,7 +7,7 @@
 
 import { maskToPrefix } from "../engine/model/addresses";
 import type { EthernetFrame } from "../engine/model/frames";
-import { linkCarriesSignal, type Device } from "../engine/model/network";
+import { findDevice, linkCarriesSignal, type Device } from "../engine/model/network";
 import type { Simulator } from "../engine/simulator";
 import type { Position } from "../storage/load";
 
@@ -20,15 +20,27 @@ export interface DeviceView {
   powered: boolean;
   // Solo per gli host: "192.168.1.10/24", oppure null se non è configurato.
   ipLabel: string | null;
-  // Solo per gli host: l'indirizzo IP da solo, e il MAC della scheda.
+  // Solo per gli host: la configurazione IP, il MAC della scheda, se la
+  // scheda sente il segnale, la tabella ARP e i pacchetti in attesa.
   ip: string | null;
+  mask: string | null;
+  gateway: string | null;
   mac: string | null;
+  linkUp: boolean;
+  arpRows: [ip: string, mac: string][];
+  pending: string[];
+  // Solo per gli switch: quante porte ha, e la tabella MAC.
+  portCount: number;
+  macRows: [mac: string, port: string][];
 }
 
 export interface LinkView {
   id: string;
   from: Position;
   to: Position;
+  // I nomi dei dispositivi ai due capi.
+  fromName: string;
+  toName: string;
   fromPort: string;
   toPort: string;
   connected: boolean;
@@ -43,6 +55,11 @@ export interface PacketView {
   id: number;
   from: Position;
   to: Position;
+  // I nomi dei dispositivi tra cui sta viaggiando.
+  fromName: string;
+  toName: string;
+  // Il contenuto, da mostrare a strati quando la busta è selezionata.
+  frame: EthernetFrame;
   protocol: Protocol;
   // Che cos'è, in parole: "ARP request", "ICMP echo reply".
   description: string;
@@ -104,14 +121,34 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
   const devices = network.devices.map((device): DeviceView => {
     const { x, y } = at(device.id);
     const base = { id: device.id, kind: device.kind, name: device.name, x, y, powered: device.powered };
+    const none = {
+      ipLabel: null,
+      ip: null,
+      mask: null,
+      gateway: null,
+      mac: null,
+      linkUp: false,
+      arpRows: [],
+      pending: [],
+      portCount: device.ports.length,
+      macRows: [],
+    };
     if (device.kind === "switch") {
-      return { ...base, ipLabel: null, ip: null, mac: null };
+      return { ...base, ...none, macRows: [...device.macTable] };
     }
     return {
       ...base,
+      ...none,
       ipLabel: ipLabelOf(device.ip, device.mask),
       ip: device.ip,
+      mask: device.mask,
+      gateway: device.gateway,
       mac: device.ports[0].mac,
+      linkUp: device.linkUp,
+      arpRows: [...device.arpTable],
+      pending: device.pendingPackets.map(
+        (waiting) => `${waiting.packet.payload.type.replace("-", " ")} per ${waiting.packet.dstIp}`,
+      ),
     };
   });
 
@@ -119,6 +156,8 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     id: link.id,
     from: at(link.a.deviceId),
     to: at(link.b.deviceId),
+    fromName: findDevice(network, link.a.deviceId).name,
+    toName: findDevice(network, link.b.deviceId).name,
     fromPort: link.a.portName,
     toPort: link.b.portName,
     connected: link.connected,
@@ -132,6 +171,9 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
       id: event.frameId,
       from: at(event.from.deviceId),
       to: at(event.to.deviceId),
+      fromName: findDevice(network, event.from.deviceId).name,
+      toName: findDevice(network, event.to.deviceId).name,
+      frame: event.frame,
       protocol: protocolOf(event.frame),
       description: describeFrame(event.frame),
       // Un frame resta sul cavo per un tick: è partito un tick prima di arrivare.
@@ -191,7 +233,7 @@ function ipLabelOf(ip: string | null, mask: string | null): string | null {
 
 // Spazio lasciato attorno ai dispositivi più esterni: sotto ne serve di
 // più, perché lì stanno le etichette.
-const MARGIN = { side: 110, top: 70, bottom: 120 };
+const MARGIN = { side: 110, top: 96, bottom: 120 };
 
 function boundsOf(devices: DeviceView[]): Bounds {
   if (devices.length === 0) return EMPTY_VIEW.bounds;

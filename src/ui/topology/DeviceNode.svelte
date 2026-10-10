@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { preferences } from "../preferences.svelte";
+  import { session } from "../session.svelte";
   import DeviceIcon from "../theme/DeviceIcon.svelte";
   import type { DeviceView } from "../view";
 
@@ -9,9 +10,42 @@
 
   // Lo switch è un po' più largo di un PC.
   const halfWidth = $derived(device.kind === "switch" ? 30 : 26);
+  const selected = $derived(session.selection?.kind === "device" && session.selection.id === device.id);
+
+  // Un clic seleziona. Se però è stato premuto Ping su un altro
+  // dispositivo, il clic sceglie la destinazione del ping.
+  function choose() {
+    if (session.pingFrom !== null) {
+      session.pingTo(device.id);
+    } else {
+      session.select({ kind: "device", id: device.id });
+    }
+  }
+
+  function onKey(event: KeyboardEvent) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      choose();
+    }
+  }
 </script>
 
-<g transform="translate({device.x} {device.y})" class:off={!device.powered}>
+<g
+  class="device"
+  class:off={!device.powered}
+  transform="translate({device.x} {device.y})"
+  role="button"
+  tabindex="0"
+  aria-label="{device.name}{selected ? ', selezionato' : ''}"
+  onclick={(event) => {
+    event.stopPropagation();
+    choose();
+  }}
+  onkeydown={onKey}
+>
+  {#if selected}
+    <rect class="selection" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
+  {/if}
   <rect class="box" x={-halfWidth} y="-26" width={halfWidth * 2} height="52" rx="10" />
   <g class="icon"><DeviceIcon kind={device.kind} /></g>
 
@@ -31,15 +65,29 @@
   {/if}
 
   {#if !device.powered}
-    <text class="state" y="-34">spento</text>
+    <text class="state" x={halfWidth + 8} y="4">spento</text>
   {/if}
 </g>
 
 <style>
+  .device {
+    cursor: pointer;
+    outline: none;
+  }
   .box {
     fill: var(--surface);
     stroke: var(--ink);
     stroke-width: 1.8;
+  }
+  .device:focus-visible .box {
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+  /* Selezionato: un contorno nel colore d'accento, più spesso del bordo. */
+  .selection {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
   }
   .icon {
     color: var(--ink);
@@ -66,7 +114,6 @@
     font-family: var(--font-ui);
     font-size: 12px;
     font-weight: 600;
-    text-anchor: middle;
   }
   /* Spento: grigio, oltre alla scritta. */
   .off .box {

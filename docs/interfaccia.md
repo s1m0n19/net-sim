@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi due: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto.
+**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi tre: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto: oggi le manca solo l'elenco degli eventi.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -35,16 +35,18 @@ Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQ
 | Barra in alto | Nuova, Apri, Salva, annulla e ripristina, nome della rete, interruttori delle etichette, tema, Presenta | no |
 | Colonna a sinistra | Dispositivi da posare e strumento Cavo | sì |
 | Disegno | La topologia, con sopra la barra della simulazione | no |
-| Pannello laterale | Ciò che è selezionato: un dispositivo, un cavo o un pacchetto | no |
+| Pannello laterale | Ciò che è selezionato: un dispositivo, un cavo o un pacchetto | sì |
 | Fascia in basso | Una scheda per ogni terminale aperto, più la scheda Eventi | sì |
+
+Colonna, pannello laterale e fascia si aprono e si chiudono con lo stesso pulsante: una piccola freccia, senza parole, che indica da che parte il pannello si ritira. Il suo significato è scritto nel suggerimento che compare passandoci sopra.
 
 La disposizione è una decisione presa con riserva: i pannelli sono componenti indipendenti dalla griglia che li ospita, così cambiarla non richiede di riscriverli (requisito NF-7).
 
 ## Che cosa c'è già
 
-Dopo i primi due passaggi:
+Dopo i primi tre passaggi:
 
-- l'ossatura completa, con la colonna e la fascia che si aprono e si chiudono;
+- l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
 - il foglio vuoto all'avvio;
 - **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, e **Nuova**, che torna al foglio vuoto;
@@ -54,9 +56,13 @@ Dopo i primi due passaggi:
 - la **barra della simulazione**: Ricomincia, Avvia e Pausa, Passo, velocità, tick;
 - le **buste** in viaggio, con colore e sigla del protocollo;
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
-- l'avviso della tempesta di broadcast.
+- l'avviso della tempesta di broadcast;
+- la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
+- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi e Ping sui dispositivi, stacca o riattacca sui cavi;
+- il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
+- il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto.
 
-Non si può ancora selezionare nulla. Per avere qualcosa da guardare, nel pannello laterale c'è un **ping di prova** provvisorio: sparirà quando arriverà la barretta delle azioni. Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti.
+Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti. Sulla barretta mancano Collega, Terminale, Appunta ed Elimina, che arriveranno con i passaggi a cui appartengono.
 
 ## All'avvio
 
@@ -110,6 +116,12 @@ Accanto a ciò che è selezionato compare una **barretta** con le azioni princip
 
 **Ping dalla barretta.** Si preme Ping e poi si fa clic sul dispositivo di destinazione. Manda **un solo** echo request: è lo strumento per le dimostrazioni. Le quattro richieste di Windows si ottengono dal terminale.
 
+Mentre si aspetta il clic sulla destinazione, il pulsante Ping resta premuto, il puntatore diventa una croce e in alto sul disegno una riga dice che cosa fare. Esc rinuncia. Se la destinazione non ha un indirizzo IP, per esempio uno switch, la riga lo dice e il ping non parte.
+
+**Pacchetto selezionato.** Del pacchetto si tiene una copia al momento del clic: il pannello continua a mostrarne il contenuto anche dopo che è arrivato, con la scritta "Arrivato" al posto di "In viaggio".
+
+**A simulazione sospesa** la barretta non compare: da una tempesta di broadcast si esce solo con Ricomincia.
+
 **Collega dalla barretta.** Si preme Collega e poi si fa clic sul dispositivo di destinazione: tira un cavo senza attivare lo strumento.
 
 ### Tabelle appuntate
@@ -149,7 +161,7 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 
 ## Pannello laterale
 
-Mostra l'ultima cosa selezionata.
+Mostra l'ultima cosa selezionata. Si chiude con la freccia nell'angolo in alto a destra, e si riduce a una striscia sottile sul bordo, da cui si riapre. Chiuso, resta chiuso anche quando si seleziona qualcosa: lo riapre solo l'utente.
 
 ### Dispositivo
 
@@ -263,14 +275,14 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | File o cartella | Contenuto |
 | --- | --- |
 | `App.svelte` | L'ossatura: la griglia che dispone le aree. I componenti non sanno dove si trovano |
-| `session.svelte.ts` | La rete aperta e ciò che di lei va disegnato. È l'unico punto che parla con il simulatore |
+| `session.svelte.ts` | La rete aperta, ciò che di lei va disegnato, la selezione e i comandi (ping, guasti, passo). È l'unico punto che parla con il simulatore |
 | `view.ts` | Trasforma rete e posizioni in ciò che i componenti disegnano: etichette, segnale sui cavi, inquadratura. Non usa il browser, quindi ha i suoi test |
 | `preferences.svelte.ts` | Ciò che riguarda solo chi guarda: tema, etichette accese, pannelli aperti |
 | `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
-| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa. *Previsto:* selezione, barretta, tabelle appuntate, zoom |
-| `panels/` | Il pannello laterale. Oggi dice che cosa comparirà e ospita il ping di prova |
+| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, messaggi. *Previsto:* tabelle appuntate, zoom |
+| `panels/` | Il pannello laterale, in sola lettura, e gli strati annidati del pacchetto. *Previsto:* modifica della configurazione |
 | `strip/` | La fascia in basso. Oggi ha la sola scheda Eventi, vuota. *Previsto:* terminali, eventi e filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
 | `simulation/playback.ts` | L'orologio: fa scorrere il tempo a schermo e chiede al motore di avanzare. Ha i suoi test, con un orologio finto |
@@ -289,13 +301,13 @@ Serviranno parti nuove fuori da `src/ui/`:
 
 ## Piano di costruzione
 
-Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` finché la nuova interfaccia non sa fare tutto ciò che fa lei, cioè fino al passaggio 3.
+Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` finché la nuova interfaccia non sa fare tutto ciò che fa lei: le manca l'elenco degli eventi, che arriva al passaggio 4.
 
 | N. | Passaggio | Che cosa si vede alla fine |
 | --- | --- | --- |
 | 1 | **Fatto.** Ossatura, temi, disegno della rete nel nuovo stile, apertura di un file | Si apre un file di esempio e lo si vede disegnato con il nuovo aspetto, nei due temi |
 | 2 | **Fatto.** Barra della simulazione: passo, tempo reale, velocità, buste animate con sigla, attese, avviso di sospensione | Un ping si guarda scorrere da solo |
-| 3 | Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
+| 3 | **Fatto.** Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
 | 4 | Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |

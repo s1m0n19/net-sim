@@ -1,125 +1,220 @@
 <script lang="ts">
-  // Il pannello laterale mostrerà ciò che è selezionato. Per ora nulla si
-  // può selezionare, quindi dice solo che cosa comparirà qui.
-  //
-  // Finché non esiste la barretta delle azioni, ospita anche un modo
-  // provvisorio per lanciare un ping, altrimenti non ci sarebbe nulla da
-  // guardare scorrere.
+  // Il pannello laterale mostra l'ultima cosa selezionata: un dispositivo,
+  // un cavo o un pacchetto. Per ora è in sola lettura.
+  import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
+  import Chevron from "../theme/Chevron.svelte";
+  import PacketLayers from "./PacketLayers.svelte";
 
-  const hosts = $derived(session.view.devices.filter((device) => device.kind === "host"));
+  const selection = $derived(session.selection);
 
-  let sourceId = $state("");
-  let targetIp = $state("");
-  let count = $state(1);
-  let problem = $state<string | null>(null);
+  const device = $derived(
+    selection?.kind === "device" ? session.view.devices.find((d) => d.id === selection.id) : undefined,
+  );
+  const link = $derived(
+    selection?.kind === "link" ? session.view.links.find((l) => l.id === selection.id) : undefined,
+  );
+  // Del pacchetto si mostra la copia presa al momento della selezione:
+  // resta leggibile anche dopo che è arrivato.
+  const packet = $derived(selection?.kind === "packet" ? selection.packet : undefined);
+  const stillTravelling = $derived(
+    packet !== undefined && session.view.packets.some((p) => p.id === packet.id),
+  );
 
-  // A ogni rete aperta, si riparte dal primo host verso il secondo.
-  $effect(() => {
-    session.generation;
-    sourceId = hosts[0]?.id ?? "";
-    targetIp = hosts[1]?.ip ?? "";
-    problem = null;
+  // La riga sotto il nome: tipo e stato, separati da un punto a mezza altezza.
+  const deviceSummary = $derived.by(() => {
+    if (device === undefined) return "";
+    const parts = [device.kind === "host" ? "PC" : "Switch", device.powered ? "acceso" : "spento"];
+    if (device.kind === "host" && device.powered) {
+      parts.push(device.linkUp ? "segnale presente" : "senza segnale");
+    }
+    return parts.join(" · ");
   });
-
-  function sendPing(event: SubmitEvent) {
-    event.preventDefault();
-    problem = session.ping(sourceId, targetIp.trim(), count);
-  }
+  const linkSummary = $derived.by(() => {
+    if (link === undefined) return "";
+    if (!link.connected) return "Staccato";
+    return `Collegato · ${link.signal ? "segnale presente" : "senza segnale"}`;
+  });
 </script>
 
+{#if !preferences.sideOpen}
+  <aside class="closed">
+    <button class="fold" title="Apri il pannello" aria-label="Apri il pannello laterale" onclick={() => (preferences.sideOpen = true)}>
+      <Chevron direction="left" />
+    </button>
+  </aside>
+{:else}
 <aside>
-  <h2>Nessuna selezione</h2>
-  <p>Qui comparirà ciò che selezioni: un dispositivo, un cavo o un pacchetto.</p>
+  <button class="fold corner" title="Chiudi il pannello" aria-label="Chiudi il pannello laterale" onclick={() => (preferences.sideOpen = false)}>
+    <Chevron direction="right" />
+  </button>
+  {#if device !== undefined}
+    <header>
+      <h2>{device.name}</h2>
+      <p>{deviceSummary}</p>
+    </header>
 
-  {#if hosts.length > 0}
-    <form onsubmit={sendPing}>
-      <h3>Ping di prova</h3>
-      <p>Provvisorio: sarà sostituito dal pulsante Ping sulla barretta del dispositivo.</p>
-      <label>
-        <span>Da</span>
-        <select id="ping-source" bind:value={sourceId}>
-          {#each hosts as host (host.id)}
-            <option value={host.id}>{host.name}</option>
-          {/each}
-        </select>
-      </label>
-      <label>
-        <span>A</span>
-        <input id="ping-target" class="mono" bind:value={targetIp} list="ping-known" />
-        <datalist id="ping-known">
-          {#each hosts as host (host.id)}
-            {#if host.ip !== null}<option value={host.ip}>{host.name}</option>{/if}
-          {/each}
-        </datalist>
-      </label>
-      <label>
-        <span>Richieste</span>
-        <input id="ping-count" type="number" min="1" max="10" bind:value={count} />
-      </label>
-      <button class="btn" disabled={session.view.suspended}>Ping</button>
-      {#if problem !== null}
-        <p class="problem" role="alert">{problem}</p>
+    {#if device.kind === "host"}
+      <dl class="fields">
+        <dt>Indirizzo IP</dt>
+        <dd>{device.ip ?? "—"}</dd>
+        <dt>Subnet mask</dt>
+        <dd>{device.mask ?? "—"}</dd>
+        <dt>Gateway</dt>
+        <dd>{device.gateway ?? "—"}</dd>
+        <dt>MAC</dt>
+        <dd>{device.mac}</dd>
+      </dl>
+
+      <h3>Tabella ARP</h3>
+      {#if device.arpRows.length === 0}
+        <p>Vuota.</p>
+      {:else}
+        <table>
+          <thead><tr><th>Indirizzo IP</th><th>Indirizzo MAC</th></tr></thead>
+          <tbody>
+            {#each device.arpRows as [ip, mac] (ip)}
+              <tr><td>{ip}</td><td>{mac}</td></tr>
+            {/each}
+          </tbody>
+        </table>
       {/if}
-    </form>
+
+      {#if device.pending.length > 0}
+        <h3>In attesa del MAC</h3>
+        <ul>
+          {#each device.pending as waiting}
+            <li>{waiting}</li>
+          {/each}
+        </ul>
+      {/if}
+    {:else}
+      <dl class="fields">
+        <dt>Porte</dt>
+        <dd>{device.portCount}</dd>
+      </dl>
+
+      <h3>Tabella MAC</h3>
+      {#if device.macRows.length === 0}
+        <p>Vuota.</p>
+      {:else}
+        <table>
+          <thead><tr><th>Indirizzo MAC</th><th>Porta</th></tr></thead>
+          <tbody>
+            {#each device.macRows as [mac, port] (mac)}
+              <tr><td>{mac}</td><td>{port}</td></tr>
+            {/each}
+          </tbody>
+        </table>
+      {/if}
+    {/if}
+  {:else if link !== undefined}
+    <header>
+      <h2>Cavo</h2>
+      <p>{linkSummary}</p>
+    </header>
+    <dl class="fields">
+      <dt>Da</dt>
+      <dd>{link.fromName} · {link.fromPort}</dd>
+      <dt>A</dt>
+      <dd>{link.toName} · {link.toPort}</dd>
+    </dl>
+  {:else if packet !== undefined}
+    <header>
+      <h2>{packet.description}</h2>
+      <p>{stillTravelling ? "In viaggio" : "Arrivato"} · da {packet.fromName} a {packet.toName}</p>
+    </header>
+    <PacketLayers frame={packet.frame} />
+  {:else}
+    <header>
+      <h2>Nessuna selezione</h2>
+      <p>Fai clic su un dispositivo, un cavo o un pacchetto per vederne i dettagli qui.</p>
+    </header>
   {/if}
 </aside>
+{/if}
 
 <style>
   aside {
+    position: relative;
+    width: 290px;
+    box-sizing: border-box;
     background: var(--surface);
     border-left: 1px solid var(--line);
     padding: 12px;
     min-width: 0;
     overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
   h2 {
-    margin: 0 0 4px;
-    font-size: 1.1em;
+    margin: 0;
+    font-size: 1.15em;
     font-weight: 600;
   }
   h3 {
-    margin: 0;
-    font-size: 1em;
-    font-weight: 600;
+    margin: 6px 0 0;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
   p {
     margin: 0;
     color: var(--muted);
   }
-  form {
-    margin-top: 20px;
-    padding-top: 12px;
-    border-top: 1px dashed var(--line);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-  label {
+  .fields {
+    margin: 0;
     display: grid;
-    grid-template-columns: 70px 1fr;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 12px;
   }
-  label span {
+  dt {
     color: var(--muted);
   }
-  select,
-  input {
-    font: inherit;
-    color: inherit;
-    min-width: 0;
-    padding: 3px 6px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface-2);
-  }
-  input.mono {
+  dd {
+    margin: 0;
     font-family: var(--font-mono);
+    overflow-wrap: anywhere;
   }
-  .problem {
-    color: var(--down);
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted);
+    font-family: var(--font-ui);
+  }
+  th,
+  td {
+    padding: 3px 6px 3px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  /* Chiuso: una striscia sottile, come la colonna dei dispositivi. */
+  aside.closed {
+    width: 26px;
+    padding: 10px 2px;
+    align-items: center;
+  }
+  /* La freccia sta nell'angolo in alto, accanto al titolo: nello stesso
+     punto da aperto e da chiuso. */
+  .corner {
+    position: absolute;
+    top: 10px;
+    right: 2px;
+  }
+  header {
+    padding-right: 20px;
   }
 </style>

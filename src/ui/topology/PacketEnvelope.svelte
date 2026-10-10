@@ -23,24 +23,66 @@
     const distance = EDGE + travel * progress;
     return { x: packet.from.x + (dx / length) * distance, y: packet.from.y + (dy / length) * distance };
   });
+
+  const selected = $derived(session.selection?.kind === "packet" && session.selection.id === packet.id);
+
+  function choose() {
+    session.select({ kind: "packet", id: packet.id, packet });
+  }
+
+  function onKey(event: KeyboardEvent) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      choose();
+    }
+  }
 </script>
 
 <!-- Colore e sigla dicono il protocollo: due segni, non uno solo. -->
-<g class="packet" class:arp={packet.protocol === "ARP"} class:icmp={packet.protocol === "ICMP"} transform="translate({position.x} {position.y})">
+<g
+  class="packet"
+  class:arp={packet.protocol === "ARP"}
+  class:icmp={packet.protocol === "ICMP"}
+  transform="translate({position.x} {position.y})"
+  role="button"
+  tabindex="0"
+  aria-label="{packet.description}, da {packet.fromName} a {packet.toName}{selected ? ', selezionato' : ''}"
+  onclick={(event) => {
+    event.stopPropagation();
+    choose();
+  }}
+  onkeydown={onKey}
+>
   <title>{packet.description}</title>
+  {#if selected}
+    <rect class="selection" x="-20" y="-28" width="40" height="44" rx="6" />
+  {/if}
   <text y="-14">{packet.protocol}</text>
   <rect x="-13" y="-9" width="26" height="18" rx="3" />
   <path d="M-10 -5L0 2L10 -5" />
 </g>
 
 <style>
+  .packet {
+    cursor: pointer;
+    outline: none;
+  }
+  .selection {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+  .packet:focus-visible rect:not(.selection) {
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
   .arp {
     --protocol: var(--arp);
   }
   .icmp {
     --protocol: var(--icmp);
   }
-  rect {
+  rect:not(.selection) {
     fill: var(--protocol);
     stroke: var(--canvas);
     stroke-width: 1.5;

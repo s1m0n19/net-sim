@@ -1,20 +1,23 @@
 <script lang="ts">
   import { preferences } from "../preferences.svelte";
+  import Chevron from "../theme/Chevron.svelte";
 </script>
 
 <footer>
   <div class="tabs">
     <span class="tab selected">Eventi</span>
     <button
-      class="toggle"
+      class="fold"
+      title={preferences.stripOpen ? "Chiudi la fascia" : "Apri la fascia"}
+      aria-label={preferences.stripOpen ? "Chiudi la fascia in basso" : "Apri la fascia in basso"}
       aria-expanded={preferences.stripOpen}
       onclick={() => (preferences.stripOpen = !preferences.stripOpen)}
     >
-      {preferences.stripOpen ? "chiudi ⌄" : "apri ⌃"}
+      <Chevron direction={preferences.stripOpen ? "down" : "up"} />
     </button>
   </div>
   {#if preferences.stripOpen}
-    <div class="body">Nessun evento: la simulazione non è ancora disponibile in questa interfaccia.</div>
+    <div class="body">Nessun evento: l'elenco degli eventi non è ancora disponibile in questa interfaccia.</div>
   {/if}
 </footer>
 
@@ -46,19 +49,12 @@
     color: var(--ink);
     font-weight: 600;
   }
-  .toggle {
+  /* La freccia sta in fondo alla riga delle schede, allineata a quella
+     del pannello laterale. */
+  .fold {
     margin-left: auto;
-    border: none;
-    background: none;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 5px 0;
-  }
-  .toggle:hover {
-    color: var(--ink);
-  }
-  .toggle:focus-visible {
-    outline: 2px solid var(--accent);
+    margin-right: -8px;
+    align-self: center;
   }
   .body {
     height: 132px;

@@ -11,6 +11,7 @@ class Preferences {
   labels = $state({ ip: true, mac: false, ports: false });
 
   paletteOpen = $state(true);
+  sideOpen = $state(true);
   stripOpen = $state(true);
 
   /** Il tema in uso in questo momento, tenendo conto del sistema. */

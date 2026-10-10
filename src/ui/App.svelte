@@ -28,7 +28,7 @@
   .shell {
     height: 100%;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) 290px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-rows: 46px auto minmax(0, 1fr) auto;
   }
   .top,

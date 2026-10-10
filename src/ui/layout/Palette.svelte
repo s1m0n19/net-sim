@@ -1,5 +1,6 @@
 <script lang="ts">
   import { preferences } from "../preferences.svelte";
+  import Chevron from "../theme/Chevron.svelte";
   import DeviceIcon from "../theme/DeviceIcon.svelte";
 
   // Le voci della colonna. Per ora sono tutte spente: posare dispositivi
@@ -26,11 +27,15 @@
       <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="cable" /></svg>
       Cavo
     </div>
-    <button class="toggle" onclick={() => (preferences.paletteOpen = false)}>‹ chiudi</button>
+    <button class="fold" title="Chiudi la colonna" aria-label="Chiudi la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = false)}>
+      <Chevron direction="left" />
+    </button>
   </aside>
 {:else}
   <aside class="closed">
-    <button class="toggle" aria-label="Apri la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = true)}>›</button>
+    <button class="fold" title="Apri la colonna" aria-label="Apri la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = true)}>
+      <Chevron direction="right" />
+    </button>
   </aside>
 {/if}
 
@@ -46,8 +51,13 @@
     gap: 8px;
   }
   aside.closed {
-    width: 22px;
-    padding: 6px 0;
+    width: 26px;
+    padding: 10px 2px;
+  }
+  /* La freccia sta in fondo, nello stesso punto da aperta e da chiusa. */
+  .fold {
+    margin-top: auto;
+    align-self: center;
   }
   .caption {
     color: var(--muted);
@@ -69,20 +79,5 @@
   .tile svg {
     width: 34px;
     height: 28px;
-  }
-  .toggle {
-    margin-top: auto;
-    border: none;
-    background: none;
-    color: var(--muted);
-    font-size: 0.85em;
-    cursor: pointer;
-    padding: 4px 0;
-  }
-  .toggle:hover {
-    color: var(--ink);
-  }
-  .toggle:focus-visible {
-    outline: 2px solid var(--accent);
   }
 </style>

@@ -12,8 +12,8 @@ L'interfaccia è in costruzione, e per ora ce ne sono due:
 
 | Indirizzo | Che cos'è | Che cosa fa oggi |
 | --- | --- | --- |
-| http://localhost:5173 | La **nuova interfaccia**, al secondo passaggio di nove | Apre una rete da file, la disegna e mostra un ping che viaggia, in tempo reale o a passi |
-| http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Ciò che la nuova non ha ancora: guasti, tabelle MAC e ARP, elenco degli eventi |
+| http://localhost:5173 | La **nuova interfaccia**, al terzo passaggio di nove | Apre una rete da file e permette di condurre una dimostrazione: ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle |
+| http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Ciò che la nuova non ha ancora: l'elenco degli eventi |
 
 La pagina provvisoria verrà cancellata quando la nuova interfaccia saprà fare le stesse cose. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -41,8 +41,7 @@ All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quell
 | **Apri** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va |
 | **Etichette: IP, MAC, Porte** | Accendono e spengono ciò che è scritto sul disegno. All'apertura è acceso solo l'indirizzo IP |
 | **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |
-| **‹ chiudi**, a sinistra | Chiude la colonna dei dispositivi |
-| **chiudi**, in basso a destra | Chiude la fascia in basso |
+| **Le tre frecce** | Chiudono e riaprono i pannelli: in fondo alla colonna dei dispositivi, nell'angolo in alto del pannello di destra, a destra nella riga delle schede in basso |
 
 Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento".
 
@@ -55,7 +54,16 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 | **Passo** | Fa arrivare a destinazione i pacchetti in viaggio e si ferma. Disponibile a tempo fermo |
 | **1×** | Cambia la velocità: 0,5×, 1×, 2×. A 1× un pacchetto impiega circa un secondo e mezzo a percorrere un cavo |
 
-Per lanciare un ping c'è, nel pannello di destra, un **ping di prova** provvisorio: host di partenza, indirizzo, numero di richieste. Verrà sostituito dal pulsante Ping sul dispositivo.
+**Selezione.** Un clic su un dispositivo, un cavo o una busta lo seleziona: il pannello di destra ne mostra i dettagli, e accanto compare una barretta con le azioni. Un clic sullo sfondo, o il tasto Esc, toglie la selezione.
+
+| Selezionato | Sulla barretta | Nel pannello di destra |
+| --- | --- | --- |
+| Un PC | Spegni o accendi · Ping | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
+| Uno switch | Spegni o accendi | Numero di porte, tabella MAC |
+| Un cavo | Stacca o riattacca | I due capi e lo stato |
+| Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
+
+**Ping.** Seleziona il PC di partenza, premi Ping sulla barretta (la freccia), poi fai clic sul dispositivo di destinazione. Parte un solo echo request. Esc rinuncia.
 
 I pacchetti sono buste colorate con la sigla sopra: ambra per ARP, viola per ICMP. Quando non viaggia nulla e un PC sta aspettando una risposta che non arriva, accanto a lui compare un anello con una clessidra che si svuota in due o tre secondi; poi il tempo salta alla scadenza.
 

@@ -55,6 +55,37 @@ describe("dispositivi da disegnare", () => {
     const sw = lan().view().devices.find((d) => d.name === "SW1")!;
 
     expect([sw.ipLabel, sw.mac]).toEqual([null, null]);
+    expect(sw.portCount).toBe(4);
+  });
+
+  test("dopo un ping, le tabelle da mostrare sono quelle dei dispositivi", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+    while (sim.canStep()) sim.step();
+
+    const devices = view().devices;
+    expect(devices.find((d) => d.name === "PC1")!.arpRows).toEqual([["192.168.1.11", "02:00:00:00:00:02"]]);
+    expect(devices.find((d) => d.name === "PC3")!.arpRows).toEqual([]);
+    expect(devices.find((d) => d.name === "SW1")!.macRows).toEqual([
+      ["02:00:00:00:00:01", "Fa0/1"],
+      ["02:00:00:00:00:02", "Fa0/2"],
+    ]);
+  });
+
+  test("un host mostra il pacchetto che tiene in attesa del MAC", () => {
+    const { sim, view } = lan();
+    sim.dispatch(ping("d1", "192.168.1.11", 1));
+
+    expect(view().devices.find((d) => d.name === "PC1")!.pending).toEqual(["echo request per 192.168.1.11"]);
+  });
+
+  test("un host sa se sente il segnale sul cavo", () => {
+    const { sim, view } = lan();
+    sim.dispatch(disconnectLink("l1"));
+
+    const devices = view().devices;
+    expect(devices.find((d) => d.name === "PC1")!.linkUp).toBe(false);
+    expect(devices.find((d) => d.name === "PC2")!.linkUp).toBe(true);
   });
 
   test("un dispositivo spento risulta spento", () => {
@@ -72,6 +103,7 @@ describe("cavi da disegnare", () => {
     expect(cable.from).toEqual({ x: 100, y: 150 }); // PC1
     expect(cable.to).toEqual({ x: 350, y: 150 }); // SW1
     expect([cable.fromPort, cable.toPort]).toEqual(["Fa0", "Fa0/1"]);
+    expect([cable.fromName, cable.toName]).toEqual(["PC1", "SW1"]);
   });
 
   test("in una rete appena accesa su ogni cavo passa il segnale", () => {
@@ -136,16 +168,19 @@ describe("pacchetti in viaggio", () => {
     sim.dispatch(ping("d1", "192.168.1.11", 1));
 
     expect(view().packets).toEqual([
-      {
+      expect.objectContaining({
         id: 1,
         from: { x: 100, y: 150 },
         to: { x: 350, y: 150 },
+        fromName: "PC1",
+        toName: "SW1",
         protocol: "ARP",
         description: "ARP request",
         departure: 0,
         arrival: 1,
-      },
+      }),
     ]);
+    expect(view().packets[0].frame).toMatchObject({ etherType: "ARP", dstMac: "ff:ff:ff:ff:ff:ff" });
   });
 
   test("dopo un passo lo switch ha inoltrato due copie, che viaggiano tra il tick 1 e il 2", () => {

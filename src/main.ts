@@ -8,6 +8,7 @@ import "./ui/theme/tokens.css";
 import { mount } from "svelte";
 import App from "./ui/App.svelte";
 import ProvisionalPage from "./ui/provisional/ProvisionalPage.svelte";
+import { preferences } from "./ui/preferences.svelte";
 import { session } from "./ui/session.svelte";
 import { start } from "./ui/simulation/playback";
 
@@ -29,6 +30,10 @@ mount(provisional ? ProvisionalPage : App, { target: document.getElementById("ap
 //   &passi=3                                  avanza subito di tre istanti
 //   &avanti=0.5                               sposta le buste di mezzo tratto di cavo
 //   &avvia                                    fa scorrere il tempo
+//   &seleziona=PC1 | l2 | pacchetto            seleziona un dispositivo, un cavo o la prima busta
+//   &stacca                                    stacca il cavo selezionato
+//   &mira                                      preme Ping sul dispositivo selezionato
+//   &fascia-chiusa, &pannello-chiuso           chiude la fascia in basso o il pannello laterale
 if (import.meta.env.DEV && !provisional) {
   const params = new URLSearchParams(location.search);
   const example = params.get("esempio");
@@ -45,6 +50,19 @@ if (import.meta.env.DEV && !provisional) {
         }
         for (let i = 0; i < Number(params.get("passi") ?? 0); i++) session.step();
         session.displayTime += Number(params.get("avanti") ?? 0);
+        const chosen = params.get("seleziona");
+        const device = session.view.devices.find((d) => d.name === chosen);
+        const link = session.view.links.find((l) => l.id === chosen);
+        const packet = session.view.packets[0];
+        if (device !== undefined) session.select({ kind: "device", id: device.id });
+        if (link !== undefined) session.select({ kind: "link", id: link.id });
+        if (chosen === "pacchetto" && packet !== undefined) {
+          session.select({ kind: "packet", id: packet.id, packet });
+        }
+        if (params.has("stacca") && link !== undefined) session.toggleLink(link.id);
+        if (params.has("mira") && device !== undefined) session.armPing(device.id);
+        if (params.has("fascia-chiusa")) preferences.stripOpen = false;
+        if (params.has("pannello-chiuso")) preferences.sideOpen = false;
         if (params.has("avvia")) start();
       });
   }
