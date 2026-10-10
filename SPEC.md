@@ -3,7 +3,7 @@
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
 - **Stato:** in sviluppo. Il motore del rilascio 1 è quasi completo; l'interfaccia è ancora una pagina provvisoria. Il dettaglio è nella sezione 9.
-- **Ultimo aggiornamento:** 9 ottobre 2026.
+- **Ultimo aggiornamento:** 10 ottobre 2026.
 - **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
@@ -45,8 +45,8 @@ Ogni requisito ha un identificativo e un rilascio. I rilasci 1 e 2 formano la pr
 
 | ID | Requisito | Rilascio |
 | --- | --- | --- |
-| ED-1 | Aggiungere dispositivi scegliendoli da varianti pronte (per esempio switch a 8 o 24 porte) | R1 |
-| ED-2 | Collegare due dispositivi scegliendo la porta su ciascuno. Il tipo di cavo è automatico e non causa mai errori | R1 |
+| ED-1 | Aggiungere dispositivi dalla colonna a sinistra, scegliendo prima la variante pronta (per esempio switch a 8 o 24 porte). Si posa trascinando, oppure con un clic sulla voce e un clic sul disegno per ogni dispositivo, finché non si preme Esc | R1 |
+| ED-2 | Collegare due dispositivi trascinando dall'uno all'altro, con lo strumento Cavo della colonna o con il pulsante Collega della barretta. L'app propone su ciascuno la prima porta libera; un clic sul nome della porta apre l'elenco per cambiarla. Il tipo di cavo è automatico e non causa mai errori | R1 |
 | ED-3 | Spostare i dispositivi, ingrandire, rimpicciolire e scorrere la topologia. Le reti previste arrivano a 50 dispositivi | R1 |
 | ED-4 | Rinominare ed eliminare dispositivi e collegamenti | R1 |
 | ED-5 | Annullare e ripristinare le modifiche a topologia e configurazioni | R1 |
@@ -78,12 +78,13 @@ I dispositivi sono generici, non modelli commerciali. Non esistono moduli da ins
 | ID | Requisito | Rilascio |
 | --- | --- | --- |
 | CFG-1 | Pannello grafico per configurare il dispositivo selezionato | R1 |
-| CFG-2 | Terminale degli host in stile Windows: `ipconfig`, `ping`, `arp -a` | R1 |
+| CFG-2 | Terminale degli host in stile Windows: `ipconfig`, `ping`, `arp -a`. I messaggi sono in inglese, come sui libri e in rete | R1 |
 | CFG-3 | `tracert` sugli host | R2 |
 | CFG-4 | CLI di switch e router con sintassi Cisco IOS: modalità (`enable`, `configure terminal`, `interface`), abbreviazioni dei comandi, completamento con Tab, aiuto con `?` | R2 |
 | CFG-5 | CLI e pannello grafico sincronizzati: una modifica fatta in uno compare subito nell'altro | R2 |
 | CFG-6 | `nslookup` sugli host | T3 |
 | CFG-7 | La configurazione IP di un host è accettata o rifiutata come farebbe Windows. Indirizzo e subnet mask si impostano insieme, oppure nessuno dei due; il gateway è facoltativo. Sono rifiutati gli indirizzi scritti male, le maschere con bit non contigui e, come indirizzo dell'host o del gateway, l'indirizzo di rete e quello di broadcast della sottorete, 0.0.0.0, gli indirizzi 127.x.x.x e quelli da 224 in su. Tutto il resto è ammesso, anche se sbagliato per quella rete. Un gateway fuori dalla sottorete dell'host è ammesso | R1 |
+| CFG-8 | Un campo del pannello di configurazione ha effetto alla conferma (Invio o uscita dal campo). Se il valore non è accettabile il campo si segna in rosso con il motivo, e la rete conserva il valore di prima. Scritto l'indirizzo su un host senza maschera, la maschera viene proposta in base alla classe dell'indirizzo, come fa Windows | R1 |
 
 Il sottoinsieme dei comandi IOS è un punto aperto (sezione 7). Proposta iniziale per R2: `enable`, `configure terminal`, `hostname`, `interface`, `ip address`, `shutdown`, `no shutdown`, `ip route`, `exit`, `end`, `show running-config`, `show ip interface brief`, `show ip route`, `show mac address-table`, `show arp`, `ping`, `traceroute`.
 
@@ -95,9 +96,9 @@ I protocolli funzionano davvero, in forma semplificata: si simulano i campi prin
 | --- | --- | --- |
 | SIM-1 | Ethernet, ARP, IPv4 e ICMP echo funzionanti | R1 |
 | SIM-2 | Due modalità commutabili: tempo reale e passo-passo. In passo-passo la rete avanza di un istante alla volta: tutto ciò che accade nello stesso istante si muove insieme | R1 |
-| SIM-3 | Velocità regolabile in tempo reale | R1 |
+| SIM-3 | Velocità regolabile in tempo reale: 0,5×, 1×, 2×. A 1× un pacchetto impiega circa un secondo a percorrere un cavo | R1 |
 | SIM-4 | Generare traffico dal terminale dell'host | R1 |
-| SIM-5 | Generare un ping con il mouse, indicando sorgente e destinazione sulla topologia | R1 |
+| SIM-5 | Generare un ping con il mouse: pulsante Ping sulla barretta dell'host, poi clic sul dispositivo di destinazione. Manda un solo echo request | R1 |
 | SIM-6 | Guasti fisici: staccare un cavo, spegnere un dispositivo | R1 |
 | SIM-7 | Guasti fisici: spegnere una singola porta | R2 |
 | SIM-8 | Comportamento da rete vera davanti agli errori di configurazione: nessun avviso preventivo e nessuna spiegazione del fallimento. La causa si cerca con gli strumenti (`ping`, `tracert`, comandi `show`) | R1 |
@@ -105,6 +106,7 @@ I protocolli funzionano davvero, in forma semplificata: si simulano i campi prin
 | SIM-14 | Un ping al proprio indirizzo, o a un indirizzo 127.x.x.x, riceve risposta subito e senza che alcun frame esca sul cavo (loopback). Vale anche per un host senza configurazione IP, limitatamente a 127.x.x.x | R1 |
 | SIM-15 | Tempesta di broadcast: un ciclo tra switch fa girare i frame senza fine, e in certi casi li moltiplica, come in una rete vera senza spanning tree. La simulazione la lascia avvenire per qualche giro, poi si sospende: quando un frame è stato inoltrato più volte di quante ne ammetta una rete senza cicli, oppure quando i frame in viaggio sono troppi. Un avviso dice che c'è una tempesta di broadcast e che la causa è un ciclo tra switch. Non si riprende: si ricomincia. È un'eccezione dichiarata a SIM-8 | R1 |
 | SIM-16 | In tempo reale, una breve pausa a schermo separa un echo request dal successivo, così i quattro giri si distinguono. In passo-passo non c'è pausa. La pausa è dell'interfaccia: il motore si comporta allo stesso modo nelle due modalità | R1 |
+| SIM-17 | In tempo reale, quando non viaggia nulla e resta solo un'attesa, non si aspetta davvero: un indicatore sul dispositivo che aspetta si svuota in due o tre secondi, poi il tempo salta alla scadenza | R1 |
 | SIM-9 | TCP con handshake visibile e UDP | T3 |
 | SIM-10 | Applicazioni simulate sugli host (browser e simili) | T3 |
 | SIM-11 | Editor per costruire a mano un pacchetto | T6 |
@@ -114,22 +116,23 @@ I protocolli funzionano davvero, in forma semplificata: si simulano i campi prin
 
 | ID | Requisito | Rilascio |
 | --- | --- | --- |
-| VIS-1 | Pacchetti animati sui collegamenti, colorati per protocollo | R1 |
+| VIS-1 | Pacchetti animati sui collegamenti: buste colorate per protocollo, con la sigla del protocollo sopra | R1 |
 | VIS-2 | Contenuto del pacchetto selezionato mostrato a strati annidati (frame, pacchetto, messaggio) con i campi principali | R1 |
 | VIS-3 | Tabelle dei dispositivi (MAC, ARP, poi routing) aggiornate mentre il traffico passa | R1 |
 | VIS-4 | Animazione, contenuto del pacchetto e tabelle visibili nella stessa schermata, sincronizzati | R1 |
-| VIS-5 | Di norma è visibile solo la conversazione seguita: il traffico generato dall'utente e quello che esso provoca. Interruttori per protocollo mostrano o nascondono il resto | R1 |
-| VIS-6 | Indirizzi IP, maschere, MAC e nomi delle porte visibili sulla topologia, attivabili separatamente | R1 |
-| VIS-7 | Modalità presentazione: nasconde gli strumenti di modifica e ingrandisce testo e topologia | R1 |
+| VIS-5 | Filtro del traffico in cima alla scheda Eventi: selettore della conversazione (tutte, oppure una) e un interruttore per protocollo. Ciò che il filtro nasconde sparisce sia dall'elenco sia dal disegno | R1 |
+| VIS-6 | Sotto ogni dispositivo restano sempre il nome e, per gli host, l'indirizzo IP con il prefisso. Indirizzi IP, MAC e nomi delle porte hanno ciascuno un interruttore; MAC e porte sono spenti all'apertura | R1 |
+| VIS-7 | Modalità presentazione: nasconde la colonna dei dispositivi e i comandi di modifica, ingrandisce testo, icone e linee, inquadra la rete per riempire lo spazio | R1 |
 | VIS-8 | Stato delle porte visibile sui collegamenti (attiva, guasta) | R1 |
-| VIS-9 | Elenco cronologico degli eventi della simulazione | R1 |
+| VIS-9 | Elenco cronologico degli eventi, una riga per fatto. Passando su una riga si evidenziano sul disegno il dispositivo e il pacchetto coinvolti; un clic apre il pacchetto nel pannello laterale | R1 |
+| VIS-10 | Tabelle appuntabili sul disegno: la tabella MAC di uno switch o la tabella ARP di un host resta visibile accanto al dispositivo qualunque cosa sia selezionata. Si può trascinare, e la riga appena imparata o persa si evidenzia per un momento | R1 |
 
-I campi da mostrare in ogni strato sono un punto aperto (sezione 7). Proposta iniziale:
+I campi da mostrare in ogni strato:
 
 | Strato | Campi |
 | --- | --- |
 | Ethernet | MAC destinazione, MAC sorgente, EtherType |
-| ARP | operazione, MAC e IP del mittente, MAC e IP del destinatario |
+| ARP | operazione, MAC e IP del mittente, MAC e IP cercati |
 | IPv4 | IP sorgente, IP destinazione, TTL, protocollo |
 | ICMP | tipo, identificativo, numero di sequenza |
 
@@ -137,11 +140,20 @@ I campi da mostrare in ogni strato sono un punto aperto (sezione 7). Proposta in
 
 | ID | Requisito | Rilascio |
 | --- | --- | --- |
-| UI-1 | Disposizione: topologia al centro, pannello laterale per configurazione e tabelle del dispositivo selezionato, fascia in basso per terminale ed elenco degli eventi | R1 |
-| UI-2 | Stile a schema pulito e piatto: dispositivi e cavi in tinta neutra, colore riservato a sottoreti, stati e tipi di pacchetto | R1 |
+| UI-1 | Disposizione: barra in alto; colonna dei dispositivi a sinistra, richiudibile; disegno al centro; pannello laterale a destra, che mostra ciò che è selezionato (dispositivo, cavo o pacchetto); fascia in basso a tutta larghezza per terminali ed eventi, richiudibile | R1 |
+| UI-2 | Stile a schema pulito e piatto, di carattere sobrio: dispositivi e cavi in tinta neutra, colore riservato a stati e tipi di pacchetto, un solo colore d'accento per l'interfaccia | R1 |
 | UI-3 | Interfaccia in italiano; termini tecnici e comandi in inglese (switch, router, gateway, subnet mask, frame) | R1 |
 | UI-4 | Uso con mouse e tastiera su PC del laboratorio e PC della cattedra collegato a LIM o proiettore. Nessun gesto tattile | R1 |
 | UI-5 | Testo leggibile dal fondo dell'aula in modalità presentazione | R1 |
+| UI-6 | Due temi, chiaro e scuro. All'apertura l'app segue il sistema; un pulsante lo cambia | R1 |
+| UI-7 | Nessuna informazione è affidata al solo colore: ogni colore con un significato è accompagnato da una forma, una sigla o una scritta | R1 |
+| UI-8 | Un clic seleziona. Accanto a ciò che è selezionato compare una barretta con le azioni principali; non esiste un menu del tasto destro | R1 |
+| UI-9 | Nessuna separazione tra costruzione e simulazione: si può modificare la rete mentre il traffico viaggia | R1 |
+| UI-10 | I comandi della simulazione stanno in una barra flottante in basso al centro del disegno | R1 |
+| UI-11 | Una scheda della fascia in basso per ogni terminale aperto, con la sua cronologia | R1 |
+| UI-12 | All'avvio l'app mostra sempre un foglio vuoto, con l'invito a trascinare un dispositivo o aprire un file | R1 |
+| UI-13 | Zoom con la rotella attorno al puntatore, spostamento trascinando lo sfondo, e pulsanti +, − e Adatta in un angolo del disegno | R1 |
+| UI-14 | In modalità presentazione: scorciatoie da tastiera per avvio e pausa, passo, apertura dei pannelli; fascia in basso chiusa; ingrandimento regolabile | R1 |
 
 ### 3.7 File
 
@@ -227,12 +239,13 @@ Il rilascio 1 è pronto quando questa lezione si svolge dall'inizio alla fine se
 
 ## 7. Decisioni reversibili e punti aperti
 
-Tre decisioni sono prese con riserva. Il progetto deve permettere di cambiarle senza riscrivere il resto.
+Alcune decisioni sono prese con riserva. Il progetto deve permettere di cambiarle senza riscrivere il resto.
 
 | Decisione | Scelta attuale | Cosa la rende reversibile |
 | --- | --- | --- |
 | Stile grafico | Schema pulito e piatto | Icone e colori definiti in un solo punto (NF-7) |
-| Disposizione dei pannelli | Laterale più fascia in basso | I pannelli sono componenti indipendenti dalla disposizione (NF-7) |
+| Disposizione dei pannelli | Colonna a sinistra, pannello laterale a destra, fascia in basso a tutta larghezza | I pannelli sono componenti indipendenti dalla disposizione (NF-7) |
+| Schede dei terminali | Una scheda per ogni terminale aperto | Se risulta macchinoso si passa a un solo terminale che segue il dispositivo selezionato: il terminale è un componente che non sa in quale scheda si trova |
 | Registro delle attività | Da provare | Modulo separato ed eliminabile (ES-7) |
 
 Punti ancora da decidere:
@@ -240,10 +253,9 @@ Punti ancora da decidere:
 - [ ] Nome dell'app. Proposte: Instrada, Trama, Salto, PacketLab, Doppino.
 - [ ] Destinatari: solo le classi del docente, i colleghi, oppure pubblica e open source. Nel terzo caso servono una licenza e attenzione a marchi e sintassi Cisco.
 - [ ] Sottoinsieme dei comandi IOS (proposta nella sezione 3.3).
-- [ ] Campi mostrati negli strati dei pacchetti (proposta nella sezione 3.5).
 - [ ] Dove pubblicare il sito, verificando che il filtro della scuola non lo blocchi.
-- [ ] Lingua dei messaggi del terminale degli host: italiano, come nei Windows del laboratorio, o inglese.
-- [ ] Come non affidare il significato al solo colore: studenti daltonici, proiettori sbiaditi.
+- [ ] Come scrivere la durata nell'output di `ping`: Windows scrive `time<1ms`, ma il tempo simulato è in tick.
+- [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
 - [ ] Se aggiungere test automatici della pagina e un controllo automatico dei test a ogni invio al repository. Oggi la pagina è verificata solo a occhio.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
@@ -288,10 +300,20 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-28 | 9 ott 2026 | La configurazione IP di un host è accettata o rifiutata come farebbe Windows; indirizzo e maschera vanno insieme. Gli indirizzi MAC duplicati sono sempre rifiutati. All'apertura un file viene controllato anche nella struttura | Ciò che Windows non lascia impostare non è un errore da diagnosticare: non si può fare. I MAC li assegna l'app, quindi due uguali sono un file danneggiato | Confermata |
 | D-29 | 9 ott 2026 | Tra un echo request e il successivo c'è una pausa solo in tempo reale, ed è l'interfaccia a farla, non il motore | In passo-passo una pausa sarebbe un clic a vuoto; in tempo reale serve a distinguere i quattro giri. Tenerla fuori dal motore lo lascia identico nelle due modalità | Confermata, da realizzare |
 | D-31 | 9 ott 2026 | Un guasto agisce attraverso il segnale sul cavo: un host senza segnale non trasmette e il ping dà subito "trasmissione non riuscita"; uno switch dimentica i MAC della porta senza segnale; i frame in viaggio sul cavo staccato vanno persi. Un dispositivo spento toglie il segnale ai vicini, perde i frame diretti a lui, le attese e tutto ciò che aveva imparato | È ciò che fa un PC vero, e rende distinguibili tre situazioni: guasto dalla propria parte, destinazione sparita e mai conosciuta, destinazione sparita ma ancora in tabella ARP | Confermata |
+| D-32 | 10 ott 2026 | Schermata unica senza modalità: colonna dei dispositivi richiudibile, disegno, pannello laterale per ciò che è selezionato, fascia in basso a tutta larghezza per terminali ed eventi, barra della simulazione flottante sul disegno | Si costruisce e si osserva nello stesso posto, come serve in una dimostrazione dal vivo; la topologia non viene mai coperta | Confermata, da realizzare |
+| D-33 | 10 ott 2026 | Il pannello laterale mostra il pacchetto selezionato al posto del dispositivo; le tabelle si vedono insieme al pacchetto appuntandole sul disegno | Un solo pannello largo e leggibile, senza rinunciare a vedere insieme viaggio, contenuto e tabelle | Confermata, da realizzare |
+| D-34 | 10 ott 2026 | Un clic seleziona; le azioni stanno su una barretta accanto all'oggetto selezionato, senza menu del tasto destro | Tutto ciò che si può fare è visibile, e funziona alla LIM | Confermata, da realizzare |
+| D-35 | 10 ott 2026 | Aspetto sobrio, due temi (chiaro e scuro), e nessuna informazione affidata al solo colore | L'attenzione va alla rete; il chiaro serve alla proiezione, lo scuro a chi lavora a lungo; il secondo segno regge il daltonismo e i proiettori sbiaditi | Confermata, da realizzare |
+| D-36 | 10 ott 2026 | Pacchetti come buste con la sigla del protocollo; sotto i dispositivi sempre nome e indirizzo con prefisso | La sigla dice che cos'è senza cliccare; il prefisso mostra la maschera senza occupare una riga | Confermata, da realizzare |
+| D-37 | 10 ott 2026 | I messaggi del terminale degli host sono in inglese; il resto dell'interfaccia, eventi compresi, è in italiano | È ciò che gli studenti troveranno sui libri, in rete e sugli apparati | Confermata, da realizzare |
+| D-38 | 10 ott 2026 | Il ping dalla barretta manda un solo echo request; quello dal terminale quattro | Il primo è lo strumento per le dimostrazioni, il secondo si comporta come Windows | Confermata, da realizzare |
+| D-39 | 10 ott 2026 | In tempo reale un tratto di cavo dura circa un secondo a 1×; le attese non si aspettano davvero ma si mostrano con un indicatore che si svuota in pochi secondi | È il ritmo per commentare a voce, senza tempi morti quando non viaggia nulla | Confermata, da realizzare |
+| D-40 | 10 ott 2026 | Un campo di configurazione ha effetto alla conferma; la maschera viene proposta in base alla classe dell'indirizzo | Evita stati intermedi mentre si scrive, e permette di rispettare la regola "indirizzo e maschera insieme" un campo alla volta | Confermata, da realizzare |
+| D-41 | 10 ott 2026 | All'avvio sempre un foglio vuoto; nessuna rete ricordata e nessun esempio integrato | Prevedibile, e adatto ai PC del laboratorio che vengono ripuliti | Confermata, da realizzare |
 
 ## 9. Stato di avanzamento
 
-Aggiornato al 9 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
+Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
 
 | Traguardo | Completamento |
 | --- | --- |
@@ -300,7 +322,7 @@ Aggiornato al 9 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lav
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo.
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; nessuno è ancora iniziato.
 
 ### Requisiti del rilascio 1
 
@@ -309,7 +331,7 @@ Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dal
 | **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
 | **Fatto in forma provvisoria** | VIS-3 tabelle aggiornate dal vivo · VIS-9 elenco degli eventi · VIS-1 pacchetti animati, senza colore per protocollo · VIS-6 indirizzi IP e MAC sempre visibili, senza porte né interruttori · SIM-5 ping da pulsante e menu, non con il mouse sulla topologia · VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
 | **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 solo lettura delle reti di esempio · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
-| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · SIM-3 velocità · SIM-16 pausa tra gli echo in tempo reale · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · UI-1 disposizione a pannelli · UI-2 stile grafico · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili |
+| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · SIM-3 velocità · SIM-16 pausa tra gli echo in tempo reale · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · UI-1 disposizione a pannelli · UI-2 stile grafico · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · SIM-17 · VIS-10 · UI-6 … UI-14 |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
 

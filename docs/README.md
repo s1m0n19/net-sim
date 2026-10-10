@@ -11,10 +11,10 @@ Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'ap
 | [architettura.md](architettura.md) | Tecnologie scelte, parti dell'app, struttura delle cartelle, convenzioni del codice |
 | [motore.md](motore.md) | Il motore di simulazione: modello dei dati, eventi, tempo, attese, protocolli e loro semplificazioni |
 | [formato-file.md](formato-file.md) | Il formato dei file delle reti |
+| [interfaccia.md](interfaccia.md) | L'interfaccia definitiva: ossatura, comportamento, aspetto e piano di costruzione. È un progetto, non ancora realizzato |
 
 Documenti previsti, da scrivere quando si arriva alla parte corrispondente:
 
-- `interfaccia.md`: componenti, disposizione, stile grafico (rilascio 1).
 - `cli.md`: interprete dei comandi IOS e terminale degli host (rilasci 1 e 2).
 - `esercizi.md`: obiettivi, verifica automatica, protezione dei file (tappa T1).
 

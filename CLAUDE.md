@@ -12,6 +12,7 @@ Documenti di riferimento, da leggere prima di lavorare su una parte e da aggiorn
 
 - `SPEC.md`: requisiti numerati (ED-1, SIM-2, ...) con il rilascio in cui arrivano, criterio di accettazione del rilascio 1, punti aperti (sezione 7), registro delle decisioni (sezione 8), stato di avanzamento (sezione 9).
 - `docs/architettura.md`, `docs/motore.md`, `docs/formato-file.md`: come è fatto il codice.
+- `docs/interfaccia.md`: il progetto dell'interfaccia definitiva, deciso con l'utente, con il piano di costruzione in nove passaggi. Va seguito: le scelte di aspetto e di interazione non si cambiano senza chiederlo.
 
 I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ciò che ancora non esiste. Quando una modifica li rende falsi vanno corretti nello stesso lavoro; lo stesso vale per la sezione 9 di `SPEC.md`.
 
@@ -19,7 +20,7 @@ I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ci
 
 Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti, loopback), guasti (cavo staccato, dispositivo spento), sospensione della tempesta di broadcast, in passo-passo.
 
-L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. Mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
+L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. L'interfaccia definitiva è progettata in `docs/interfaccia.md` ma non ancora iniziata: mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
 
 Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Non ci sono difetti noti aperti.
 
