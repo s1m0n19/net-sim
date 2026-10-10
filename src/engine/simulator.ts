@@ -6,6 +6,7 @@
 
 import type { Action } from "./actions";
 import * as editing from "./editing";
+import { stepsToRestore, type RestoreStep, type Snapshot } from "./snapshot";
 import {
   receiveFrame,
   sameTimer,
@@ -21,6 +22,8 @@ import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
 import {
   clearRuntimeState,
+  createHost,
+  createSwitch,
   findDevice,
   findLink,
   hostsOf,
@@ -78,6 +81,12 @@ export interface TimerExpiry {
 export type SimEvent = FrameArrival | TimerExpiry;
 
 // Le tracce registrano ciò che è successo. L'interfaccia le legge per disegnare.
+// Le azioni che modificano la rete, più i passi con cui si torna a una
+// configurazione fotografata.
+type EditAction =
+  | Exclude<Action, { kind: "ping" | "resolve-address" | "set-link-connected" | "set-device-powered" }>
+  | Extract<RestoreStep, Action>;
+
 export type Trace =
   | {
       time: number;
@@ -233,7 +242,7 @@ export class Simulator {
   // Esegue una modifica alla rete e tiene in ordine la simulazione: ciò
   // che viaggiava su un cavo tolto va perso, chi cambia configurazione
   // riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
-  private edit(action: Exclude<Action, { kind: "ping" | "resolve-address" | "set-link-connected" | "set-device-powered" }>, produced: Trace[]): void {
+  private edit(action: EditAction, produced: Trace[]): void {
     const time = this.time;
     switch (action.kind) {
       case "add-device": {
@@ -288,8 +297,39 @@ export class Simulator {
         produced.push({ time, kind: "host-configured", deviceId: host.id });
         break;
       }
+      case "restore-configuration":
+        this.restore(action.snapshot, produced);
+        break;
     }
     this.refreshLinkState(produced);
+  }
+
+  // Riporta la rete a una configurazione fotografata prima, eseguendo una
+  // alla volta le modifiche che la separano da quella di adesso.
+  private restore(snapshot: Snapshot, produced: Trace[]): void {
+    const time = this.time;
+    for (const step of stepsToRestore(this.network, snapshot)) {
+      switch (step.kind) {
+        case "put-device": {
+          // Torna un dispositivo che era stato tolto: è quello di prima,
+          // ma appena acceso, con le tabelle vuote.
+          const device = step.device.kind === "host" ? createHost(step.device) : createSwitch(step.device);
+          this.network.devices.push(device);
+          produced.push({ time, kind: "device-added", deviceId: device.id });
+          break;
+        }
+        case "put-link":
+          this.network.links.push(step.link);
+          produced.push({ time, kind: "link-added", linkId: step.link.id });
+          break;
+        default:
+          this.edit(step, produced);
+      }
+    }
+    // Dispositivi e cavi tornano anche nell'ordine che avevano.
+    const place = (ids: string[]) => (a: { id: string }, b: { id: string }) => ids.indexOf(a.id) - ids.indexOf(b.id);
+    this.network.devices.sort(place(snapshot.devices.map((device) => device.id)));
+    this.network.links.sort(place(snapshot.links.map((link) => link.id)));
   }
 
   // I nomi dei dispositivi ai due capi di un cavo. Se uno dei due è appena

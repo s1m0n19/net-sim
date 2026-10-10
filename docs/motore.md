@@ -413,6 +413,22 @@ I guasti fanno parte della configurazione: un file può contenere un dispositivo
 
 Le modifiche stanno in `src/engine/editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. Il simulatore le chiama e poi tiene in ordine la simulazione.
 
+### Tornare a una configurazione di prima
+
+`src/engine/snapshot.ts` serve ad annullare e ripristinare. `takeSnapshot` fotografa la configurazione: dispositivi con nome, porte e indirizzi, e cavi. Niente tabelle, niente pacchetti.
+
+L'azione `restore-configuration` riporta la rete a una fotografia. Non sostituisce la rete: `stepsToRestore` confronta la rete di adesso con la fotografia e restituisce le modifiche che le separano, e il simulatore le esegue una alla volta come farebbe con quelle dell'utente. Nell'ordine: via i cavi e i dispositivi che nella fotografia non ci sono, poi tornano i dispositivi tolti e gli altri riprendono nome e indirizzi, infine tornano i cavi.
+
+| Caso | Che cosa succede |
+| --- | --- |
+| Un dispositivo torna | È quello di prima (identificativo, nome, MAC, indirizzi), ma appena acceso: tabelle vuote |
+| Un dispositivo non è cambiato | Tiene il suo stato di esecuzione |
+| La configurazione IP di un host torna quella di prima | L'host dimentica tabella ARP e attese, come per ogni cambio di configurazione (D-48) |
+| Un cavo ha solo cambiato porta | Viene spostato, non tolto e rimesso |
+| Guasti | Non sono modifiche: ciò che c'è da entrambe le parti resta acceso o spento, collegato o staccato, com'è adesso. Ciò che torna, torna com'era nella fotografia |
+
+La fotografia deve venire dalla stessa rete, in un momento precedente o successivo della stessa serie di modifiche: è ciò che garantisce che nomi e porte da rimettere siano liberi.
+
 ### Ciò che il motore sceglie da solo
 
 Chi aggiunge un dispositivo dice solo che cosa vuole: un PC, oppure uno switch con un certo numero di porte. Il resto lo sceglie il motore, sempre allo stesso modo:

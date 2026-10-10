@@ -1,3 +1,4 @@
+import type { Snapshot } from "./snapshot";
 import type { DeviceTemplate } from "./editing";
 import type { Ipv4Address } from "./model/addresses";
 import type { IpConfig } from "./model/ip-config";
@@ -17,7 +18,8 @@ export type Action =
   | { kind: "remove-link"; linkId: string }
   | { kind: "move-link-end"; linkId: string; end: "a" | "b"; portName: string }
   | { kind: "rename-device"; deviceId: string; name: string }
-  | { kind: "configure-host"; deviceId: string; config: IpConfig };
+  | { kind: "configure-host"; deviceId: string; config: IpConfig }
+  | { kind: "restore-configuration"; snapshot: Snapshot };
 
 /**
  * Crea l'azione "questo host fa ping a questo indirizzo IP".
@@ -169,4 +171,16 @@ export function renameDevice(deviceId: string, name: string): Action {
  */
 export function configureHost(deviceId: string, config: IpConfig): Action {
   return { kind: "configure-host", deviceId, config };
+}
+
+/**
+ * Crea l'azione "riporta la rete a questa configurazione". Serve ad
+ * annullare e ripristinare le modifiche.
+ *
+ * @param snapshot - la configurazione a cui tornare, presa con `takeSnapshot`
+ *   da questa stessa rete
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function restoreConfiguration(snapshot: Snapshot): Action {
+  return { kind: "restore-configuration", snapshot };
 }

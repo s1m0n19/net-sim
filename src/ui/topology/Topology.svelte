@@ -146,6 +146,15 @@
   }
 
   function onKey(event: KeyboardEvent) {
+    // Ctrl+Z annulla, Ctrl+Maiusc+Z o Ctrl+Y ripristina (Cmd su Mac). In
+    // una casella di testo restano quelli del testo che si sta scrivendo.
+    const letter = event.key.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && !isTyping(event) && (letter === "z" || letter === "y")) {
+      event.preventDefault();
+      if (letter === "y" || event.shiftKey) session.redo();
+      else session.undo();
+      return;
+    }
     if (event.key === "Escape") {
       // Esc lascia andare, nell'ordine: l'elenco delle porte, la voce
       // scelta nella colonna, il cavo cominciato, lo strumento Cavo, il

@@ -70,6 +70,7 @@ net-sim/
 │   │   ├── devices/           host.ts, switch.ts
 │   │   ├── simulator.ts       coda degli eventi, tempo, tracce
 │   │   ├── editing.ts         modifiche alla rete: aggiungere, togliere, collegare, configurare
+│   │   ├── snapshot.ts        fotografia della configurazione, per annullare e ripristinare
 │   │   └── actions.ts         le azioni accettate dal motore
 │   ├── storage/
 │   │   └── load.ts            lettura dei file di rete
@@ -117,8 +118,8 @@ Cartelle *previste* e non ancora esistenti:
 
 `createHost` e `createSwitch` costruiscono un dispositivo "appena acceso": la configurazione data più lo stato di esecuzione iniziale. Li usano il lettore dei file e i test, così lo stato iniziale è definito in un solo punto.
 
-*Previsto:* annulla e ripristina (requisito ED-5) agiranno solo sulla configurazione. La proposta è conservare una pila di copie della configurazione: è un oggetto piccolo, e una copia per ogni modifica è più semplice da capire di un meccanismo che inverte le singole operazioni.
+Annulla e ripristina (requisito ED-5) agiscono solo sulla configurazione e sulle posizioni. Prima di ogni modifica `session` fotografa la configurazione (`takeSnapshot`, in `src/engine/snapshot.ts`) e la mette su una pila insieme alle posizioni: è un oggetto piccolo, e una copia per ogni modifica è più semplice da capire di un meccanismo che inverte le singole operazioni. Annullare invia al motore l'azione `restore-configuration`, che calcola le modifiche tra la rete di adesso e la fotografia e le esegue una alla volta: la simulazione in corso viene trattata come per qualsiasi altra modifica (D-54).
 
 ## Cosa non è coperto da test
 
-I test riguardano il motore, la lettura dei file e le due parti dell'interfaccia che non hanno bisogno di uno schermo: `view.ts`, che prepara il disegno, e `simulation/playback.ts`, l'orologio. I componenti a schermo non hanno test automatici: si verificano nel browser, a occhio o con uno screenshot. Non esiste un controllo automatico che esegua i test a ogni invio al repository.
+I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che non hanno bisogno di uno schermo: `view.ts`, che prepara il disegno, `simulation/playback.ts`, l'orologio, e `session`, con modifiche, cronologia e terminali. I componenti a schermo non hanno test automatici: si verificano nel browser, a occhio o con uno screenshot. Non esiste un controllo automatico che esegua i test a ogni invio al repository.

@@ -64,9 +64,9 @@ Dopo i primi sei passaggi:
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
-- dell'**editor**, le prime tre parti: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello. Manca l'annulla.
+- l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica.
 
-Salva, annulla e Presenta sono visibili ma spenti.
+Salva e Presenta sono visibili ma spenti.
 
 ## All'avvio
 
@@ -146,6 +146,15 @@ Ogni tabella (MAC di uno switch, ARP di un host) si può **appuntare** sul diseg
 Un dispositivo si sposta trascinandolo: cavi, buste in viaggio e tabella appuntata lo seguono. Un clic senza movimento resta un clic, e seleziona. Mentre si trascina l'inquadratura resta ferma, e si riadatta al rilascio.
 
 Si elimina ciò che è selezionato con il cestino sulla barretta, oppure con il tasto Canc o Backspace. Eliminando un dispositivo spariscono anche i suoi cavi, la sua tabella appuntata e il suo terminale. Scrivendo in una casella di testo o nel terminale, Canc e Backspace cancellano solo il testo.
+
+### Annulla e ripristina
+
+Le due frecce della barra in alto, e da tastiera Ctrl+Z per annullare e Ctrl+Maiusc+Z o Ctrl+Y per ripristinare (Cmd su Mac). Sono spente quando non c'è nulla da annullare o da ripristinare. Scrivendo in una casella di testo o nel terminale, le scorciatoie restano quelle del testo.
+
+- **Che cosa si annulla** (D-55): posare, spostare, collegare, cambiare porta, rinominare, configurare, eliminare. Un trascinamento conta come una sola modifica. Guasti e traffico non si annullano: restano come sono.
+- **La simulazione continua** (D-54, D-56): annullare equivale a fare a mano la modifica contraria. Un dispositivo che torna è appena acceso, con le tabelle vuote; gli altri tengono le loro. Un frame in viaggio verso qualcosa che sparisce va perso. L'elenco degli eventi mostra ciò che è successo con le righe di sempre ("PC3 viene tolto dalla rete").
+- **Con ciò che sparisce** se ne vanno la sua selezione, la sua tabella appuntata e il suo terminale. Tornando, il dispositivo non li riporta.
+- **Limiti.** Si torna indietro di cento modifiche. Una modifica nuova cancella ciò che si poteva ripristinare. Aprire un file o Nuova svuotano la cronologia; Ricomincia no. A simulazione sospesa annullare viene rifiutato, come ogni altra modifica.
 
 ### L'inquadratura
 
@@ -369,7 +378,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser.
 | 4 | **Fatto.** Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
 | 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
-| 7 | **Fatte le parti a, b, c e d** (azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta; nome e configurazione dal pannello). Resta annulla e ripristina | Si costruisce una rete da zero |
+| 7 | **Fatto.** Editor: azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta; nome e configurazione dal pannello; annulla e ripristina | Si costruisce una rete da zero |
 | 8 | Nuova e Salva, zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |
 | 9 | Modalità presentazione e scorciatoie | Il rilascio 1 è completo |
 

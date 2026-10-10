@@ -18,11 +18,13 @@ import {
   removeDevice,
   removeLink,
   renameDevice,
+  restoreConfiguration,
   type Action,
 } from "../engine/actions";
 import { freePortsOf, type DeviceTemplate } from "../engine/editing";
 import { checkIpConfig, defaultMaskFor, type IpConfig } from "../engine/model/ip-config";
 import { Simulator, type Trace } from "../engine/simulator";
+import { takeSnapshot, type Snapshot } from "../engine/snapshot";
 import {
   formatArpTable,
   formatHelp,
@@ -39,6 +41,16 @@ import {
   type PacketDetails,
   type Protocol,
 } from "./view";
+
+// Un punto della cronologia: la configurazione della rete e le posizioni
+// dei dispositivi sul disegno.
+interface HistoryEntry {
+  config: Snapshot;
+  positions: Map<string, Position>;
+}
+
+// Quante modifiche si possono annullare.
+const HISTORY_LIMIT = 100;
 
 // Ciò che l'utente ha selezionato sul disegno. Di un pacchetto si tiene
 // una copia: così il pannello può continuare a mostrarlo anche dopo che è
@@ -154,6 +166,17 @@ class Session {
   private simulator: Simulator | null = new Simulator({ devices: [], links: [] });
   private positions = new Map<string, Position>();
 
+  // La cronologia delle modifiche: com'era la rete prima di ognuna, per
+  // annullarla, e com'era prima di ogni annullamento, per ripristinarla.
+  private undoStack: HistoryEntry[] = [];
+  private redoStack: HistoryEntry[] = [];
+  // Com'era la rete quando è cominciato il trascinamento in corso.
+  private beforeDrag: HistoryEntry | null = null;
+  /** C'è una modifica da annullare. */
+  canUndo = $state(false);
+  /** C'è una modifica annullata da ripristinare. */
+  canRedo = $state(false);
+
   /**
    * Apre una rete a partire dal contenuto di un file.
    * Se il file non è valido la rete aperta resta quella di prima, e
@@ -167,6 +190,7 @@ class Session {
       const loaded = loadNetworkFile(text);
       this.simulator = new Simulator(loaded.network);
       this.positions = loaded.positions;
+      this.forgetHistory();
       this.fileName = name.replace(/(\.netsim)?\.json$/i, "");
       this.error = null;
       this.selection = null;
@@ -183,6 +207,7 @@ class Session {
   clear(): void {
     this.simulator = new Simulator({ devices: [], links: [] });
     this.positions = new Map();
+    this.forgetHistory();
     this.fileName = null;
     this.error = null;
     this.selection = null;
@@ -262,14 +287,99 @@ class Session {
       this.notice = `${name} non ha porte libere.`;
       return;
     }
+    const before = this.capture();
     const traces = this.run(addLink(ends[0], ends[1]));
     const added = traces.find((trace) => trace.kind === "link-added");
-    if (added !== undefined) this.selection = { kind: "link", id: added.linkId };
+    if (added !== undefined) {
+      this.remember(before);
+      this.selection = { kind: "link", id: added.linkId };
+    }
   }
 
   /** Sposta un capo di un cavo su un'altra porta dello stesso dispositivo. */
   changePort(linkId: string, end: "a" | "b", portName: string): void {
+    const before = this.capture();
     this.run(moveLinkEnd(linkId, end, portName));
+    if (this.notice === null) this.remember(before);
+  }
+
+  /**
+   * Annulla l'ultima modifica alla rete: un dispositivo o un cavo aggiunto,
+   * tolto o spostato, un nome o un indirizzo cambiato. Guasti e traffico
+   * non sono modifiche, e non si annullano.
+   */
+  undo(): void {
+    this.travel(this.undoStack, this.redoStack);
+  }
+
+  /** Rifà l'ultima modifica annullata. */
+  redo(): void {
+    this.travel(this.redoStack, this.undoStack);
+  }
+
+  // Torna alla rete in cima a una pila, e mette quella di adesso
+  // sull'altra: così il viaggio si può rifare al contrario.
+  private travel(from: HistoryEntry[], to: HistoryEntry[]): void {
+    const entry = from.at(-1);
+    if (entry === undefined || this.simulator === null) return;
+    const now = this.capture();
+    try {
+      this.simulator.dispatch(restoreConfiguration(entry.config));
+      this.notice = null;
+    } catch (problem) {
+      // A simulazione sospesa la rete non si tocca: la cronologia resta com'è.
+      this.notice = messageOf(problem);
+      return;
+    }
+    from.pop();
+    to.push(now);
+    this.positions = new Map(entry.positions);
+
+    // Ciò che riguardava un dispositivo o un cavo sparito se ne va con lui.
+    const devices = new Set(this.simulator.network.devices.map((device) => device.id));
+    const links = new Set(this.simulator.network.links.map((link) => link.id));
+    this.pins = this.pins.filter((pin) => devices.has(pin.deviceId));
+    for (const terminal of [...this.terminals]) {
+      if (!devices.has(terminal.deviceId)) this.closeTerminal(terminal.deviceId);
+    }
+    const selection = this.selection;
+    const gone =
+      (selection?.kind === "device" && !devices.has(selection.id)) ||
+      (selection?.kind === "link" && !links.has(selection.id));
+    if (gone) this.selection = null;
+    this.pingFrom = null;
+    this.linkFrom = null;
+    this.portMenu = null;
+
+    this.syncHistory();
+    this.refresh();
+  }
+
+  // Fotografa la rete com'è adesso: configurazione e posizioni.
+  private capture(): HistoryEntry {
+    const network = this.simulator?.network ?? { devices: [], links: [] };
+    return { config: takeSnapshot(network), positions: new Map(this.positions) };
+  }
+
+  // Registra una modifica appena fatta, dando com'era la rete prima. Una
+  // modifica nuova cancella ciò che si poteva ripristinare.
+  private remember(before: HistoryEntry): void {
+    this.undoStack.push(before);
+    if (this.undoStack.length > HISTORY_LIMIT) this.undoStack.shift();
+    this.redoStack = [];
+    this.syncHistory();
+  }
+
+  private forgetHistory(): void {
+    this.undoStack = [];
+    this.redoStack = [];
+    this.beforeDrag = null;
+    this.syncHistory();
+  }
+
+  private syncHistory(): void {
+    this.canUndo = this.undoStack.length > 0;
+    this.canRedo = this.redoStack.length > 0;
   }
 
   /**
@@ -390,10 +500,12 @@ class Session {
   addDevice(template: DeviceTemplate, position: Position): void {
     if (this.simulator === null) return;
     const action = template.kind === "host" ? addHost() : addSwitch(template.portCount);
+    const before = this.capture();
     try {
       const traces = this.simulator.dispatch(action);
       const added = traces.find((trace) => trace.kind === "device-added");
       if (added !== undefined) {
+        this.remember(before);
         this.positions.set(added.deviceId, { x: Math.round(position.x), y: Math.round(position.y) });
         this.selection = { kind: "device", id: added.deviceId };
       }
@@ -411,9 +523,19 @@ class Session {
     this.refresh();
   }
 
-  /** Da chiamare quando comincia e quando finisce il trascinamento di un dispositivo. */
+  /**
+   * Da chiamare quando comincia e quando finisce il trascinamento di un
+   * dispositivo. Tiene ferma l'inquadratura per la durata, e alla fine
+   * registra lo spostamento come una sola modifica da annullare.
+   */
   holdBounds(hold: boolean): void {
     this.frozenBounds = hold ? this.view.bounds : null;
+    if (hold) {
+      this.beforeDrag = this.capture();
+    } else if (this.beforeDrag !== null) {
+      this.remember(this.beforeDrag);
+      this.beforeDrag = null;
+    }
   }
 
   /**
@@ -424,9 +546,11 @@ class Session {
     const selection = this.selection;
     if (selection === null || selection.kind === "packet") return;
 
+    const before = this.capture();
     this.run(selection.kind === "device" ? removeDevice(selection.id) : removeLink(selection.id));
     // Se l'eliminazione è stata rifiutata, tutto resta com'era.
     if (this.notice !== null) return;
+    this.remember(before);
 
     if (selection.kind === "device") {
       // Con il dispositivo spariscono la sua posizione, la sua tabella
@@ -558,8 +682,10 @@ class Session {
   private attempt(action: Action): string | null {
     if (this.simulator === null) return null;
     let problem: string | null = null;
+    const before = this.capture();
     try {
       this.simulator.dispatch(action);
+      this.remember(before);
       this.notice = null;
     } catch (thrown) {
       problem = messageOf(thrown);

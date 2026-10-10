@@ -51,6 +51,9 @@ if (import.meta.env.DEV) {
   if (params.has("cavo")) session.cabling = true;
   const cableFrom = named(params.get("da"));
   if (cableFrom !== undefined) session.armLink(cableFrom.id);
+  // &annulla=2, &ripristina=1                 annulla le ultime modifiche, poi ne rifà
+  for (let i = 0; i < Number(params.get("annulla") ?? 0); i++) session.undo();
+  for (let i = 0; i < Number(params.get("ripristina") ?? 0); i++) session.redo();
   // &seleziona=PC1                            (senza esempio) seleziona un dispositivo posato
   const picked = named(params.get("seleziona"));
   if (params.get("esempio") === null && picked !== undefined) session.select({ kind: "device", id: picked.id });

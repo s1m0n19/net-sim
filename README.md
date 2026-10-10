@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sei, e il settimo è a metà. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è quasi completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi; manca solo l'annulla. Mancano ancora il salvataggio e la modalità presentazione.
+L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sette. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Mancano ancora il salvataggio e la modalità presentazione.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -50,6 +50,13 @@ Selezionato un dispositivo, nel pannello a destra si cambiano il **nome** e, per
 - Un valore non accettabile, per esempio l'indirizzo di broadcast della sottorete o un nome già usato, segna il campo in rosso con il motivo sotto, e la rete conserva il valore di prima.
 - Svuotare l'indirizzo toglie tutta la configurazione del PC.
 - Cambiare la configurazione di un PC ne svuota la tabella ARP, come riavviare la scheda di rete.
+
+**Annulla e ripristina.** Le due frecce nella barra in alto, oppure Ctrl+Z e Ctrl+Maiusc+Z (anche Ctrl+Y; Cmd su Mac), annullano e rifanno le modifiche alla rete, una alla volta, fino a cento:
+
+- sono modifiche: posare, spostare, collegare, cambiare porta, rinominare, configurare, eliminare;
+- non lo sono i guasti (spegnere, staccare un cavo) né il traffico: annullare li salta e li lascia come sono;
+- annullare non riavvia la simulazione. È come fare a mano la modifica contraria: un PC eliminato torna con nome, indirizzi e cavi, ma con la tabella ARP vuota, e gli altri dispositivi tengono le loro tabelle;
+- aprire un file o premere Nuova svuota la cronologia.
 
 | Comando | Effetto |
 | --- | --- |
@@ -103,7 +110,7 @@ I messaggi sono in inglese. L'output di `ping` cresce mentre la simulazione avan
 
 I pacchetti sono buste colorate con la sigla sopra: ambra per ARP, viola per ICMP. Quando non viaggia nulla e un PC sta aspettando una risposta che non arriva, accanto a lui compare un anello con una clessidra che si svuota in due o tre secondi; poi il tempo salta alla scadenza.
 
-Salva, annulla, Presenta e le voci della colonna si vedono ma non sono ancora attivi.
+Salva, Presenta e le voci Router e Server della colonna si vedono ma non sono ancora attivi.
 
 Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una certa situazione. Nel sito pubblicato queste scorciatoie non esistono.
 

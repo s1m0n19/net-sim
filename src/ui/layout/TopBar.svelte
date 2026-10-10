@@ -15,8 +15,8 @@
   <button class="btn" onclick={() => session.clear()}>Nuova</button>
   <button class="btn" onclick={open}>Apri</button>
   <button class="btn" disabled title="Non ancora disponibile">Salva</button>
-  <button class="btn" disabled title="Non ancora disponibile" aria-label="Annulla">↶</button>
-  <button class="btn" disabled title="Non ancora disponibile" aria-label="Ripristina">↷</button>
+  <button class="btn" disabled={!session.canUndo} title="Annulla l'ultima modifica (Ctrl+Z)" aria-label="Annulla" onclick={() => session.undo()}>↶</button>
+  <button class="btn" disabled={!session.canRedo} title="Ripristina la modifica annullata (Ctrl+Maiusc+Z)" aria-label="Ripristina" onclick={() => session.redo()}>↷</button>
 
   {#if session.fileName !== null}
     <span class="file mono">{session.fileName}</span>
