@@ -12,7 +12,7 @@ L'interfaccia è in costruzione, e per ora ce ne sono due:
 
 | Indirizzo | Che cos'è | Che cosa fa oggi |
 | --- | --- | --- |
-| http://localhost:5173 | La **nuova interfaccia**, al quarto passaggio di nove | Apre una rete da file e permette di condurre una dimostrazione: ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi |
+| http://localhost:5173 | La **nuova interfaccia**, al quinto passaggio di nove | Apre una rete da file e permette di condurre una dimostrazione: ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi |
 | http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Ciò che la nuova non ha ancora: il ping con quattro richieste |
 
 La pagina provvisoria verrà cancellata quando la nuova interfaccia saprà fare le stesse cose. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
@@ -58,12 +58,14 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 
 | Selezionato | Sulla barretta | Nel pannello di destra |
 | --- | --- | --- |
-| Un PC | Spegni o accendi · Ping | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
-| Uno switch | Spegni o accendi | Numero di porte, tabella MAC |
+| Un PC | Spegni o accendi · Ping · Appunta la tabella | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
+| Uno switch | Spegni o accendi · Appunta la tabella | Numero di porte, tabella MAC |
 | Un cavo | Stacca o riattacca | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 
 **Ping.** Seleziona il PC di partenza, premi Ping sulla barretta (la freccia), poi fai clic sul dispositivo di destinazione. Parte un solo echo request. Esc rinuncia.
+
+**Tabelle appuntate.** Il pulsante con la griglia, sulla barretta di un dispositivo, appunta la sua tabella sul disegno: resta visibile qualunque cosa sia selezionata, così si guarda la tabella MAC riempirsi mentre il pacchetto viaggia. Si trascina dove dà meno fastidio e si toglie con la crocetta. Una riga appena imparata si accende per un momento; una appena persa resta un attimo, barrata.
 
 **Eventi.** La fascia in basso elenca ciò che succede, una riga per fatto: tempo, dispositivo, sigla del protocollo, descrizione. L'ultima riga di un ping è il suo esito.
 

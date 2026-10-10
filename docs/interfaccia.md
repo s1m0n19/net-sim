@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi quattro: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto: oggi le manca solo il ping con quattro richieste, che arriverà con il terminale.
+**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi cinque: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro; tabelle appuntate. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto: oggi le manca solo il ping con quattro richieste, che arriverà con il terminale.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -44,7 +44,7 @@ La disposizione è una decisione presa con riserva: i pannelli sono componenti i
 
 ## Che cosa c'è già
 
-Dopo i primi quattro passaggi:
+Dopo i primi cinque passaggi:
 
 - l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
@@ -58,12 +58,13 @@ Dopo i primi quattro passaggi:
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
 - l'avviso della tempesta di broadcast;
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
-- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi e Ping sui dispositivi, stacca o riattacca sui cavi;
+- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping e Appunta sui dispositivi, stacca o riattacca sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
 - il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto;
-- la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo.
+- la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
+- le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare.
 
-Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti. Sulla barretta mancano Collega, Terminale, Appunta ed Elimina, che arriveranno con i passaggi a cui appartengono.
+Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti. Sulla barretta mancano Collega, Terminale ed Elimina, che arriveranno con i passaggi a cui appartengono.
 
 ## All'avvio
 
@@ -129,10 +130,12 @@ Mentre si aspetta il clic sulla destinazione, il pulsante Ping resta premuto, il
 
 Ogni tabella (MAC di uno switch, ARP di un host) si può **appuntare** sul disegno: compare in un riquadro accanto al suo dispositivo, legata a lui da una linea tratteggiata, e resta visibile qualunque cosa sia selezionata. È il modo per vedere insieme il pacchetto che viaggia, il suo contenuto e la tabella che cambia.
 
-- Si può trascinare dove dà meno fastidio; la linea la segue.
-- Quando impara o perde una riga, quella riga si evidenzia per un momento.
+- Si appunta e si toglie in tre modi: dal pulsante sulla barretta del dispositivo, dal pulsante "appunta" accanto alla tabella nel pannello laterale, e, per toglierla, dalla crocetta nel suo angolo.
+- Nasce sotto il dispositivo. Si può trascinare dove dà meno fastidio; la linea la segue, e parte da sotto le etichette per non coprirle.
+- Una riga appena imparata si accende nel colore d'accento e torna normale in un secondo e mezzo. Una riga appena persa resta un momento, rossa e barrata, e svanisce.
 - Gli indirizzi sono scritti per intero.
-- Quali tabelle sono appuntate non si salva nel file.
+- L'inquadratura si allarga quanto serve per far stare anche le tabelle.
+- Ricominciando la simulazione restano dove sono. Aprendo un'altra rete spariscono: quali tabelle sono appuntate non si salva nel file.
 
 ### Muoversi sul disegno
 
@@ -291,7 +294,7 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
-| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, messaggi. *Previsto:* tabelle appuntate, zoom |
+| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, tabelle appuntate, messaggi. *Previsto:* zoom |
 | `panels/` | Il pannello laterale, in sola lettura, e gli strati annidati del pacchetto. *Previsto:* modifica della configurazione |
 | `strip/` | La fascia in basso, con la scheda Eventi e il suo filtro. *Previsto:* terminali |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
@@ -319,7 +322,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria 
 | 2 | **Fatto.** Barra della simulazione: passo, tempo reale, velocità, buste animate con sigla, attese, avviso di sospensione | Un ping si guarda scorrere da solo |
 | 3 | **Fatto.** Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
 | 4 | **Fatto.** Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |
-| 5 | Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
+| 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
 | 7 | Editor: azioni di modifica nel motore, colonna, strumento Cavo, configurazione dal pannello, annulla e ripristina | Si costruisce una rete da zero |
 | 8 | Nuova e Salva, zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |

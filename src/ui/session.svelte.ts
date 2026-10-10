@@ -18,6 +18,14 @@ import {
 // Ciò che l'utente ha selezionato sul disegno. Di un pacchetto si tiene
 // una copia: così il pannello può continuare a mostrarlo anche dopo che è
 // arrivato a destinazione e non è più in viaggio.
+// Una tabella appuntata sul disegno, accanto al suo dispositivo.
+export interface Pin {
+  deviceId: string;
+  // Dove sta l'angolo in alto a sinistra, rispetto al centro del dispositivo.
+  dx: number;
+  dy: number;
+}
+
 export type Selection =
   | { kind: "device"; id: string }
   | { kind: "link"; id: string }
@@ -55,6 +63,11 @@ class Session {
   // Un messaggio breve quando un comando non si può eseguire.
   notice = $state<string | null>(null);
 
+  // --- Tabelle appuntate -----------------------------------------------------
+  // Le tabelle tenute in vista sul disegno: di quale dispositivo, e a che
+  // distanza da lui. Riguardano solo lo schermo e non si salvano nel file.
+  pins = $state<Pin[]>([]);
+
   // --- Filtro del traffico --------------------------------------------------
   // Quale conversazione si sta seguendo; null = tutte.
   followed = $state<number | null>(null);
@@ -82,6 +95,7 @@ class Session {
       this.fileName = name.replace(/(\.netsim)?\.json$/i, "");
       this.error = null;
       this.selection = null;
+      this.pins = [];
       this.rewind();
     } catch (problem) {
       this.error = messageOf(problem);
@@ -95,6 +109,7 @@ class Session {
     this.fileName = null;
     this.error = null;
     this.selection = null;
+    this.pins = [];
     this.rewind();
   }
 
@@ -130,6 +145,36 @@ class Session {
       return false;
     }
     return protocol === null || this.protocols[protocol];
+  }
+
+  /** Dice se la tabella di un dispositivo è appuntata sul disegno. */
+  isPinned(deviceId: string): boolean {
+    return this.pins.some((pin) => pin.deviceId === deviceId);
+  }
+
+  /**
+   * Appunta sul disegno la tabella di un dispositivo (MAC per uno switch,
+   * ARP per un host), oppure la toglie se è già appuntata. Nasce sotto il
+   * dispositivo, e da lì si può trascinare.
+   */
+  togglePin(deviceId: string): void {
+    if (this.isPinned(deviceId)) {
+      this.pins = this.pins.filter((pin) => pin.deviceId !== deviceId);
+      return;
+    }
+    const device = this.view.devices.find((d) => d.id === deviceId);
+    if (device === undefined) return;
+    // Sotto un host ci sono più righe di etichetta che sotto uno switch.
+    this.pins.push({ deviceId, dx: -100, dy: device.kind === "host" ? 92 : 62 });
+  }
+
+  /** Sposta una tabella appuntata a una nuova distanza dal suo dispositivo. */
+  movePin(deviceId: string, dx: number, dy: number): void {
+    const pin = this.pins.find((p) => p.deviceId === deviceId);
+    if (pin !== undefined) {
+      pin.dx = dx;
+      pin.dy = dy;
+    }
   }
 
   /** Spegne un dispositivo acceso, o accende uno spento. */

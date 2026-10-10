@@ -66,7 +66,12 @@
         <dd>{device.mac}</dd>
       </dl>
 
-      <h3>Tabella ARP</h3>
+      <h3>
+        Tabella ARP
+        <button class="btn pin" class:on={session.isPinned(device.id)} aria-pressed={session.isPinned(device.id)} onclick={() => session.togglePin(device.id)}>
+          {session.isPinned(device.id) ? "appuntata" : "appunta"}
+        </button>
+      </h3>
       {#if device.arpRows.length === 0}
         <p>Vuota.</p>
       {:else}
@@ -94,7 +99,12 @@
         <dd>{device.portCount}</dd>
       </dl>
 
-      <h3>Tabella MAC</h3>
+      <h3>
+        Tabella MAC
+        <button class="btn pin" class:on={session.isPinned(device.id)} aria-pressed={session.isPinned(device.id)} onclick={() => session.togglePin(device.id)}>
+          {session.isPinned(device.id) ? "appuntata" : "appunta"}
+        </button>
+      </h3>
       {#if device.macRows.length === 0}
         <p>Vuota.</p>
       {:else}
@@ -160,6 +170,17 @@
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+  h3:has(.pin) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pin {
+    font-size: 1em;
+    padding: 1px 7px;
+    text-transform: none;
+    letter-spacing: 0;
   }
   p {
     margin: 0;

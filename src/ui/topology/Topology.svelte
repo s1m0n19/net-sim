@@ -4,10 +4,35 @@
   import ActionBar, { type BarAction } from "./ActionBar.svelte";
   import DeviceNode from "./DeviceNode.svelte";
   import LinkLine from "./LinkLine.svelte";
+  import PinnedTable, { pinnedSize } from "./PinnedTable.svelte";
   import PacketEnvelope from "./PacketEnvelope.svelte";
   import WaitIndicator from "./WaitIndicator.svelte";
 
-  const bounds = $derived(session.view.bounds);
+  // Le tabelle appuntate, ciascuna con il suo dispositivo.
+  const pinned = $derived(
+    session.pins.flatMap((pin) => {
+      const device = session.view.devices.find((d) => d.id === pin.deviceId);
+      return device === undefined ? [] : [{ pin, device }];
+    }),
+  );
+
+  // L'inquadratura: tutta la rete, allargata quanto serve per far stare
+  // anche le tabelle appuntate.
+  const bounds = $derived.by(() => {
+    let { x, y, width, height } = session.view.bounds;
+    let right = x + width;
+    let bottom = y + height;
+    for (const { pin, device } of pinned) {
+      const size = pinnedSize(device);
+      const left = device.x + pin.dx;
+      const top = device.y + pin.dy;
+      x = Math.min(x, left - 16);
+      y = Math.min(y, top - 16);
+      right = Math.max(right, left + size.width + 16);
+      bottom = Math.max(bottom, top + size.height + 16);
+    }
+    return { x, y, width: right - x, height: bottom - y };
+  });
 
   // I dispositivi che stanno aspettando una risposta, quando non viaggia nulla.
   const waiting = $derived(
@@ -39,6 +64,15 @@
           run: () => session.armPing(device.id),
         });
       }
+      const table = device.kind === "host" ? "ARP" : "MAC";
+      actions.push({
+        icon: "pin",
+        label: session.isPinned(device.id)
+          ? `Togli la tabella ${table} di ${device.name} dal disegno`
+          : `Appunta la tabella ${table} di ${device.name} sul disegno`,
+        active: session.isPinned(device.id),
+        run: () => session.togglePin(device.id),
+      });
       return { x: device.x, y: device.y - 42, actions };
     }
 
@@ -100,6 +134,9 @@
       {/each}
       {#each session.view.devices as device (device.id)}
         <DeviceNode {device} />
+      {/each}
+      {#each pinned as { pin, device } (device.id)}
+        <PinnedTable {pin} {device} />
       {/each}
       {#each packets as packet (`${session.generation}-${packet.id}`)}
         <PacketEnvelope {packet} />
