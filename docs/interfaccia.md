@@ -52,7 +52,7 @@ Dopo i primi sei passaggi:
 - **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, **Nuova**, che torna al foglio vuoto, **Salva** e **Salva con nome**, che scrivono la rete in un file;
 - il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
 - gli interruttori delle etichette IP, MAC e Porte;
-- la rete sempre inquadrata per intero, su un foglio di base che si allarga solo se serve;
+- l'inquadratura: un foglio di base che si allarga solo se serve, la rotella per ingrandire, lo sfondo da trascinare per spostare la vista, i pulsanti −, + e Adatta;
 - la **barra della simulazione**: Ricomincia, Avvia e Pausa, Passo, velocità, tick;
 - le **buste** in viaggio, con colore e sigla del protocollo;
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
@@ -66,7 +66,7 @@ Dopo i primi sei passaggi:
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
 - l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica.
 
-Presenta è visibile ma spento. Mancano zoom e spostamento della vista.
+Presenta è visibile ma spento.
 
 ## File
 
@@ -170,7 +170,13 @@ Il disegno parte da un foglio di base. Finché la rete ci sta, posare o spostare
 
 ### Muoversi sul disegno
 
-La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore; trascinando lo sfondo si sposta la vista. In un angolo del disegno ci sono i pulsanti +, − e Adatta, che inquadra tutta la rete.
+La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore: ciò che sta sotto il puntatore resta dov'è. Trascinando lo sfondo si sposta la vista; un clic senza movimento resta un clic, e posa o toglie la selezione. Nell'angolo in basso a destra del disegno ci sono i pulsanti −, + e Adatta: i primi due agiscono attorno al centro di ciò che si vede, Adatta inquadra tutta la rete.
+
+- **Automatica o scelta** (D-59). Finché non si tocca nulla vale l'inquadratura automatica del foglio. Dal primo ingrandimento, spostamento o Adatta l'inquadratura è quella scelta, e non cambia più da sola: un dispositivo posato fuori vista resta fuori vista finché non si preme Adatta. Nuova torna a quella automatica.
+- **All'apertura di un file** la rete viene inquadrata per intero, come con Adatta (D-60).
+- **Adatta** lascia margine per le etichette e per la barra della simulazione, tiene dentro anche le tabelle appuntate, e non ingrandisce oltre un riquadro minimo: un PC da solo non riempie lo schermo. Sul foglio vuoto torna all'inquadratura automatica.
+- **Limiti.** Si arriva a quattro volte più vicino e a cinque volte più lontano del foglio di base.
+- Con la vista si ingrandisce tutto il disegno, comprese scritte, barretta delle azioni ed elenco delle porte. L'inquadratura non si salva nel file.
 
 ## Barra della simulazione
 
@@ -356,7 +362,7 @@ L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non
 | `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
-| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, tabelle appuntate, messaggi. *Previsto:* zoom |
+| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi, pulsanti dell'inquadratura. `camera.ts` e `geometry.ts` contengono i calcoli, senza schermo |
 | `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
@@ -387,7 +393,7 @@ Nove passaggi, ciascuno verificabile da solo nel browser.
 | 5 | **Fatto.** Tabelle appuntate | Si vedono insieme pacchetto, contenuto e tabelle |
 | 6 | **Fatto.** Terminale: interprete dei comandi e schede | `ping` e `arp -a` dal prompt |
 | 7 | **Fatto.** Editor: azioni di modifica nel motore; colonna, spostare ed eliminare; strumento Cavo, Collega e scelta della porta; nome e configurazione dal pannello; annulla e ripristina | Si costruisce una rete da zero |
-| 8 | **Fatti Nuova, Salva e Salva con nome.** Restano zoom e spostamento della vista | Si prepara una rete a casa e la si riapre in aula |
+| 8 | **Fatto.** Nuova, Salva e Salva con nome; zoom, spostamento della vista e Adatta | Si prepara una rete a casa e la si riapre in aula |
 | 9 | Modalità presentazione e scorciatoie | Il rilascio 1 è completo |
 
 Dopo il passaggio 3 l'app è già proiettabile per la lezione su ARP e ping, su una rete preparata come file.

@@ -34,6 +34,7 @@ import {
 } from "../shell/windows";
 import { loadNetworkFile, type Position } from "../storage/load";
 import { serializeNetwork } from "../storage/save";
+import { fitted } from "./topology/camera";
 import {
   buildView,
   EMPTY_VIEW,
@@ -173,6 +174,9 @@ class Session {
   // Mentre si trascina un dispositivo l'inquadratura resta ferma, altrimenti
   // il disegno si muoverebbe sotto il mouse.
   frozenBounds = $state.raw<Bounds | null>(null);
+  // L'inquadratura scelta dall'utente ingrandendo, spostando o premendo
+  // Adatta. Finché vale null l'inquadratura è quella automatica del foglio.
+  camera = $state.raw<Bounds | null>(null);
 
   // Una rete c'è sempre: all'avvio è vuota.
   private simulator: Simulator | null = new Simulator({ devices: [], links: [] });
@@ -211,6 +215,8 @@ class Session {
       this.terminals = [];
       this.activeTab = "events";
       this.rewind();
+      // Una rete appena aperta si vede tutta, grande quanto ci sta.
+      this.fitView();
     } catch (problem) {
       this.error = messageOf(problem);
     }
@@ -229,6 +235,17 @@ class Session {
     this.terminals = [];
     this.activeTab = "events";
     this.rewind();
+    this.camera = null;
+  }
+
+  /**
+   * Inquadra tutta la rete. Su un foglio vuoto torna all'inquadratura di base.
+   *
+   * @param extras - altri rettangoli del disegno da tenere dentro, come le
+   *   tabelle appuntate
+   */
+  fitView(extras: Bounds[] = []): void {
+    this.camera = fitted(this.view.devices, extras);
   }
 
   /**

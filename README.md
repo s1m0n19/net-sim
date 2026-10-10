@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sette, e dell'ottavo la prima metà. Oggi apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Mancano ancora lo zoom del disegno e la modalità presentazione.
+L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti otto. Oggi apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Manca ancora la modalità presentazione.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -50,6 +50,8 @@ Selezionato un dispositivo, nel pannello a destra si cambiano il **nome** e, per
 - Un valore non accettabile, per esempio l'indirizzo di broadcast della sottorete o un nome già usato, segna il campo in rosso con il motivo sotto, e la rete conserva il valore di prima.
 - Svuotare l'indirizzo toglie tutta la configurazione del PC.
 - Cambiare la configurazione di un PC ne svuota la tabella ARP, come riavviare la scheda di rete.
+
+**Muoversi sul disegno.** La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore; trascinando lo sfondo si sposta la vista. Nell'angolo in basso a destra del disegno ci sono **−**, **+** e **Adatta**, che inquadra tutta la rete. Un file appena aperto viene inquadrato per intero.
 
 **Salvare.** **Salva**, o Ctrl+S (Cmd+S su Mac), scrive la rete in un file `.netsim.json`: dispositivi, cavi, indirizzi, posizioni e guasti. Tabelle e pacchetti in viaggio non si salvano: una rete riaperta è una rete appena accesa.
 

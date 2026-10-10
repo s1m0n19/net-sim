@@ -3,6 +3,7 @@
   import { session } from "../session.svelte";
   import SimulationBar from "../simulation/SimulationBar.svelte";
   import ActionBar, { type BarAction } from "./ActionBar.svelte";
+  import { panned, zoomed, ZOOM_STEP } from "./camera";
   import DeviceNode from "./DeviceNode.svelte";
   import LinkLine from "./LinkLine.svelte";
   import PinnedTable, { pinnedSize } from "./PinnedTable.svelte";
@@ -18,9 +19,16 @@
     }),
   );
 
-  // L'inquadratura: tutta la rete, allargata quanto serve per far stare
-  // anche le tabelle appuntate.
+  // Dove sta ogni tabella appuntata, come rettangolo del disegno.
+  const pinnedBoxes = $derived(
+    pinned.map(({ pin, device }) => ({ x: device.x + pin.dx, y: device.y + pin.dy, ...pinnedSize(device) })),
+  );
+
+  // L'inquadratura. Se l'utente l'ha scelta, è quella. Altrimenti è
+  // automatica: il foglio di base, allargato quanto serve per far stare
+  // tutta la rete e le tabelle appuntate.
   const bounds = $derived.by(() => {
+    if (session.camera !== null) return session.camera;
     // Mentre si trascina un dispositivo l'inquadratura non si muove.
     if (session.frozenBounds !== null) return session.frozenBounds;
     let { x, y, width, height } = session.view.bounds;
@@ -190,9 +198,70 @@
     return { x: point.x, y: point.y };
   }
 
+  // --- Muoversi sul disegno -------------------------------------------------
+  // La rotella ingrandisce e rimpicciolisce attorno al puntatore.
+  function onWheel(event: WheelEvent) {
+    event.preventDefault();
+    // Un trackpad manda molti scatti piccoli, una rotella pochi e grandi:
+    // l'ingrandimento è proporzionale allo scatto, entro un limite.
+    const delta = Math.max(-80, Math.min(80, event.deltaY));
+    session.camera = zoomed(bounds, Math.exp(-delta * 0.004), toDrawing(event.clientX, event.clientY));
+  }
+
+  // La pagina non deve scorrere mentre si ingrandisce: per poterlo
+  // impedire, l'ascolto della rotella va dichiarato "non passivo".
+  $effect(() => {
+    const element = drawing;
+    if (element === undefined) return;
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  });
+
+  // I pulsanti + e − ingrandiscono attorno al centro di ciò che si vede.
+  function zoomButton(factor: number) {
+    const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+    session.camera = zoomed(bounds, factor, centre);
+  }
+
+  // Trascinando lo sfondo si sposta la vista. Come per i dispositivi, si
+  // aspetta qualche pixel di movimento: un clic resta un clic.
+  let grab: { clientX: number; clientY: number; box: typeof bounds; scale: number } | null = null;
+  let panning = $state(false);
+  let justPanned = false;
+
+  function onBackgroundDown(event: PointerEvent) {
+    if (event.button !== 0 || event.target !== drawing) return;
+    const scale = drawing?.getScreenCTM()?.a ?? 1;
+    grab = { clientX: event.clientX, clientY: event.clientY, box: bounds, scale };
+  }
+
+  function onBackgroundMove(event: PointerEvent) {
+    if (grab === null) return;
+    const dx = event.clientX - grab.clientX;
+    const dy = event.clientY - grab.clientY;
+    if (!panning) {
+      if (Math.hypot(dx, dy) < 4) return;
+      panning = true;
+      drawing?.setPointerCapture?.(event.pointerId);
+    }
+    // Il disegno segue il mouse: l'inquadratura va dalla parte opposta.
+    session.camera = panned(grab.box, -dx / grab.scale, -dy / grab.scale);
+  }
+
+  function onBackgroundUp() {
+    if (panning) justPanned = true;
+    grab = null;
+    panning = false;
+  }
+
   // Un clic sullo sfondo: posa il dispositivo scelto nella colonna, se ce
   // n'è uno; altrimenti toglie la selezione.
   function onBackgroundClick(event: MouseEvent) {
+    // Dopo uno spostamento della vista il browser manda comunque un clic.
+    if (justPanned) {
+      justPanned = false;
+      return;
+    }
     if (session.placing !== null) {
       session.addDevice(session.placing, toDrawing(event.clientX, event.clientY));
     } else {
@@ -224,6 +293,7 @@
   class="canvas"
   class:aiming={session.pingFrom !== null || session.cabling || session.linkFrom !== null}
   class:placing={session.placing !== null}
+  class:panning
   ondragover={onDragOver}
   ondrop={onDrop}
   role="presentation"
@@ -238,6 +308,10 @@
     role="group"
     aria-label="Topologia della rete"
     onclick={onBackgroundClick}
+    onpointerdown={onBackgroundDown}
+    onpointermove={onBackgroundMove}
+    onpointerup={onBackgroundUp}
+    onpointercancel={onBackgroundUp}
   >
       {#each session.view.links as link (link.id)}
         <LinkLine {link} />
@@ -309,6 +383,12 @@
       {/if}
     </div>
 
+  <div class="zoom" role="group" aria-label="Inquadratura">
+    <button class="btn" title="Rimpicciolisci" aria-label="Rimpicciolisci" onclick={() => zoomButton(1 / ZOOM_STEP)}>−</button>
+    <button class="btn" title="Ingrandisci" aria-label="Ingrandisci" onclick={() => zoomButton(ZOOM_STEP)}>+</button>
+    <button class="btn" title="Inquadra tutta la rete" onclick={() => session.fitView(pinnedBoxes)}>Adatta</button>
+  </div>
+
   <SimulationBar />
 </div>
 
@@ -343,6 +423,22 @@
   /* Con un dispositivo scelto nella colonna, il puntatore dice "posa qui". */
   .placing :global(svg) {
     cursor: copy;
+  }
+  /* Mentre si sposta la vista il puntatore è una mano chiusa. */
+  .panning :global(svg) {
+    cursor: grabbing;
+  }
+  /* I pulsanti dell'inquadratura, nell'angolo in basso a destra. */
+  .zoom {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    display: flex;
+    gap: 4px;
+  }
+  .zoom .btn {
+    min-width: 30px;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
   }
   .hint {
     position: absolute;

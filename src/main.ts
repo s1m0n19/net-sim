@@ -51,6 +51,11 @@ if (import.meta.env.DEV) {
   if (params.has("cavo")) session.cabling = true;
   const cableFrom = named(params.get("da"));
   if (cableFrom !== undefined) session.armLink(cableFrom.id);
+  // &vista=100,50,400,250                     inquadra quel rettangolo (x, y, larghezza, altezza)
+  // &adatta                                   preme Adatta
+  const [vx, vy, vw, vh] = (params.get("vista") ?? "").split(",").map(Number);
+  if (params.has("vista")) session.camera = { x: vx, y: vy, width: vw, height: vh };
+  if (params.has("adatta")) session.fitView();
   // &annulla=2, &ripristina=1                 annulla le ultime modifiche, poi ne rifà
   for (let i = 0; i < Number(params.get("annulla") ?? 0); i++) session.undo();
   for (let i = 0; i < Number(params.get("ripristina") ?? 0); i++) session.redo();
