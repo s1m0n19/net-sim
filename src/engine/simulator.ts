@@ -24,6 +24,7 @@ import {
   findLink,
   hostsOf,
   linkAt,
+  linkCarriesSignal,
   otherEndOf,
   type Device,
   type Host,
@@ -293,11 +294,7 @@ export class Simulator {
   // staccato, e i dispositivi ai due capi sono entrambi accesi.
   private hasCarrier(port: PortRef): boolean {
     const link = linkAt(this.network, port);
-    if (link === null || !link.connected) return false;
-    return (
-      findDevice(this.network, link.a.deviceId).powered &&
-      findDevice(this.network, link.b.deviceId).powered
-    );
+    return link !== null && linkCarriesSignal(this.network, link);
   }
 
   // Dopo un guasto o una riparazione, aggiorna ciò che i dispositivi sanno

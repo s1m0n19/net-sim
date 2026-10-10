@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** progetto, non ancora realizzato. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Oggi a schermo c'è ancora la pagina provvisoria (`src/ui/App.svelte`), che verrà sostituita.
+**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, è fatto il primo: ossatura, temi, disegno della rete, apertura di un file. Tutto il resto è descritto qui ma non esiste ancora; la pagina provvisoria di prima resta raggiungibile all'indirizzo `/#provvisoria` finché la nuova non la sostituisce del tutto.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -39,6 +39,20 @@ Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQ
 | Fascia in basso | Una scheda per ogni terminale aperto, più la scheda Eventi | sì |
 
 La disposizione è una decisione presa con riserva: i pannelli sono componenti indipendenti dalla griglia che li ospita, così cambiarla non richiede di riscriverli (requisito NF-7).
+
+## Che cosa c'è già
+
+Dopo il primo passaggio:
+
+- l'ossatura completa, con la colonna e la fascia che si aprono e si chiudono;
+- i due temi, con il pulsante Tema;
+- il foglio vuoto all'avvio;
+- **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, e **Nuova**, che torna al foglio vuoto;
+- il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
+- gli interruttori delle etichette IP, MAC e Porte;
+- la rete sempre inquadrata per intero.
+
+Non c'è ancora nulla che si muova o si possa selezionare: Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti.
 
 ## All'avvio
 
@@ -234,18 +248,26 @@ Sono i valori del bozzetto: un punto di partenza, da ritoccare quando l'interfac
 | Campo rifiutato | bordo rosso | il motivo scritto sotto |
 | Selezione | accento | contorno più spesso e barretta |
 
-## Come sarà organizzato il codice
+## Come è organizzato il codice
 
-*Previsto.* L'interfaccia sta in `src/ui/`, divisa per area:
+L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non esistono ancora.
 
-| Cartella | Contenuto |
+| File o cartella | Contenuto |
 | --- | --- |
-| `theme/` | I colori dei due temi, le misure, le icone: in un solo punto |
-| `layout/` | La griglia della schermata, la barra in alto, la modalità presentazione |
-| `topology/` | Il disegno: dispositivi, cavi, buste, selezione, barretta, tabelle appuntate, zoom |
-| `panels/` | Il pannello laterale nelle sue forme |
-| `strip/` | La fascia in basso: schede, terminale, eventi e filtro |
-| `simulation/` | La barra della simulazione e l'orologio del tempo reale |
+| `App.svelte` | L'ossatura: la griglia che dispone le aree. I componenti non sanno dove si trovano |
+| `session.svelte.ts` | La rete aperta e ciò che di lei va disegnato. È l'unico punto che parla con il simulatore |
+| `view.ts` | Trasforma rete e posizioni in ciò che i componenti disegnano: etichette, segnale sui cavi, inquadratura. Non usa il browser, quindi ha i suoi test |
+| `preferences.svelte.ts` | Ciò che riguarda solo chi guarda: tema, etichette accese, pannelli aperti |
+| `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
+| `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
+| `layout/` | Barra in alto e colonna dei dispositivi. *Previsto:* modalità presentazione |
+| `topology/` | Il disegno: dispositivi e cavi. *Previsto:* buste, selezione, barretta, tabelle appuntate, zoom |
+| `panels/` | Il pannello laterale. Oggi dice solo che cosa comparirà |
+| `strip/` | La fascia in basso. Oggi ha la sola scheda Eventi, vuota. *Previsto:* terminali, eventi e filtro |
+| `simulation/` | *Previsto:* barra della simulazione e orologio del tempo reale |
+| `provisional/` | La pagina provvisoria di prima. Verrà cancellata |
+
+I caratteri IBM Plex sono inclusi nel sito, non scaricati da un servizio esterno: l'app deve funzionare anche senza rete e dietro il filtro della scuola.
 
 Restano valide le regole di [architettura.md](architettura.md): l'interfaccia comanda il motore solo con le azioni e ne legge lo stato dopo ogni comando. Ciò che riguarda solo lo schermo (selezione, tabelle appuntate, inquadratura, tema, filtro, terminali aperti) è stato della vista, e il motore non lo conosce.
 
@@ -258,11 +280,11 @@ Serviranno parti nuove fuori da `src/ui/`:
 
 ## Piano di costruzione
 
-Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria viene sostituita al primo.
+Nove passaggi, ciascuno verificabile da solo nel browser. La pagina provvisoria resta all'indirizzo `/#provvisoria` finché la nuova interfaccia non sa fare tutto ciò che fa lei, cioè fino al passaggio 3.
 
 | N. | Passaggio | Che cosa si vede alla fine |
 | --- | --- | --- |
-| 1 | Ossatura, temi, disegno della rete nel nuovo stile, apertura di un file | Si apre un file di esempio e lo si vede disegnato con il nuovo aspetto, nei due temi |
+| 1 | **Fatto.** Ossatura, temi, disegno della rete nel nuovo stile, apertura di un file | Si apre un file di esempio e lo si vede disegnato con il nuovo aspetto, nei due temi |
 | 2 | Barra della simulazione: passo, tempo reale, velocità, buste animate con sigla, attese, avviso di sospensione | Un ping si guarda scorrere da solo |
 | 3 | Selezione, barretta e pannello laterale: dispositivo e cavo in sola lettura, pacchetto a strati, guasti e ping dalla barretta | Si conduce la dimostrazione di ARP e ping senza la pagina provvisoria |
 | 4 | Fascia in basso con la scheda Eventi, il filtro e il collegamento al disegno | Si segue una sola conversazione |

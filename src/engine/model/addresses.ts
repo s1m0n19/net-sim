@@ -61,6 +61,21 @@ export function isValidMask(mask: Ipv4Address): boolean {
 }
 
 /**
+ * Conta i bit a 1 di una subnet mask: è il numero che si scrive dopo la
+ * barra nella notazione CIDR (255.255.255.0 diventa 24).
+ *
+ * @param mask - la subnet mask
+ * @returns la lunghezza del prefisso, da 0 a 32
+ * @throws Error se la maschera non è valida
+ */
+export function maskToPrefix(mask: Ipv4Address): number {
+  if (!isValidMask(mask)) {
+    throw new Error(`Subnet mask non valida: ${mask}`);
+  }
+  return ipToNumber(mask).toString(2).split("1").length - 1;
+}
+
+/**
  * Dice se due indirizzi appartengono alla stessa rete.
  * Lo sono quando, applicata la maschera, resta lo stesso indirizzo di rete.
  *

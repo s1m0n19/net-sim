@@ -3,7 +3,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Tween } from "svelte/motion";
-  import type { Position } from "../storage/load";
+  import type { Position } from "../../storage/load";
 
   let { from, to, label }: { from: Position; to: Position; label: string } = $props();
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ipToNumber, isValidMask, sameNetwork } from "../../src/engine/model/addresses";
+import { ipToNumber, isValidMask, maskToPrefix, sameNetwork } from "../../src/engine/model/addresses";
 import { createHost, type Host } from "../../src/engine/model/network";
 import { makeEchoReply, makeEchoRequest } from "../../src/engine/protocols/icmp";
 import { DEFAULT_TTL, makeIpv4Packet, nextHopFor } from "../../src/engine/protocols/ipv4";
@@ -51,6 +51,21 @@ describe("subnet mask", () => {
   test("non è valido ciò che non è un indirizzo", () => {
     expect(isValidMask("255.255.255")).toBe(false);
     expect(isValidMask("/24")).toBe(false);
+  });
+});
+
+describe("prefisso", () => {
+  test("è il numero di bit a 1 della maschera", () => {
+    expect(maskToPrefix("255.255.255.0")).toBe(24);
+    expect(maskToPrefix("255.255.0.0")).toBe(16);
+    expect(maskToPrefix("255.255.255.128")).toBe(25);
+    expect(maskToPrefix("255.255.252.0")).toBe(22);
+    expect(maskToPrefix("0.0.0.0")).toBe(0);
+    expect(maskToPrefix("255.255.255.255")).toBe(32);
+  });
+
+  test("una maschera non valida viene rifiutata", () => {
+    expect(() => maskToPrefix("255.0.255.0")).toThrow("Subnet mask non valida");
   });
 });
 

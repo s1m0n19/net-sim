@@ -6,11 +6,16 @@ Il nome è provvisorio.
 
 ## Stato
 
-Il progetto è in sviluppo. Oggi la parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti, da far avanzare un passo alla volta.
+Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-Quello che si vede a schermo è invece una **pagina provvisoria**, fatta per osservare la simulazione: disegno essenziale, comandi con pulsanti e menu. Mancano ancora l'editor per costruire le reti, il salvataggio, il terminale dei PC, l'avanzamento automatico del tempo e la grafica curata.
+L'interfaccia è in costruzione, e per ora ce ne sono due:
 
-Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
+| Indirizzo | Che cos'è | Che cosa fa oggi |
+| --- | --- | --- |
+| http://localhost:5173 | La **nuova interfaccia**, al primo passaggio di nove | Apre una rete da file e la disegna, nei temi chiaro e scuro |
+| http://localhost:5173/#provvisoria | La **pagina provvisoria** di prima | Tutto il resto: ping, passo-passo, guasti, tempesta di broadcast |
+
+La pagina provvisoria verrà cancellata quando la nuova interfaccia saprà fare le stesse cose. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
 ## Requisiti
 
@@ -26,7 +31,28 @@ npm run dev
 
 Poi si apre http://localhost:5173 nel browser.
 
-## Cosa si può fare
+## La nuova interfaccia
+
+All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quelli di esempio stanno nella cartella [examples/](examples/).
+
+| Comando | Effetto |
+| --- | --- |
+| **Nuova** | Torna al foglio vuoto |
+| **Apri** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va |
+| **Etichette: IP, MAC, Porte** | Accendono e spengono ciò che è scritto sul disegno. All'apertura è acceso solo l'indirizzo IP |
+| **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |
+| **‹ chiudi**, a sinistra | Chiude la colonna dei dispositivi |
+| **chiudi**, in basso a destra | Chiude la fascia in basso |
+
+Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento".
+
+Salva, annulla, Presenta e le voci della colonna si vedono ma non sono ancora attivi.
+
+Durante lo sviluppo c'è una scorciatoia: l'indirizzo `http://localhost:5173/?esempio=lan-switch` apre subito il file `examples/lan-switch.netsim.json`. Nel sito pubblicato non esiste.
+
+## La pagina provvisoria
+
+Sta all'indirizzo http://localhost:5173/#provvisoria.
 
 La pagina offre tre reti di esempio, nella rete 192.168.1.0/24:
 
@@ -92,7 +118,7 @@ Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC co
 ## Limiti noti
 
 - **Venti clic per un ping completo.** Con le quattro richieste di Windows e senza avanzamento automatico, un ping nella LAN richiede venti passi. Per una dimostrazione conviene impostare una richiesta sola.
-- **Le reti sono solo le tre di esempio.** Per provarne un'altra bisogna modificare un file in `examples/`.
+- **Nella pagina provvisoria le reti sono solo le tre di esempio.** Un file qualsiasi si apre dalla nuova interfaccia, che però non sa ancora simulare.
 
 ## Comandi
 
@@ -110,9 +136,9 @@ Sotto il disegno compaiono la tabella MAC dello switch, le tabelle ARP dei PC co
 Il codice è diviso in due parti che non si mescolano:
 
 - **`src/engine/`**: il motore di simulazione. Contiene tutta la logica di rete, in TypeScript puro, e non sa nulla della grafica.
-- **`src/ui/`**: l'interfaccia, in Svelte. Mostra lo stato del motore e gli invia i comandi.
+- **`src/ui/`**: l'interfaccia, in Svelte. Mostra lo stato del motore e gli invia i comandi. La pagina provvisoria sta in `src/ui/provisional/`.
 
-`src/storage/` legge i file delle reti. I test stanno in `tests/` e coprono il motore e la lettura dei file, non la pagina.
+`src/storage/` legge i file delle reti. I test stanno in `tests/` e coprono il motore, la lettura dei file e la preparazione del disegno, non i componenti a schermo.
 
 Il motore è scritto per essere letto: un file per protocollo, nomi dei campi come sul libro di testo, commenti che spiegano il perché. Un buon punto di partenza è [src/engine/protocols/arp.ts](src/engine/protocols/arp.ts), seguito da [src/engine/devices/host.ts](src/engine/devices/host.ts).
 
@@ -124,3 +150,4 @@ Il motore è scritto per essere letto: un file per protocollo, nomi dei campi co
 | [docs/architettura.md](docs/architettura.md) | Tecnologie, parti dell'app, convenzioni del codice |
 | [docs/motore.md](docs/motore.md) | Come funziona il motore di simulazione, dove semplifica la realtà, difetti noti |
 | [docs/formato-file.md](docs/formato-file.md) | Il formato dei file delle reti |
+| [docs/interfaccia.md](docs/interfaccia.md) | L'interfaccia definitiva: progetto, stato e piano di costruzione |

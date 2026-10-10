@@ -1,0 +1,125 @@
+/* Colori, caratteri e misure dell'interfaccia: tutto in questo file.
+   I valori sono quelli di docs/interfaccia.md. Cambiare l'aspetto dell'app
+   significa cambiare questi, non i componenti. */
+
+:root {
+  /* tema chiaro */
+  --bg: #eef0f3;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --canvas: #fbfcfd;
+  --ink: #1b2430;
+  --muted: #5b6675;
+  --line: #cdd3db;
+  --accent: #0b6e8a;
+  --on-accent: #ffffff;
+  --arp: #b86a00;
+  --icmp: #7a3fd0;
+  --up: #1c9650;
+  --down: #cf3a3a;
+
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 4px;
+
+  color-scheme: light;
+}
+
+/* tema scuro, quando il sistema lo chiede e l'utente non ha scelto il chiaro */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1318;
+    --surface: #1a2028;
+    --surface-2: #222a34;
+    --canvas: #151a21;
+    --ink: #e6eaef;
+    --muted: #98a3b1;
+    --line: #36414e;
+    --accent: #5cc4e0;
+    --on-accent: #0f1318;
+    --arp: #f0b04a;
+    --icmp: #c09bff;
+    --up: #4dc57f;
+    --down: #f0716c;
+    color-scheme: dark;
+  }
+}
+
+/* tema scuro, quando l'utente lo ha scelto con il pulsante */
+:root[data-theme="dark"] {
+  --bg: #0f1318;
+  --surface: #1a2028;
+  --surface-2: #222a34;
+  --canvas: #151a21;
+  --ink: #e6eaef;
+  --muted: #98a3b1;
+  --line: #36414e;
+  --accent: #5cc4e0;
+  --on-accent: #0f1318;
+  --arp: #f0b04a;
+  --icmp: #c09bff;
+  --up: #4dc57f;
+  --down: #f0716c;
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* La pagina provvisoria non ha un'impaginazione sua: le basta un margine. */
+body.provisional {
+  padding: 8px 16px;
+  font-size: 15px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Il pulsante di base dell'interfaccia. */
+.btn {
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}

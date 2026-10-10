@@ -72,18 +72,24 @@ net-sim/
 │   │   └── actions.ts         le azioni accettate dal motore
 │   ├── storage/
 │   │   └── load.ts            lettura dei file di rete
-│   └── ui/
-│       ├── App.svelte         la pagina provvisoria, tutta in un componente
-│       └── Packet.svelte      il frame animato sul collegamento
+│   ├── storage/…              (più browser-files.ts: scelta di un file nel browser)
+│   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
+│       ├── App.svelte         l'ossatura della schermata
+│       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore
+│       ├── view.ts            prepara ciò che il disegno mostra
+│       ├── preferences.svelte.ts  tema, etichette, pannelli aperti
+│       ├── theme/             colori, caratteri, sagome dei dispositivi
+│       ├── layout/  topology/  panels/  strip/
+│       └── provisional/       la pagina provvisoria, da cancellare
 └── tests/
     ├── engine/                un file per argomento, più builders.ts con le reti di prova
-    └── storage/               lettura dei file
+    ├── storage/               lettura dei file
+    └── ui/                    preparazione del disegno (view.ts)
 ```
 
 Cartelle *previste* e non ancora esistenti:
 
 - `src/shell/`: interpreti dei comandi (prompt Windows degli host, CLI IOS). Starà fuori dal motore perché traduce testo in azioni: è un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
-- `src/ui/topology/`, `panels/`, `terminal/`, `theme/`: la divisione dell'interfaccia definitiva. `theme/` terrà icone e colori in un solo punto.
 - Scrittura dei file e migrazioni di versione in `src/storage/`.
 
 ## Convenzioni del codice
@@ -112,4 +118,4 @@ Cartelle *previste* e non ancora esistenti:
 
 ## Cosa non è coperto da test
 
-I test riguardano il motore e la lettura dei file. La pagina non ha test automatici: finora è stata verificata a occhio nel browser. Non esiste un controllo automatico che esegua i test a ogni invio al repository.
+I test riguardano il motore, la lettura dei file e `src/ui/view.ts`, che prepara il disegno senza usare il browser. I componenti a schermo non hanno test automatici: si verificano nel browser, a occhio o con uno screenshot. Non esiste un controllo automatico che esegua i test a ogni invio al repository.

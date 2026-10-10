@@ -171,6 +171,22 @@ export function linkAt(network: Network, port: PortRef): Link | null {
   return network.links.find((l) => samePort(l.a, port) || samePort(l.b, port)) ?? null;
 }
 
+/**
+ * Dice se su un cavo passa il segnale: il cavo non è staccato e i
+ * dispositivi ai due capi sono entrambi accesi.
+ *
+ * @param network - la rete a cui il cavo appartiene
+ * @param link - il cavo
+ * @returns true se le porte ai due capi sentono il segnale
+ */
+export function linkCarriesSignal(network: Network, link: Link): boolean {
+  return (
+    link.connected &&
+    findDevice(network, link.a.deviceId).powered &&
+    findDevice(network, link.b.deviceId).powered
+  );
+}
+
 function samePort(p: PortRef, q: PortRef): boolean {
   return p.deviceId === q.deviceId && p.portName === q.portName;
 }

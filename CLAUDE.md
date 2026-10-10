@@ -20,7 +20,7 @@ I documenti in `docs/` descrivono il codice com'è e indicano come *previsto* ci
 
 Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e ping (quattro echo request in serie, ARP automatico, pacchetti in attesa, scadenze, quattro esiti distinti, loopback), guasti (cavo staccato, dispositivo spento), sospensione della tempesta di broadcast, in passo-passo.
 
-L'interfaccia è una pagina provvisoria (`src/ui/App.svelte`), fatta per vedere il motore funzionare e destinata a essere sostituita: non va rifinita. L'interfaccia definitiva è progettata in `docs/interfaccia.md` ma non ancora iniziata: mancano editor, pannelli, terminale, tempo reale, apertura e salvataggio dei file, stile grafico.
+L'interfaccia definitiva è progettata in `docs/interfaccia.md` e va costruita in nove passaggi; è fatto il primo (ossatura, temi, disegno della rete, apertura di un file). La pagina provvisoria di prima sta in `src/ui/provisional/`, si apre all'indirizzo `/#provvisoria` ed è ancora l'unico posto da cui lanciare ping e guasti: non va rifinita, e si cancella quando la nuova la sostituisce.
 
 Il prossimo traguardo è il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch). Non ci sono difetti noti aperti.
 
@@ -38,6 +38,16 @@ npx vitest                                 # test in ascolto sulle modifiche
 ```
 
 Non c'è un linter. `npm run check` deve chiudersi senza errori né avvisi.
+
+Per vedere davvero la pagina, con il server di sviluppo acceso:
+
+```sh
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars \
+  --window-size=1400,860 --virtual-time-budget=4000 --screenshot=/percorso/uscita.png \
+  "http://localhost:5173/?esempio=lan-switch"
+```
+
+`?esempio=nome` apre `examples/nome.netsim.json` ed esiste solo in sviluppo. Aggiungere `--blink-settings=preferredColorScheme=1` forza il tema chiaro. Lo screenshot va fatto e guardato prima di dire all'utente che una modifica a schermo funziona. Se il server serve una versione vecchia di un file spostato o ricreato, va riavviato.
 
 TypeScript è fermo alla versione 6 perché `svelte-check` non supporta ancora la 7.
 
@@ -60,7 +70,7 @@ Il motore non importa mai da `ui/`, da Svelte o dal browser. Dentro `src/engine/
 2. Il `Simulator` (`src/engine/simulator.ts`) è a eventi discreti: tiene una coda ordinata di arrivi di frame e di scadenze di attese, ciascuno con il suo istante in **tick** (un tick per collegamento attraversato). `step()` salta al prossimo istante ed elabora **tutti** gli eventi di quell'istante, uno alla volta dalla testa della coda.
 3. I dispositivi (`src/engine/devices/`) non spediscono nulla e non misurano il tempo: restituiscono un elenco di cose da fare (`HostOutput`: frame da inviare, attese da avviare o annullare, esiti dei ping), più l'eventuale scarto e il cambio di tabella. È il simulatore a eseguirle.
 4. `dispatch()` e `step()` restituiscono le **tracce** di ciò che è successo; l'elenco completo resta in `sim.traces`.
-5. L'interfaccia non osserva il simulatore: dopo ogni comando ne copia lo stato in una variabile `$state.raw` (`readState()` in `App.svelte`) e disegna quella.
+5. L'interfaccia non osserva il simulatore: dopo ogni comando ne copia lo stato in una variabile `$state.raw` e disegna quella. Nella nuova interfaccia lo fa `session` (`src/ui/session.svelte.ts`), unico punto di contatto con il simulatore, usando `buildView` (`src/ui/view.ts`); i componenti leggono `session.view` e non fanno calcoli.
 
 Un ciclo tra switch produce una tempesta di broadcast, che il simulatore interrompe sospendendosi (`sim.suspended`). Per far avanzare la rete fino alla fine si usa `while (sim.canStep())`, mai la lunghezza della coda: a simulazione sospesa la coda non si svuota.
 

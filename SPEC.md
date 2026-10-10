@@ -310,6 +310,8 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-39 | 10 ott 2026 | In tempo reale un tratto di cavo dura circa un secondo a 1×; le attese non si aspettano davvero ma si mostrano con un indicatore che si svuota in pochi secondi | È il ritmo per commentare a voce, senza tempi morti quando non viaggia nulla | Confermata, da realizzare |
 | D-40 | 10 ott 2026 | Un campo di configurazione ha effetto alla conferma; la maschera viene proposta in base alla classe dell'indirizzo | Evita stati intermedi mentre si scrive, e permette di rispettare la regola "indirizzo e maschera insieme" un campo alla volta | Confermata, da realizzare |
 | D-41 | 10 ott 2026 | All'avvio sempre un foglio vuoto; nessuna rete ricordata e nessun esempio integrato | Prevedibile, e adatto ai PC del laboratorio che vengono ripuliti | Confermata, da realizzare |
+| D-42 | 10 ott 2026 | I caratteri dell'interfaccia sono inclusi nel sito, non caricati da un servizio esterno | L'app deve funzionare offline e dietro il filtro della scuola | Adottata |
+| D-43 | 10 ott 2026 | Durante la costruzione della nuova interfaccia la pagina provvisoria resta raggiungibile all'indirizzo `/#provvisoria` | Finché la nuova non sa lanciare un ping, togliere la vecchia lascerebbe l'app senza modo di mostrare la simulazione | Adottata |
 
 ## 9. Stato di avanzamento
 
@@ -318,20 +320,20 @@ Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul la
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
-| Rilascio 1 intero | circa 40% |
+| Rilascio 1 intero | circa 45% |
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; nessuno è ancora iniziato.
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; è fatto il primo.
 
 ### Requisiti del rilascio 1
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
-| **Fatto in forma provvisoria** | VIS-3 tabelle aggiornate dal vivo · VIS-9 elenco degli eventi · VIS-1 pacchetti animati, senza colore per protocollo · VIS-6 indirizzi IP e MAC sempre visibili, senza porte né interruttori · SIM-5 ping da pulsante e menu, non con il mouse sulla topologia · VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
-| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 solo lettura delle reti di esempio · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
-| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · SIM-3 velocità · SIM-16 pausa tra gli echo in tempo reale · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · UI-1 disposizione a pannelli · UI-2 stile grafico · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · SIM-17 · VIS-10 · UI-6 … UI-14 |
+| **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-6 due temi · UI-12 foglio vuoto all'avvio · VIS-6 etichette sul disegno · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
+| **Fatto in forma provvisoria** | VIS-3 tabelle aggiornate dal vivo · VIS-9 elenco degli eventi · VIS-1 pacchetti animati, senza colore per protocollo · SIM-5 ping da pulsante e menu, non con il mouse sulla topologia · VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
+| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file; manca il terminale · SIM-2 solo passo-passo · FILE-1 si apre un file dal disco; manca il salvataggio · UI-1 l'ossatura c'è tutta, ma pannello laterale e fascia sono ancora vuoti · UI-2 lo stile è applicato a dispositivi e cavi, non ancora ai pacchetti · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · VIS-5 il numero di conversazione esiste nel motore, il filtro no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
+| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · CFG-2 e SIM-4 terminale dell'host · SIM-3 velocità · SIM-16 pausa tra gli echo in tempo reale · VIS-2 pacchetto a strati · VIS-4 vista sincronizzata · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · SIM-17 · VIS-10 · UI-8 … UI-11 · UI-13 · UI-14 |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
 
@@ -339,7 +341,7 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 | Punto | Stato |
 | --- | --- |
-| 1. Aprire un file con uno switch e tre PC | La rete esiste come esempio integrato; manca l'apertura di un file |
+| 1. Aprire un file con uno switch e tre PC | Funziona nella nuova interfaccia |
 | 2. Lanciare il ping dal terminale, in modalità presentazione | Il ping parte da un pulsante; mancano terminale e modalità presentazione |
 | 3. Richiesta ARP in broadcast, flooding, tabella MAC | Funziona |
 | 4. PC2 risponde, PC3 scarta, le tabelle si aggiornano | Funziona |
@@ -350,9 +352,10 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 ### Che cosa esiste oltre ai requisiti
 
-- 202 test automatici su motore e lettura dei file.
+- 217 test automatici su motore, lettura dei file e preparazione del disegno.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
-- Una pagina provvisoria in `src/ui/`, descritta in [README.md](README.md): serve a vedere il motore funzionare, e verrà sostituita dall'interfaccia definitiva.
+- La nuova interfaccia, al primo dei nove passaggi: per ora apre una rete e la disegna.
+- La pagina provvisoria di prima, all'indirizzo `/#provvisoria`: è ancora l'unico posto da cui lanciare un ping e provocare guasti. Verrà cancellata quando la nuova interfaccia la sostituisce.
 
 ### Difetti noti
 
