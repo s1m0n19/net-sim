@@ -52,20 +52,21 @@ Dopo i primi sei passaggi:
 - **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, e **Nuova**, che torna al foglio vuoto;
 - il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
 - gli interruttori delle etichette IP, MAC e Porte;
-- la rete sempre inquadrata per intero;
+- la rete sempre inquadrata per intero, su un foglio di base che si allarga solo se serve;
 - la **barra della simulazione**: Ricomincia, Avvia e Pausa, Passo, velocità, tick;
 - le **buste** in viaggio, con colore e sigla del protocollo;
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
 - l'avviso della tempesta di broadcast;
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
-- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping, Terminale e Appunta sui dispositivi, stacca o riattacca sui cavi;
+- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
 - il **pannello laterale**, in sola lettura: configurazione e tabelle del dispositivo, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
-- il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`.
+- il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
+- dell'**editor**, la prima metà: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi. Mancano i cavi nuovi, la configurazione dal pannello e l'annulla.
 
-Salva, annulla, Presenta e le voci della colonna sono visibili ma spenti. Sulla barretta mancano Collega ed Elimina, che arriveranno con l'editor.
+Salva, annulla, Presenta e lo strumento Cavo sono visibili ma spenti. Sulla barretta manca Collega.
 
 ## All'avvio
 
@@ -74,7 +75,7 @@ L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: tr
 ## Colonna dei dispositivi e degli strumenti
 
 - **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte) si scelgono prima di posare: passando sulla voce si apre il loro elenco.
-- **Posare.** In due modi: trascinando la voce sul disegno, per posarne uno; oppure con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare, finché non si preme Esc.
+- **Posare.** In due modi: trascinando la voce sul disegno, per posarne uno; oppure con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare, finché non si preme Esc. Nel secondo modo la voce resta evidenziata, il puntatore cambia e una riga in alto sul disegno dice che cosa fare. Il dispositivo appena posato viene selezionato.
 - **Strumento Cavo.** Finché è attivo, trascinare da un dispositivo a un altro tira un cavo invece di spostare. Si disattiva con Esc o con un secondo clic.
 - I tipi non ancora disponibili (router, server) compaiono attenuati.
 
@@ -137,6 +138,16 @@ Ogni tabella (MAC di uno switch, ARP di un host) si può **appuntare** sul diseg
 - Gli indirizzi sono scritti per intero.
 - L'inquadratura si allarga quanto serve per far stare anche le tabelle.
 - Ricominciando la simulazione restano dove sono. Aprendo un'altra rete spariscono: quali tabelle sono appuntate non si salva nel file.
+
+### Spostare ed eliminare
+
+Un dispositivo si sposta trascinandolo: cavi, buste in viaggio e tabella appuntata lo seguono. Un clic senza movimento resta un clic, e seleziona. Mentre si trascina l'inquadratura resta ferma, e si riadatta al rilascio.
+
+Si elimina ciò che è selezionato con il cestino sulla barretta, oppure con il tasto Canc o Backspace. Eliminando un dispositivo spariscono anche i suoi cavi, la sua tabella appuntata e il suo terminale. Scrivendo in una casella di testo o nel terminale, Canc e Backspace cancellano solo il testo.
+
+### L'inquadratura
+
+Il disegno parte da un foglio di base. Finché la rete ci sta, posare o spostare un dispositivo non cambia nulla; se un dispositivo esce dal foglio, l'inquadratura si allarga per contenerlo. Così il disegno non "salta" a ogni modifica.
 
 ### Muoversi sul disegno
 

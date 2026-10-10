@@ -1,32 +1,103 @@
 <script lang="ts">
+  // La colonna da cui si prendono i dispositivi da posare sul disegno.
+  // Due modi: trascinare una voce sul disegno, per posarne uno; oppure un
+  // clic sulla voce e poi un clic sul disegno per ogni dispositivo, finché
+  // non si preme Esc.
+  import type { DeviceTemplate } from "../../engine/editing";
   import { preferences } from "../preferences.svelte";
+  import { session } from "../session.svelte";
   import Chevron from "../theme/Chevron.svelte";
   import DeviceIcon from "../theme/DeviceIcon.svelte";
 
-  // Le voci della colonna. Per ora sono tutte spente: posare dispositivi
-  // e tirare cavi arriva con l'editor.
-  const devices = [
-    { kind: "host", label: "PC" },
-    { kind: "switch", label: "Switch" },
-    { kind: "router", label: "Router" },
-    { kind: "server", label: "Server" },
-  ] as const;
+  const PC: DeviceTemplate = { kind: "host" };
+  // Le varianti pronte dello switch, tra cui scegliere prima di posarlo.
+  const SWITCHES = [
+    { label: "Switch a 8 porte", template: { kind: "switch", portCount: 8 } as DeviceTemplate },
+    { label: "Switch a 24 porte", template: { kind: "switch", portCount: 24 } as DeviceTemplate },
+  ];
+
+  let switchMenuOpen = $state(false);
+
+  const placingHost = $derived(session.placing?.kind === "host");
+  const placingSwitch = $derived(session.placing?.kind === "switch");
+
+  // Un clic sulla voce già scelta la lascia andare.
+  function choose(template: DeviceTemplate) {
+    const same = JSON.stringify(session.placing) === JSON.stringify(template);
+    session.placing = same ? null : template;
+    switchMenuOpen = false;
+  }
+
+  // Trascinando, il disegno legge da qui che cosa sta arrivando.
+  function startDrag(event: DragEvent, template: DeviceTemplate) {
+    session.placing = null;
+    event.dataTransfer?.setData("application/x-net-sim-device", JSON.stringify(template));
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+  }
 </script>
 
 {#if preferences.paletteOpen}
   <aside>
     <div class="caption">Dispositivi</div>
-    {#each devices as device}
-      <div class="tile" title="Non ancora disponibile">
-        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind={device.kind} /></svg>
-        {device.label}
-      </div>
-    {/each}
+
+    <button
+      class="tile"
+      class:active={placingHost}
+      aria-pressed={placingHost}
+      title="PC: trascinalo sul disegno, oppure fai clic qui e poi sul disegno"
+      draggable="true"
+      ondragstart={(event) => startDrag(event, PC)}
+      onclick={() => choose(PC)}
+    >
+      <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="host" /></svg>
+      PC
+    </button>
+
+    <div class="with-menu" onmouseleave={() => (switchMenuOpen = false)} role="presentation">
+      <button
+        class="tile"
+        class:active={placingSwitch}
+        aria-pressed={placingSwitch}
+        aria-haspopup="menu"
+        aria-expanded={switchMenuOpen}
+        title="Switch: scegli quante porte"
+        onmouseenter={() => (switchMenuOpen = true)}
+        onclick={() => (switchMenuOpen = !switchMenuOpen)}
+      >
+        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="switch" /></svg>
+        Switch ›
+      </button>
+      {#if switchMenuOpen}
+        <div class="menu" role="menu">
+          {#each SWITCHES as variant}
+            <button
+              role="menuitem"
+              draggable="true"
+              ondragstart={(event) => startDrag(event, variant.template)}
+              onclick={() => choose(variant.template)}
+            >
+              {variant.label}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <div class="tile soon" title="Non ancora disponibile">
+      <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="router" /></svg>
+      Router
+    </div>
+    <div class="tile soon" title="Non ancora disponibile">
+      <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="server" /></svg>
+      Server
+    </div>
+
     <div class="caption">Strumenti</div>
-    <div class="tile" title="Non ancora disponibile">
+    <div class="tile soon" title="Non ancora disponibile">
       <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="cable" /></svg>
       Cavo
     </div>
+
     <button class="fold" title="Chiudi la colonna" aria-label="Chiudi la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = false)}>
       <Chevron direction="left" />
     </button>
@@ -65,19 +136,79 @@
     text-align: center;
   }
   .tile {
+    width: 100%;
+    box-sizing: border-box;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--surface-2);
+    color: var(--ink);
     padding: 6px 2px 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
     font-size: 0.85em;
+  }
+  button.tile {
+    cursor: grab;
+  }
+  button.tile:hover {
+    border-color: var(--muted);
+  }
+  button.tile:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  /* La voce scelta: il prossimo clic sul disegno ne posa uno. */
+  .tile.active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    color: var(--accent);
+  }
+  .tile.soon {
     opacity: 0.45;
   }
   .tile svg {
     width: 34px;
     height: 28px;
+  }
+  .with-menu {
+    position: relative;
+  }
+  /* L'elenco delle varianti si apre a fianco della voce, sopra il disegno. */
+  .menu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    z-index: 5;
+    padding: 4px 4px 4px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .menu::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.14);
+  }
+  .menu button {
+    position: relative;
+    padding: 5px 10px;
+    border: none;
+    border-radius: var(--radius);
+    background: none;
+    white-space: nowrap;
+    text-align: left;
+    cursor: grab;
+  }
+  .menu button:hover,
+  .menu button:focus-visible {
+    background: var(--surface-2);
+    color: var(--accent);
+    outline: none;
   }
 </style>

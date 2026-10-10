@@ -30,6 +30,46 @@
       choose();
     }
   }
+
+  // --- Trascinamento -------------------------------------------------------
+  // Tenendo premuto e muovendo il mouse il dispositivo si sposta. Un clic
+  // senza movimento resta un clic: per distinguerli si aspetta che il
+  // mouse si sia mosso di qualche pixel.
+  const THRESHOLD = 4;
+  let press: { clientX: number; clientY: number; x: number; y: number; scale: number } | null = null;
+  let dragging = false;
+  // Dopo un trascinamento il browser manda comunque un clic: va ignorato.
+  let justDragged = false;
+
+  function down(event: PointerEvent) {
+    if (event.button !== 0 || session.pingFrom !== null) return;
+    const group = event.currentTarget as SVGGElement;
+    // Di quanti pixel dello schermo è fatta un'unità del disegno.
+    const scale = group.ownerSVGElement?.getScreenCTM()?.a ?? 1;
+    press = { clientX: event.clientX, clientY: event.clientY, x: device.x, y: device.y, scale };
+    group.setPointerCapture?.(event.pointerId);
+  }
+
+  function move(event: PointerEvent) {
+    if (press === null) return;
+    const dx = event.clientX - press.clientX;
+    const dy = event.clientY - press.clientY;
+    if (!dragging) {
+      if (Math.hypot(dx, dy) < THRESHOLD) return;
+      dragging = true;
+      session.holdBounds(true);
+    }
+    session.moveDevice(device.id, { x: press.x + dx / press.scale, y: press.y + dy / press.scale });
+  }
+
+  function up() {
+    if (dragging) {
+      session.holdBounds(false);
+      justDragged = true;
+    }
+    press = null;
+    dragging = false;
+  }
 </script>
 
 <g
@@ -39,8 +79,16 @@
   role="button"
   tabindex="0"
   aria-label="{device.name}{selected ? ', selezionato' : ''}"
+  onpointerdown={down}
+  onpointermove={move}
+  onpointerup={up}
+  onpointercancel={up}
   onclick={(event) => {
     event.stopPropagation();
+    if (justDragged) {
+      justDragged = false;
+      return;
+    }
     choose();
   }}
   onkeydown={onKey}

@@ -4,7 +4,7 @@
   // La barretta delle azioni: compare accanto a ciò che è selezionato e
   // mostra, come icone, quello che ci si può fare. Tutto è visibile: non
   // esiste un menu nascosto.
-  export type ActionIcon = "power" | "ping" | "terminal" | "pin" | "unplug" | "replug";
+  export type ActionIcon = "power" | "ping" | "terminal" | "pin" | "unplug" | "replug" | "remove";
 
   export interface BarAction {
     icon: ActionIcon;
@@ -27,6 +27,8 @@
     pin: "M9 10H23V22H9ZM9 16H23M16 10V22",
     unplug: "M7 16H12M20 16H25M12 11V21M20 11V21",
     replug: "M7 16H25M14 11V21M18 11V21",
+    // Un cestino.
+    remove: "M10 12H22M14 12V10H18V12M11.5 12L12.5 23H19.5L20.5 12M14.5 15V20M17.5 15V20",
   };
 
   function onKey(event: KeyboardEvent, action: BarAction) {

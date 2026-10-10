@@ -4,7 +4,19 @@
 // leggono `session.view` e chiamano i metodi di `session`; nessuno di loro
 // tocca il simulatore direttamente.
 
-import { connectLink, disconnectLink, ping, powerOff, powerOn, type Action } from "../engine/actions";
+import {
+  addHost,
+  addSwitch,
+  connectLink,
+  disconnectLink,
+  ping,
+  powerOff,
+  powerOn,
+  removeDevice,
+  removeLink,
+  type Action,
+} from "../engine/actions";
+import type { DeviceTemplate } from "../engine/editing";
 import { Simulator, type Trace } from "../engine/simulator";
 import {
   formatArpTable,
@@ -17,6 +29,7 @@ import { loadNetworkFile, type Position } from "../storage/load";
 import {
   buildView,
   EMPTY_VIEW,
+  type Bounds,
   type NetworkView,
   type PacketDetails,
   type Protocol,
@@ -113,7 +126,16 @@ class Session {
   // Ciò su cui sta il mouse nell'elenco degli eventi: va evidenziato sul disegno.
   highlight = $state.raw<{ deviceId: string | null; packetId: number | null } | null>(null);
 
-  private simulator: Simulator | null = null;
+  // --- Costruzione della rete ---------------------------------------------------
+  // Il tipo di dispositivo scelto nella colonna: finché non è null, ogni
+  // clic sul disegno ne posa uno.
+  placing = $state.raw<DeviceTemplate | null>(null);
+  // Mentre si trascina un dispositivo l'inquadratura resta ferma, altrimenti
+  // il disegno si muoverebbe sotto il mouse.
+  frozenBounds = $state.raw<Bounds | null>(null);
+
+  // Una rete c'è sempre: all'avvio è vuota.
+  private simulator: Simulator | null = new Simulator({ devices: [], links: [] });
   private positions = new Map<string, Position>();
 
   /**
@@ -141,9 +163,9 @@ class Session {
     }
   }
 
-  /** Torna al foglio vuoto. */
+  /** Torna al foglio vuoto: una rete nuova, senza dispositivi. */
   clear(): void {
-    this.simulator = null;
+    this.simulator = new Simulator({ devices: [], links: [] });
     this.positions = new Map();
     this.fileName = null;
     this.error = null;
@@ -283,6 +305,63 @@ class Session {
     return done < last.count;
   }
 
+  /**
+   * Posa un dispositivo nuovo sul disegno e lo seleziona.
+   *
+   * @param template - che cosa posare: un PC, o uno switch con le sue porte
+   * @param position - dove, in coordinate del disegno
+   */
+  addDevice(template: DeviceTemplate, position: Position): void {
+    if (this.simulator === null) return;
+    const action = template.kind === "host" ? addHost() : addSwitch(template.portCount);
+    try {
+      const traces = this.simulator.dispatch(action);
+      const added = traces.find((trace) => trace.kind === "device-added");
+      if (added !== undefined) {
+        this.positions.set(added.deviceId, { x: Math.round(position.x), y: Math.round(position.y) });
+        this.selection = { kind: "device", id: added.deviceId };
+      }
+      this.notice = null;
+    } catch (problem) {
+      this.notice = messageOf(problem);
+    }
+    this.refresh();
+  }
+
+  /** Sposta un dispositivo in un altro punto del disegno. */
+  moveDevice(deviceId: string, position: Position): void {
+    if (!this.positions.has(deviceId)) return;
+    this.positions.set(deviceId, { x: Math.round(position.x), y: Math.round(position.y) });
+    this.refresh();
+  }
+
+  /** Da chiamare quando comincia e quando finisce il trascinamento di un dispositivo. */
+  holdBounds(hold: boolean): void {
+    this.frozenBounds = hold ? this.view.bounds : null;
+  }
+
+  /**
+   * Elimina ciò che è selezionato: un dispositivo, con i suoi cavi, oppure
+   * un cavo. Un pacchetto non si può eliminare.
+   */
+  removeSelection(): void {
+    const selection = this.selection;
+    if (selection === null || selection.kind === "packet") return;
+
+    this.run(selection.kind === "device" ? removeDevice(selection.id) : removeLink(selection.id));
+    // Se l'eliminazione è stata rifiutata, tutto resta com'era.
+    if (this.notice !== null) return;
+
+    if (selection.kind === "device") {
+      // Con il dispositivo spariscono la sua posizione, la sua tabella
+      // appuntata e il suo terminale.
+      this.positions.delete(selection.id);
+      this.pins = this.pins.filter((pin) => pin.deviceId !== selection.id);
+      this.closeTerminal(selection.id);
+    }
+    this.selection = null;
+  }
+
   /** Dice se la tabella di un dispositivo è appuntata sul disegno. */
   isPinned(deviceId: string): boolean {
     return this.pins.some((pin) => pin.deviceId === deviceId);
@@ -412,6 +491,8 @@ class Session {
     this.waitProgress = null;
     this.pingFrom = null;
     this.notice = null;
+    this.placing = null;
+    this.frozenBounds = null;
     this.highlight = null;
     // Le conversazioni di prima non esistono più.
     this.followed = null;

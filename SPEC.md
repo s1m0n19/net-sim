@@ -316,6 +316,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-46 | 10 ott 2026 | Identificativi, nomi, porte e indirizzi MAC di un dispositivo nuovo li sceglie il motore, prendendo il primo libero della serie | L'utente dice solo che cosa vuole aggiungere; la scelta è sempre la stessa a parità di rete, quindi i test restano ripetibili | Adottata |
 | D-47 | 10 ott 2026 | Due dispositivi non possono avere lo stesso nome | Il nome è ciò che l'utente vede nell'elenco degli eventi e nel terminale: due uguali non si distinguerebbero | Adottata |
 | D-48 | 10 ott 2026 | Cambiando la configurazione IP, un host dimentica tabella ARP e attese; gli altri host tengono le loro tabelle | È ciò che succede riavviando una scheda di rete, e lascia agli altri una riga ARP vecchia, che è un caso reale da diagnosticare | Adottata |
+| D-49 | 10 ott 2026 | Il disegno parte da un foglio di base e l'inquadratura si allarga solo quando un dispositivo ne esce | Se l'inquadratura seguisse sempre la rete, il disegno si sposterebbe a ogni dispositivo posato o trascinato. Lo zoom manuale arriverà con il passaggio 8 | Adottata |
 
 ## 9. Stato di avanzamento
 
@@ -324,11 +325,11 @@ Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul la
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
-| Rilascio 1 intero | circa 75% |
+| Rilascio 1 intero | circa 80% |
 | Prima versione (rilasci 1 e 2) | circa 20% |
 | Progetto completo, fino alla tappa T8 | circa 8% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sei, e del settimo (l'editor) la parte che riguarda il motore.
+Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sei, e del settimo (l'editor) le prime due parti su cinque: le modifiche nel motore, e posare, spostare ed eliminare dal disegno.
 
 ### Requisiti del rilascio 1
 
@@ -336,8 +337,8 @@ Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dal
 | --- | --- |
 | **Fatto** | DEV-2 switch · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
 | **Fatto in parte** | VIS-8 cavo staccato, dispositivo spento e PC senza segnale si vedono sul disegno, ma non lo stato delle singole porte |
-| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file · FILE-1 si apre un file dal disco; manca il salvataggio · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
-| **Da fare** | ED-1 … ED-5 tutto l'editor · CFG-1 pannello di configurazione · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · UI-9 · UI-13 · UI-14 |
+| **A metà** | DEV-1 PC: la configurazione IP funziona ma si imposta solo nel file · ED-1 si posano PC e switch dalla colonna · ED-3 i dispositivi si spostano; mancano zoom e scorrimento · ED-4 si eliminano dispositivi e cavi; manca rinominare · FILE-1 si apre un file dal disco; manca il salvataggio · UI-8 selezione e barretta, con le sole azioni che esistono · UI-7 colore più secondo segno, per ciò che esiste · FILE-2 il numero di versione c'è, le migrazioni no · CFG-7 le regole sulla configurazione IP esistono e valgono per i file; manca il pannello che le applichi a ciò che l'utente scrive |
+| **Da fare** | ED-2 collegare con un cavo nuovo · ED-5 annulla e ripristina · CFG-1 pannello di configurazione · VIS-7 modalità presentazione · UI-5 leggibilità da lontano · NF-4 reti fino a 50 dispositivi, mai provate · NF-7 stile e disposizione sostituibili · CFG-8 · UI-9 · UI-13 · UI-14 |
 
 Rilascio 2 e tappe successive: nulla è iniziato.
 
@@ -356,7 +357,7 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 ### Che cosa esiste oltre ai requisiti
 
-- 337 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
+- 354 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
 - La nuova interfaccia, al sesto dei nove passaggi (ora anche con le tabelle appuntate e il terminale degli host): apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping, provocare guasti e seguire gli eventi con un filtro.
 

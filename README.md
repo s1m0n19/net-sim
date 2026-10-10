@@ -8,7 +8,7 @@ Il nome è provvisorio.
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
 
-L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sei. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. Manca ancora l'editor per costruire le reti, il salvataggio e la modalità presentazione.
+L'interfaccia è in costruzione: dei nove passaggi previsti ne sono fatti sei, e il settimo è a metà. Oggi apre una rete da file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. Dell'editor c'è l'inizio: si posano, si spostano e si eliminano i dispositivi. Mancano ancora i cavi nuovi, la configurazione degli indirizzi, il salvataggio e la modalità presentazione.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
 
@@ -29,6 +29,15 @@ Poi si apre http://localhost:5173 nel browser.
 ## L'interfaccia
 
 All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quelli di esempio stanno nella cartella [examples/](examples/).
+
+**Costruire.** Dalla colonna a sinistra si posano i dispositivi, in due modi:
+
+- trascinando la voce **PC** sul disegno;
+- con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare. Esc per finire.
+
+Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con il cestino sulla sua barretta o con il tasto Canc.
+
+Non si possono ancora tirare cavi nuovi né scrivere indirizzi: per ora una rete funzionante si ottiene solo aprendo un file.
 
 | Comando | Effetto |
 | --- | --- |
@@ -53,9 +62,9 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 
 | Selezionato | Sulla barretta | Nel pannello di destra |
 | --- | --- | --- |
-| Un PC | Spegni o accendi · Ping · Terminale · Appunta la tabella | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
-| Uno switch | Spegni o accendi · Appunta la tabella | Numero di porte, tabella MAC |
-| Un cavo | Stacca o riattacca | I due capi e lo stato |
+| Un PC | Spegni o accendi · Ping · Terminale · Appunta la tabella · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
+| Uno switch | Spegni o accendi · Appunta la tabella · Elimina | Numero di porte, tabella MAC |
+| Un cavo | Stacca o riattacca · Elimina | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 
 **Ping.** Seleziona il PC di partenza, premi Ping sulla barretta (la freccia), poi fai clic sul dispositivo di destinazione. Parte un solo echo request. Esc rinuncia.
@@ -95,7 +104,7 @@ Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una 
 
 ## Limiti noti
 
-- **Le reti non si possono ancora costruire né salvare.** Si aprono da file; per prepararne una nuova bisogna scrivere il JSON a mano, partendo da un esempio.
+- **Le reti non si possono ancora costruire per intero né salvare.** Si posano i dispositivi, ma mancano i cavi nuovi e gli indirizzi; per preparare una rete funzionante bisogna ancora scrivere il JSON a mano, partendo da un esempio.
 - **Un ping completo, a passi, richiede molti clic.** Con le quattro richieste di Windows sono venti. Con Avvia scorre da solo.
 
 ## Comandi

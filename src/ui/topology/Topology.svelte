@@ -20,6 +20,8 @@
   // L'inquadratura: tutta la rete, allargata quanto serve per far stare
   // anche le tabelle appuntate.
   const bounds = $derived.by(() => {
+    // Mentre si trascina un dispositivo l'inquadratura non si muove.
+    if (session.frozenBounds !== null) return session.frozenBounds;
     let { x, y, width, height } = session.view.bounds;
     let right = x + width;
     let bottom = y + height;
@@ -75,6 +77,11 @@
           },
         });
       }
+      const removeDevice: BarAction = {
+        icon: "remove",
+        label: `Elimina ${device.name}, con i suoi cavi`,
+        run: () => session.removeSelection(),
+      };
       const table = device.kind === "host" ? "ARP" : "MAC";
       actions.push({
         icon: "pin",
@@ -84,6 +91,7 @@
         active: session.isPinned(device.id),
         run: () => session.togglePin(device.id),
       });
+      actions.push(removeDevice);
       return { x: device.x, y: device.y - 42, actions };
     }
 
@@ -99,6 +107,7 @@
             label: link.connected ? "Stacca il cavo" : "Riattacca il cavo",
             run: () => session.toggleLink(link.id),
           },
+          { icon: "remove", label: "Elimina il cavo", run: () => session.removeSelection() },
         ],
       };
     }
@@ -112,34 +121,91 @@
 
   const pingSource = $derived(session.view.devices.find((device) => device.id === session.pingFrom));
 
+  // Chi sta scrivendo in una casella di testo, o nel terminale, non vuole
+  // che i tasti agiscano sul disegno.
+  function isTyping(event: KeyboardEvent): boolean {
+    const target = event.target as HTMLElement | null;
+    return target !== null && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+  }
+
   function onKey(event: KeyboardEvent) {
-    if (event.key !== "Escape") return;
-    if (session.pingFrom !== null) {
-      session.pingFrom = null; // rinuncia al ping, la selezione resta
+    if (event.key === "Escape") {
+      // Esc lascia andare, nell'ordine: la voce scelta nella colonna, il
+      // ping in attesa della destinazione, la selezione.
+      if (session.placing !== null) {
+        session.placing = null;
+      } else if (session.pingFrom !== null) {
+        session.pingFrom = null;
+      } else {
+        session.select(null);
+      }
+      return;
+    }
+    if ((event.key === "Delete" || event.key === "Backspace") && !isTyping(event)) {
+      session.removeSelection();
+    }
+  }
+
+  // --- Posare dispositivi --------------------------------------------------
+  let drawing: SVGSVGElement | undefined = $state();
+
+  // Trasforma un punto dello schermo in un punto del disegno.
+  function toDrawing(clientX: number, clientY: number) {
+    const matrix = drawing?.getScreenCTM();
+    if (drawing === undefined || !matrix) return { x: 400, y: 250 };
+    const point = new DOMPoint(clientX, clientY).matrixTransform(matrix.inverse());
+    return { x: point.x, y: point.y };
+  }
+
+  // Un clic sullo sfondo: posa il dispositivo scelto nella colonna, se ce
+  // n'è uno; altrimenti toglie la selezione.
+  function onBackgroundClick(event: MouseEvent) {
+    if (session.placing !== null) {
+      session.addDevice(session.placing, toDrawing(event.clientX, event.clientY));
     } else {
       session.select(null);
     }
+  }
+
+  const DRAG_TYPE = "application/x-net-sim-device";
+
+  function onDragOver(event: DragEvent) {
+    if (event.dataTransfer?.types.includes(DRAG_TYPE)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    }
+  }
+
+  // Una voce della colonna lasciata cadere sul disegno.
+  function onDrop(event: DragEvent) {
+    const data = event.dataTransfer?.getData(DRAG_TYPE);
+    if (!data) return;
+    event.preventDefault();
+    session.addDevice(JSON.parse(data), toDrawing(event.clientX, event.clientY));
   }
 </script>
 
 <svelte:window onkeydown={onKey} />
 
-<div class="canvas" class:aiming={session.pingFrom !== null}>
-  {#if session.isEmpty()}
-    <div class="hint">
-      <strong>La rete è vuota</strong>
-      <span>Apri un file con il pulsante "Apri", in alto a sinistra.</span>
-    </div>
-  {:else}
-    <!-- La rete viene sempre inquadrata per intero. Un clic sullo sfondo
-         toglie la selezione; da tastiera lo fa il tasto Esc. -->
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-    <svg
-      viewBox="{bounds.x} {bounds.y} {bounds.width} {bounds.height}"
-      role="group"
-      aria-label="Topologia della rete"
-      onclick={() => session.select(null)}
-    >
+<div
+  class="canvas"
+  class:aiming={session.pingFrom !== null}
+  class:placing={session.placing !== null}
+  ondragover={onDragOver}
+  ondrop={onDrop}
+  role="presentation"
+>
+  <!-- La rete viene sempre inquadrata per intero. Un clic sullo sfondo
+       posa il dispositivo scelto nella colonna, oppure toglie la
+       selezione; da tastiera la toglie il tasto Esc. -->
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+  <svg
+    bind:this={drawing}
+    viewBox="{bounds.x} {bounds.y} {bounds.width} {bounds.height}"
+    role="group"
+    aria-label="Topologia della rete"
+    onclick={onBackgroundClick}
+  >
       {#each session.view.links as link (link.id)}
         <LinkLine {link} />
       {/each}
@@ -158,15 +224,28 @@
       {#if bar !== null}
         <ActionBar x={bar.x} y={bar.y} actions={bar.actions} />
       {/if}
-    </svg>
+  </svg>
 
-    <div class="messages">
+  {#if session.isEmpty()}
+    <div class="hint">
+      <strong>La rete è vuota</strong>
+      <span>Trascina un dispositivo dalla colonna a sinistra, oppure apri un file.</span>
+    </div>
+  {/if}
+
+  <div class="messages">
       {#if session.view.suspended}
         <div class="message storm" role="alert">
           <strong>Simulazione sospesa: tempesta di broadcast.</strong>
           Ci sono {session.view.packets.length} frame che continuano a girare senza fermarsi. La causa
           è un ciclo tra switch: senza spanning tree, un broadcast inoltrato in cerchio non si
           esaurisce mai. Premi "Ricomincia" per ripartire.
+        </div>
+      {/if}
+      {#if session.placing !== null}
+        <div class="message" role="status">
+          <strong>{session.placing.kind === "host" ? "PC" : `Switch a ${session.placing.portCount} porte`}.</strong>
+          Fai clic sul disegno per posarne uno; puoi posarne altri. Esc per finire.
         </div>
       {/if}
       {#if pingSource !== undefined}
@@ -180,8 +259,7 @@
       {/if}
     </div>
 
-    <SimulationBar />
-  {/if}
+  <SimulationBar />
 </div>
 
 <style>
@@ -203,6 +281,10 @@
   .aiming :global(.device) {
     cursor: crosshair;
   }
+  /* Con un dispositivo scelto nella colonna, il puntatore dice "posa qui". */
+  .placing :global(svg) {
+    cursor: copy;
+  }
   .hint {
     position: absolute;
     inset: 0;
@@ -213,6 +295,8 @@
     gap: 6px;
     color: var(--muted);
     text-align: center;
+    /* È solo una scritta: i clic passano al disegno che sta sotto. */
+    pointer-events: none;
   }
   .hint strong {
     color: var(--ink);

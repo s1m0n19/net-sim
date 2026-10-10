@@ -385,17 +385,15 @@ function ipLabelOf(ip: string | null, mask: string | null): string | null {
 // più, perché lì stanno le etichette.
 const MARGIN = { side: 110, top: 96, bottom: 120 };
 
+// L'inquadratura è il foglio di base, allargato quanto serve per contenere
+// tutti i dispositivi con i loro margini. Finché la rete sta nel foglio
+// l'inquadratura non cambia: posare o spostare un dispositivo non fa
+// "saltare" il disegno.
 function boundsOf(devices: DeviceView[]): Bounds {
-  if (devices.length === 0) return EMPTY_VIEW.bounds;
-
-  const xs = devices.map((device) => device.x);
-  const ys = devices.map((device) => device.y);
-  const left = Math.min(...xs) - MARGIN.side;
-  const top = Math.min(...ys) - MARGIN.top;
-  return {
-    x: left,
-    y: top,
-    width: Math.max(...xs) + MARGIN.side - left,
-    height: Math.max(...ys) + MARGIN.bottom - top,
-  };
+  const sheet = EMPTY_VIEW.bounds;
+  const left = Math.min(sheet.x, ...devices.map((device) => device.x - MARGIN.side));
+  const top = Math.min(sheet.y, ...devices.map((device) => device.y - MARGIN.top));
+  const right = Math.max(sheet.x + sheet.width, ...devices.map((device) => device.x + MARGIN.side));
+  const bottom = Math.max(sheet.y + sheet.height, ...devices.map((device) => device.y + MARGIN.bottom));
+  return { x: left, y: top, width: right - left, height: bottom - top };
 }
