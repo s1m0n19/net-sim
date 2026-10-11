@@ -26,13 +26,23 @@
     screen?.scrollTo({ top: screen.scrollHeight });
   });
 
-  // Appena il terminale è pronto, si può scrivere senza cliccare.
+  // Appena il terminale è pronto, si può scrivere senza cliccare. Ma solo
+  // se chi lo usa è rimasto lì: se mentre il comando era in corso ha fatto
+  // clic altrove (sul disegno, su un pulsante), il cursore non gli viene
+  // tolto. Altrimenti, finito un ping, i tasti premuti per comandare la
+  // simulazione finirebbero scritti nel terminale.
+  let wantsFocus = true;
   $effect(() => {
-    if (!busy) input?.focus();
+    if (!busy && wantsFocus) input?.focus();
   });
+
+  function onPointerDown(event: PointerEvent) {
+    wantsFocus = screen !== undefined && event.target instanceof Node && screen.contains(event.target);
+  }
 
   function submit(event: SubmitEvent) {
     event.preventDefault();
+    wantsFocus = true;
     session.execute(terminal.deviceId, line);
     line = "";
     recalled = -1;
@@ -52,6 +62,8 @@
     line = recalled === -1 ? "" : history[recalled];
   }
 </script>
+
+<svelte:window onpointerdown={onPointerDown} />
 
 <!-- Un clic in qualsiasi punto dello schermo porta il cursore sulla riga di comando. -->
 <div class="screen mono" bind:this={screen} onclick={() => input?.focus()} role="presentation">

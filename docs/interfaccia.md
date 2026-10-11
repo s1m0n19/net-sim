@@ -249,6 +249,8 @@ Ogni terminale aperto dalla barretta di un host diventa una **scheda**, con il n
 
 Questa scelta è presa con riserva: se si rivelasse macchinosa, si passerà a un solo terminale che segue il dispositivo selezionato.
 
+Quando un comando finisce, il cursore torna sulla riga di comando, così si può scrivere il successivo senza cliccare. Non però se nel frattempo si è fatto clic altrove, sul disegno o su un pulsante: in quel caso il cursore resta dov'è, e i tasti premuti per comandare la simulazione non finiscono scritti nel terminale.
+
 I comandi sono quelli di Windows e i **messaggi sono in inglese**, come sui libri e in rete.
 
 | Comando | Che cosa fa |
