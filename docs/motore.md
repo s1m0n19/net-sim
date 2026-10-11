@@ -131,6 +131,20 @@ interface Switch {
 
 `createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali. `clearRuntimeState(device)` riporta un dispositivo a quello stato: è ciò che succede quando lo si spegne.
 
+### Router (`network.ts`, `router-config.ts`)
+
+Un `Router` ha più **interfacce** (`RouterInterface`): porte che, oltre a nome e MAC, hanno un indirizzo IP, una maschera e uno stato acceso o spento (`enabled`). Su un router le interfacce nascono spente, come su un Cisco (decisione D-70). Ha poi un elenco di rotte statiche (`StaticRoute`: rete, maschera, prossimo salto) e, come stato di esecuzione, una tabella ARP e i pacchetti in attesa del MAC. Lo crea `createRouter`.
+
+`router-config.ts` dice che cosa si può impostare, con lo stesso criterio di `ip-config.ts`: ciò che un apparato vero rifiuterebbe viene rifiutato.
+
+| Funzione | Che cosa controlla |
+| --- | --- |
+| `checkInterfaceAddress` | L'indirizzo di un'interfaccia, con le regole degli host |
+| `checkInterfacesApart` | Che due interfacce dello stesso router non abbiano reti sovrapposte |
+| `checkRoute` | Che una rotta abbia indirizzi validi, e una rete coerente con la maschera |
+
+Le reti si confrontano con `networksOverlap` (`addresses.ts`), che guarda la più corta delle due maschere: se con quella i due indirizzi stanno nella stessa rete, la rete più piccola è dentro la più grande. Le maschere possono avere qualsiasi lunghezza: `10.0.0.1/30` e `10.0.0.5/30` sono reti diverse anche se appartengono alla stessa classe A.
+
 ### Frame e pacchetti (`frames.ts`)
 
 L'incapsulamento è rappresentato alla lettera: ogni unità contiene quella del livello superiore nel campo `payload`. Il campo `etherType` dice che cosa c'è dentro il frame, come nel frame vero.
@@ -388,7 +402,7 @@ I guasti sono due: il **cavo staccato** e il **dispositivo spento**. Un collegam
 
 ### Il segnale sul cavo
 
-Il concetto su cui si regge tutto è il **segnale sul cavo**. Una porta sente il segnale se le è attaccato un cavo, il cavo non è staccato, e i dispositivi ai due capi sono entrambi accesi. Il simulatore lo ricalcola dopo ogni guasto o riparazione, e aggiorna ciò che i dispositivi sanno:
+Il concetto su cui si regge tutto è il **segnale sul cavo**. Una porta sente il segnale se le è attaccato un cavo, il cavo non è staccato, i dispositivi ai due capi sono entrambi accesi e, se una delle due porte è un'interfaccia di router, questa non è spenta. Il simulatore lo ricalcola dopo ogni guasto o riparazione, e aggiorna ciò che i dispositivi sanno:
 
 - **Host.** Il campo `linkUp` dice se la scheda sente il segnale. Senza segnale l'host sa di non poter trasmettere: un ping finisce subito con "trasmissione non riuscita", senza che parta nulla. È ciò che fa un PC vero con il cavo staccato, o collegato a uno switch spento.
 - **Switch.** Dimentica i MAC che aveva imparato sulla porta rimasta senza segnale, e su quella porta non inoltra più nulla.
@@ -509,7 +523,7 @@ Non ancora nel codice:
 
 - **Porta spenta** (requisito SIM-7, rilascio 2).
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
-- **Router**, con più porte ciascuna con il proprio indirizzo, tabella di routing e decremento del TTL (rilascio 2).
+- **Inoltro sul router** (rilascio 2, in costruzione): ARP per interfaccia, tabella di routing, decremento del TTL, riscrittura dei MAC, messaggi ICMP di errore, `tracert`. Il router esiste già nel modello e nei file, ma per ora scarta ogni frame che riceve (traccia `frame-dropped` con motivo provvisorio `router-not-forwarding`).
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo

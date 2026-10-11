@@ -75,8 +75,38 @@ export interface Switch {
   macTable: Map<MacAddress, string>;
 }
 
-// I router si aggiungeranno qui.
-export type Device = Host | Switch;
+// Un'interfaccia di un router: una porta che ha anche un indirizzo IP, e
+// che si può spegnere.
+export interface RouterInterface extends Port {
+  ip: Ipv4Address | null;
+  mask: Ipv4Address | null;
+  // false = l'interfaccia è spenta ("shutdown"): è come se il cavo non ci
+  // fosse. Su un router le interfacce nascono spente.
+  enabled: boolean;
+}
+
+// Una rotta statica: "per raggiungere questa rete, passa da questo vicino".
+export interface StaticRoute {
+  network: Ipv4Address; // l'indirizzo della rete di destinazione
+  mask: Ipv4Address;
+  nextHop: Ipv4Address; // il prossimo router sulla strada
+}
+
+export interface Router {
+  kind: "router";
+  id: string;
+  name: string;
+  // Configurazione: la imposta l'utente.
+  ports: RouterInterface[];
+  powered: boolean; // false = il dispositivo è spento
+  routes: StaticRoute[];
+  // Stato di esecuzione: cambia mentre la rete funziona.
+  arpTable: Map<Ipv4Address, MacAddress>;
+  // Pacchetti da inoltrare, in attesa della risposta ARP.
+  pendingPackets: PendingPacket[];
+}
+
+export type Device = Host | Switch | Router;
 
 // La parte di un dispositivo che l'utente imposta e che si salva nel file.
 // `powered` si può omettere: un dispositivo nasce acceso.
@@ -84,6 +114,7 @@ export type HostConfig = Pick<Host, "id" | "name" | "ports" | "ip" | "mask" | "g
   powered?: boolean;
 };
 export type SwitchConfig = Pick<Switch, "id" | "name" | "ports"> & { powered?: boolean };
+export type RouterConfig = Pick<Router, "id" | "name" | "ports" | "routes"> & { powered?: boolean };
 
 /**
  * Crea un host appena acceso: con la configurazione data e lo stato di
@@ -115,6 +146,23 @@ export function createHost(config: HostConfig): Host {
  */
 export function createSwitch(config: SwitchConfig): Switch {
   return { kind: "switch", ...config, powered: config.powered ?? true, macTable: new Map() };
+}
+
+/**
+ * Crea un router appena acceso: con la configurazione data, la tabella ARP
+ * vuota e nessun pacchetto in attesa.
+ *
+ * @param config - identificativo, nome, interfacce e rotte statiche
+ * @returns il router pronto per essere messo in una rete
+ */
+export function createRouter(config: RouterConfig): Router {
+  return {
+    kind: "router",
+    ...config,
+    powered: config.powered ?? true,
+    arpTable: new Map(),
+    pendingPackets: [],
+  };
 }
 
 /**
@@ -172,19 +220,25 @@ export function linkAt(network: Network, port: PortRef): Link | null {
 }
 
 /**
- * Dice se su un cavo passa il segnale: il cavo non è staccato e i
- * dispositivi ai due capi sono entrambi accesi.
+ * Dice se su un cavo passa il segnale: il cavo non è staccato, i
+ * dispositivi ai due capi sono entrambi accesi, e nessuna delle due porte
+ * è un'interfaccia di router spenta.
  *
  * @param network - la rete a cui il cavo appartiene
  * @param link - il cavo
  * @returns true se le porte ai due capi sentono il segnale
  */
 export function linkCarriesSignal(network: Network, link: Link): boolean {
-  return (
-    link.connected &&
-    findDevice(network, link.a.deviceId).powered &&
-    findDevice(network, link.b.deviceId).powered
-  );
+  return link.connected && portIsOn(network, link.a) && portIsOn(network, link.b);
+}
+
+// Una porta "c'è" se il suo dispositivo è acceso e, su un router, se
+// l'interfaccia non è spenta.
+function portIsOn(network: Network, ref: PortRef): boolean {
+  const device = findDevice(network, ref.deviceId);
+  if (!device.powered) return false;
+  if (device.kind !== "router") return true;
+  return device.ports.find((port) => port.name === ref.portName)?.enabled ?? false;
 }
 
 function samePort(p: PortRef, q: PortRef): boolean {
@@ -216,6 +270,11 @@ export function otherEndOf(network: Network, port: PortRef): PortRef | null {
 export function clearRuntimeState(device: Device): void {
   if (device.kind === "switch") {
     device.macTable.clear();
+    return;
+  }
+  if (device.kind === "router") {
+    device.arpTable.clear();
+    device.pendingPackets = [];
     return;
   }
   device.linkUp = false;

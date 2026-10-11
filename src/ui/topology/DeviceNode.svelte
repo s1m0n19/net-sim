@@ -8,8 +8,8 @@
 
   let { device }: { device: DeviceView } = $props();
 
-  // Lo switch è un po' più largo di un PC.
-  const halfWidth = $derived(device.kind === "switch" ? 30 : 26);
+  // Switch e router sono un po' più larghi di un PC.
+  const halfWidth = $derived(device.kind === "host" ? 26 : 30);
   const selected = $derived(session.selection?.kind === "device" && session.selection.id === device.id);
   // Il mouse è su una riga dell'elenco degli eventi che parla di questo dispositivo.
   const highlighted = $derived(session.highlight?.deviceId === device.id);

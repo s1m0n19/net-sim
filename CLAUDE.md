@@ -22,7 +22,7 @@ Il motore del rilascio 1 è completo: host, switch di livello 2, ARP, IPv4 e pin
 
 L'interfaccia definitiva è progettata in `docs/interfaccia.md` ed è stata costruita in nove passaggi, tutti fatti: ossatura e temi; barra della simulazione e tempo reale; selezione, barretta e pannello laterale; scheda Eventi; tabelle appuntate; terminale degli host; editor (posare, collegare, configurare, annullare); file, zoom e spostamento della vista; modalità presentazione con scorciatoie. Resta da provarla in aula, su LIM e con reti grandi.
 
-Il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch) è costruito e va provato in aula; poi viene il rilascio 2. Non ci sono difetti noti aperti.
+Il rilascio 1 descritto in `SPEC.md` (lezione su ARP e ping in una LAN con switch) è costruito e va provato in aula. Il rilascio 2 è cominciato dal router, secondo il piano in sette passaggi di `SPEC.md`, sezione 5: è fatta la parte 1a (router nel modello e nei file, con i controlli di `model/router-config.ts`; a schermo solo in lettura). Finché non è fatto il passaggio 2 il router scarta ogni frame che riceve. Non ci sono difetti noti aperti.
 
 ## Comandi
 

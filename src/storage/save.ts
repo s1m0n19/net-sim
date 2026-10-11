@@ -27,9 +27,22 @@ export function serializeNetwork(network: Network, positions: Map<string, Positi
       kind: device.kind,
       name: device.name,
       position: { x: position.x, y: position.y },
-      ports: device.ports.map((port) => ({ name: port.name, mac: port.mac })),
-      // Solo gli host hanno una configurazione IP.
+      // Le interfacce di un router portano con sé indirizzo e stato.
+      ports:
+        device.kind === "router"
+          ? device.ports.map((port) => ({
+              name: port.name,
+              mac: port.mac,
+              ip: port.ip,
+              mask: port.mask,
+              enabled: port.enabled,
+            }))
+          : device.ports.map((port) => ({ name: port.name, mac: port.mac })),
+      // Solo gli host hanno una configurazione IP propria, con il gateway.
       ...(device.kind === "host" ? { ip: device.ip, mask: device.mask, gateway: device.gateway } : {}),
+      ...(device.kind === "router"
+        ? { routes: device.routes.map((r) => ({ network: r.network, mask: r.mask, nextHop: r.nextHop })) }
+        : {}),
       // I guasti si scrivono solo quando ci sono: un dispositivo nasce acceso.
       ...(device.powered ? {} : { powered: false }),
     };

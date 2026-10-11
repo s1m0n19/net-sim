@@ -27,7 +27,7 @@ A chi sviluppa l'app e agli studenti che ne leggono il codice. Per questo ogni d
 | Termine | Significato in questa documentazione |
 | --- | --- |
 | Rete | L'insieme di dispositivi e collegamenti |
-| Dispositivo | Oggi un host (PC) o uno switch; sono previsti server e router |
+| Dispositivo | Un host (PC), uno switch o un router; è previsto il server. Il router per ora esiste solo nel modello e nei file |
 | Porta | Punto di collegamento di un dispositivo, con un nome (per esempio `Fa0/1`) |
 | Collegamento | Il cavo tra due porte |
 | Configurazione | Ciò che si imposta e che sta nel file: indirizzi, nomi, porte |

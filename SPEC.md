@@ -287,6 +287,7 @@ Punti ancora da decidere:
 - [ ] Dominio `.it` per il sito, da comprare quando il nome dell'app sarà scelto, e prima del funzionamento offline (NF-2): chi ha installato l'app da un indirizzo dovrebbe reinstallarla dal nuovo.
 - [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
 - [ ] Da decidere dopo il collaudo: come alleggerire il passo-passo di un ping da quattro richieste (oggi si usa `ping -n 1`); quale icona dare al pulsante che stacca e riattacca un cavo.
+- [ ] Icona del router (oggi un cerchio con una croce): probabilmente da rivedere. Segnalato dal docente l'11 ottobre 2026; da riprendere quando il router avrà la sua forma a schermo (passaggio 5 del rilascio 2).
 - [ ] LIM usata con il dito: UI-4 esclude i gesti tattili, ma trascinamenti e clic vanno provati; la rotella non c'è, restano i pulsanti − e +.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
@@ -400,7 +401,7 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5), non ancora iniziato. Tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5) e appena cominciato. Del passaggio 1 è fatta la prima metà: il router esiste nel modello e nei file, con i controlli su interfacce e rotte, e compare sul disegno in sola lettura. Non inoltra ancora nulla, non si posa dalla colonna e non si configura dal pannello. Tappe successive: nulla è iniziato.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
@@ -420,8 +421,8 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 ### Che cosa esiste oltre ai requisiti
 
 - 8 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
-- 463 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
-- Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
+- 501 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- Quattro reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
 
 ### Difetti noti

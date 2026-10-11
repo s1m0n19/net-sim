@@ -61,11 +61,11 @@ net-sim/
 ├── README.md                  come avviare e provare l'app
 ├── CLAUDE.md                  regole di lavoro per Claude Code
 ├── docs/                      questa documentazione
-├── examples/                  reti di esempio: due-pc, lan-switch, anello-switch
+├── examples/                  reti di esempio: due-pc, lan-switch, anello-switch, due-lan-router
 ├── src/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
-│   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts
+│   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
 │   │   ├── devices/           host.ts, switch.ts
 │   │   ├── simulator.ts       coda degli eventi, tempo, consegna dei frame

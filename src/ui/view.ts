@@ -58,9 +58,32 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
       pending: [],
       portCount: device.ports.length,
       macRows: [],
+      interfaces: [],
+      routes: [],
     };
     if (device.kind === "switch") {
       return { ...base, ...none, macRows: [...device.macTable] };
+    }
+    if (device.kind === "router") {
+      return {
+        ...base,
+        ...none,
+        arpRows: [...device.arpTable],
+        interfaces: device.ports.map((port) => ({
+          name: port.name,
+          mac: port.mac,
+          ip: port.ip,
+          mask: port.mask,
+          ipLabel: ipLabelOf(port.ip, port.mask),
+          enabled: port.enabled,
+        })),
+        routes: device.routes.map((route) => ({
+          destination: `${route.network}/${maskToPrefix(route.mask)}`,
+          network: route.network,
+          mask: route.mask,
+          nextHop: route.nextHop,
+        })),
+      };
     }
     return {
       ...base,

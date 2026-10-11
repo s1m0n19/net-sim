@@ -95,3 +95,46 @@ export function sameNetwork(a: Ipv4Address, b: Ipv4Address, mask: Ipv4Address): 
   const networkOfB = (ipToNumber(b) & maskBits) >>> 0;
   return networkOfA === networkOfB;
 }
+
+/**
+ * Calcola l'indirizzo di rete: ciò che resta di un indirizzo dopo aver
+ * applicato la maschera (192.168.1.10 con 255.255.255.0 dà 192.168.1.0).
+ *
+ * @param ip - un indirizzo della rete
+ * @param mask - la subnet mask
+ * @returns l'indirizzo di rete, in notazione decimale puntata
+ * @throws Error se l'indirizzo non è IPv4 valido o se la maschera non è valida
+ */
+export function networkAddress(ip: Ipv4Address, mask: Ipv4Address): Ipv4Address {
+  if (!isValidMask(mask)) {
+    throw new Error(`Subnet mask non valida: ${mask}`);
+  }
+  const value = (ipToNumber(ip) & ipToNumber(mask)) >>> 0;
+  return [24, 16, 8, 0].map((shift) => (value >>> shift) & 255).join(".");
+}
+
+/**
+ * Dice se due reti si sovrappongono, cioè se hanno indirizzi in comune.
+ *
+ * Le maschere possono essere diverse e di qualsiasi lunghezza: conta solo
+ * la più corta delle due. Se, guardati con quella, i due indirizzi stanno
+ * nella stessa rete, allora la rete più piccola è contenuta nella più
+ * grande. Così 192.168.1.0/24 e 192.168.1.128/25 si sovrappongono, mentre
+ * 10.0.0.0/30 e 10.0.0.4/30 no.
+ *
+ * @param ipA - un indirizzo della prima rete
+ * @param maskA - la maschera della prima rete
+ * @param ipB - un indirizzo della seconda rete
+ * @param maskB - la maschera della seconda rete
+ * @returns true se le due reti hanno almeno un indirizzo in comune
+ * @throws Error se un indirizzo o una maschera non sono validi
+ */
+export function networksOverlap(
+  ipA: Ipv4Address,
+  maskA: Ipv4Address,
+  ipB: Ipv4Address,
+  maskB: Ipv4Address,
+): boolean {
+  const shorter = maskToPrefix(maskA) <= maskToPrefix(maskB) ? maskA : maskB;
+  return sameNetwork(ipA, ipB, shorter);
+}

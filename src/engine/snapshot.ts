@@ -13,13 +13,14 @@
 // con le stesse regole di qualsiasi altra modifica.
 
 import type { Action } from "./actions";
-import type { HostConfig, Link, Network, SwitchConfig } from "./model/network";
+import type { HostConfig, Link, Network, RouterConfig, SwitchConfig } from "./model/network";
 
 // Un dispositivo come sta nella fotografia: la sua configurazione, senza
 // stato di esecuzione.
 export type DeviceSnapshot =
   | ({ kind: "host" } & Required<HostConfig>)
-  | ({ kind: "switch" } & Required<SwitchConfig>);
+  | ({ kind: "switch" } & Required<SwitchConfig>)
+  | ({ kind: "router" } & Required<RouterConfig>);
 
 export interface Snapshot {
   devices: DeviceSnapshot[];
@@ -43,15 +44,22 @@ export type RestoreStep =
  */
 export function takeSnapshot(network: Network): Snapshot {
   const devices = network.devices.map((device): DeviceSnapshot => {
-    const common = {
-      id: device.id,
-      name: device.name,
-      ports: device.ports.map((port) => ({ ...port })),
-      powered: device.powered,
-    };
-    return device.kind === "host"
-      ? { kind: "host", ...common, ip: device.ip, mask: device.mask, gateway: device.gateway }
-      : { kind: "switch", ...common };
+    const common = { id: device.id, name: device.name, powered: device.powered };
+    switch (device.kind) {
+      case "host": {
+        const ports = device.ports.map((port) => ({ ...port }));
+        return { kind: "host", ...common, ports, ip: device.ip, mask: device.mask, gateway: device.gateway };
+      }
+      case "switch":
+        return { kind: "switch", ...common, ports: device.ports.map((port) => ({ ...port })) };
+      case "router":
+        return {
+          kind: "router",
+          ...common,
+          ports: device.ports.map((port) => ({ ...port })),
+          routes: device.routes.map((route) => ({ ...route })),
+        };
+    }
   });
   return { devices, links: network.links.map(copyLink) };
 }

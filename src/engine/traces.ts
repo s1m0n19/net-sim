@@ -34,7 +34,9 @@ export type Trace =
       frameId: number;
       at: PortRef;
       frame: EthernetFrame;
-      reason: DropReason | SwitchDropReason;
+      // "router-not-forwarding" è provvisorio: finché il router non sa
+      // inoltrare, scarta tutto ciò che riceve.
+      reason: DropReason | SwitchDropReason | "router-not-forwarding";
       conversationId: number;
     }
   | {

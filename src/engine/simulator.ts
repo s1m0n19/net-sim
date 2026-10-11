@@ -310,8 +310,21 @@ export class Simulator {
     const device = findDevice(this.network, event.to.deviceId);
     if (device.kind === "host") {
       this.deliverToHost(device, event, produced);
-    } else {
+    } else if (device.kind === "switch") {
       this.deliverToSwitch(device, event, produced);
+    } else {
+      // Provvisorio: il router riceve il frame ma non sa ancora che farne.
+      const { frameId, frame, conversationId, to } = event;
+      produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
+      produced.push({
+        time: this.time,
+        kind: "frame-dropped",
+        frameId,
+        at: to,
+        frame,
+        reason: "router-not-forwarding",
+        conversationId,
+      });
     }
   }
 

@@ -23,9 +23,33 @@ export interface DeviceView {
   linkUp: boolean;
   arpRows: [ip: string, mac: string][];
   pending: string[];
-  // Solo per gli switch: quante porte ha, e la tabella MAC.
+  // Quante porte ha; solo per gli switch, la tabella MAC.
   portCount: number;
   macRows: [mac: string, port: string][];
+  // Solo per i router: le interfacce e le rotte statiche.
+  interfaces: InterfaceView[];
+  routes: RouteView[];
+}
+
+// Un'interfaccia di un router.
+export interface InterfaceView {
+  name: string;
+  mac: string;
+  ip: string | null;
+  mask: string | null;
+  // "192.168.1.1/24", oppure null se non ha un indirizzo.
+  ipLabel: string | null;
+  // false = spenta.
+  enabled: boolean;
+}
+
+// Una rotta statica di un router.
+export interface RouteView {
+  // "192.168.2.0/24"
+  destination: string;
+  network: string;
+  mask: string;
+  nextHop: string;
 }
 
 export interface LinkView {

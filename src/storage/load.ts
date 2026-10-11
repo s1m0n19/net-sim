@@ -7,13 +7,17 @@ import { BROADCAST_MAC } from "../engine/model/addresses";
 import { checkIpConfig } from "../engine/model/ip-config";
 import {
   createHost,
+  createRouter,
   createSwitch,
   type Device,
   type Link,
   type Network,
   type Port,
   type PortRef,
+  type RouterInterface,
+  type StaticRoute,
 } from "../engine/model/network";
+import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } from "../engine/model/router-config";
 
 export const FILE_FORMAT = "net-sim";
 export const FILE_VERSION = 1;
@@ -118,6 +122,11 @@ function readDevice(d: any, where: string): { device: Device; position: Position
     }
     case "switch":
       return { device: createSwitch({ id, name, ports, powered }), position };
+    case "router": {
+      const interfaces = readInterfaces(d, ports, name);
+      const routes = readRoutes(d, name);
+      return { device: createRouter({ id, name, ports: interfaces, routes, powered }), position };
+    }
     default:
       throw new Error(`Tipo di dispositivo non supportato: ${kind}.`);
   }
@@ -140,6 +149,58 @@ function readPorts(d: any, deviceName: string): Port[] {
     `${deviceName}: nome di porta duplicato`,
   );
   return ports;
+}
+
+// Le interfacce di un router: alle porte, già lette, si aggiungono
+// l'indirizzo e lo stato. Un'interfaccia senza il campo "enabled" è
+// spenta, come nasce su un router.
+function readInterfaces(d: any, ports: Port[], routerName: string): RouterInterface[] {
+  const interfaces = ports.map((port, index): RouterInterface => {
+    const source = d.ports[index];
+    const where = `${routerName} ${port.name}`;
+    const ip = source.ip === undefined ? null : readTextOrNull(source, "ip", where);
+    const mask = source.mask === undefined ? null : readTextOrNull(source, "mask", where);
+    const problem = checkInterfaceAddress(ip, mask);
+    if (problem !== null) {
+      throw new Error(`${where}: ${problem}.`);
+    }
+    if (source.enabled !== undefined && typeof source.enabled !== "boolean") {
+      throw new Error(`${where}: il campo "enabled" deve essere true o false.`);
+    }
+    return { ...port, ip, mask, enabled: source.enabled === true };
+  });
+  const overlap = checkInterfacesApart(interfaces);
+  if (overlap !== null) {
+    throw new Error(`${routerName}: ${overlap}.`);
+  }
+  return interfaces;
+}
+
+// Le rotte statiche di un router. Il campo è facoltativo: se manca, il
+// router non ne ha.
+function readRoutes(d: any, routerName: string): StaticRoute[] {
+  if (d.routes === undefined) return [];
+  if (!Array.isArray(d.routes)) {
+    throw new Error(`${routerName}: il campo "routes" deve essere un elenco.`);
+  }
+  const routes: StaticRoute[] = [];
+  d.routes.forEach((r: any, index: number) => {
+    const where = `${routerName}, rotta n. ${index + 1}`;
+    const route = {
+      network: readText(r, "network", where),
+      mask: readText(r, "mask", where),
+      nextHop: readText(r, "nextHop", where),
+    };
+    const problem = checkRoute(route);
+    if (problem !== null) {
+      throw new Error(`${where}: ${problem}.`);
+    }
+    if (routes.some((other) => sameRoute(other, route))) {
+      throw new Error(`${where}: rotta duplicata.`);
+    }
+    routes.push(route);
+  });
+  return routes;
 }
 
 function readLink(l: any, where: string, network: Network): Link {

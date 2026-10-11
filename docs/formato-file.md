@@ -113,6 +113,45 @@ Gli identificativi (`id`) sono interni: i collegamenti si riferiscono a quelli, 
 
 La posizione riguarda il disegno, non la rete: il lettore la restituisce a parte (`LoadedFile.positions`), fuori dal modello del motore.
 
+## Router
+
+Un router (dal rilascio 2) è un dispositivo di tipo `"router"`. Le sue porte sono **interfacce**: oltre a nome e MAC hanno un indirizzo e uno stato. In più il router ha l'elenco delle rotte statiche. È il file `examples/due-lan-router.netsim.json`.
+
+```json
+{
+  "id": "r1",
+  "kind": "router",
+  "name": "R1",
+  "position": { "x": 460, "y": 200 },
+  "ports": [
+    { "name": "Gi0/0", "mac": "02:00:00:00:03:01", "ip": "192.168.1.1", "mask": "255.255.255.0", "enabled": true },
+    { "name": "Gi0/1", "mac": "02:00:00:00:03:02", "ip": null, "mask": null, "enabled": false }
+  ],
+  "routes": [
+    { "network": "10.0.0.0", "mask": "255.0.0.0", "nextHop": "192.168.1.254" }
+  ]
+}
+```
+
+| Campo | Contenuto |
+| --- | --- |
+| `ports[].ip`, `ports[].mask` | L'indirizzo dell'interfaccia. Entrambi `null`, o assenti, se non ne ha |
+| `ports[].enabled` | `true` se l'interfaccia è accesa. Se manca vale `false`: su un router le interfacce nascono spente |
+| `routes` | Le rotte statiche, ciascuna con `network`, `mask` e `nextHop`. Facoltativo: se manca, nessuna |
+
+Sono campi nuovi di un tipo nuovo: i file scritti prima restano validi, e il numero di versione non cambia.
+
+Controlli all'apertura, oltre a quelli comuni:
+
+| Controllo | Esempio di ciò che viene rifiutato |
+| --- | --- |
+| L'indirizzo di ogni interfaccia segue le regole degli host: indirizzo e maschera insieme, validi, né rete né broadcast | `192.168.1.255` con `255.255.255.0` |
+| Due interfacce dello stesso router non hanno reti sovrapposte. Conta la maschera, di qualsiasi lunghezza, non la classe | `192.168.1.1/24` e `192.168.1.129/25`; invece `10.0.0.1/30` e `10.0.0.5/30` vanno bene |
+| In una rotta, rete e maschera vanno d'accordo | `192.168.2.5` con `255.255.255.0` |
+| Nessuna rotta è ripetuta | due rotte con la stessa rete, maschera e prossimo salto |
+
+Non viene controllato che il prossimo salto di una rotta sia raggiungibile: è un errore che lo studente deve saper diagnosticare.
+
 ## Controlli all'apertura
 
 Un file può arrivare modificato a mano o danneggiato. Se un controllo fallisce, il lettore non apre il file e dice che cosa non va, nominando il dispositivo o il collegamento. Non tenta di riparare.

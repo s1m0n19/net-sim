@@ -9,7 +9,17 @@ import type { Action } from "./actions";
 import * as editing from "./editing";
 import type { SimulationState } from "./events";
 import { forgetTimersOf, loseFrames, loseFramesOn, refreshLinkState } from "./faults";
-import { clearRuntimeState, createHost, createSwitch, findDevice, findLink, type Link } from "./model/network";
+import {
+  clearRuntimeState,
+  createHost,
+  createRouter,
+  createSwitch,
+  findDevice,
+  findLink,
+  type Device,
+  type Link,
+} from "./model/network";
+import type { DeviceSnapshot } from "./snapshot";
 import { stepsToRestore, type RestoreStep, type Snapshot } from "./snapshot";
 import type { Trace } from "./traces";
 
@@ -100,7 +110,7 @@ function restore(sim: SimulationState, snapshot: Snapshot, produced: Trace[]): v
       case "put-device": {
         // Torna un dispositivo che era stato tolto: è quello di prima,
         // ma appena acceso, con le tabelle vuote.
-        const device = step.device.kind === "host" ? createHost(step.device) : createSwitch(step.device);
+        const device = deviceFrom(step.device);
         sim.network.devices.push(device);
         produced.push({ time, kind: "device-added", deviceId: device.id });
         break;
@@ -117,6 +127,23 @@ function restore(sim: SimulationState, snapshot: Snapshot, produced: Trace[]): v
   const place = (ids: string[]) => (a: { id: string }, b: { id: string }) => ids.indexOf(a.id) - ids.indexOf(b.id);
   sim.network.devices.sort(place(snapshot.devices.map((device) => device.id)));
   sim.network.links.sort(place(snapshot.links.map((link) => link.id)));
+}
+
+// Ricrea un dispositivo dalla sua fotografia: stessa configurazione, stato
+// di esecuzione da appena acceso.
+function deviceFrom(snapshot: DeviceSnapshot): Device {
+  switch (snapshot.kind) {
+    case "host":
+      return createHost(snapshot);
+    case "switch":
+      return createSwitch(snapshot);
+    case "router":
+      return createRouter({
+        ...snapshot,
+        ports: snapshot.ports.map((port) => ({ ...port })),
+        routes: snapshot.routes.map((route) => ({ ...route })),
+      });
+  }
 }
 
 // I nomi dei dispositivi ai due capi di un cavo. Se uno dei due è appena

@@ -40,6 +40,8 @@ Poi si apre http://localhost:5173 nel browser.
 
 All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quelli di esempio stanno nella cartella [examples/](examples/).
 
+Il router è in costruzione (rilascio 2). Per ora un file che ne contiene uno, come `due-lan-router`, si apre e si salva, e il router si vede sul disegno con interfacce e rotte nel pannello; ma non inoltra ancora i pacchetti, non si posa dalla colonna e non si configura.
+
 **Costruire.** Dalla colonna a sinistra si posano i dispositivi, in due modi:
 
 - trascinando la voce **PC** sul disegno;

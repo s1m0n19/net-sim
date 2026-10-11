@@ -1,0 +1,170 @@
+{
+  "format": "net-sim",
+  "version": 1,
+  "network": {
+    "devices": [
+      {
+        "id": "d1",
+        "kind": "host",
+        "name": "PC1",
+        "position": {
+          "x": 100,
+          "y": 200
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:01"
+          }
+        ],
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "s1",
+        "kind": "switch",
+        "name": "SW1",
+        "position": {
+          "x": 280,
+          "y": 200
+        },
+        "ports": [
+          {
+            "name": "Fa0/1",
+            "mac": "02:00:00:00:01:01"
+          },
+          {
+            "name": "Fa0/2",
+            "mac": "02:00:00:00:01:02"
+          },
+          {
+            "name": "Fa0/3",
+            "mac": "02:00:00:00:01:03"
+          },
+          {
+            "name": "Fa0/4",
+            "mac": "02:00:00:00:01:04"
+          }
+        ]
+      },
+      {
+        "id": "r1",
+        "kind": "router",
+        "name": "R1",
+        "position": {
+          "x": 460,
+          "y": 200
+        },
+        "ports": [
+          {
+            "name": "Gi0/0",
+            "mac": "02:00:00:00:03:01",
+            "ip": "192.168.1.1",
+            "mask": "255.255.255.0",
+            "enabled": true
+          },
+          {
+            "name": "Gi0/1",
+            "mac": "02:00:00:00:03:02",
+            "ip": "192.168.2.1",
+            "mask": "255.255.255.0",
+            "enabled": true
+          }
+        ],
+        "routes": []
+      },
+      {
+        "id": "s2",
+        "kind": "switch",
+        "name": "SW2",
+        "position": {
+          "x": 640,
+          "y": 200
+        },
+        "ports": [
+          {
+            "name": "Fa0/1",
+            "mac": "02:00:00:00:02:01"
+          },
+          {
+            "name": "Fa0/2",
+            "mac": "02:00:00:00:02:02"
+          },
+          {
+            "name": "Fa0/3",
+            "mac": "02:00:00:00:02:03"
+          },
+          {
+            "name": "Fa0/4",
+            "mac": "02:00:00:00:02:04"
+          }
+        ]
+      },
+      {
+        "id": "d2",
+        "kind": "host",
+        "name": "PC2",
+        "position": {
+          "x": 820,
+          "y": 200
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:02"
+          }
+        ],
+        "ip": "192.168.2.10",
+        "mask": "255.255.255.0",
+        "gateway": "192.168.2.1"
+      }
+    ],
+    "links": [
+      {
+        "id": "l1",
+        "a": {
+          "deviceId": "d1",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/1"
+        }
+      },
+      {
+        "id": "l2",
+        "a": {
+          "deviceId": "s1",
+          "portName": "Fa0/4"
+        },
+        "b": {
+          "deviceId": "r1",
+          "portName": "Gi0/0"
+        }
+      },
+      {
+        "id": "l3",
+        "a": {
+          "deviceId": "r1",
+          "portName": "Gi0/1"
+        },
+        "b": {
+          "deviceId": "s2",
+          "portName": "Fa0/4"
+        }
+      },
+      {
+        "id": "l4",
+        "a": {
+          "deviceId": "s2",
+          "portName": "Fa0/1"
+        },
+        "b": {
+          "deviceId": "d2",
+          "portName": "Fa0"
+        }
+      }
+    ]
+  }
+}

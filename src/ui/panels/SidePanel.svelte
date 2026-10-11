@@ -26,7 +26,8 @@
   // La riga sotto il nome: tipo e stato, separati da un punto a mezza altezza.
   const deviceSummary = $derived.by(() => {
     if (device === undefined) return "";
-    const parts = [device.kind === "host" ? "PC" : "Switch", device.powered ? "acceso" : "spento"];
+    const kinds = { host: "PC", switch: "Switch", router: "Router" };
+    const parts = [kinds[device.kind], device.powered ? "acceso" : "spento"];
     if (device.kind === "host" && device.powered) {
       parts.push(device.linkUp ? "segnale presente" : "senza segnale");
     }
@@ -96,6 +97,41 @@
             <li>{waiting}</li>
           {/each}
         </ul>
+      {/if}
+    {:else if device.kind === "router"}
+      {#key device.id}
+        <div class="fields">
+          <ConfigField label="Nome" name="name" mono={false} value={device.name} apply={(text) => session.rename(device.id, text)} />
+        </div>
+      {/key}
+
+      <!-- Per ora in sola lettura: interfacce e rotte si impostano nel file. -->
+      <h3>Interfacce</h3>
+      <table>
+        <thead><tr><th>Nome</th><th>Indirizzo</th><th>Stato</th></tr></thead>
+        <tbody>
+          {#each device.interfaces as port (port.name)}
+            <tr>
+              <td>{port.name}</td>
+              <td>{port.ipLabel ?? "—"}</td>
+              <td class="plain">{port.enabled ? "accesa" : "spenta"}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+
+      <h3>Rotte statiche</h3>
+      {#if device.routes.length === 0}
+        <p>Nessuna.</p>
+      {:else}
+        <table>
+          <thead><tr><th>Rete</th><th>Prossimo salto</th></tr></thead>
+          <tbody>
+            {#each device.routes as route (`${route.destination} ${route.nextHop}`)}
+              <tr><td>{route.destination}</td><td>{route.nextHop}</td></tr>
+            {/each}
+          </tbody>
+        </table>
       {/if}
     {:else}
       {#key device.id}
@@ -233,6 +269,10 @@
   td {
     padding: 3px 6px 3px 0;
     border-bottom: 1px solid var(--line);
+  }
+  /* Una cella di parole, non di indirizzi: carattere dell'interfaccia. */
+  td.plain {
+    font-family: var(--font-ui);
   }
   ul {
     margin: 0;
