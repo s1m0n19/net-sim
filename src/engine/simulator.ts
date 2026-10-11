@@ -5,179 +5,41 @@
 // scade") e a ogni passo salta al prossimo istante in cui succede qualcosa.
 
 import type { Action } from "./actions";
-import * as editing from "./editing";
-import { stepsToRestore, type RestoreStep, type Snapshot } from "./snapshot";
 import {
   receiveFrame,
   sameTimer,
   startArpResolution,
   startPing,
   timerExpired,
-  type DropReason,
   type HostOutput,
   type HostTimer,
-  type PingResult,
 } from "./devices/host";
-import { receiveFrameOnSwitch, type SwitchDropReason } from "./devices/switch";
-import type { EthernetFrame, Ipv4Packet } from "./model/frames";
+import { receiveFrameOnSwitch } from "./devices/switch";
+import type { FrameArrival, SimEvent, TimerExpiry } from "./events";
+import { hasCarrier, refreshLinkState, setDevicePowered, setLinkConnected } from "./faults";
+import type { EthernetFrame } from "./model/frames";
 import {
   clearRuntimeState,
-  createHost,
-  createSwitch,
   findDevice,
   findLink,
-  hostsOf,
-  linkAt,
-  linkCarriesSignal,
   otherEndOf,
-  type Device,
   type Host,
-  type Link,
   type Network,
   type PortRef,
   type Switch,
 } from "./model/network";
+import { applyEdit } from "./network-changes";
+import { stormSize } from "./storm";
+import type { Conversation, Trace } from "./traces";
+
+// Eventi e tracce stanno nei loro file; chi usa il simulatore li trova
+// anche qui.
+export type { FrameArrival, SimEvent, TimerExpiry } from "./events";
+export type { Conversation, Trace } from "./traces";
+export { STORM_FRAME_LIMIT, STORM_LAPS } from "./storm";
 
 // Tempo, in tick, per attraversare un collegamento.
 export const LINK_TRANSIT_TICKS = 1;
-
-// Tempesta di broadcast: senza spanning tree, un ciclo tra switch fa girare
-// un frame all'infinito. Il simulatore la lascia avvenire per un po', poi
-// si sospende. Due segnali, perché le tempeste sono di due tipi.
-//
-// 1. Un frame che gira in tondo. In una rete senza cicli un frame passa da
-//    ogni switch al massimo una volta: se è stato inoltrato più volte di
-//    quanti sono gli switch, c'è di sicuro un ciclo. Lo si lascia girare
-//    per questo numero di volte il numero degli switch, poi basta.
-export const STORM_LAPS = 3;
-// 2. I frame che si moltiplicano. Se gli switch del ciclo hanno più strade
-//    tra loro, a ogni giro le copie aumentano: oltre questo numero di frame
-//    in viaggio ci si ferma comunque.
-export const STORM_FRAME_LIMIT = 200;
-
-// Un frame in viaggio su un cavo, con l'istante in cui arriverà.
-export interface FrameArrival {
-  time: number;
-  kind: "frame-arrival";
-  frameId: number;
-  from: PortRef;
-  to: PortRef;
-  frame: EthernetFrame;
-  conversationId: number;
-  // Da quanti switch è già stato inoltrato: serve a riconoscere un frame
-  // che gira in tondo.
-  hops: number;
-}
-
-// Un'attesa di un host, con l'istante in cui scadrà.
-export interface TimerExpiry {
-  time: number;
-  kind: "timer";
-  deviceId: string;
-  timer: HostTimer;
-  conversationId: number;
-}
-
-export type SimEvent = FrameArrival | TimerExpiry;
-
-// Le tracce registrano ciò che è successo. L'interfaccia le legge per disegnare.
-// Le azioni che modificano la rete, più i passi con cui si torna a una
-// configurazione fotografata.
-type EditAction =
-  | Exclude<Action, { kind: "ping" | "resolve-address" | "set-link-connected" | "set-device-powered" }>
-  | Extract<RestoreStep, Action>;
-
-export type Trace =
-  | {
-      time: number;
-      kind: "frame-sent";
-      frameId: number;
-      from: PortRef;
-      to: PortRef;
-      frame: EthernetFrame;
-      conversationId: number;
-    }
-  | {
-      time: number;
-      kind: "frame-received";
-      frameId: number;
-      at: PortRef;
-      frame: EthernetFrame;
-      conversationId: number;
-    }
-  | {
-      time: number;
-      kind: "frame-dropped";
-      frameId: number;
-      at: PortRef;
-      frame: EthernetFrame;
-      reason: DropReason | SwitchDropReason;
-      conversationId: number;
-    }
-  | {
-      time: number;
-      kind: "table-changed";
-      deviceId: string;
-      table: "arp" | "mac";
-      // La conversazione che l'ha fatta cambiare; null se è cambiata per
-      // un guasto, che non appartiene a nessuna conversazione.
-      conversationId: number | null;
-    }
-  | {
-      // Un host ha rinunciato a spedire un pacchetto che teneva in attesa.
-      time: number;
-      kind: "packet-dropped";
-      deviceId: string;
-      packet: Ipv4Packet;
-      reason: "arp-timeout";
-      conversationId: number;
-    }
-  | {
-      // Un echo request è arrivato a una conclusione: è ciò che il
-      // comando ping stampa a chi lo ha lanciato.
-      time: number;
-      kind: "ping-result";
-      deviceId: string;
-      targetIp: PingResult["targetIp"];
-      sequence: number;
-      outcome: PingResult["outcome"];
-      remaining: number;
-      conversationId: number;
-    }
-  | {
-      // Un frame in viaggio è andato perso: il cavo è stato staccato,
-      // oppure il dispositivo a cui era diretto è stato spento.
-      time: number;
-      kind: "frame-lost";
-      frameId: number;
-      from: PortRef;
-      to: PortRef;
-      frame: EthernetFrame;
-      conversationId: number;
-    }
-  | { time: number; kind: "link-changed"; linkId: string; connected: boolean }
-  | { time: number; kind: "power-changed"; deviceId: string; powered: boolean }
-  // La rete è stata modificata. Le tracce di ciò che è stato tolto ne
-  // portano il nome, perché dopo non lo si può più andare a leggere.
-  | { time: number; kind: "device-added"; deviceId: string }
-  | { time: number; kind: "device-removed"; deviceId: string; name: string }
-  | { time: number; kind: "link-added"; linkId: string }
-  | { time: number; kind: "link-removed"; linkId: string; between: [string, string] }
-  | { time: number; kind: "device-renamed"; deviceId: string; from: string }
-  | { time: number; kind: "host-configured"; deviceId: string }
-  | {
-      // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
-      time: number;
-      kind: "simulation-suspended";
-      cause: "switch-loop";
-      framesInFlight: number;
-    };
-
-// Una conversazione: tutto ciò che un'azione dell'utente provoca.
-export interface Conversation {
-  id: number;
-  action: Action;
-}
 
 export class Simulator {
   readonly network: Network;
@@ -203,7 +65,7 @@ export class Simulator {
    */
   constructor(network: Network) {
     this.network = network;
-    this.refreshLinkState([]);
+    refreshLinkState(this, []);
   }
 
   /**
@@ -227,122 +89,16 @@ export class Simulator {
         this.runHostAction(action, produced);
         break;
       case "set-link-connected":
-        this.setLinkConnected(findLink(this.network, action.linkId), action.connected, produced);
+        setLinkConnected(this, findLink(this.network, action.linkId), action.connected, produced);
         break;
       case "set-device-powered":
-        this.setDevicePowered(findDevice(this.network, action.deviceId), action.powered, produced);
+        setDevicePowered(this, findDevice(this.network, action.deviceId), action.powered, produced);
         break;
       default:
-        this.edit(action, produced);
+        applyEdit(this, action, produced);
     }
     this.traces.push(...produced);
     return produced;
-  }
-
-  // Esegue una modifica alla rete e tiene in ordine la simulazione: ciò
-  // che viaggiava su un cavo tolto va perso, chi cambia configurazione
-  // riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
-  private edit(action: EditAction, produced: Trace[]): void {
-    const time = this.time;
-    switch (action.kind) {
-      case "add-device": {
-        const device = editing.addDevice(this.network, action.template);
-        produced.push({ time, kind: "device-added", deviceId: device.id });
-        break;
-      }
-      case "remove-device": {
-        const { name } = findDevice(this.network, action.deviceId);
-        // Prima si perdono i frame, finché i cavi ci sono ancora.
-        this.loseFrames(
-          (arrival) => arrival.to.deviceId === action.deviceId || arrival.from.deviceId === action.deviceId,
-          produced,
-        );
-        this.forgetTimersOf(action.deviceId);
-        const links = editing.removeDevice(this.network, action.deviceId);
-        for (const link of links) {
-          produced.push({ time, kind: "link-removed", linkId: link.id, between: this.namesAt(link, action.deviceId, name) });
-        }
-        produced.push({ time, kind: "device-removed", deviceId: action.deviceId, name });
-        break;
-      }
-      case "add-link": {
-        const link = editing.addLink(this.network, action.a, action.b);
-        produced.push({ time, kind: "link-added", linkId: link.id });
-        break;
-      }
-      case "remove-link": {
-        const link = findLink(this.network, action.linkId);
-        this.loseFramesOn(link, produced);
-        editing.removeLink(this.network, action.linkId);
-        produced.push({ time, kind: "link-removed", linkId: link.id, between: this.namesAt(link) });
-        break;
-      }
-      case "move-link-end": {
-        // Spostare un capo vuol dire staccarlo e riattaccarlo altrove.
-        this.loseFramesOn(findLink(this.network, action.linkId), produced);
-        editing.moveLinkEnd(this.network, action.linkId, action.end, action.portName);
-        break;
-      }
-      case "rename-device": {
-        const from = findDevice(this.network, action.deviceId).name;
-        editing.renameDevice(this.network, action.deviceId, action.name);
-        produced.push({ time, kind: "device-renamed", deviceId: action.deviceId, from });
-        break;
-      }
-      case "configure-host": {
-        const host = editing.configureHost(this.network, action.deviceId, action.config);
-        // Con un indirizzo nuovo, ciò che l'host sapeva e aspettava non vale più.
-        this.forgetTimersOf(host.id);
-        clearRuntimeState(host);
-        produced.push({ time, kind: "host-configured", deviceId: host.id });
-        break;
-      }
-      case "restore-configuration":
-        this.restore(action.snapshot, produced);
-        break;
-    }
-    this.refreshLinkState(produced);
-  }
-
-  // Riporta la rete a una configurazione fotografata prima, eseguendo una
-  // alla volta le modifiche che la separano da quella di adesso.
-  private restore(snapshot: Snapshot, produced: Trace[]): void {
-    const time = this.time;
-    for (const step of stepsToRestore(this.network, snapshot)) {
-      switch (step.kind) {
-        case "put-device": {
-          // Torna un dispositivo che era stato tolto: è quello di prima,
-          // ma appena acceso, con le tabelle vuote.
-          const device = step.device.kind === "host" ? createHost(step.device) : createSwitch(step.device);
-          this.network.devices.push(device);
-          produced.push({ time, kind: "device-added", deviceId: device.id });
-          break;
-        }
-        case "put-link":
-          this.network.links.push(step.link);
-          produced.push({ time, kind: "link-added", linkId: step.link.id });
-          break;
-        default:
-          this.edit(step, produced);
-      }
-    }
-    // Dispositivi e cavi tornano anche nell'ordine che avevano.
-    const place = (ids: string[]) => (a: { id: string }, b: { id: string }) => ids.indexOf(a.id) - ids.indexOf(b.id);
-    this.network.devices.sort(place(snapshot.devices.map((device) => device.id)));
-    this.network.links.sort(place(snapshot.links.map((link) => link.id)));
-  }
-
-  // I nomi dei dispositivi ai due capi di un cavo. Se uno dei due è appena
-  // stato tolto dalla rete, il suo nome va passato a parte.
-  private namesAt(link: Link, removedId?: string, removedName?: string): [string, string] {
-    const nameOf = (deviceId: string) =>
-      deviceId === removedId ? (removedName ?? "") : findDevice(this.network, deviceId).name;
-    return [nameOf(link.a.deviceId), nameOf(link.b.deviceId)];
-  }
-
-  // Toglie dalla coda tutte le attese di un dispositivo.
-  private forgetTimersOf(deviceId: string): void {
-    this.queue = this.queue.filter((event) => !(event.kind === "timer" && event.deviceId === deviceId));
   }
 
   // Esegue un'azione che riguarda un host: ping o richiesta ARP.
@@ -383,90 +139,6 @@ export class Simulator {
       const conversationId = this.nextConversationId++;
       this.conversations.push({ id: conversationId, action });
       this.apply(host, output, conversationId, produced);
-    }
-  }
-
-  // Stacca o riattacca un cavo.
-  private setLinkConnected(link: Link, connected: boolean, produced: Trace[]): void {
-    if (link.connected === connected) return;
-    link.connected = connected;
-    produced.push({ time: this.time, kind: "link-changed", linkId: link.id, connected });
-
-    if (!connected) {
-      this.loseFramesOn(link, produced);
-    }
-    this.refreshLinkState(produced);
-  }
-
-  // I frame che stavano viaggiando su un cavo staccato non arrivano più.
-  private loseFramesOn(link: Link, produced: Trace[]): void {
-    this.loseFrames((arrival) => linkAt(this.network, arrival.to)?.id === link.id, produced);
-  }
-
-  // Spegne o accende un dispositivo.
-  private setDevicePowered(device: Device, powered: boolean, produced: Trace[]): void {
-    if (device.powered === powered) return;
-    device.powered = powered;
-    produced.push({ time: this.time, kind: "power-changed", deviceId: device.id, powered });
-
-    if (!powered) {
-      // Un dispositivo spento non riceve più nulla, non aspetta più nulla
-      // e dimentica tutto ciò che aveva imparato.
-      this.loseFrames((arrival) => arrival.to.deviceId === device.id, produced);
-      this.forgetTimersOf(device.id);
-      clearRuntimeState(device);
-    }
-    this.refreshLinkState(produced);
-  }
-
-  // Toglie dalla coda i frame in viaggio indicati da `isLost` e lo registra.
-  private loseFrames(isLost: (arrival: FrameArrival) => boolean, produced: Trace[]): void {
-    const kept: SimEvent[] = [];
-    for (const event of this.queue) {
-      if (event.kind !== "frame-arrival" || !isLost(event)) {
-        kept.push(event);
-        continue;
-      }
-      const { frameId, from, to, frame, conversationId } = event;
-      produced.push({ time: this.time, kind: "frame-lost", frameId, from, to, frame, conversationId });
-    }
-    this.queue = kept;
-  }
-
-  // Una porta sente il segnale se le è attaccato un cavo, il cavo non è
-  // staccato, e i dispositivi ai due capi sono entrambi accesi.
-  private hasCarrier(port: PortRef): boolean {
-    const link = linkAt(this.network, port);
-    return link !== null && linkCarriesSignal(this.network, link);
-  }
-
-  // Dopo un guasto o una riparazione, aggiorna ciò che i dispositivi sanno
-  // dei propri cavi.
-  private refreshLinkState(produced: Trace[]): void {
-    // Ogni host sa se la sua scheda sente il segnale.
-    for (const host of hostsOf(this.network)) {
-      host.linkUp = this.hasCarrier({ deviceId: host.id, portName: host.ports[0].name });
-    }
-    // Uno switch dimentica i MAC imparati su una porta rimasta senza segnale:
-    // chi stava lì dietro non è più raggiungibile da quella parte.
-    for (const device of this.network.devices) {
-      if (device.kind !== "switch") continue;
-      let changed = false;
-      for (const [mac, portName] of device.macTable) {
-        if (!this.hasCarrier({ deviceId: device.id, portName })) {
-          device.macTable.delete(mac);
-          changed = true;
-        }
-      }
-      if (changed) {
-        produced.push({
-          time: this.time,
-          kind: "table-changed",
-          deviceId: device.id,
-          table: "mac",
-          conversationId: null,
-        });
-      }
     }
   }
 
@@ -519,7 +191,7 @@ export class Simulator {
     for (const device of this.network.devices) {
       clearRuntimeState(device);
     }
-    this.refreshLinkState([]);
+    refreshLinkState(this, []);
   }
 
   /**
@@ -534,20 +206,11 @@ export class Simulator {
   // Controlla se i frame in viaggio mostrano una tempesta di broadcast e,
   // in quel caso, ferma la simulazione.
   private suspendIfStorm(produced: Trace[]): void {
-    const inFlight = this.queue.filter((event) => event.kind === "frame-arrival");
-    const switches = this.network.devices.filter((device) => device.kind === "switch").length;
-
-    const goingInCircles = inFlight.some((event) => event.hops > switches * STORM_LAPS);
-    const multiplying = inFlight.length > STORM_FRAME_LIMIT;
-    if (!goingInCircles && !multiplying) return;
+    const framesInFlight = stormSize(this.network, this.queue);
+    if (framesInFlight === null) return;
 
     this.suspended = true;
-    produced.push({
-      time: this.time,
-      kind: "simulation-suspended",
-      cause: "switch-loop",
-      framesInFlight: inFlight.length,
-    });
+    produced.push({ time: this.time, kind: "simulation-suspended", cause: "switch-loop", framesInFlight });
   }
 
   // Esegue ciò che un host ha chiesto: registrare gli esiti dei ping,
@@ -625,7 +288,7 @@ export class Simulator {
   ): void {
     // Senza cavo, o con il cavo staccato, il frame non parte.
     const to = otherEndOf(this.network, from);
-    if (to === null || !this.hasCarrier(from)) return;
+    if (to === null || !hasCarrier(this, from)) return;
 
     const frameId = this.nextFrameId++;
     produced.push({ time: this.time, kind: "frame-sent", frameId, from, to, frame, conversationId });
