@@ -112,28 +112,28 @@ describe("ping", () => {
     expect(formatPing("192.168.1.11", 4, 0, [], PC1.ip)).toEqual(["", "Pinging 192.168.1.11 with 32 bytes of data:"]);
   });
 
-  test("ogni risposta ha la sua riga, con la durata in tick dalla precedente", () => {
+  test("ogni risposta ha la sua riga, con la durata dalla precedente: un millisecondo per tick", () => {
     const lines = formatPing("192.168.1.11", 4, 0, [
       { time: 8, outcome: "reply" },
       { time: 12, outcome: "reply" },
     ], PC1.ip);
 
     expect(lines.slice(2)).toEqual([
-      "Reply from 192.168.1.11: bytes=32 time=8 ticks TTL=128",
-      "Reply from 192.168.1.11: bytes=32 time=4 ticks TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=8ms TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=4ms TTL=128",
     ]);
   });
 
   test("la durata parte dal momento in cui il comando è stato lanciato", () => {
     const lines = formatPing("192.168.1.11", 1, 30, [{ time: 34, outcome: "reply" }], PC1.ip);
 
-    expect(lines[2]).toBe("Reply from 192.168.1.11: bytes=32 time=4 ticks TTL=128");
+    expect(lines[2]).toBe("Reply from 192.168.1.11: bytes=32 time=4ms TTL=128");
   });
 
-  test("una risposta immediata, come dal loopback, dura meno di un tick", () => {
+  test("una risposta immediata, come dal loopback, dura meno di un millisecondo", () => {
     const lines = formatPing("127.0.0.1", 1, 5, [{ time: 5, outcome: "reply" }], PC1.ip);
 
-    expect(lines[2]).toBe("Reply from 127.0.0.1: bytes=32 time<1 tick TTL=128");
+    expect(lines[2]).toBe("Reply from 127.0.0.1: bytes=32 time<1ms TTL=128");
   });
 
   test("gli altri esiti hanno le parole di Windows", () => {

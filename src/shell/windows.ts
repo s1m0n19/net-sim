@@ -193,8 +193,10 @@ export function formatPing(
 function formatEcho(target: string, result: EchoResult, ticks: number, ownIp: string | null): string {
   switch (result.outcome) {
     case "reply": {
-      // Il tempo simulato si misura in tick, non in millisecondi.
-      const time = ticks === 0 ? "time<1 tick" : `time=${ticks} ticks`;
+      // Il tempo simulato si misura in tick, ma la riga è quella di
+      // Windows: un tick viene scritto come un millisecondo. È un numero
+      // di comodo, che dice quanti cavi ha attraversato lo scambio.
+      const time = ticks === 0 ? "time<1ms" : `time=${ticks}ms`;
       return `Reply from ${target}: bytes=32 ${time} TTL=${DEFAULT_TTL}`;
     }
     case "timeout":

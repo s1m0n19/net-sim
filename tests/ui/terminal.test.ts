@@ -110,15 +110,15 @@ describe("ping dal terminale", () => {
     expect(session.isBusy(session.terminals[0])).toBe(true);
 
     for (let i = 0; i < 8; i++) session.step();
-    expect(screenOf("d1").at(-1)).toBe("Reply from 192.168.1.11: bytes=32 time=8 ticks TTL=128");
+    expect(screenOf("d1").at(-1)).toBe("Reply from 192.168.1.11: bytes=32 time=8ms TTL=128");
     expect(session.isBusy(session.terminals[0])).toBe(true);
 
     runToEnd();
     expect(screenOf("d1").slice(3)).toEqual([
-      "Reply from 192.168.1.11: bytes=32 time=8 ticks TTL=128",
-      "Reply from 192.168.1.11: bytes=32 time=4 ticks TTL=128",
-      "Reply from 192.168.1.11: bytes=32 time=4 ticks TTL=128",
-      "Reply from 192.168.1.11: bytes=32 time=4 ticks TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=8ms TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=4ms TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=4ms TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=4ms TTL=128",
       "",
       "Ping statistics for 192.168.1.11:",
       "    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),",
@@ -151,7 +151,7 @@ describe("ping dal terminale", () => {
   test("verso se stessi: risposta immediata", () => {
     session.execute("d1", "ping -n 1 127.0.0.1");
 
-    expect(screenOf("d1")[3]).toBe("Reply from 127.0.0.1: bytes=32 time<1 tick TTL=128");
+    expect(screenOf("d1")[3]).toBe("Reply from 127.0.0.1: bytes=32 time<1ms TTL=128");
   });
 
   test("un secondo ping misura la durata dal momento in cui è stato lanciato", () => {
@@ -161,8 +161,8 @@ describe("ping dal terminale", () => {
     runToEnd();
 
     expect(screenOf("d1").filter((line) => line.startsWith("Reply"))).toEqual([
-      "Reply from 192.168.1.11: bytes=32 time=8 ticks TTL=128",
-      "Reply from 192.168.1.11: bytes=32 time=4 ticks TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=8ms TTL=128",
+      "Reply from 192.168.1.11: bytes=32 time=4ms TTL=128",
     ]);
   });
 
@@ -172,7 +172,7 @@ describe("ping dal terminale", () => {
     session.execute("d3", "ping -n 1 192.168.1.99");
     runToEnd();
 
-    expect(screenOf("d1")[3]).toBe("Reply from 192.168.1.11: bytes=32 time=8 ticks TTL=128");
+    expect(screenOf("d1")[3]).toBe("Reply from 192.168.1.11: bytes=32 time=8ms TTL=128");
     expect(screenOf("d3")[3]).toBe("Reply from 192.168.1.12: Destination host unreachable.");
   });
 
