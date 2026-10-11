@@ -4,6 +4,8 @@ Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer 
 
 Il nome è provvisorio.
 
+**Provalo:** https://net-sim.simon-nucifora.workers.dev
+
 ## Stato
 
 Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
@@ -11,6 +13,14 @@ Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC
 L'interfaccia del rilascio 1 è costruita: tutti e nove i passaggi previsti sono fatti, e resta da provarla in aula. Oggi apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Con Presenta si proietta in aula.
 
 Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
+
+## Pubblicazione
+
+Il sito pubblico sta su Cloudflare, nel piano gratuito, ed è collegato a questo repository: **a ogni push sul ramo `main`** Cloudflare esegue `npm run build` e pubblica la cartella `dist/`. Non c'è altro da fare, e non esiste un comando per pubblicare a mano.
+
+- La versione di Node usata per costruire è quella scritta in `.nvmrc`.
+- Sul sito pubblicato le scorciatoie di sviluppo nell'indirizzo (`?esempio=` e simili) non esistono, e le reti di esempio non sono incluse: si aprono dal proprio computer con Apri.
+- Le prove si fanno sempre in locale, con `npm run dev`: ciò che arriva su `main` è subito pubblico.
 
 ## Requisiti
 

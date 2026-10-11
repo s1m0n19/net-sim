@@ -100,6 +100,10 @@ L'ordine previsto in `docs/motore.md`: tipo dell'unità dati in `model/`, compor
 - **Test come piccole storie**: costruisco la rete, compio l'azione, controllo tracce o stato. Nomi dei test in italiano, scritti come affermazioni. Le reti di prova stanno in `tests/engine/builders.ts`. La pagina non ha test automatici: ciò che cambia a schermo va fatto verificare all'utente nel browser, dicendo che cosa guardare e dove.
 - Stile grafico e disposizione dei pannelli sono decisioni dichiarate reversibili in `SPEC.md`: icone e colori vanno tenuti in un solo punto, e nulla nel motore deve dipenderne.
 
+## Pubblicazione
+
+Il sito pubblico (https://net-sim.simon-nucifora.workers.dev) è su Cloudflare, collegato al repository: ogni push su `main` viene costruito con `npm run build` e pubblicato da solo. Un push è quindi una pubblicazione: prima vanno fatti passare test, `npm run check` e `npm run build`. Le prove si fanno sempre con il server locale.
+
 ## Git
 - Non committare finché non lo chiedo esplicitamente
 - Messaggi di commit in italiano, all'imperativo, una funzionalità per commit

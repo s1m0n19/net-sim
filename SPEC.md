@@ -253,7 +253,8 @@ Punti ancora da decidere:
 - [ ] Nome dell'app. Proposte: Instrada, Trama, Salto, PacketLab, Doppino.
 - [ ] Destinatari: solo le classi del docente, i colleghi, oppure pubblica e open source. Nel terzo caso servono una licenza e attenzione a marchi e sintassi Cisco.
 - [ ] Sottoinsieme dei comandi IOS (proposta nella sezione 3.3).
-- [ ] Dove pubblicare il sito, verificando che il filtro della scuola non lo blocchi.
+- [ ] Verificare che il filtro della scuola non blocchi il sito pubblicato (`net-sim.simon-nucifora.workers.dev`), aprendolo da un PC dell'aula. Dove pubblicare è deciso: D-64.
+- [ ] Dominio `.it` per il sito, da comprare quando il nome dell'app sarà scelto, e prima del funzionamento offline (NF-2): chi ha installato l'app da un indirizzo dovrebbe reinstallarla dal nuovo.
 - [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
 - [ ] Se aggiungere test automatici della pagina e un controllo automatico dei test a ogni invio al repository. Oggi la pagina è verificata solo a occhio.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
@@ -332,6 +333,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-61 | 10 ott 2026 | In presentazione l'ingrandimento è un solo fattore, regolabile dal 100% al 200% (di partenza 140%). Barre, pannello e fascia si ingrandiscono per intero; nel disegno crescono dispositivi, scritte, buste, tabelle e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete | Un fattore solo è facile da regolare guardando dal fondo dell'aula. Ingrandire gli elementi e non le distanze è ciò che rende leggibile una rete grande, che altrimenti verrebbe solo rimpicciolita dall'inquadratura | Adottata |
 | D-62 | 10 ott 2026 | In presentazione spariscono i comandi per costruire (colonna, file, annulla, etichette, Collega, Elimina, tasto Canc); restano guasti, ping, terminale, tabelle appuntate, spostamento dei dispositivi e modifica di nome e indirizzi dal pannello | Durante una dimostrazione servono i guasti e il cambio di un indirizzo (criterio di accettazione, punto 7); eliminare un dispositivo per sbaglio davanti alla classe no | Adottata |
 | D-63 | 10 ott 2026 | Le scorciatoie Spazio, Freccia destra, E e T valgono solo in presentazione, e mai mentre si scrive in una casella o nel terminale. Esc prima lascia andare un gesto a metà, poi esce | Fuori dalla presentazione quei tasti si premono per altri motivi. Così UI-14 è rispettato senza sorprese | Adottata |
+| D-64 | 11 ott 2026 | Il sito è pubblicato su Cloudflare, nel piano gratuito, e si aggiorna da solo a ogni push sul ramo `main`. Il repository resta privato. Le prove si fanno in locale | È gratuito senza un tetto mensile che possa sospendere il sito, non obbliga a rendere pubblico il codice prima di aver deciso destinatari e licenza, e accetta un dominio `.it` comprato altrove | Confermata |
 
 ## 9. Stato di avanzamento
 
