@@ -63,12 +63,12 @@ I dispositivi sono generici, non modelli commerciali. Non esistono moduli da ins
 | --- | --- | --- |
 | DEV-1 | PC con una interfaccia di rete, configurazione IPv4 (indirizzo, maschera, gateway) e terminale | R1 |
 | DEV-2 | Switch di livello 2 con apprendimento degli indirizzi MAC, flooding, inoltro mirato e broadcast | R1 |
-| DEV-3 | Router con più interfacce, inoltro tra reti, decremento del TTL e riscrittura dei MAC a ogni salto | R2 |
-| DEV-4 | Routing statico e tabella di routing sul router | R2 |
-| DEV-5 | Server come dispositivo distinto dal PC, predisposto a ospitare servizi | R2 |
+| DEV-3 | Router con più interfacce, inoltro tra reti, decremento del TTL e riscrittura dei MAC a ogni salto. Tre varianti pronte, a 2, 4 e 8 interfacce, chiamate `Gi0/0`, `Gi0/1`…; ogni interfaccia ha MAC, indirizzo IP e maschera propri. Le interfacce nascono spente, come su un Cisco, e vanno accese | R2 |
+| DEV-4 | Routing statico e tabella di routing sul router. Una rotta statica è fatta di rete, maschera e prossimo salto; la rotta di default è 0.0.0.0 con maschera 0.0.0.0. Le reti delle interfacce accese e configurate entrano in tabella da sole. Tra più rotte che corrispondono vince quella con la maschera più lunga | R2 |
+| DEV-5 | Server come dispositivo distinto dal PC, predisposto a ospitare servizi. Nel rilascio 2 è un host con un'altra icona e nome `SRV1`: una interfaccia, indirizzo, gateway e terminale come un PC | R2 |
 | DEV-6 | VLAN: porte access e trunk 802.1Q, routing tra VLAN | T2 |
 | DEV-7 | Servizi sul server: DHCP, DNS, web | T3 |
-| DEV-8 | Routing dinamico (RIP, OSPF) e NAT/PAT | T5 |
+| DEV-8 | Routing dinamico con i protocolli RIP, RIPv2 e OSPF, e NAT/PAT | T5 |
 | DEV-9 | ACL sul router e firewall dedicato con zone e DMZ | T6 |
 | DEV-10 | Access point e client Wi-Fi | T7 |
 | DEV-11 | Spanning tree (STP) sugli switch: in presenza di un ciclo, gli switch bloccano da soli una porta | T2 |
@@ -79,7 +79,7 @@ I dispositivi sono generici, non modelli commerciali. Non esistono moduli da ins
 | --- | --- | --- |
 | CFG-1 | Pannello grafico per configurare il dispositivo selezionato | R1 |
 | CFG-2 | Terminale degli host in stile Windows: `ipconfig`, `ping`, `arp -a`. I messaggi sono in inglese, come sui libri e in rete | R1 |
-| CFG-3 | `tracert` sugli host | R2 |
+| CFG-3 | `tracert` sugli host: una sonda per salto, con TTL crescente, fino a 30 salti | R2 |
 | CFG-4 | CLI di switch e router con sintassi Cisco IOS: modalità (`enable`, `configure terminal`, `interface`), abbreviazioni dei comandi, completamento con Tab, aiuto con `?` | R2 |
 | CFG-5 | CLI e pannello grafico sincronizzati: una modifica fatta in uno compare subito nell'altro | R2 |
 | CFG-6 | `nslookup` sugli host | T3 |
@@ -100,13 +100,14 @@ I protocolli funzionano davvero, in forma semplificata: si simulano i campi prin
 | SIM-4 | Generare traffico dal terminale dell'host | R1 |
 | SIM-5 | Generare un ping con il mouse: pulsante Ping sulla barretta dell'host, poi clic sul dispositivo di destinazione. Manda un solo echo request | R1 |
 | SIM-6 | Guasti fisici: staccare un cavo, spegnere un dispositivo | R1 |
-| SIM-7 | Guasti fisici: spegnere una singola porta | R2 |
+| SIM-7 | Guasti fisici: spegnere una singola porta. Per le interfacce dei router arriva insieme al router, perché nascono spente (DEV-3); per le porte di switch e host in seguito | R2 |
 | SIM-8 | Comportamento da rete vera davanti agli errori di configurazione: nessun avviso preventivo e nessuna spiegazione del fallimento. La causa si cerca con gli strumenti (`ping`, `tracert`, comandi `show`) | R1 |
 | SIM-13 | Il ping manda quattro echo request, o il numero richiesto, e conclude ciascuno con l'esito che stamperebbe Windows: risposta, richiesta scaduta, host di destinazione non raggiungibile, trasmissione non riuscita | R1 |
 | SIM-14 | Un ping al proprio indirizzo, o a un indirizzo 127.x.x.x, riceve risposta subito e senza che alcun frame esca sul cavo (loopback). Vale anche per un host senza configurazione IP, limitatamente a 127.x.x.x | R1 |
 | SIM-15 | Tempesta di broadcast: un ciclo tra switch fa girare i frame senza fine, e in certi casi li moltiplica, come in una rete vera senza spanning tree. La simulazione la lascia avvenire per qualche giro, poi si sospende: quando un frame è stato inoltrato più volte di quante ne ammetta una rete senza cicli, oppure quando i frame in viaggio sono troppi. Un avviso dice che c'è una tempesta di broadcast e che la causa è un ciclo tra switch. Non si riprende: si ricomincia. È un'eccezione dichiarata a SIM-8 | R1 |
 | SIM-16 | In tempo reale, una breve pausa a schermo separa un echo request dal successivo, così i quattro giri si distinguono. In passo-passo non c'è pausa. La pausa è dell'interfaccia: il motore si comporta allo stesso modo nelle due modalità | R1 |
 | SIM-17 | In tempo reale, quando non viaggia nulla e resta solo un'attesa, non si aspetta davvero: un indicatore sul dispositivo che aspetta si svuota in due o tre secondi, poi il tempo salta alla scadenza | R1 |
+| SIM-18 | Messaggi ICMP di errore: «Time exceeded» quando il TTL arriva a zero su un router, «Destination net unreachable» quando un router non ha una rotta, «Destination host unreachable» quando l'ultimo router non ottiene risposta ARP dalla destinazione. `ping` li stampa come Windows (`Reply from <router>: Destination net unreachable.`, `TTL expired in transit.`) | R2 |
 | SIM-9 | TCP con handshake visibile e UDP | T3 |
 | SIM-10 | Applicazioni simulate sugli host (browser e simili) | T3 |
 | SIM-11 | Editor per costruire a mano un pacchetto | T6 |
@@ -121,7 +122,7 @@ I protocolli funzionano davvero, in forma semplificata: si simulano i campi prin
 | VIS-3 | Tabelle dei dispositivi (MAC, ARP, poi routing) aggiornate mentre il traffico passa | R1 |
 | VIS-4 | Animazione, contenuto del pacchetto e tabelle visibili nella stessa schermata, sincronizzati | R1 |
 | VIS-5 | Filtro del traffico in cima alla scheda Eventi: selettore della conversazione (tutte, oppure una) e un interruttore per protocollo. Ciò che il filtro nasconde sparisce sia dall'elenco sia dal disegno | R1 |
-| VIS-6 | Sotto ogni dispositivo restano sempre il nome e, per gli host, l'indirizzo IP con il prefisso. Indirizzi IP, MAC e nomi delle porte hanno ciascuno un interruttore; MAC e porte sono spenti all'apertura | R1 |
+| VIS-6 | Sotto ogni dispositivo restano sempre il nome e, per gli host, l'indirizzo IP con il prefisso. Indirizzi IP, MAC e nomi delle porte hanno ciascuno un interruttore; MAC e porte sono spenti all'apertura. Dal rilascio 2: gli indirizzi di un router stanno accanto ai cavi, sul capo vicino al router, uno per interfaccia | R1 |
 | VIS-7 | Modalità presentazione: nasconde la colonna dei dispositivi e i comandi di modifica, ingrandisce testo, icone e linee, inquadra la rete per riempire lo spazio | R1 |
 | VIS-8 | Stato delle porte visibile sui collegamenti (attiva, guasta) | R1 |
 | VIS-9 | Elenco cronologico degli eventi, una riga per fatto. Passando su una riga si evidenziano sul disegno il dispositivo e il pacchetto coinvolti; un clic apre il pacchetto nel pannello laterale | R1 |
@@ -224,6 +225,35 @@ Il rilascio 1 è pronto quando questa lezione si svolge dall'inizio alla fine se
 6. Selezionando un pacchetto in qualsiasi momento, la classe ne vede gli strati con indirizzi MAC e IP.
 7. Il docente stacca il cavo di PC2 e ripete il ping, che fallisce. Poi cambia l'indirizzo di PC3 in uno di un'altra rete e mostra che un ping verso PC3 fallisce senza che parta alcuna richiesta ARP.
 8. Salva la rete modificata in un nuovo file.
+
+### Criterio di accettazione del rilascio 2
+
+La parte sul routing del rilascio 2 è pronta quando questa lezione si svolge dall'inizio alla fine senza uscire dall'app:
+
+1. Il docente apre un file con due LAN, 192.168.1.0/24 e 192.168.2.0/24, unite da un router. PC1 sta nella prima, PC2 nella seconda.
+2. PC1 non ha gateway: `ping 192.168.2.10` fallisce subito, senza che parta alcun frame.
+3. Imposta il gateway di PC1 e ripete il ping. La classe vede PC1 chiedere con ARP il MAC del router, non quello di PC2; il router chiedere il MAC di PC2 sull'altra interfaccia; l'echo request attraversare il router.
+4. Aprendo il pacchetto prima e dopo il router, la classe vede che gli indirizzi IP sono gli stessi, i MAC sono cambiati e il TTL è sceso di uno.
+5. Spegne un'interfaccia del router e mostra che il ping fallisce; la riaccende.
+6. Apre un secondo file con tre reti e due router in fila. Senza rotte statiche, il ping da un capo all'altro riceve `Destination net unreachable` dal primo router.
+7. Aggiunge la rotta di andata: l'echo request arriva, ma la risposta si ferma al secondo router, che non ha la rotta di ritorno. Aggiunge anche quella, e il ping riesce.
+8. `tracert` dall'host mostra i due router e la destinazione, una riga per salto.
+
+### Piano di costruzione del rilascio 2
+
+Deciso nell'intervista dell'11 ottobre 2026. Prima il routing, costruito a piccoli passaggi, ciascuno verificabile:
+
+| N. | Passaggio | Che cosa si può fare dopo |
+| --- | --- | --- |
+| 1 | Il router nel modello e nei file: interfacce con indirizzo, maschera e stato, rotte statiche; azioni per aggiungerlo e configurarlo | Un file con un router si apre, si salva e si riapre |
+| 2 | Inoltro: ARP per interfaccia, tabella di routing, TTL, MAC riscritti, pacchetti in attesa del MAC | Nei test, un ping attraversa uno e due router |
+| 3 | Messaggi ICMP di errore ed esiti del ping che ne derivano | Rotta mancante e TTL scaduto si distinguono da un host spento |
+| 4 | `tracert` nel motore e nel terminale | Il percorso si legge dal prompt |
+| 5 | Il router a schermo: colonna con le tre varianti, icona, indirizzi accanto ai cavi, interfaccia spenta, pannello con interfacce e rotte, tabella di routing appuntabile, eventi | La lezione del criterio di accettazione si svolge nell'app |
+| 6 | Il server | Si posa e si usa come un PC |
+| 7 | Reti di esempio e test della lezione nel browser | Il routing del rilascio 2 è collaudabile |
+
+Poi, in quest'ordine: CLI in stile IOS, funzionamento offline (che richiede nome e dominio definitivi), strumenti dell'editor, tabelle nel file.
 
 ## 6. Fuori ambito
 
@@ -339,6 +369,14 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-66 | 11 ott 2026 | L'app è rivolta alle classi del docente e ai colleghi. Il repository resta privato; il codice del motore lo mostra il docente in classe | Aprire il codice richiede di scegliere una licenza e di curare marchi e sintassi Cisco: non serve per usare l'app dal sito. Si potrà aprire in seguito | Confermata |
 | D-67 | 11 ott 2026 | La pagina ha pochi test che eseguono i percorsi principali in un browser vero (Playwright, sul sito costruito): la lezione del criterio di accettazione, costruire una rete, salvare e riaprire, inquadratura e presentazione. A ogni push GitHub Actions esegue test, controllo dei tipi e build, e segna l'esito sul commit; è un avviso, non blocca la pubblicazione | I componenti a schermo erano verificati solo a occhio, e ogni push pubblica. Pochi percorsi veri coprono clic e trascinamenti che un browser simulato non vede; un avviso basta finché si lavora su un ramo solo | Confermata |
 | D-68 | 11 ott 2026 | I quattro file oltre le 300 righe sono stati divisi per argomento, senza cambiare comportamento né i nomi usati dal resto del codice. `session` è diventata tre classi una sopra l'altra (rete e simulazione; dimostrazione; modifiche), i cui metodi si chiamano ancora tutti su `session` | La convenzione "un concetto, un file" serve a chi legge, studenti compresi. Dividere `session` a strati evita di toccare tutti i componenti e i test che la usano | Confermata |
+| D-69 | 11 ott 2026 | Il rilascio 2 comincia dal router con il routing statico, costruito dal motore verso lo schermo; seguono CLI in stile IOS, offline, strumenti dell'editor e tabelle nel file. Il routing dinamico (RIP, RIPv2, OSPF) resta alla tappa T5 | Il router apre le lezioni su IP e routing ed è la base di quasi tutto il resto. La CLI viene subito dopo, finché è fresco ciò che deve configurare; l'offline aspetta nome e dominio | Confermata |
+| D-70 | 11 ott 2026 | Il router generico ha tre varianti, a 2, 4 e 8 interfacce, tutte Ethernet e chiamate `Gi0/n`. Le interfacce nascono spente, come su un Cisco | Dimenticare di accendere un'interfaccia è il primo errore che si fa su un apparato vero: il docente vuole che gli studenti lo incontrino. È l'unico punto in cui si segue l'apparato reale invece della semplificazione | Confermata |
+| D-71 | 11 ott 2026 | Una rotta statica è fatta di rete, maschera e prossimo salto. Niente interfaccia di uscita, niente distanza amministrativa | È la forma che si insegna per prima e che su Ethernet funziona sempre. La distanza amministrativa servirà con il routing dinamico | Confermata |
+| D-72 | 11 ott 2026 | Si simulano tre messaggi ICMP di errore: TTL scaduto, rete non raggiungibile, host non raggiungibile | Sono gli indizi con cui si diagnostica un problema di routing, e il primo serve a `tracert`. Senza, una rotta mancante e un host spento darebbero lo stesso `Request timed out` | Confermata |
+| D-73 | 11 ott 2026 | `tracert` manda una sonda per salto, non tre come Windows | Sul disegno il meccanismo si vede meglio, e in passo-passo i passi non triplicano. La riga ha un tempo solo | Confermata |
+| D-74 | 11 ott 2026 | Fino all'arrivo della CLI il router si configura dal pannello laterale: interfacce (acceso o spento, indirizzo, maschera) e rotte statiche da aggiungere e togliere | La lezione sul routing non deve aspettare la CLI. Quando arriverà, CLI e pannello passeranno dalle stesse azioni (CFG-5) | Confermata |
+| D-75 | 11 ott 2026 | Gli indirizzi di un router sono scritti accanto ai cavi, sul capo vicino al router, uno per interfaccia | Si vede a colpo d'occhio quale indirizzo guarda quale rete; una pila sotto il dispositivo non lo direbbe | Confermata |
+| D-76 | 11 ott 2026 | Il server arriva subito, come host con un'altra icona; i servizi in T3 | Serve a disegnare reti credibili e costa poco | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -362,7 +400,7 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2 e tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5), non ancora iniziato. Tappe successive: nulla è iniziato.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
