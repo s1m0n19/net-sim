@@ -89,7 +89,8 @@ net-sim/
     ├── engine/                un file per argomento, più builders.ts con le reti di prova
     ├── shell/                 comandi del prompt e loro output
     ├── storage/               lettura e scrittura dei file
-    └── ui/                    preparazione del disegno e orologio del tempo reale
+    ├── ui/                    logica dell'interfaccia: disegno, orologio, modifiche, cronologia
+    └── e2e/                   la pagina intera in un browser vero (Playwright)
 ```
 
 Cartelle *previste* e non ancora esistenti:
@@ -123,4 +124,15 @@ Annulla e ripristina (requisito ED-5) agiscono solo sulla configurazione e sulle
 
 ## Cosa non è coperto da test
 
-I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che non hanno bisogno di uno schermo: `view.ts`, che prepara il disegno, `simulation/playback.ts`, l'orologio, e `session`, con modifiche, cronologia e terminali. I componenti a schermo non hanno test automatici: si verificano nel browser, a occhio o con uno screenshot. Non esiste un controllo automatico che esegua i test a ogni invio al repository.
+I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che non hanno bisogno di uno schermo: `view.ts`, che prepara il disegno, `simulation/playback.ts`, l'orologio, e `session`, con modifiche, cronologia e terminali. I singoli componenti a schermo non hanno test propri. La pagina intera è provata da pochi percorsi eseguiti in un browser vero (decisione D-67), in `tests/e2e/`, con Playwright, sul sito costruito e non sul server di sviluppo:
+
+| File | Percorso |
+| --- | --- |
+| `lezione.spec.ts` | La lezione del criterio di accettazione del rilascio 1, dall'apertura del file al salvataggio |
+| `costruire.spec.ts` | Una rete costruita da zero con il mouse; spostare, annullare, eliminare |
+| `file.spec.ts` | Salvare e riaprire, modifiche non salvate, file non valido |
+| `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione |
+
+Le finestre di Chrome per scegliere dove aprire e salvare non si possono comandare da un test: lì l'app viene provata con il ripiego che usa negli altri browser, cioè campo di tipo file e scaricamento. L'aspetto (colori, dimensioni, leggibilità) resta da guardare a occhio.
+
+A ogni push GitHub Actions esegue test, controllo dei tipi e test della pagina (`.github/workflows/controlli.yml`) e segna l'esito sul commit. È un avviso: non blocca la pubblicazione.

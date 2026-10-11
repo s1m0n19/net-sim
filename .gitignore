@@ -9,6 +9,8 @@ dev-dist/
 
 # Test e copertura
 coverage/
+test-results/
+playwright-report/
 
 # Variabili d'ambiente locali
 .env

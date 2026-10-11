@@ -4,7 +4,7 @@ Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer 
 
 - **Stato:** in sviluppo. Il rilascio 1 è costruito, motore e interfaccia, ed è pubblicato; resta da provarlo in aula. Il rilascio 2 non è iniziato. Il dettaglio è nella sezione 9.
 - **Ultimo aggiornamento:** 11 ottobre 2026.
-- **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
+- **Nome dell'app:** *Doppino*, scelto l'11 ottobre 2026 con riserva di cambiarlo. Finché non è definitivo l'app, i file e il repository restano *net-sim*, e così questo documento.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
 ## 1. Scopo
@@ -250,13 +250,15 @@ Alcune decisioni sono prese con riserva. Il progetto deve permettere di cambiarl
 
 Punti ancora da decidere:
 
-- [ ] Nome dell'app. Proposte: Instrada, Trama, Salto, PacketLab, Doppino.
-- [ ] Destinatari: solo le classi del docente, i colleghi, oppure pubblica e open source. Nel terzo caso servono una licenza e attenzione a marchi e sintassi Cisco.
+- [ ] Nome dell'app: scelto *Doppino*, con riserva (`doppino.it` risultava libero l'11 ottobre 2026; marchi non verificati). Da rendere definitivo, e applicare a schermo, file e repository, prima del funzionamento offline (NF-2). Altre proposte considerate: Instrada, Trama, Salto, PacketLab, Salto a salto, Primo Ping, Simulareti, Banco di rete, Fil di rete.
+- [ ] Condizioni d'uso per i colleghi: una nota breve da scrivere sul sito o nel README (destinatari decisi: D-66). Prima della CLI del rilascio 2, rivedere i testi per marchi e sintassi Cisco.
 - [ ] Sottoinsieme dei comandi IOS (proposta nella sezione 3.3).
 - [ ] Verificare che il filtro della scuola non blocchi il sito pubblicato (`net-sim.simon-nucifora.workers.dev`), aprendolo da un PC dell'aula. Dove pubblicare è deciso: D-64.
 - [ ] Dominio `.it` per il sito, da comprare quando il nome dell'app sarà scelto, e prima del funzionamento offline (NF-2): chi ha installato l'app da un indirizzo dovrebbe reinstallarla dal nuovo.
 - [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
-- [ ] Se aggiungere test automatici della pagina e un controllo automatico dei test a ogni invio al repository. Oggi la pagina è verificata solo a occhio.
+- [ ] Da decidere dopo il collaudo: come alleggerire il passo-passo di un ping da quattro richieste (oggi si usa `ping -n 1`); quale icona dare al pulsante che stacca e riattacca un cavo.
+- [ ] LIM usata con il dito: UI-4 esclude i gesti tattili, ma trascinamenti e clic vanno provati; la rotella non c'è, restano i pulsanti − e +.
+- [ ] Riordino dei quattro file oltre le 300 righe (`session.svelte.ts`, `simulator.ts`, `Topology.svelte`, `view.ts`): deciso l'11 ottobre 2026, da fare dopo i test della pagina, un file per volta e senza cambiare comportamento.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
 - [ ] In quale rilascio collocare il salvataggio facoltativo delle tabelle (FILE-5). Proposta: R2.
@@ -335,6 +337,8 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-63 | 10 ott 2026 | Le scorciatoie Spazio, Freccia destra, E e T valgono solo in presentazione, e mai mentre si scrive in una casella o nel terminale. Esc prima lascia andare un gesto a metà, poi esce | Fuori dalla presentazione quei tasti si premono per altri motivi. Così UI-14 è rispettato senza sorprese | Confermata |
 | D-64 | 11 ott 2026 | Il sito è pubblicato su Cloudflare, nel piano gratuito, e si aggiorna da solo a ogni push sul ramo `main`. Il repository resta privato. Le prove si fanno in locale | È gratuito senza un tetto mensile che possa sospendere il sito, non obbliga a rendere pubblico il codice prima di aver deciso destinatari e licenza, e accetta un dominio `.it` comprato altrove | Confermata |
 | D-65 | 11 ott 2026 | Nell'output di `ping` la durata è scritta in millisecondi, come su Windows: un tick vale un millisecondo (`time=8ms`), e una risposta immediata è `time<1ms` | La riga deve essere quella che gli studenti vedranno su un PC vero. Il numero è di comodo, ma resta leggibile: dice quanti tratti di cavo ha attraversato lo scambio | Confermata |
+| D-66 | 11 ott 2026 | L'app è rivolta alle classi del docente e ai colleghi. Il repository resta privato; il codice del motore lo mostra il docente in classe | Aprire il codice richiede di scegliere una licenza e di curare marchi e sintassi Cisco: non serve per usare l'app dal sito. Si potrà aprire in seguito | Confermata |
+| D-67 | 11 ott 2026 | La pagina ha pochi test che eseguono i percorsi principali in un browser vero (Playwright, sul sito costruito): la lezione del criterio di accettazione, costruire una rete, salvare e riaprire, inquadratura e presentazione. A ogni push GitHub Actions esegue test, controllo dei tipi e build, e segna l'esito sul commit; è un avviso, non blocca la pubblicazione | I componenti a schermo erano verificati solo a occhio, e ogni push pubblica. Pochi percorsi veri coprono clic e trascinamenti che un browser simulato non vede; un avviso basta finché si lavora su un ramo solo | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -373,8 +377,11 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 | 7. Staccare un cavo; cambiare un indirizzo | Funzionano entrambi: il cavo con un clic, l'indirizzo dal pannello laterale |
 | 8. Salvare la rete | Funziona; la finestra di salvataggio va provata nei browser dell'aula |
 
+Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico in un browser vero (`tests/e2e/lezione.spec.ts`). Resta la prova in aula: leggibilità, LIM, filtro della scuola.
+
 ### Che cosa esiste oltre ai requisiti
 
+- 8 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
 - 463 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.

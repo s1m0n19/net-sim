@@ -1,0 +1,45 @@
+# A ogni push: test, controllo dei tipi, costruzione del sito e test della
+# pagina in un browser vero. L'esito compare accanto al commit.
+#
+# È un avviso: il sito viene pubblicato da Cloudflare in ogni caso
+# (decisione D-67 in SPEC.md).
+name: Controlli
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  controlli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Installa le dipendenze
+        run: npm ci
+
+      - name: Test del motore e della logica dell'interfaccia
+        run: npm test
+
+      - name: Controllo dei tipi
+        run: npm run check
+
+      - name: Installa il browser dei test
+        run: npx playwright install --with-deps chromium
+
+      - name: Test della pagina (costruiscono il sito e lo provano)
+        run: npm run test:e2e
+
+      - name: Conserva le tracce dei test falliti
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracce-dei-test
+          path: test-results/
+          retention-days: 7

@@ -31,13 +31,16 @@ npm run dev      # server di sviluppo su http://localhost:5173
 npm test         # tutti i test, una sola esecuzione
 npm run check    # controllo dei tipi (TypeScript e componenti Svelte)
 npm run build    # sito statico in dist/
+npm run test:e2e # test della pagina in un browser vero (costruisce il sito e lo prova)
 
 npx vitest run tests/engine/arp.test.ts    # un solo file di test
 npx vitest run -t "la richiesta parte"     # i test il cui nome contiene il testo
 npx vitest                                 # test in ascolto sulle modifiche
+npx playwright test lezione                # un solo file dei test della pagina
+npx playwright install chromium            # una volta sola: scarica il browser dei test
 ```
 
-Non c'è un linter. `npm run check` deve chiudersi senza errori né avvisi.
+Non c'è un linter. `npm run check` deve chiudersi senza errori né avvisi. A ogni push GitHub Actions (`.github/workflows/controlli.yml`) esegue test, controllo dei tipi e test della pagina e segna l'esito sul commit: dopo un push va controllato, insieme alla costruzione di Cloudflare.
 
 Per vedere davvero la pagina, con il server di sviluppo acceso:
 
@@ -97,12 +100,12 @@ L'ordine previsto in `docs/motore.md`: tipo dell'unità dati in `model/`, compor
 - **Un concetto, un file**: `arp.ts` contiene ARP e nient'altro.
 - **Funzioni pure dove possibile**, e tra una soluzione breve e una ovvia si sceglie quella ovvia.
 - **Come una rete vera** (requisito SIM-8): l'app non avvisa degli errori di configurazione e non spiega perché un frame è stato scartato. Il campo `reason` delle tracce serve solo ai test; l'interfaccia non lo mostra. Due confini, entrambi decisi: ciò che Windows non lascerebbe impostare viene rifiutato all'inserimento (CFG-7), e l'avviso della tempesta di broadcast ne spiega la causa (SIM-15).
-- **Test come piccole storie**: costruisco la rete, compio l'azione, controllo tracce o stato. Nomi dei test in italiano, scritti come affermazioni. Le reti di prova stanno in `tests/engine/builders.ts`. La pagina non ha test automatici: ciò che cambia a schermo va fatto verificare all'utente nel browser, dicendo che cosa guardare e dove.
+- **Test come piccole storie**: costruisco la rete, compio l'azione, controllo tracce o stato. Nomi dei test in italiano, scritti come affermazioni. Le reti di prova stanno in `tests/engine/builders.ts`. La pagina ha pochi test che eseguono percorsi interi in un browser vero (`tests/e2e/`, Playwright, sul sito costruito): la lezione del criterio di accettazione, costruire una rete, i file, inquadratura e presentazione. Un comportamento nuovo della pagina va aggiunto a uno di quei percorsi, o a uno nuovo; ciò che riguarda l'aspetto va comunque fatto verificare all'utente nel browser, dicendo che cosa guardare e dove.
 - Stile grafico e disposizione dei pannelli sono decisioni dichiarate reversibili in `SPEC.md`: icone e colori vanno tenuti in un solo punto, e nulla nel motore deve dipenderne.
 
 ## Pubblicazione
 
-Il sito pubblico (https://net-sim.simon-nucifora.workers.dev) è su Cloudflare, collegato al repository: ogni push su `main` viene costruito con `npm run build` e pubblicato da solo. Un push è quindi una pubblicazione: prima vanno fatti passare test, `npm run check` e `npm run build`. Le prove si fanno sempre con il server locale.
+Il sito pubblico (https://net-sim.simon-nucifora.workers.dev) è su Cloudflare, collegato al repository: ogni push su `main` viene costruito con `npm run build` e pubblicato da solo. Un push è quindi una pubblicazione: prima vanno fatti passare `npm test`, `npm run check` e `npm run test:e2e` (che costruisce anche il sito). Le prove si fanno sempre con il server locale.
 
 ## Git
 - Non committare finché non lo chiedo esplicitamente
