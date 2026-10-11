@@ -2,7 +2,7 @@ import type { Snapshot } from "./snapshot";
 import type { DeviceTemplate } from "./editing";
 import type { Ipv4Address } from "./model/addresses";
 import type { IpConfig } from "./model/ip-config";
-import type { PortRef } from "./model/network";
+import type { PortRef, StaticRoute } from "./model/network";
 import { DEFAULT_PING_COUNT } from "./protocols/icmp";
 
 // Le azioni sono l'unico modo in cui l'esterno comanda il motore.
@@ -19,6 +19,11 @@ export type Action =
   | { kind: "move-link-end"; linkId: string; end: "a" | "b"; portName: string }
   | { kind: "rename-device"; deviceId: string; name: string }
   | { kind: "configure-host"; deviceId: string; config: IpConfig }
+  // Modifiche a un router.
+  | { kind: "configure-interface"; deviceId: string; portName: string; ip: Ipv4Address | null; mask: Ipv4Address | null }
+  | { kind: "set-interface-enabled"; deviceId: string; portName: string; enabled: boolean }
+  | { kind: "add-route"; deviceId: string; route: StaticRoute }
+  | { kind: "remove-route"; deviceId: string; route: StaticRoute }
   | { kind: "restore-configuration"; snapshot: Snapshot };
 
 /**
@@ -109,6 +114,17 @@ export function addSwitch(portCount: number): Action {
 }
 
 /**
+ * Crea l'azione "aggiungi un router alla rete". Nasce con le interfacce
+ * spente e senza indirizzo.
+ *
+ * @param interfaceCount - quante interfacce ha il router
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function addRouter(interfaceCount: number): Action {
+  return { kind: "add-device", template: { kind: "router", interfaceCount } };
+}
+
+/**
  * Crea l'azione "togli questo dispositivo, con i suoi cavi".
  *
  * @param deviceId - identificativo del dispositivo
@@ -183,4 +199,68 @@ export function configureHost(deviceId: string, config: IpConfig): Action {
  */
 export function restoreConfiguration(snapshot: Snapshot): Action {
   return { kind: "restore-configuration", snapshot };
+}
+
+/**
+ * Crea l'azione "dai questo indirizzo a questa interfaccia di un router".
+ *
+ * @param deviceId - identificativo del router
+ * @param portName - l'interfaccia, per esempio "Gi0/0"
+ * @param ip - l'indirizzo, oppure null per toglierlo
+ * @param mask - la subnet mask, oppure null
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function configureInterface(
+  deviceId: string,
+  portName: string,
+  ip: Ipv4Address | null,
+  mask: Ipv4Address | null,
+): Action {
+  return { kind: "configure-interface", deviceId, portName, ip, mask };
+}
+
+/**
+ * Crea l'azione "accendi questa interfaccia di un router" (su un Cisco:
+ * `no shutdown`).
+ *
+ * @param deviceId - identificativo del router
+ * @param portName - l'interfaccia
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function enableInterface(deviceId: string, portName: string): Action {
+  return { kind: "set-interface-enabled", deviceId, portName, enabled: true };
+}
+
+/**
+ * Crea l'azione "spegni questa interfaccia di un router" (su un Cisco:
+ * `shutdown`).
+ *
+ * @param deviceId - identificativo del router
+ * @param portName - l'interfaccia
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function disableInterface(deviceId: string, portName: string): Action {
+  return { kind: "set-interface-enabled", deviceId, portName, enabled: false };
+}
+
+/**
+ * Crea l'azione "aggiungi questa rotta statica a un router".
+ *
+ * @param deviceId - identificativo del router
+ * @param route - rete di destinazione, maschera e prossimo salto
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function addRoute(deviceId: string, route: StaticRoute): Action {
+  return { kind: "add-route", deviceId, route };
+}
+
+/**
+ * Crea l'azione "togli questa rotta statica da un router".
+ *
+ * @param deviceId - identificativo del router
+ * @param route - la rotta da togliere
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function removeRoute(deviceId: string, route: StaticRoute): Action {
+  return { kind: "remove-route", deviceId, route };
 }

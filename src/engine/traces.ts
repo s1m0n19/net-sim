@@ -8,7 +8,7 @@ import type { Action } from "./actions";
 import type { DropReason, PingResult } from "./devices/host";
 import type { SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
-import type { PortRef } from "./model/network";
+import type { PortRef, StaticRoute } from "./model/network";
 
 export type Trace =
   | {
@@ -90,6 +90,11 @@ export type Trace =
   | { time: number; kind: "link-removed"; linkId: string; between: [string, string] }
   | { time: number; kind: "device-renamed"; deviceId: string; from: string }
   | { time: number; kind: "host-configured"; deviceId: string }
+  // Modifiche a un router.
+  | { time: number; kind: "interface-configured"; deviceId: string; portName: string }
+  | { time: number; kind: "interface-changed"; deviceId: string; portName: string; enabled: boolean }
+  | { time: number; kind: "route-added"; deviceId: string; route: StaticRoute }
+  | { time: number; kind: "route-removed"; deviceId: string; route: StaticRoute }
   | {
       // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
       time: number;

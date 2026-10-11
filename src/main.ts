@@ -34,11 +34,16 @@ mount(App, { target: document.getElementById("app")! });
 //   &fascia-chiusa, &pannello-chiuso           chiude la fascia in basso o il pannello laterale
 if (import.meta.env.DEV) {
   const params = new URLSearchParams(location.search);
-  // &posa=PC@200,150;SW8@450,150;PC@700,150   posa dispositivi su un foglio vuoto
+  // &posa=PC@200,150;SW8@450,150;R4@700,150   posa dispositivi su un foglio vuoto
   for (const item of (params.get("posa") ?? "").split(";").filter((text) => text !== "")) {
     const [what, where] = item.split("@");
     const [x, y] = where.split(",").map(Number);
-    const template = what === "PC" ? ({ kind: "host" } as const) : ({ kind: "switch", portCount: Number(what.slice(2)) } as const);
+    const template =
+      what === "PC"
+        ? ({ kind: "host" } as const)
+        : what.startsWith("R")
+          ? ({ kind: "router", interfaceCount: Number(what.slice(1)) } as const)
+          : ({ kind: "switch", portCount: Number(what.slice(2)) } as const);
     session.addDevice(template, { x, y });
   }
   if (params.has("scegli")) session.placing = { kind: "host" };

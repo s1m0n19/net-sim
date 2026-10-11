@@ -2,7 +2,8 @@
 // dell'elenco degli eventi, e da un frame alla sua descrizione a parole.
 
 import type { EthernetFrame } from "../engine/model/frames";
-import { otherEndOf, type Network } from "../engine/model/network";
+import { maskToPrefix } from "../engine/model/addresses";
+import { otherEndOf, type Network, type StaticRoute } from "../engine/model/network";
 import type { Conversation, Trace } from "../engine/simulator";
 import type { EventView, PacketDetails, Protocol } from "./view-types";
 
@@ -117,9 +118,22 @@ export function describeTrace(network: Network, trace: Trace, index: number): Ev
       return row(trace.deviceId, `cambia nome: prima era ${trace.from}`);
     case "host-configured":
       return row(trace.deviceId, "cambia configurazione IP");
+    case "interface-configured":
+      return row(trace.deviceId, `cambia l'indirizzo dell'interfaccia ${trace.portName}`);
+    case "interface-changed":
+      return row(trace.deviceId, `${trace.enabled ? "accende" : "spegne"} l'interfaccia ${trace.portName}`);
+    case "route-added":
+      return row(trace.deviceId, `aggiunge la rotta verso ${routeText(trace.route)}`);
+    case "route-removed":
+      return row(trace.deviceId, `toglie la rotta verso ${routeText(trace.route)}`);
     case "simulation-suspended":
       return row(null, "simulazione sospesa: tempesta di broadcast");
   }
+}
+
+// Una rotta a parole: "192.168.2.0/24 via 10.0.0.2".
+function routeText(route: StaticRoute): string {
+  return `${route.network}/${maskToPrefix(route.mask)} via ${route.nextHop}`;
 }
 
 // Il protocollo più interno: è quello che dà colore e sigla alla busta.

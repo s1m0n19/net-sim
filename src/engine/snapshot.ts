@@ -13,7 +13,8 @@
 // con le stesse regole di qualsiasi altra modifica.
 
 import type { Action } from "./actions";
-import type { HostConfig, Link, Network, RouterConfig, SwitchConfig } from "./model/network";
+import type { HostConfig, Link, Network, Router, RouterConfig, SwitchConfig } from "./model/network";
+import { sameRoute } from "./model/router-config";
 
 // Un dispositivo come sta nella fotografia: la sua configurazione, senza
 // stato di esecuzione.
@@ -31,7 +32,21 @@ export interface Snapshot {
 // modifica; in più servono due passi che rimettono al suo posto qualcosa
 // che era stato tolto, con l'identificativo, il nome e i MAC che aveva.
 export type RestoreStep =
-  | Extract<Action, { kind: "remove-device" | "remove-link" | "move-link-end" | "rename-device" | "configure-host" }>
+  | Extract<
+      Action,
+      {
+        kind:
+          | "remove-device"
+          | "remove-link"
+          | "move-link-end"
+          | "rename-device"
+          | "configure-host"
+          | "configure-interface"
+          | "set-interface-enabled"
+          | "add-route"
+          | "remove-route";
+      }
+    >
   | { kind: "put-device"; device: DeviceSnapshot }
   | { kind: "put-link"; link: Link };
 
@@ -125,11 +140,44 @@ export function stepsToRestore(network: Network, snapshot: Snapshot): RestoreSte
         steps.push({ kind: "configure-host", deviceId: device.id, config });
       }
     }
+    if (device.kind === "router" && wanted.kind === "router") {
+      steps.push(...routerSteps(device, wanted));
+    }
   }
 
   // 4. Tornano i cavi tolti, ora che i loro dispositivi ci sono tutti.
   for (const link of linksToPut.values()) {
     steps.push({ kind: "put-link", link: copyLink(link) });
+  }
+  return steps;
+}
+
+// Le modifiche che riportano un router alla sua fotografia: indirizzo e
+// stato di ogni interfaccia, e le rotte statiche. Lo stato acceso o spento
+// di un'interfaccia è configurazione, non un guasto: su un router si
+// imposta, e nasce spento.
+function routerSteps(router: Router, wanted: Extract<DeviceSnapshot, { kind: "router" }>): RestoreStep[] {
+  const steps: RestoreStep[] = [];
+  const deviceId = router.id;
+  for (const port of wanted.ports) {
+    const now = router.ports.find((p) => p.name === port.name);
+    if (now === undefined) continue;
+    if (now.ip !== port.ip || now.mask !== port.mask) {
+      steps.push({ kind: "configure-interface", deviceId, portName: port.name, ip: port.ip, mask: port.mask });
+    }
+    if (now.enabled !== port.enabled) {
+      steps.push({ kind: "set-interface-enabled", deviceId, portName: port.name, enabled: port.enabled });
+    }
+  }
+  for (const route of router.routes) {
+    if (!wanted.routes.some((other) => sameRoute(other, route))) {
+      steps.push({ kind: "remove-route", deviceId, route: { ...route } });
+    }
+  }
+  for (const route of wanted.routes) {
+    if (!router.routes.some((other) => sameRoute(other, route))) {
+      steps.push({ kind: "add-route", deviceId, route: { ...route } });
+    }
   }
   return steps;
 }

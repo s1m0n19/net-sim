@@ -5,9 +5,11 @@
 // sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la
 // simulazione dopo una modifica pensa il simulatore.
 
+import type { Ipv4Address } from "./model/addresses";
 import { checkIpConfig, type IpConfig } from "./model/ip-config";
 import {
   createHost,
+  createRouter,
   createSwitch,
   findDevice,
   findLink,
@@ -18,11 +20,18 @@ import {
   type Network,
   type Port,
   type PortRef,
+  type Router,
+  type RouterInterface,
+  type StaticRoute,
 } from "./model/network";
+import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } from "./model/router-config";
 
-// Che cosa si può aggiungere: un PC, oppure uno switch con un certo
-// numero di porte.
-export type DeviceTemplate = { kind: "host" } | { kind: "switch"; portCount: number };
+// Che cosa si può aggiungere: un PC, uno switch con un certo numero di
+// porte, oppure un router con un certo numero di interfacce.
+export type DeviceTemplate =
+  | { kind: "host" }
+  | { kind: "switch"; portCount: number }
+  | { kind: "router"; interfaceCount: number };
 
 /**
  * Aggiunge alla rete un dispositivo nuovo, acceso e senza cavi.
@@ -32,12 +41,24 @@ export type DeviceTemplate = { kind: "host" } | { kind: "switch"; portCount: num
  * @param network - la rete da modificare
  * @param template - che cosa aggiungere
  * @returns il dispositivo aggiunto
- * @throws Error se uno switch viene chiesto con meno di una porta
+ * @throws Error se uno switch viene chiesto con meno di una porta, o un
+ *   router con meno di un'interfaccia
  */
 export function addDevice(network: Network, template: DeviceTemplate): Device {
-  const device = template.kind === "host" ? newHost(network) : newSwitch(network, template.portCount);
+  const device = newDevice(network, template);
   network.devices.push(device);
   return device;
+}
+
+function newDevice(network: Network, template: DeviceTemplate): Device {
+  switch (template.kind) {
+    case "host":
+      return newHost(network);
+    case "switch":
+      return newSwitch(network, template.portCount);
+    case "router":
+      return newRouter(network, template.interfaceCount);
+  }
 }
 
 function newHost(network: Network): Host {
@@ -64,6 +85,27 @@ function newSwitch(network: Network, portCount: number): Device {
     id: freeName(usedIds(network), "s"),
     name: freeName(usedNames(network), "SW"),
     ports,
+  });
+}
+
+// Un router nasce con le interfacce spente e senza indirizzo, come un
+// Cisco appena tolto dalla scatola, e senza rotte.
+function newRouter(network: Network, interfaceCount: number): Device {
+  if (!Number.isInteger(interfaceCount) || interfaceCount < 1) {
+    throw new Error(`Numero di interfacce non valido: ${interfaceCount}`);
+  }
+  const ports: RouterInterface[] = freeMacs(network, interfaceCount).map((mac, index) => ({
+    name: `Gi0/${index}`,
+    mac,
+    ip: null,
+    mask: null,
+    enabled: false,
+  }));
+  return createRouter({
+    id: freeName(usedIds(network), "r"),
+    name: freeName(usedNames(network), "R"),
+    ports,
+    routes: [],
   });
 }
 
@@ -190,6 +232,119 @@ export function configureHost(network: Network, deviceId: string, config: IpConf
   device.mask = config.mask;
   device.gateway = config.gateway;
   return device;
+}
+
+/**
+ * Cambia l'indirizzo di un'interfaccia di un router, dopo averlo
+ * controllato: valgono le regole degli host, e in più la rete non deve
+ * sovrapporsi a quella di un'altra interfaccia dello stesso router.
+ *
+ * @param network - la rete da modificare
+ * @param deviceId - il router
+ * @param portName - l'interfaccia, per esempio "Gi0/0"
+ * @param ip - l'indirizzo, oppure null per toglierlo
+ * @param mask - la subnet mask, oppure null
+ * @returns il router modificato
+ * @throws Error se il dispositivo non è un router, se non ha
+ *   quell'interfaccia, o se l'indirizzo non è accettabile; in quel caso
+ *   l'interfaccia resta com'era
+ */
+export function configureInterface(
+  network: Network,
+  deviceId: string,
+  portName: string,
+  ip: Ipv4Address | null,
+  mask: Ipv4Address | null,
+): Router {
+  const router = findRouter(network, deviceId);
+  const port = findInterface(router, portName);
+  const problem =
+    checkInterfaceAddress(ip, mask) ??
+    // Le altre interfacce restano com'erano: si prova con questa cambiata.
+    checkInterfacesApart(router.ports.map((other) => (other === port ? { ...port, ip, mask } : other)));
+  if (problem !== null) {
+    throw new Error(`${router.name} ${portName}: ${problem}.`);
+  }
+  port.ip = ip;
+  port.mask = mask;
+  return router;
+}
+
+/**
+ * Accende o spegne un'interfaccia di un router. Spenta, è come se il suo
+ * cavo non ci fosse.
+ *
+ * @param network - la rete da modificare
+ * @param deviceId - il router
+ * @param portName - l'interfaccia
+ * @param enabled - true per accenderla, false per spegnerla
+ * @returns true se lo stato è cambiato, false se era già così
+ * @throws Error se il dispositivo non è un router o non ha quell'interfaccia
+ */
+export function setInterfaceEnabled(
+  network: Network,
+  deviceId: string,
+  portName: string,
+  enabled: boolean,
+): boolean {
+  const port = findInterface(findRouter(network, deviceId), portName);
+  if (port.enabled === enabled) return false;
+  port.enabled = enabled;
+  return true;
+}
+
+/**
+ * Aggiunge una rotta statica a un router, in fondo all'elenco.
+ *
+ * @param network - la rete da modificare
+ * @param deviceId - il router
+ * @param route - rete di destinazione, maschera e prossimo salto
+ * @throws Error se il dispositivo non è un router, se la rotta non è
+ *   accettabile, o se il router ne ha già una uguale
+ */
+export function addRoute(network: Network, deviceId: string, route: StaticRoute): void {
+  const router = findRouter(network, deviceId);
+  const problem = checkRoute(route);
+  if (problem !== null) {
+    throw new Error(`${router.name}: ${problem}.`);
+  }
+  if (router.routes.some((other) => sameRoute(other, route))) {
+    throw new Error(`${router.name} ha già questa rotta.`);
+  }
+  router.routes.push({ network: route.network, mask: route.mask, nextHop: route.nextHop });
+}
+
+/**
+ * Toglie una rotta statica da un router.
+ *
+ * @param network - la rete da modificare
+ * @param deviceId - il router
+ * @param route - la rotta da togliere: rete, maschera e prossimo salto
+ * @throws Error se il dispositivo non è un router o non ha quella rotta
+ */
+export function removeRoute(network: Network, deviceId: string, route: StaticRoute): void {
+  const router = findRouter(network, deviceId);
+  const index = router.routes.findIndex((other) => sameRoute(other, route));
+  if (index === -1) {
+    throw new Error(`${router.name} non ha questa rotta.`);
+  }
+  router.routes.splice(index, 1);
+}
+
+function findRouter(network: Network, deviceId: string): Router {
+  const device = findDevice(network, deviceId);
+  if (device.kind !== "router") {
+    throw new Error(`${device.name} non è un router.`);
+  }
+  return device;
+}
+
+function findInterface(router: Router, portName: string): RouterInterface {
+  const port = router.ports.find((p) => p.name === portName);
+  if (port === undefined) {
+    throw new Error(`${router.name} non ha un'interfaccia ${portName}.`);
+  }
+  return port;
 }
 
 /**

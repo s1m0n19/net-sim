@@ -8,6 +8,7 @@
 import {
   addHost,
   addLink,
+  addRouter,
   addSwitch,
   configureHost,
   moveLinkEnd,
@@ -52,7 +53,12 @@ export class SessionEditing extends SessionDemo {
    */
   addDevice(template: DeviceTemplate, position: Position): void {
     if (this.simulator === null) return;
-    const action = template.kind === "host" ? addHost() : addSwitch(template.portCount);
+    const action =
+      template.kind === "host"
+        ? addHost()
+        : template.kind === "switch"
+          ? addSwitch(template.portCount)
+          : addRouter(template.interfaceCount);
     const before = this.capture();
     try {
       const traces = this.simulator.dispatch(action);

@@ -188,3 +188,24 @@ describe("annulla e ripristina", () => {
     expect(session.canUndo).toBe(true);
   });
 });
+
+describe("router", () => {
+  test("un router si posa, si collega e si annulla come gli altri dispositivi", () => {
+    session.clear();
+    session.addDevice({ kind: "router", interfaceCount: 4 }, { x: 300, y: 200 });
+    session.addDevice({ kind: "host" }, { x: 100, y: 200 });
+    const [router, pc] = session.view.devices;
+    expect(router).toMatchObject({ kind: "router", name: "R1", portCount: 4 });
+    expect(router.interfaces.every((port) => !port.enabled && port.ipLabel === null)).toBe(true);
+
+    session.connect(pc.id, router.id);
+    const cable = session.view.links[0];
+    expect(cable.toPort).toBe("Gi0/0");
+    expect(cable.signal).toBe(false); // l'interfaccia nasce spenta
+
+    session.undo();
+    session.undo();
+    session.undo();
+    expect(session.isEmpty()).toBe(true);
+  });
+});

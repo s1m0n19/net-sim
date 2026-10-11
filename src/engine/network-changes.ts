@@ -16,9 +16,12 @@ import {
   createSwitch,
   findDevice,
   findLink,
+  linkAt,
   type Device,
   type Link,
+  type StaticRoute,
 } from "./model/network";
+import { sameRoute } from "./model/router-config";
 import type { DeviceSnapshot } from "./snapshot";
 import { stepsToRestore, type RestoreStep, type Snapshot } from "./snapshot";
 import type { Trace } from "./traces";
@@ -94,6 +97,37 @@ export function applyEdit(sim: SimulationState, action: EditAction, produced: Tr
       produced.push({ time, kind: "host-configured", deviceId: host.id });
       break;
     }
+    case "configure-interface": {
+      const { deviceId, portName, ip, mask } = action;
+      const router = editing.configureInterface(sim.network, deviceId, portName, ip, mask);
+      // Come per un host: con un indirizzo nuovo, ciò che il router
+      // sapeva e aspettava non vale più.
+      forgetTimersOf(sim, router.id);
+      clearRuntimeState(router);
+      produced.push({ time, kind: "interface-configured", deviceId, portName });
+      break;
+    }
+    case "set-interface-enabled": {
+      const { deviceId, portName, enabled } = action;
+      const changed = editing.setInterfaceEnabled(sim.network, deviceId, portName, enabled);
+      if (!changed) break;
+      if (!enabled) {
+        // Spegnere un'interfaccia è come staccarne il cavo: ciò che
+        // stava viaggiando lì va perso.
+        const link = linkAt(sim.network, { deviceId, portName });
+        if (link !== null) loseFramesOn(sim, link, produced);
+      }
+      produced.push({ time, kind: "interface-changed", deviceId, portName, enabled });
+      break;
+    }
+    case "add-route":
+      editing.addRoute(sim.network, action.deviceId, action.route);
+      produced.push({ time, kind: "route-added", deviceId: action.deviceId, route: { ...action.route } });
+      break;
+    case "remove-route":
+      editing.removeRoute(sim.network, action.deviceId, action.route);
+      produced.push({ time, kind: "route-removed", deviceId: action.deviceId, route: { ...action.route } });
+      break;
     case "restore-configuration":
       restore(sim, action.snapshot, produced);
       break;
@@ -122,6 +156,13 @@ function restore(sim: SimulationState, snapshot: Snapshot, produced: Trace[]): v
       default:
         applyEdit(sim, step, produced);
     }
+  }
+  // Le rotte di ogni router tornano nell'ordine che avevano.
+  for (const wanted of snapshot.devices) {
+    const device = sim.network.devices.find((d) => d.id === wanted.id);
+    if (device?.kind !== "router" || wanted.kind !== "router") continue;
+    const position = (route: StaticRoute) => wanted.routes.findIndex((other) => sameRoute(other, route));
+    device.routes.sort((a, b) => position(a) - position(b));
   }
   // Dispositivi e cavi tornano anche nell'ordine che avevano.
   const place = (ids: string[]) => (a: { id: string }, b: { id: string }) => ids.indexOf(a.id) - ids.indexOf(b.id);

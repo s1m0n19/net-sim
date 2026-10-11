@@ -4,6 +4,15 @@
   // comandi rifiutati, e l'avviso della tempesta di broadcast.
   import { session } from "../session.svelte";
 
+  // Che cosa si sta per posare, a parole.
+  const placingName = $derived.by(() => {
+    const template = session.placing;
+    if (template === null) return "";
+    if (template.kind === "host") return "PC";
+    if (template.kind === "switch") return `Switch a ${template.portCount} porte`;
+    return `Router a ${template.interfaceCount} interfacce`;
+  });
+
   const pingSource = $derived(session.view.devices.find((device) => device.id === session.pingFrom));
   const linkSource = $derived(session.view.devices.find((device) => device.id === session.linkFrom));
 </script>
@@ -19,7 +28,7 @@
   {/if}
   {#if session.placing !== null}
     <div class="message" role="status">
-      <strong>{session.placing.kind === "host" ? "PC" : `Switch a ${session.placing.portCount} porte`}.</strong>
+      <strong>{placingName}.</strong>
       Fai clic sul disegno per posarne uno; puoi posarne altri. Esc per finire.
     </div>
   {/if}

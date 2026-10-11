@@ -378,6 +378,9 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-74 | 11 ott 2026 | Fino all'arrivo della CLI il router si configura dal pannello laterale: interfacce (acceso o spento, indirizzo, maschera) e rotte statiche da aggiungere e togliere | La lezione sul routing non deve aspettare la CLI. Quando arriverà, CLI e pannello passeranno dalle stesse azioni (CFG-5) | Confermata |
 | D-75 | 11 ott 2026 | Gli indirizzi di un router sono scritti accanto ai cavi, sul capo vicino al router, uno per interfaccia | Si vede a colpo d'occhio quale indirizzo guarda quale rete; una pila sotto il dispositivo non lo direbbe | Confermata |
 | D-76 | 11 ott 2026 | Il server arriva subito, come host con un'altra icona; i servizi in T3 | Serve a disegnare reti credibili e costa poco | Confermata |
+| D-77 | 11 ott 2026 | Due interfacce dello stesso router non possono avere reti sovrapposte. Conta la maschera, di qualsiasi lunghezza, non la classe dell'indirizzo: `10.0.0.1/30` e `10.0.0.5/30` vanno bene, `192.168.1.1/24` e `192.168.1.129/25` no | È ciò che fa un router vero, e rientra nella regola per cui si rifiuta ciò che l'apparato non lascerebbe impostare. Le maschere di lunghezza variabile sono materia di lezione e devono funzionare | Confermata |
+| D-78 | 11 ott 2026 | Lo stato acceso o spento di un'interfaccia di router è configurazione, non un guasto: si salva nel file (se manca vale spenta) e Annulla lo rimette com'era. Cavo staccato e dispositivo spento restano guasti, che Annulla non tocca | Su un router lo stato dell'interfaccia si imposta, come un indirizzo, e nasce spento | Confermata |
+| D-79 | 11 ott 2026 | Cambiando l'indirizzo di un'interfaccia il router dimentica tutta la tabella ARP e ciò che stava aspettando. Due rotte statiche verso la stessa rete con prossimi salti diversi sono ammesse | La prima è la regola dei PC (D-48), applicata all'intero router per semplicità. La seconda lascia preparare reti con una rotta sbagliata accanto a quella giusta | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -401,7 +404,7 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5) e appena cominciato. Del passaggio 1 è fatta la prima metà: il router esiste nel modello e nei file, con i controlli su interfacce e rotte, e compare sul disegno in sola lettura. Non inoltra ancora nulla, non si posa dalla colonna e non si configura dal pannello. Tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5) e cominciato. È fatto il passaggio 1: il router esiste nel modello e nei file, con i controlli su interfacce e rotte, e nel motore si può aggiungere, configurare (interfacce accese o spente, indirizzi, rotte statiche) e annullare ogni modifica. Sul disegno compare in sola lettura. Non inoltra ancora nulla (passaggio 2), non si posa dalla colonna e non si configura dal pannello (passaggio 5). Tappe successive: nulla è iniziato.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
@@ -421,7 +424,7 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 ### Che cosa esiste oltre ai requisiti
 
 - 8 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
-- 501 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- 525 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Quattro reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
 
