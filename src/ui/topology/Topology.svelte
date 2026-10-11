@@ -2,10 +2,13 @@
   import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import SimulationBar from "../simulation/SimulationBar.svelte";
-  import ActionBar, { type BarAction } from "./ActionBar.svelte";
+  import ActionBar from "./ActionBar.svelte";
   import { untrack } from "svelte";
-  import { presentationKey } from "../presentation";
-  import { panned, zoomed, ZOOM_STEP } from "./camera";
+  import { selectionBar } from "./bar-actions";
+  import { zoomed, ZOOM_STEP } from "./camera";
+  import { drawingKey } from "./keyboard";
+  import Messages from "./Messages.svelte";
+  import { viewGestures } from "./view-gestures";
   import DeviceNode from "./DeviceNode.svelte";
   import LinkLine from "./LinkLine.svelte";
   import PinnedTable, { pinnedSize } from "./PinnedTable.svelte";
@@ -73,93 +76,12 @@
   );
 
   // La barretta delle azioni di ciò che è selezionato: dove sta e che cosa offre.
-  const bar = $derived.by((): { x: number; y: number; actions: BarAction[] } | null => {
-    const selection = session.selection;
-    if (selection === null || session.view.suspended) return null;
-
-    if (selection.kind === "device") {
-      const device = session.view.devices.find((d) => d.id === selection.id);
-      if (device === undefined) return null;
-      const actions: BarAction[] = [
-        {
-          icon: "power",
-          label: device.powered ? `Spegni ${device.name}` : `Accendi ${device.name}`,
-          run: () => session.togglePower(device.id),
-        },
-      ];
-      if (device.kind === "host" && device.powered) {
-        actions.push({
-          icon: "ping",
-          label: `Ping da ${device.name}: poi fai clic sulla destinazione`,
-          active: session.pingFrom === device.id,
-          run: () => session.armPing(device.id),
-        });
-      }
-      // In presentazione i comandi per costruire la rete non ci sono.
-      if (!preferences.presenting) {
-        actions.push({
-          icon: "link",
-          label: `Collega ${device.name}: poi fai clic sull'altro dispositivo`,
-          active: session.linkFrom === device.id,
-          run: () => session.armLink(device.id),
-        });
-      }
-      if (device.kind === "host") {
-        actions.push({
-          icon: "terminal",
-          label: `Apri il terminale di ${device.name}`,
-          run: () => {
-            session.openTerminal(device.id);
-            preferences.stripOpen = true;
-          },
-        });
-      }
-      const removeDevice: BarAction = {
-        icon: "remove",
-        label: `Elimina ${device.name}, con i suoi cavi`,
-        run: () => session.removeSelection(),
-      };
-      const table = device.kind === "host" ? "ARP" : "MAC";
-      actions.push({
-        icon: "pin",
-        label: session.isPinned(device.id)
-          ? `Togli la tabella ${table} di ${device.name} dal disegno`
-          : `Appunta la tabella ${table} di ${device.name} sul disegno`,
-        active: session.isPinned(device.id),
-        run: () => session.togglePin(device.id),
-      });
-      if (!preferences.presenting) actions.push(removeDevice);
-      return { x: device.x, y: device.y - 42 * preferences.scale, actions };
-    }
-
-    if (selection.kind === "link") {
-      const link = session.view.links.find((l) => l.id === selection.id);
-      if (link === undefined) return null;
-      return {
-        x: (link.from.x + link.to.x) / 2,
-        y: (link.from.y + link.to.y) / 2 - 16,
-        actions: [
-          {
-            icon: link.connected ? "unplug" : "replug",
-            label: link.connected ? "Stacca il cavo" : "Riattacca il cavo",
-            run: () => session.toggleLink(link.id),
-          },
-          ...(preferences.presenting
-            ? []
-            : [{ icon: "remove" as const, label: "Elimina il cavo", run: () => session.removeSelection() }]),
-        ],
-      };
-    }
-    return null;
-  });
+  const bar = $derived(selectionBar());
 
   // Le buste che il filtro lascia vedere.
   const packets = $derived(
     session.view.packets.filter((packet) => session.shows(packet.conversationId, packet.protocol)),
   );
-
-  const pingSource = $derived(session.view.devices.find((device) => device.id === session.pingFrom));
-  const linkSource = $derived(session.view.devices.find((device) => device.id === session.linkFrom));
 
   // Il cavo che si sta tirando con il mouse: dal dispositivo al puntatore.
   const rubber = $derived.by(() => {
@@ -169,49 +91,6 @@
 
   // Il cavo di cui è aperto l'elenco delle porte.
   const portMenuLink = $derived(session.view.links.find((link) => link.id === session.portMenu?.linkId));
-
-  // Chi sta scrivendo in una casella di testo, o nel terminale, non vuole
-  // che i tasti agiscano sul disegno.
-  function isTyping(event: KeyboardEvent): boolean {
-    const target = event.target as HTMLElement | null;
-    return target !== null && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
-  }
-
-  function onKey(event: KeyboardEvent) {
-    // In presentazione alcuni tasti comandano la simulazione.
-    if (presentationKey(event)) return;
-    // Ctrl+Z annulla, Ctrl+Maiusc+Z o Ctrl+Y ripristina (Cmd su Mac). In
-    // una casella di testo restano quelli del testo che si sta scrivendo.
-    const letter = event.key.toLowerCase();
-    if ((event.ctrlKey || event.metaKey) && !isTyping(event) && (letter === "z" || letter === "y")) {
-      event.preventDefault();
-      if (letter === "y" || event.shiftKey) session.redo();
-      else session.undo();
-      return;
-    }
-    if (event.key === "Escape") {
-      // Esc lascia andare, nell'ordine: l'elenco delle porte, la voce
-      // scelta nella colonna, il cavo cominciato, lo strumento Cavo, il
-      // ping in attesa della destinazione, la selezione.
-      if (session.portMenu !== null) {
-        session.portMenu = null;
-      } else if (session.placing !== null) {
-        session.placing = null;
-      } else if (session.linkFrom !== null) {
-        session.linkFrom = null;
-      } else if (session.cabling) {
-        session.cabling = false;
-      } else if (session.pingFrom !== null) {
-        session.pingFrom = null;
-      } else {
-        session.select(null);
-      }
-      return;
-    }
-    if ((event.key === "Delete" || event.key === "Backspace") && !isTyping(event) && !preferences.presenting) {
-      session.removeSelection();
-    }
-  }
 
   // --- Posare dispositivi --------------------------------------------------
   let drawing: SVGSVGElement | undefined = $state();
@@ -225,23 +104,7 @@
   }
 
   // --- Muoversi sul disegno -------------------------------------------------
-  // La rotella ingrandisce e rimpicciolisce attorno al puntatore.
-  function onWheel(event: WheelEvent) {
-    event.preventDefault();
-    // Un trackpad manda molti scatti piccoli, una rotella pochi e grandi:
-    // l'ingrandimento è proporzionale allo scatto, entro un limite.
-    const delta = Math.max(-80, Math.min(80, event.deltaY));
-    session.camera = zoomed(bounds, Math.exp(-delta * 0.004), toDrawing(event.clientX, event.clientY));
-  }
-
-  // La pagina non deve scorrere mentre si ingrandisce: per poterlo
-  // impedire, l'ascolto della rotella va dichiarato "non passivo".
-  $effect(() => {
-    const element = drawing;
-    if (element === undefined) return;
-    element.addEventListener("wheel", onWheel, { passive: false });
-    return () => element.removeEventListener("wheel", onWheel);
-  });
+  // Rotella e trascinamento dello sfondo stanno in view-gestures.ts.
 
   // I pulsanti + e − ingrandiscono attorno al centro di ciò che si vede.
   function zoomButton(factor: number) {
@@ -253,45 +116,9 @@
     session.fitView(pinnedBoxes, preferences.scale);
   }
 
-  // Trascinando lo sfondo si sposta la vista. Come per i dispositivi, si
-  // aspetta qualche pixel di movimento: un clic resta un clic.
-  let grab: { clientX: number; clientY: number; box: typeof bounds; scale: number } | null = null;
-  let panning = $state(false);
-  let justPanned = false;
-
-  function onBackgroundDown(event: PointerEvent) {
-    if (event.button !== 0 || event.target !== drawing) return;
-    const scale = drawing?.getScreenCTM()?.a ?? 1;
-    grab = { clientX: event.clientX, clientY: event.clientY, box: bounds, scale };
-  }
-
-  function onBackgroundMove(event: PointerEvent) {
-    if (grab === null) return;
-    const dx = event.clientX - grab.clientX;
-    const dy = event.clientY - grab.clientY;
-    if (!panning) {
-      if (Math.hypot(dx, dy) < 4) return;
-      panning = true;
-      drawing?.setPointerCapture?.(event.pointerId);
-    }
-    // Il disegno segue il mouse: l'inquadratura va dalla parte opposta.
-    session.camera = panned(grab.box, -dx / grab.scale, -dy / grab.scale);
-  }
-
-  function onBackgroundUp() {
-    if (panning) justPanned = true;
-    grab = null;
-    panning = false;
-  }
-
   // Un clic sullo sfondo: posa il dispositivo scelto nella colonna, se ce
   // n'è uno; altrimenti toglie la selezione.
   function onBackgroundClick(event: MouseEvent) {
-    // Dopo uno spostamento della vista il browser manda comunque un clic.
-    if (justPanned) {
-      justPanned = false;
-      return;
-    }
     if (session.placing !== null) {
       session.addDevice(session.placing, toDrawing(event.clientX, event.clientY));
     } else {
@@ -317,13 +144,12 @@
   }
 </script>
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={drawingKey} />
 
 <div
   class="canvas"
   class:aiming={session.pingFrom !== null || session.cabling || session.linkFrom !== null}
   class:placing={session.placing !== null}
-  class:panning
   class:presenting={preferences.presenting}
   ondragover={onDragOver}
   ondrop={onDrop}
@@ -340,10 +166,7 @@
     role="group"
     aria-label="Topologia della rete"
     onclick={onBackgroundClick}
-    onpointerdown={onBackgroundDown}
-    onpointermove={onBackgroundMove}
-    onpointerup={onBackgroundUp}
-    onpointercancel={onBackgroundUp}
+    use:viewGestures={() => bounds}
   >
       {#each session.view.links as link (link.id)}
         <LinkLine {link} />
@@ -378,42 +201,7 @@
     </div>
   {/if}
 
-  <div class="messages">
-      {#if session.view.suspended}
-        <div class="message storm" role="alert">
-          <strong>Simulazione sospesa: tempesta di broadcast.</strong>
-          Ci sono {session.view.packets.length} frame che continuano a girare senza fermarsi. La causa
-          è un ciclo tra switch: senza spanning tree, un broadcast inoltrato in cerchio non si
-          esaurisce mai. Premi "Ricomincia" per ripartire.
-        </div>
-      {/if}
-      {#if session.placing !== null}
-        <div class="message" role="status">
-          <strong>{session.placing.kind === "host" ? "PC" : `Switch a ${session.placing.portCount} porte`}.</strong>
-          Fai clic sul disegno per posarne uno; puoi posarne altri. Esc per finire.
-        </div>
-      {/if}
-      {#if linkSource !== undefined}
-        <div class="message" role="status">
-          <strong>Cavo da {linkSource.name}.</strong> Fai clic sul dispositivo da collegare. Esc per
-          annullare.
-        </div>
-      {:else if session.cabling}
-        <div class="message" role="status">
-          <strong>Cavo.</strong> Trascina da un dispositivo a un altro, oppure fai clic sul primo e poi
-          sul secondo. Esc per finire.
-        </div>
-      {/if}
-      {#if pingSource !== undefined}
-        <div class="message" role="status">
-          <strong>Ping da {pingSource.name}.</strong> Fai clic sul dispositivo di destinazione. Esc per
-          annullare.
-        </div>
-      {/if}
-      {#if session.notice !== null}
-        <div class="message" role="alert">{session.notice}</div>
-      {/if}
-    </div>
+  <Messages />
 
   <div class="zoom" role="group" aria-label="Inquadratura">
     <button class="btn" title="Rimpicciolisci" aria-label="Rimpicciolisci" onclick={() => zoomButton(1 / ZOOM_STEP)}>−</button>
@@ -456,8 +244,9 @@
   .placing :global(svg) {
     cursor: copy;
   }
-  /* Mentre si sposta la vista il puntatore è una mano chiusa. */
-  .panning :global(svg) {
+  /* Mentre si sposta la vista il puntatore è una mano chiusa: la classe
+     la mette view-gestures.ts. */
+  .canvas :global(svg.panning) {
     cursor: grabbing;
   }
   /* I pulsanti dell'inquadratura, nell'angolo in basso a destra. */
@@ -495,34 +284,5 @@
     color: var(--ink);
     font-size: 1.25em;
     font-weight: 600;
-  }
-  .messages {
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(560px, calc(100% - 28px));
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    pointer-events: none;
-  }
-  .message {
-    padding: 8px 14px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-left: 4px solid var(--accent);
-    border-radius: var(--radius);
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
-  }
-  .message[role="alert"] {
-    border-left-color: var(--down);
-  }
-  .storm {
-    border: 2px solid var(--down);
-  }
-  .storm strong {
-    display: block;
-    color: var(--down);
   }
 </style>

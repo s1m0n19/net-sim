@@ -4,15 +4,7 @@
   // La barretta delle azioni: compare accanto a ciò che è selezionato e
   // mostra, come icone, quello che ci si può fare. Tutto è visibile: non
   // esiste un menu nascosto.
-  export type ActionIcon = "power" | "ping" | "link" | "terminal" | "pin" | "unplug" | "replug" | "remove";
-
-  export interface BarAction {
-    icon: ActionIcon;
-    label: string;
-    // Il pulsante resta premuto: l'azione aspetta un secondo clic altrove.
-    active?: boolean;
-    run: () => void;
-  }
+  import type { ActionIcon, BarAction } from "./bar-actions";
 
   // `x` è il centro della barretta, `y` il suo bordo inferiore.
   let { x, y, actions }: { x: number; y: number; actions: BarAction[] } = $props();
