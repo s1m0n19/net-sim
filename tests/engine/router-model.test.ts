@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import routerFile from "../../examples/due-lan-router.netsim.json?raw";
-import { ping, removeDevice, restoreConfiguration } from "../../src/engine/actions";
+import { removeDevice, restoreConfiguration } from "../../src/engine/actions";
 import { networkAddress, networksOverlap } from "../../src/engine/model/addresses";
 import {
   clearRuntimeState,
@@ -184,17 +184,6 @@ describe("il router nella rete", () => {
 
     expect(router.arpTable.size).toBe(0);
     expect(router.ports[0]).toMatchObject({ ip: "192.168.1.1", enabled: true });
-  });
-
-  test("per ora il router riceve i frame e li scarta: non inoltra ancora", () => {
-    const { sim } = twoLans();
-    // PC2 ha il gateway: chiede con ARP il MAC del router.
-    sim.dispatch(ping("d2", "192.168.1.10", 1));
-    while (sim.canStep()) sim.step();
-
-    const atRouter = sim.traces.filter((t) => t.kind === "frame-dropped" && t.at.deviceId === "r1");
-    expect(atRouter).toHaveLength(1);
-    expect(sim.traces.some((t) => t.kind === "frame-sent" && t.from.deviceId === "r1")).toBe(false);
   });
 });
 

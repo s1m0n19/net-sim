@@ -26,9 +26,23 @@ export interface DeviceView {
   // Quante porte ha; solo per gli switch, la tabella MAC.
   portCount: number;
   macRows: [mac: string, port: string][];
-  // Solo per i router: le interfacce e le rotte statiche.
+  // Solo per i router: le interfacce, le rotte statiche impostate e la
+  // tabella di routing com'è adesso.
   interfaces: InterfaceView[];
   routes: RouteView[];
+  routingRows: RoutingRowView[];
+}
+
+// Una riga della tabella di routing di un router.
+export interface RoutingRowView {
+  // "C" per una rete collegata, "S" per una rotta statica, come su un Cisco.
+  code: "C" | "S";
+  // "192.168.2.0/24"
+  destination: string;
+  // Il vicino a cui consegnare; null per una rete collegata.
+  nextHop: string | null;
+  // L'interfaccia di uscita; null se la rotta non è utilizzabile.
+  portName: string | null;
 }
 
 // Un'interfaccia di un router.

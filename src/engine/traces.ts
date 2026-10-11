@@ -6,6 +6,7 @@
 
 import type { Action } from "./actions";
 import type { DropReason, PingResult } from "./devices/host";
+import type { RouterDropReason } from "./devices/router";
 import type { SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
 import type { PortRef, StaticRoute } from "./model/network";
@@ -34,9 +35,7 @@ export type Trace =
       frameId: number;
       at: PortRef;
       frame: EthernetFrame;
-      // "router-not-forwarding" è provvisorio: finché il router non sa
-      // inoltrare, scarta tutto ciò che riceve.
-      reason: DropReason | SwitchDropReason | "router-not-forwarding";
+      reason: DropReason | SwitchDropReason | RouterDropReason;
       conversationId: number;
     }
   | {

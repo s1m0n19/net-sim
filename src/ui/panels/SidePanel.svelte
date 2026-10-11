@@ -120,18 +120,48 @@
         </tbody>
       </table>
 
-      <h3>Rotte statiche</h3>
-      {#if device.routes.length === 0}
-        <p>Nessuna.</p>
+      <!-- C = rete collegata, S = rotta statica, come su un Cisco. Una
+           rotta statica senza interfaccia non è utilizzabile. -->
+      <h3>Tabella di routing</h3>
+      {#if device.routingRows.length === 0}
+        <p>Vuota.</p>
       {:else}
         <table>
-          <thead><tr><th>Rete</th><th>Prossimo salto</th></tr></thead>
+          <thead><tr><th></th><th>Rete</th><th>Prossimo salto</th><th>Esce da</th></tr></thead>
           <tbody>
-            {#each device.routes as route (`${route.destination} ${route.nextHop}`)}
-              <tr><td>{route.destination}</td><td>{route.nextHop}</td></tr>
+            {#each device.routingRows as row (`${row.code} ${row.destination} ${row.nextHop}`)}
+              <tr>
+                <td>{row.code}</td>
+                <td>{row.destination}</td>
+                <td>{row.nextHop ?? "—"}</td>
+                <td>{row.portName ?? "—"}</td>
+              </tr>
             {/each}
           </tbody>
         </table>
+      {/if}
+
+      <h3>Tabella ARP</h3>
+      {#if device.arpRows.length === 0}
+        <p>Vuota.</p>
+      {:else}
+        <table>
+          <thead><tr><th>Indirizzo IP</th><th>Indirizzo MAC</th></tr></thead>
+          <tbody>
+            {#each device.arpRows as [ip, mac] (ip)}
+              <tr><td>{ip}</td><td>{mac}</td></tr>
+            {/each}
+          </tbody>
+        </table>
+      {/if}
+
+      {#if device.pending.length > 0}
+        <h3>In attesa del MAC</h3>
+        <ul>
+          {#each device.pending as waiting}
+            <li>{waiting}</li>
+          {/each}
+        </ul>
       {/if}
     {:else}
       {#key device.id}

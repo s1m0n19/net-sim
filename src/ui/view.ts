@@ -6,8 +6,9 @@
 // browser.
 
 import { freePortsOf } from "../engine/editing";
-import { maskToPrefix } from "../engine/model/addresses";
+import { maskToPrefix, networkAddress } from "../engine/model/addresses";
 import { linkCarriesSignal, type Network } from "../engine/model/network";
+import { routingTableOf } from "../engine/protocols/routing";
 import type { Simulator } from "../engine/simulator";
 import type { Position } from "../storage/load";
 import { describeTrace, detailsOf, labelOf, nameOf } from "./event-text";
@@ -60,6 +61,7 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
       macRows: [],
       interfaces: [],
       routes: [],
+      routingRows: [],
     };
     if (device.kind === "switch") {
       return { ...base, ...none, macRows: [...device.macTable] };
@@ -69,6 +71,15 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
         ...base,
         ...none,
         arpRows: [...device.arpTable],
+        pending: device.pendingPackets.map(
+          (waiting) => `${waiting.packet.payload.type.replace("-", " ")} per ${waiting.packet.dstIp}`,
+        ),
+        routingRows: routingTableOf(network, device).map((route) => ({
+          code: route.kind === "connected" ? "C" : "S",
+          destination: `${networkAddress(route.network, route.mask)}/${maskToPrefix(route.mask)}`,
+          nextHop: route.nextHop,
+          portName: route.portName,
+        })),
         interfaces: device.ports.map((port) => ({
           name: port.name,
           mac: port.mac,

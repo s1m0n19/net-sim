@@ -2,10 +2,13 @@
 
 import {
   createHost,
+  createRouter,
   createSwitch,
   type Host,
   type Link,
   type Network,
+  type Router,
+  type RouterInterface,
   type Switch,
 } from "../../src/engine/model/network";
 import { Simulator } from "../../src/engine/simulator";
@@ -137,4 +140,85 @@ export function buildTripleLink(): { sim: Simulator; pc1: Host } {
     ],
   };
   return { sim: new Simulator(network), pc1 };
+}
+
+// --- Reti con router ---------------------------------------------------------
+
+function routedHost(id: string, name: string, mac: string, ip: string, gateway: string | null): Host {
+  return createHost({ id, name, ports: [{ name: "Fa0", mac }], ip, mask: "255.255.255.0", gateway });
+}
+
+function iface(name: string, mac: string, ip: string, mask: string): RouterInterface {
+  return { name, mac, ip, mask, enabled: true };
+}
+
+function wire(id: string, a: [string, string], b: [string, string]): Link {
+  return {
+    id,
+    a: { deviceId: a[0], portName: a[1] },
+    b: { deviceId: b[0], portName: b[1] },
+    connected: true,
+  };
+}
+
+// Due LAN unite da un router, con i PC attaccati direttamente a lui:
+//
+//   PC1 192.168.1.10 ── Gi0/0 [R1] Gi0/1 ── PC2 192.168.2.10
+//
+// R1 ha 192.168.1.1 e 192.168.2.1; ogni PC ha come gateway il "suo" lato.
+export function buildTwoLans(): { sim: Simulator; pc1: Host; pc2: Host; r1: Router } {
+  const pc1 = routedHost("d1", "PC1", "02:00:00:00:00:01", "192.168.1.10", "192.168.1.1");
+  const pc2 = routedHost("d2", "PC2", "02:00:00:00:00:02", "192.168.2.10", "192.168.2.1");
+  const r1 = createRouter({
+    id: "r1",
+    name: "R1",
+    ports: [
+      iface("Gi0/0", "02:00:00:00:03:01", "192.168.1.1", "255.255.255.0"),
+      iface("Gi0/1", "02:00:00:00:03:02", "192.168.2.1", "255.255.255.0"),
+    ],
+    routes: [],
+  });
+  const network: Network = {
+    devices: [pc1, r1, pc2],
+    links: [wire("l1", ["d1", "Fa0"], ["r1", "Gi0/0"]), wire("l2", ["r1", "Gi0/1"], ["d2", "Fa0"])],
+  };
+  return { sim: new Simulator(network), pc1, pc2, r1 };
+}
+
+// Tre reti e due router in fila, senza rotte statiche:
+//
+//   PC1 192.168.1.10 ── [R1] 10.0.0.1 ── 10.0.0.2 [R2] ── PC2 192.168.2.10
+//
+// La rete tra i due router è 10.0.0.0/30. Senza rotte, R1 non conosce
+// 192.168.2.0/24 e R2 non conosce 192.168.1.0/24.
+export function buildThreeNetworks(): { sim: Simulator; pc1: Host; pc2: Host; r1: Router; r2: Router } {
+  const pc1 = routedHost("d1", "PC1", "02:00:00:00:00:01", "192.168.1.10", "192.168.1.1");
+  const pc2 = routedHost("d2", "PC2", "02:00:00:00:00:02", "192.168.2.10", "192.168.2.1");
+  const r1 = createRouter({
+    id: "r1",
+    name: "R1",
+    ports: [
+      iface("Gi0/0", "02:00:00:00:03:01", "192.168.1.1", "255.255.255.0"),
+      iface("Gi0/1", "02:00:00:00:03:02", "10.0.0.1", "255.255.255.252"),
+    ],
+    routes: [],
+  });
+  const r2 = createRouter({
+    id: "r2",
+    name: "R2",
+    ports: [
+      iface("Gi0/0", "02:00:00:00:04:01", "10.0.0.2", "255.255.255.252"),
+      iface("Gi0/1", "02:00:00:00:04:02", "192.168.2.1", "255.255.255.0"),
+    ],
+    routes: [],
+  });
+  const network: Network = {
+    devices: [pc1, r1, r2, pc2],
+    links: [
+      wire("l1", ["d1", "Fa0"], ["r1", "Gi0/0"]),
+      wire("l2", ["r1", "Gi0/1"], ["r2", "Gi0/0"]),
+      wire("l3", ["r2", "Gi0/1"], ["d2", "Fa0"]),
+    ],
+  };
+  return { sim: new Simulator(network), pc1, pc2, r1, r2 };
 }

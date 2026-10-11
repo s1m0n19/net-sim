@@ -103,7 +103,13 @@ export interface Router {
   // Stato di esecuzione: cambia mentre la rete funziona.
   arpTable: Map<Ipv4Address, MacAddress>;
   // Pacchetti da inoltrare, in attesa della risposta ARP.
-  pendingPackets: PendingPacket[];
+  pendingPackets: RouterPendingPacket[];
+}
+
+// Un pacchetto che un router non può ancora inoltrare: oltre al prossimo
+// salto, ricorda da quale interfaccia dovrà uscire.
+export interface RouterPendingPacket extends PendingPacket {
+  portName: string;
 }
 
 export type Device = Host | Switch | Router;

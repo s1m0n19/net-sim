@@ -365,6 +365,36 @@ Durate tipiche, nella LAN di esempio con uno switch:
 | Quattro echo request senza una strada | 0 tick: quattro esiti immediati, nessun frame |
 | Quattro echo request a se stessi | 0 tick: quattro risposte immediate, nessun frame |
 
+### Router (`devices/router.ts`, `protocols/routing.ts`)
+
+Il router unisce reti diverse: riceve un pacchetto IP da un'interfaccia e lo fa uscire da un'altra.
+
+**La tabella di routing** (`routingTableOf`) si ricalcola ogni volta che serve, e contiene:
+
+- le reti **collegate**: una per ogni interfaccia accesa, con un indirizzo, e che sente il segnale sul cavo. Staccando il cavo, la rete sparisce;
+- le rotte **statiche** impostate. Una rotta statica serve solo se il suo prossimo salto sta su una rete collegata: da lì si ricava l'interfaccia di uscita. Altrimenti resta in tabella, senza interfaccia, e non viene mai scelta.
+
+**La scelta della rotta** (`lookupRoute`): tra le rotte utilizzabili la cui rete contiene la destinazione vince la maschera più lunga; a parità, la prima della tabella. La rotta di default, 0.0.0.0 con maschera 0.0.0.0, contiene tutto e quindi vince solo quando non c'è di meglio.
+
+**Quando riceve un frame** (`receiveFrameOnRouter`):
+
+1. Lo considera solo se è indirizzato al MAC di quell'interfaccia, o in broadcast.
+2. A una richiesta ARP risponde solo se chiede l'indirizzo dell'interfaccia su cui è arrivata, e impara il MAC di chi chiede. Non risponde per conto di altri.
+3. Un pacchetto IP per uno dei suoi indirizzi lo tiene per sé: a un echo request risponde, dall'indirizzo interrogato.
+4. Ogni altro pacchetto IP lo inoltra.
+
+**Quando inoltra**:
+
+1. Toglie 1 al TTL. Se era già a 1, scarta il pacchetto: è ciò che ferma un pacchetto finito in un ciclo tra router.
+2. Sceglie la rotta. Se non ce n'è, scarta.
+3. Il prossimo salto è la destinazione stessa su una rete collegata, altrimenti il vicino indicato dalla rotta.
+4. Se ne conosce il MAC spedisce. Altrimenti manda una richiesta ARP dall'interfaccia di uscita e tiene il pacchetto in attesa, con la scadenza degli host (20 tick); se la risposta non arriva, rinuncia.
+5. Il frame che riparte ha come sorgente il MAC dell'interfaccia di uscita e come destinazione il MAC del prossimo salto. Gli indirizzi IP non cambiano.
+
+Come gli host, il router non spedisce e non misura il tempo: restituisce i frame da inviare, ciascuno con la sua interfaccia, e le attese da avviare o annullare.
+
+Dal punto di vista di un host non cambia nulla: `nextHopFor` consegna al gateway ciò che non è della propria rete, e l'host chiede con ARP il MAC del gateway, non quello della destinazione.
+
 ### Switch
 
 Per ogni frame ricevuto su una porta:
@@ -396,7 +426,12 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Collisioni, velocità, duplex | Dipendono dal mezzo fisico | Assenti: ogni collegamento è punto-punto e senza errori |
 | Dimensione dei frame, MTU, frammentazione | Presenti | Assenti |
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
-| TTL | Diminuisce a ogni router | Resta 128: non esistono ancora router |
+| TTL | Diminuisce a ogni router | Diminuisce a ogni router. Un pacchetto il cui TTL si esaurisce viene scartato; il messaggio ICMP che avvisa il mittente non c'è ancora |
+| Rotta statica con prossimo salto non collegato | Il router cerca a sua volta una rotta per il prossimo salto | La rotta resta in tabella ma non viene usata |
+| Più rotte equivalenti | Il traffico viene diviso tra le rotte | Vince la prima della tabella |
+| Proxy ARP | Su molti router si può attivare | Assente: il router risponde solo per l'indirizzo dell'interfaccia interrogata |
+| Pacchetto senza rotta | Il router avvisa il mittente con un messaggio ICMP | Per ora scartato in silenzio: i messaggi ICMP di errore sono il prossimo passaggio |
+| Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11) |
 
 ## Guasti
@@ -532,7 +567,8 @@ Non ancora nel codice:
 
 - **Porta spenta** (requisito SIM-7, rilascio 2).
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
-- **Inoltro sul router** (rilascio 2, in costruzione): ARP per interfaccia, tabella di routing, decremento del TTL, riscrittura dei MAC, messaggi ICMP di errore, `tracert`. Il router esiste già nel modello e nei file, ma per ora scarta ogni frame che riceve (traccia `frame-dropped` con motivo provvisorio `router-not-forwarding`).
+- **Messaggi ICMP di errore** (rilascio 2, requisito SIM-18): TTL scaduto, rete non raggiungibile, host non raggiungibile. Oggi il router scarta in silenzio e chi fa il ping vede `Request timed out`.
+- **`tracert`** sugli host (CFG-3).
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
@@ -582,6 +618,8 @@ I file di test, uno per argomento:
 | `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
 | `router-model.test.ts` | Il router nel modello: controlli su interfacce e rotte, reti sovrapposte, segnale |
 | `router-editing.test.ts` | Aggiungere un router, interfacce, rotte, e annullare |
+| `routing.test.ts` | Tabella di routing e scelta della rotta |
+| `router-forwarding.test.ts` | Ping attraverso uno e due router: ARP sui due lati, MAC, TTL, rotte mancanti, ciclo di routing |
 | `reset.test.ts` | Ricominciare la simulazione |
 | `snapshot.test.ts` | Fotografare la configurazione e tornarci |
 

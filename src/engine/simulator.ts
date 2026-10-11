@@ -14,6 +14,7 @@ import {
   type HostOutput,
   type HostTimer,
 } from "./devices/host";
+import { receiveFrameOnRouter, routerTimerExpired, type RouterOutput } from "./devices/router";
 import { receiveFrameOnSwitch } from "./devices/switch";
 import type { FrameArrival, SimEvent, TimerExpiry } from "./events";
 import { hasCarrier, refreshLinkState, setDevicePowered, setLinkConnected } from "./faults";
@@ -26,8 +27,10 @@ import {
   type Host,
   type Network,
   type PortRef,
+  type Router,
   type Switch,
 } from "./model/network";
+import { routingTableOf } from "./protocols/routing";
 import { applyEdit } from "./network-changes";
 import { stormSize } from "./storm";
 import type { Conversation, Trace } from "./traces";
@@ -259,9 +262,24 @@ export class Simulator {
     this.queue = this.queue.filter((event) => !matches(event));
   }
 
-  // Un'attesa è scaduta: l'host decide che cosa fare.
+  // Un'attesa è scaduta: il dispositivo che aspettava decide che cosa fare.
   private fireTimer(event: TimerExpiry, produced: Trace[]): void {
     const host = findDevice(this.network, event.deviceId);
+    if (host.kind === "router") {
+      const reaction = routerTimerExpired(host, event.timer);
+      for (const packet of reaction.droppedPackets) {
+        produced.push({
+          time: this.time,
+          kind: "packet-dropped",
+          deviceId: host.id,
+          packet,
+          reason: "arp-timeout",
+          conversationId: event.conversationId,
+        });
+      }
+      this.applyRouter(host, reaction, event.conversationId, produced);
+      return;
+    }
     if (host.kind !== "host") return;
 
     const reaction = timerExpired(host, event.timer);
@@ -313,16 +331,43 @@ export class Simulator {
     } else if (device.kind === "switch") {
       this.deliverToSwitch(device, event, produced);
     } else {
-      // Provvisorio: il router riceve il frame ma non sa ancora che farne.
-      const { frameId, frame, conversationId, to } = event;
-      produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
-      produced.push({
-        time: this.time,
-        kind: "frame-dropped",
-        frameId,
-        at: to,
-        frame,
-        reason: "router-not-forwarding",
+      this.deliverToRouter(device, event, produced);
+    }
+  }
+
+  private deliverToRouter(router: Router, event: FrameArrival, produced: Trace[]): void {
+    const { frameId, frame, conversationId, to } = event;
+    const reaction = receiveFrameOnRouter(router, to.portName, frame, routingTableOf(this.network, router));
+
+    if (reaction.dropped !== null) {
+      const reason = reaction.dropped;
+      produced.push({ time: this.time, kind: "frame-dropped", frameId, at: to, frame, reason, conversationId });
+      return;
+    }
+
+    produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
+    if (reaction.tableChanged) {
+      produced.push({ time: this.time, kind: "table-changed", deviceId: router.id, table: "arp", conversationId });
+    }
+    this.applyRouter(router, reaction, conversationId, produced);
+  }
+
+  // Esegue ciò che un router ha chiesto: spedire frame dalle interfacce
+  // indicate, annullare e avviare attese.
+  private applyRouter(router: Router, output: RouterOutput, conversationId: number, produced: Trace[]): void {
+    for (const { portName, frame } of output.send) {
+      // Il router scrive un frame nuovo: non è ancora passato da nessuno switch.
+      this.transmit({ deviceId: router.id, portName }, frame, conversationId, 0, produced);
+    }
+    for (const timer of output.cancelTimers) {
+      this.cancelTimer(router.id, timer);
+    }
+    for (const request of output.startTimers) {
+      this.schedule({
+        time: this.time + request.delay,
+        kind: "timer",
+        deviceId: router.id,
+        timer: request.timer,
         conversationId,
       });
     }
