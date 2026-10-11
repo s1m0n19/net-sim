@@ -44,6 +44,8 @@ export function labelOf(network: Network, conversation: Conversation): string {
   switch (action.kind) {
     case "ping":
       return `ping ${nameOf(network, action.deviceId)} → ${action.targetIp}`;
+    case "tracert":
+      return `tracert ${nameOf(network, action.deviceId)} → ${action.targetIp}`;
     case "resolve-address":
       return `ARP ${nameOf(network, action.deviceId)} → ${action.targetIp}`;
     default:
@@ -59,6 +61,17 @@ const OUTCOMES = {
   "net-unreachable": () => "ping: rete di destinazione non raggiungibile",
   "host-unreachable": () => "ping: host di destinazione non raggiungibile",
   "ttl-expired": () => "ping: TTL scaduto lungo la strada",
+};
+
+// Che cosa ha scoperto una sonda di tracert, a parole.
+const HOPS = {
+  hop: (hop: number, from: string) => `tracert: il salto ${hop} è ${from}`,
+  reached: (hop: number, from: string) => `tracert: al salto ${hop} risponde la destinazione, ${from}`,
+  timeout: (hop: number) => `tracert: il salto ${hop} non risponde`,
+  "net-unreachable": (_hop: number, from: string) => `tracert: ${from} avvisa che la rete non è raggiungibile`,
+  "host-unreachable": (_hop: number, from: string) => `tracert: ${from} avvisa che l'host non è raggiungibile`,
+  unreachable: () => "tracert: host di destinazione non raggiungibile",
+  "transmit-failed": () => "tracert: trasmissione non riuscita",
 };
 
 // Trasforma una traccia del motore in una riga dell'elenco degli eventi.
@@ -105,6 +118,8 @@ export function describeTrace(network: Network, trace: Trace, index: number): Ev
       return row(trace.deviceId, `rinuncia a spedire ${trace.packet.payload.type.replace("-", " ")} per ${trace.packet.dstIp}`, { protocol: "ICMP" });
     case "ping-result":
       return row(trace.deviceId, OUTCOMES[trace.outcome](trace.targetIp), { protocol: "ICMP" });
+    case "trace-hop":
+      return row(trace.deviceId, HOPS[trace.outcome](trace.hop, trace.from ?? ""), { protocol: "ICMP" });
     case "power-changed":
       return row(trace.deviceId, trace.powered ? "viene acceso" : "viene spento");
     case "link-changed":

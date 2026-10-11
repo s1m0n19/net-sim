@@ -10,6 +10,7 @@ import {
   sameTimer,
   startArpResolution,
   startPing,
+  startTracert,
   timerExpired,
   type HostOutput,
   type HostTimer,
@@ -88,6 +89,7 @@ export class Simulator {
     const produced: Trace[] = [];
     switch (action.kind) {
       case "ping":
+      case "tracert":
       case "resolve-address":
         this.runHostAction(action, produced);
         break;
@@ -106,7 +108,7 @@ export class Simulator {
 
   // Esegue un'azione che riguarda un host: ping o richiesta ARP.
   private runHostAction(
-    action: Extract<Action, { kind: "ping" | "resolve-address" }>,
+    action: Extract<Action, { kind: "ping" | "tracert" | "resolve-address" }>,
     produced: Trace[],
   ): void {
     const host = findDevice(this.network, action.deviceId);
@@ -121,7 +123,10 @@ export class Simulator {
     let output: HostOutput;
     switch (action.kind) {
       case "ping":
-        output = startPing(host, action.targetIp, action.count);
+        output = startPing(host, action.targetIp, action.count, action.ttl);
+        break;
+      case "tracert":
+        output = startTracert(host, action.targetIp, action.maxHops);
         break;
       case "resolve-address": {
         const request = startArpResolution(host, action.targetIp);
@@ -130,13 +135,17 @@ export class Simulator {
           startTimers: [],
           cancelTimers: [],
           pingResults: [],
+          traceHops: [],
         };
         break;
       }
     }
 
     const somethingToDo =
-      output.send.length > 0 || output.startTimers.length > 0 || output.pingResults.length > 0;
+      output.send.length > 0 ||
+      output.startTimers.length > 0 ||
+      output.pingResults.length > 0 ||
+      output.traceHops.length > 0;
     if (somethingToDo) {
       // Tutto ciò che questa azione provoca avrà lo stesso numero.
       const conversationId = this.nextConversationId++;
@@ -227,6 +236,9 @@ export class Simulator {
         ...result,
         conversationId,
       });
+    }
+    for (const hop of output.traceHops) {
+      produced.push({ time: this.time, kind: "trace-hop", deviceId: host.id, ...hop, conversationId });
     }
     const port = { deviceId: host.id, portName: host.ports[0].name };
     for (const frame of output.send) {

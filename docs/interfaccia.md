@@ -63,7 +63,7 @@ Dopo i primi sei passaggi:
 - il **pannello laterale**: nome e configurazione IP del dispositivo, che si cambiano da lì, le sue tabelle, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
-- il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `arp -a`, `cls` e `help`;
+- il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `tracert`, `arp -a`, `cls` e `help`;
 - l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica;
 - la **modalità presentazione**, con l'ingrandimento regolabile e le scorciatoie da tastiera.
 
@@ -258,6 +258,8 @@ I comandi sono quelli di Windows e i **messaggi sono in inglese**, come sui libr
 | `ipconfig` | Mostra indirizzo, maschera e gateway. Con il cavo staccato mostra solo `Media disconnected` |
 | `ping indirizzo` | Manda quattro echo request. `ping -n 2 indirizzo` ne manda due |
 | `arp -a` | Mostra la tabella ARP, con i MAC scritti con i trattini come su Windows |
+| `tracert indirizzo` | Mostra i router sulla strada, una riga per salto. `tracert -h 5 indirizzo` si ferma al quinto salto invece che al trentesimo |
+| `ping -i 6 indirizzo` | Come `ping`, ma il pacchetto parte con TTL 6: dopo sei router si ferma. Serve a mostrare un ciclo di routing in pochi passi |
 | `cls` | Pulisce lo schermo |
 | `help` | Elenca i comandi disponibili |
 
@@ -272,6 +274,17 @@ L'output di `ping` cresce mentre la simulazione avanza: una riga per ogni echo r
 | Rete non raggiungibile, detto da un router | `Reply from 192.168.1.1: Destination net unreachable.` (l'indirizzo è quello del router che non ha la rotta) |
 | Host non raggiungibile, detto da un router | `Reply from 10.0.0.2: Destination host unreachable.` (l'ultimo router non ha trovato la destinazione) |
 | TTL scaduto | `Reply from 10.0.0.2: TTL expired in transit.` |
+
+`tracert` stampa una riga per salto man mano che lo scopre, e alla fine `Trace complete.`:
+
+| Che cosa succede | Riga stampata |
+| --- | --- |
+| Un router, o la destinazione, risponde | `  2     6 ms  10.0.0.2` |
+| Il salto non risponde | `  2     *     Request timed out.` (e prosegue con il successivo) |
+| Un router avvisa che non si passa | `  2  192.168.1.1  reports: Destination net unreachable.` (e finisce) |
+| Il PC non può nemmeno spedire | `  1  Transmit error: code 1231.` (è la riga di Windows) |
+
+A differenza di Windows manda una sola sonda per salto, quindi ogni riga ha un tempo solo.
 
 Come su Windows, nelle statistiche finali ogni riga che comincia con `Reply from` conta come pacchetto ricevuto, anche quando è un avviso di errore: dopo un `Destination net unreachable` si legge `Received = 1, Lost = 0`. Contano come persi solo le richieste scadute e le trasmissioni non riuscite.
 

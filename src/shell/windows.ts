@@ -6,7 +6,7 @@
 // trovano sui libri, in rete e sugli apparati.
 
 import { isValidIp } from "../engine/model/ip-config";
-import { DEFAULT_PING_COUNT } from "../engine/protocols/icmp";
+import { DEFAULT_MAX_HOPS, DEFAULT_PING_COUNT } from "../engine/protocols/icmp";
 import { DEFAULT_TTL } from "../engine/protocols/ipv4";
 
 export const PROMPT = "C:\\>";
@@ -14,7 +14,9 @@ export const PROMPT = "C:\\>";
 // Che cosa l'utente ha chiesto.
 export type Command =
   | { kind: "empty" }
-  | { kind: "ping"; target: string; count: number }
+  // `ttl` c'è solo se è stato chiesto con -i.
+  | { kind: "ping"; target: string; count: number; ttl?: number }
+  | { kind: "tracert"; target: string; maxHops: number }
   | { kind: "ipconfig" }
   | { kind: "arp" }
   | { kind: "cls" }
@@ -37,6 +39,8 @@ export function parseCommand(line: string): Command {
   switch (name.toLowerCase()) {
     case "ping":
       return parsePing(args);
+    case "tracert":
+      return parseTracert(args);
     case "ipconfig":
       return { kind: "ipconfig" };
     case "arp":
@@ -57,10 +61,11 @@ export function parseCommand(line: string): Command {
   }
 }
 
-// ping [-n count] target, con l'opzione prima o dopo l'indirizzo.
+// ping [-n count] [-i TTL] target, con le opzioni prima o dopo l'indirizzo.
 function parsePing(args: string[]): Command {
   let target: string | null = null;
   let count = DEFAULT_PING_COUNT;
+  let ttl: number | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i].toLowerCase() === "-n") {
@@ -70,6 +75,15 @@ function parsePing(args: string[]): Command {
       }
       count = Number(value);
       i += 1;
+    } else if (args[i].toLowerCase() === "-i") {
+      // Il TTL di partenza: con un valore piccolo il pacchetto si ferma
+      // dopo pochi router.
+      const value = args[i + 1] ?? "";
+      if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 255) {
+        return { kind: "error", lines: ["Bad value for option -i, valid range is from 1 to 255."] };
+      }
+      ttl = Number(value);
+      i += 1;
     } else if (target === null) {
       target = args[i];
     } else {
@@ -78,7 +92,7 @@ function parsePing(args: string[]): Command {
   }
 
   if (target === null) {
-    return { kind: "error", lines: ["Usage: ping [-n count] target_address"] };
+    return { kind: "error", lines: ["Usage: ping [-n count] [-i TTL] target_address"] };
   }
   // Non esiste un DNS: un nome non si può risolvere.
   if (!isValidIp(target)) {
@@ -87,14 +101,44 @@ function parsePing(args: string[]): Command {
       lines: [`Ping request could not find host ${target}. Please check the name and try again.`],
     };
   }
-  return { kind: "ping", target, count };
+  return ttl === undefined ? { kind: "ping", target, count } : { kind: "ping", target, count, ttl };
+}
+
+// tracert [-h maximum_hops] target
+function parseTracert(args: string[]): Command {
+  let target: string | null = null;
+  let maxHops = DEFAULT_MAX_HOPS;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].toLowerCase() === "-h") {
+      const value = args[i + 1] ?? "";
+      if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 255) {
+        return { kind: "error", lines: ["Bad value for option -h."] };
+      }
+      maxHops = Number(value);
+      i += 1;
+    } else if (target === null) {
+      target = args[i];
+    } else {
+      return { kind: "error", lines: [`${args[i]} is not a valid command option.`] };
+    }
+  }
+
+  if (target === null) {
+    return { kind: "error", lines: ["Usage: tracert [-h maximum_hops] target_name"] };
+  }
+  if (!isValidIp(target)) {
+    return { kind: "error", lines: [`Unable to resolve target system name ${target}.`] };
+  }
+  return { kind: "tracert", target, maxHops };
 }
 
 /** Le righe stampate dal comando `help`. */
 export function formatHelp(): string[] {
   return [
     "IPCONFIG       Displays the IP configuration of this computer.",
-    "PING           Sends echo requests to an address: ping [-n count] address",
+    "PING           Sends echo requests to an address: ping [-n count] [-i TTL] address",
+    "TRACERT        Traces the route to an address: tracert [-h maximum_hops] address",
     "ARP -A         Displays the ARP table.",
     "CLS            Clears the screen.",
   ];
@@ -232,5 +276,73 @@ function formatEcho(target: string, result: EchoResult, ticks: number, ownIp: st
       return `Reply from ${result.from ?? ""}: Destination host unreachable.`;
     case "ttl-expired":
       return `Reply from ${result.from ?? ""}: TTL expired in transit.`;
+  }
+}
+
+// Un salto scoperto da tracert, e quando.
+export interface HopResult {
+  time: number;
+  hop: number;
+  outcome: "hop" | "reached" | "timeout" | "net-unreachable" | "host-unreachable" | "unreachable" | "transmit-failed";
+  // Chi ha risposto: un router, oppure la destinazione.
+  from: string | null;
+  // true se tracert finisce con questo salto.
+  done: boolean;
+}
+
+/**
+ * Le righe che `tracert` ha stampato finora: l'intestazione, una riga per
+ * ogni salto scoperto e, alla fine, "Trace complete.".
+ *
+ * @param target - l'indirizzo verso cui si traccia la strada
+ * @param maxHops - a quale salto fermarsi comunque
+ * @param startTime - il tick in cui il comando è stato lanciato
+ * @param hops - i salti conclusi finora, in ordine
+ * @param ownIp - l'indirizzo dell'host che lancia il comando
+ * @returns le righe da mostrare
+ */
+export function formatTracert(
+  target: string,
+  maxHops: number,
+  startTime: number,
+  hops: HopResult[],
+  ownIp: string | null,
+): string[] {
+  const lines = ["", `Tracing route to ${target} over a maximum of ${maxHops} hops`, ""];
+
+  // La durata di una sonda va dalla fine della precedente alla sua conclusione.
+  let previous = startTime;
+  for (const hop of hops) {
+    lines.push(formatHop(hop, hop.time - previous, ownIp));
+    previous = hop.time;
+  }
+
+  if (hops.at(-1)?.done) {
+    lines.push("");
+    lines.push("Trace complete.");
+  }
+  return lines;
+}
+
+function formatHop(hop: HopResult, ticks: number, ownIp: string | null): string {
+  const number = String(hop.hop).padStart(3);
+  switch (hop.outcome) {
+    case "hop":
+    case "reached": {
+      // Come per ping: un tick è scritto come un millisecondo.
+      const time = ticks === 0 ? "<1 ms" : `${ticks} ms`;
+      return `${number}  ${time.padStart(7)}  ${hop.from ?? ""}`;
+    }
+    case "timeout":
+      return `${number}     *     Request timed out.`;
+    case "net-unreachable":
+      return `${number}  ${hop.from ?? ""}  reports: Destination net unreachable.`;
+    case "host-unreachable":
+      return `${number}  ${hop.from ?? ""}  reports: Destination host unreachable.`;
+    case "unreachable":
+      // Lo dice il PC stesso: non ha trovato sulla sua LAN a chi consegnare.
+      return `${number}  ${ownIp ?? ""}  reports: Destination host unreachable.`;
+    case "transmit-failed":
+      return `${number}  Transmit error: code 1231.`;
   }
 }

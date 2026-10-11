@@ -29,7 +29,7 @@ import type { Trace } from "./traces";
 // Le azioni che modificano la rete, più i passi con cui si torna a una
 // configurazione fotografata.
 export type EditAction =
-  | Exclude<Action, { kind: "ping" | "resolve-address" | "set-link-connected" | "set-device-powered" }>
+  | Exclude<Action, { kind: "ping" | "tracert" | "resolve-address" | "set-link-connected" | "set-device-powered" }>
   | Extract<RestoreStep, Action>;
 
 /**

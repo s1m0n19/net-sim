@@ -33,6 +33,15 @@ export type TerminalEntry =
       count: number;
       startTime: number;
       conversationId: number;
+    }
+  // Un tracert: come il ping, il suo output cresce un salto alla volta.
+  | {
+      kind: "tracert";
+      command: string;
+      target: string;
+      maxHops: number;
+      startTime: number;
+      conversationId: number;
     };
 
 // Il prompt dei comandi aperto su un host.

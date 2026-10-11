@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import lanFile from "../../examples/lan-switch.netsim.json?raw";
+import routerFile from "../../examples/due-lan-router.netsim.json?raw";
 import { session } from "../../src/ui/session.svelte";
 
 // Ciò che si legge sullo schermo del terminale di un host, riga per riga.
@@ -181,5 +182,78 @@ describe("ping dal terminale", () => {
     session.execute("d1", "ping -n 1 192.168.1.11");
 
     expect(session.view.conversations).toEqual([{ id: 1, label: "ping PC1 → 192.168.1.11" }]);
+  });
+});
+
+describe("tracert e ping attraverso un router, dal terminale", () => {
+  // PC2 sta a destra del router e ha il gateway; PC1, a sinistra, no.
+  beforeEach(() => {
+    session.open("due-lan-router.netsim.json", routerFile);
+    session.openTerminal("d2");
+  });
+
+  test("tracert verso l'altra interfaccia del router: un solo salto", () => {
+    session.execute("d2", "tracert 192.168.1.1");
+    expect(session.isBusy(session.terminals[0])).toBe(true);
+    runToEnd();
+
+    const screen = screenOf("d2");
+    expect(screen[2]).toBe("Tracing route to 192.168.1.1 over a maximum of 30 hops");
+    expect(screen[4]).toMatch(/^  1 +\d+ ms  192\.168\.1\.1$/);
+    expect(screen.slice(-2)).toEqual(["", "Trace complete."]);
+    expect(session.isBusy(session.terminals[0])).toBe(false);
+  });
+
+  test("tracert verso un PC dell'altra LAN: prima il router, poi il PC", () => {
+    session.configure("d1", "gateway", "192.168.1.1");
+    session.execute("d2", "tracert 192.168.1.10");
+    runToEnd();
+
+    const hops = screenOf("d2").slice(4, 6);
+    expect(hops[0]).toMatch(/^  1 +\d+ ms  192\.168\.2\.1$/);
+    expect(hops[1]).toMatch(/^  2 +\d+ ms  192\.168\.1\.10$/);
+  });
+
+  test("tracert verso una rete che non esiste: il router avvisa", () => {
+    session.execute("d2", "tracert 10.9.9.9");
+    runToEnd();
+
+    expect(screenOf("d2").slice(4)).toEqual([
+      expect.stringMatching(/^  1 +\d+ ms  192\.168\.2\.1$/),
+      "  2  192.168.2.1  reports: Destination net unreachable.",
+      "",
+      "Trace complete.",
+    ]);
+  });
+
+  test("il ping attraverso il router stampa il TTL con cui la risposta è arrivata", () => {
+    session.configure("d1", "gateway", "192.168.1.1");
+    session.execute("d2", "ping -n 1 192.168.1.10");
+    runToEnd();
+
+    expect(screenOf("d2")[3]).toMatch(/^Reply from 192\.168\.1\.10: bytes=32 time=\d+ms TTL=127$/);
+  });
+
+  test("ping -i 1 si ferma al router, che lo dice", () => {
+    session.configure("d1", "gateway", "192.168.1.1");
+    session.execute("d2", "ping -n 1 -i 1 192.168.1.10");
+    runToEnd();
+
+    expect(screenOf("d2")[3]).toBe("Reply from 192.168.2.1: TTL expired in transit.");
+  });
+
+  test("tracert compare tra le conversazioni che si possono seguire", () => {
+    session.execute("d2", "tracert 192.168.1.1");
+
+    expect(session.view.conversations.at(-1)?.label).toBe("tracert PC2 → 192.168.1.1");
+  });
+
+  test("Ricomincia svuota anche l'output di un tracert", () => {
+    session.execute("d2", "tracert 192.168.1.1");
+    runToEnd();
+
+    session.restart();
+
+    expect(screenOf("d2")).toEqual([]);
   });
 });

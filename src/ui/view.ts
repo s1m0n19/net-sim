@@ -26,6 +26,7 @@ export const EMPTY_VIEW: NetworkView = {
   events: [],
   conversations: [],
   pingResults: [],
+  traceHops: [],
   bounds: { x: 0, y: 0, width: 800, height: 500 },
   time: 0,
   nextEvent: null,
@@ -152,6 +153,20 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     pingResults: simulator.traces.flatMap((trace) =>
       trace.kind === "ping-result"
         ? [{ conversationId: trace.conversationId, time: trace.time, outcome: trace.outcome, from: trace.from, ttl: trace.ttl }]
+        : [],
+    ),
+    traceHops: simulator.traces.flatMap((trace) =>
+      trace.kind === "trace-hop"
+        ? [
+            {
+              conversationId: trace.conversationId,
+              time: trace.time,
+              hop: trace.hop,
+              outcome: trace.outcome,
+              from: trace.from,
+              done: trace.done,
+            },
+          ]
         : [],
     ),
     bounds: boundsOf(devices),

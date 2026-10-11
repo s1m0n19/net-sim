@@ -18,6 +18,9 @@ export const ECHO_TIMEOUT_TICKS = 40;
 // Quanti echo request manda un ping, se non si chiede altro. È il valore di Windows.
 export const DEFAULT_PING_COUNT = 4;
 
+// Fino a quanti salti prosegue tracert, se non si chiede altro. È il valore di Windows.
+export const DEFAULT_MAX_HOPS = 30;
+
 /**
  * Costruisce un echo request, la domanda del ping.
  *

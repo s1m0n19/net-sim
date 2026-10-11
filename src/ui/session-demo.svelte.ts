@@ -5,7 +5,14 @@
 // per osservare la rete e provocarla, senza modificarne la configurazione.
 
 import { connectLink, disconnectLink, powerOff, powerOn } from "../engine/actions";
-import { formatArpTable, formatHelp, formatIpconfig, formatPing, parseCommand } from "../shell/windows";
+import {
+  formatArpTable,
+  formatHelp,
+  formatIpconfig,
+  formatPing,
+  formatTracert,
+  parseCommand,
+} from "../shell/windows";
 import { SessionCore } from "./session-core.svelte";
 import type { Pin, Terminal, TerminalEntry } from "./session-types";
 import type { Protocol } from "./view";
@@ -102,7 +109,7 @@ export class SessionDemo extends SessionCore {
         // Il ping apre una conversazione: il terminale ne ricorda il numero
         // e ne leggerà gli esiti man mano che arrivano.
         const before = this.simulator.conversations.length;
-        const problem = this.ping(deviceId, command.target, command.count);
+        const problem = this.ping(deviceId, command.target, command.count, command.ttl);
         const conversation = this.simulator.conversations.at(-1);
         if (problem !== null || conversation === undefined || this.simulator.conversations.length === before) {
           print([problem ?? "PING: transmit failed. General failure."]);
@@ -118,24 +125,51 @@ export class SessionDemo extends SessionCore {
         });
         break;
       }
+      case "tracert": {
+        // Come il ping: una conversazione di cui leggere i salti man mano.
+        const before = this.simulator.conversations.length;
+        const problem = this.tracert(deviceId, command.target, command.maxHops);
+        const conversation = this.simulator.conversations.at(-1);
+        if (problem !== null || conversation === undefined || this.simulator.conversations.length === before) {
+          print([problem ?? "Unable to contact IP driver. General failure."]);
+          break;
+        }
+        terminal.entries.push({
+          kind: "tracert",
+          command: line,
+          target: command.target,
+          maxHops: command.maxHops,
+          startTime: this.view.time,
+          conversationId: conversation.id,
+        });
+        break;
+      }
     }
   }
 
   /**
-   * Le righe che un comando ha stampato finora. Per un ping crescono man
-   * mano che gli echo request si concludono.
+   * Le righe che un comando ha stampato finora. Per un ping o un tracert
+   * crescono man mano che gli echo request si concludono.
    */
   outputOf(deviceId: string, entry: TerminalEntry): string[] {
     if (entry.kind === "text") return entry.lines;
-    const results = this.view.pingResults.filter((r) => r.conversationId === entry.conversationId);
     const ownIp = this.view.devices.find((d) => d.id === deviceId)?.ip ?? null;
+    if (entry.kind === "tracert") {
+      const hops = this.view.traceHops.filter((hop) => hop.conversationId === entry.conversationId);
+      return formatTracert(entry.target, entry.maxHops, entry.startTime, hops, ownIp);
+    }
+    const results = this.view.pingResults.filter((r) => r.conversationId === entry.conversationId);
     return formatPing(entry.target, entry.count, entry.startTime, results, ownIp);
   }
 
-  /** Dice se un terminale sta ancora eseguendo un ping, e non accetta comandi. */
+  /** Dice se un terminale sta ancora eseguendo un ping o un tracert, e non accetta comandi. */
   isBusy(terminal: Terminal): boolean {
     const last = terminal.entries.at(-1);
-    if (last === undefined || last.kind !== "ping") return false;
+    if (last === undefined || last.kind === "text") return false;
+    if (last.kind === "tracert") {
+      const hops = this.view.traceHops.filter((hop) => hop.conversationId === last.conversationId);
+      return hops.at(-1)?.done !== true;
+    }
     const done = this.view.pingResults.filter((r) => r.conversationId === last.conversationId).length;
     return done < last.count;
   }

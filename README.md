@@ -132,6 +132,8 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 | `ipconfig` | Mostra la configurazione IP del PC |
 | `ping 192.168.1.11` | Manda quattro echo request, come su Windows; `ping -n 1 192.168.1.11` ne manda uno |
 | `arp -a` | Mostra la tabella ARP |
+| `tracert 192.168.2.10` | Mostra i router sulla strada, una riga per salto; con `-h 5` si ferma al quinto |
+| `ping -i 6 172.16.0.1` | Come `ping`, ma il pacchetto parte con TTL 6: utile per mostrare un ciclo di routing |
 | `cls` | Pulisce lo schermo |
 | `help` | Elenca i comandi |
 

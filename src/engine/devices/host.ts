@@ -79,6 +79,32 @@ export interface PingResult {
   ttl: number | null;
 }
 
+// Che cosa ha scoperto una sonda di tracert, cioè un echo request partito
+// con un TTL piccolo apposta per farsi fermare lungo la strada.
+export interface TraceHop {
+  targetIp: Ipv4Address;
+  // Il numero del salto: è il TTL con cui la sonda è partita.
+  hop: number;
+  outcome:
+    // Un router ha fermato la sonda e ha detto chi è: un salto della strada.
+    | "hop"
+    // Ha risposto la destinazione: la strada è finita.
+    | "reached"
+    // Nessuno ha risposto in tempo: quel salto resta ignoto.
+    | "timeout"
+    // Un router ha avvisato che oltre non si passa.
+    | "net-unreachable"
+    | "host-unreachable"
+    // L'host non trova sulla propria LAN a chi consegnare la sonda.
+    | "unreachable"
+    // L'host non ha nemmeno potuto spedirla.
+    | "transmit-failed";
+  // Chi ha risposto; null se nessuno.
+  from: Ipv4Address | null;
+  // true se tracert finisce qui.
+  done: boolean;
+}
+
 // Richiesta di avviare un'attesa che scadrà dopo `delay` tick.
 export interface TimerRequest {
   delay: number;
@@ -92,6 +118,8 @@ export interface HostOutput {
   cancelTimers: HostTimer[];
   // Echo request arrivati a una conclusione.
   pingResults: PingResult[];
+  // Sonde di tracert arrivate a una conclusione.
+  traceHops: TraceHop[];
 }
 
 // Che cosa ha fatto l'host dopo aver ricevuto un frame.
@@ -110,7 +138,7 @@ export interface TimerReaction extends HostOutput {
 // e distingue i ping con il numero di sequenza.
 const PING_IDENTIFIER = 1;
 
-const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [], pingResults: [] };
+const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [], pingResults: [], traceHops: [] };
 
 /**
  * Avvia un ping: una serie di echo request verso un indirizzo IP, mandati
@@ -123,6 +151,9 @@ const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [], pingR
  * @param host - l'host che fa il ping
  * @param targetIp - l'indirizzo IP da raggiungere
  * @param count - quanti echo request mandare in tutto
+ * @param ttl - il TTL con cui farli partire; se manca, quello solito (128).
+ *   Un TTL piccolo fa fermare il pacchetto dopo pochi router: è l'opzione
+ *   `-i` di ping
  * @returns che cosa fare per il primo echo request: inviarlo se il MAC del
  *   prossimo salto è noto, altrimenti inviare la richiesta ARP; in entrambi
  *   i casi avviare l'attesa dell'echo reply. Se la destinazione è l'host
@@ -132,20 +163,54 @@ const NOTHING: HostOutput = { send: [], startTimers: [], cancelTimers: [], pingR
  *   IP, o se la destinazione è in un'altra rete e manca il gateway, nessun
  *   echo request può partire: il risultato contiene solo gli esiti
  *   "transmit-failed"
- * @throws Error se `targetIp` non è un indirizzo IPv4 valido, o se `count`
- *   non è un numero intero maggiore di zero
+ * @throws Error se `targetIp` non è un indirizzo IPv4 valido, se `count`
+ *   non è un numero intero maggiore di zero, o se `ttl` non sta tra 1 e 255
  */
-export function startPing(host: Host, targetIp: Ipv4Address, count: number): HostOutput {
+export function startPing(host: Host, targetIp: Ipv4Address, count: number, ttl?: number): HostOutput {
   ipToNumber(targetIp); // rifiuta subito ciò che non è un indirizzo
   if (!Number.isInteger(count) || count < 1) {
     throw new Error(`Numero di richieste non valido: ${count}`);
   }
-  return sendEchoRequest(host, targetIp, count - 1);
+  if (ttl !== undefined) requireTtl(ttl);
+  return sendEchoRequest(host, { targetIp, remaining: count - 1, ...(ttl === undefined ? {} : { sendTtl: ttl }) });
 }
 
-// Prepara un echo request. `remaining` dice quanti altri ne seguiranno.
-function sendEchoRequest(host: Host, targetIp: Ipv4Address, remaining: number): HostOutput {
-  const echo: AwaitedEcho = { targetIp, sequence: host.nextEchoSequence, remaining };
+/**
+ * Avvia un tracert: scopre i router sulla strada verso un indirizzo.
+ *
+ * Il trucco è mandare echo request con il TTL troppo basso per arrivare.
+ * La prima sonda parte con TTL 1: il primo router la ferma e avvisa, e
+ * così dice chi è. La seconda parte con TTL 2 e arriva un router più in
+ * là. Si prosegue finché risponde la destinazione.
+ *
+ * Modifica lo stato dell'host come `startPing`.
+ *
+ * @param host - l'host che traccia la strada
+ * @param targetIp - l'indirizzo da raggiungere
+ * @param maxHops - a quale salto fermarsi comunque
+ * @returns che cosa fare per la prima sonda. Se non può partire, o se la
+ *   destinazione è l'host stesso, il risultato contiene già la conclusione
+ * @throws Error se `targetIp` non è un indirizzo IPv4 valido, o se
+ *   `maxHops` non sta tra 1 e 255
+ */
+export function startTracert(host: Host, targetIp: Ipv4Address, maxHops: number): HostOutput {
+  ipToNumber(targetIp);
+  requireTtl(maxHops);
+  return sendEchoRequest(host, { targetIp, remaining: 0, sendTtl: 1, probe: { hop: 1, maxHops } });
+}
+
+// Il TTL sta in un byte, e con zero un pacchetto non parte nemmeno.
+function requireTtl(ttl: number): void {
+  if (!Number.isInteger(ttl) || ttl < 1 || ttl > 255) {
+    throw new Error(`TTL non valido: ${ttl}`);
+  }
+}
+
+// Prepara un echo request: uno dei quattro di un ping, oppure una sonda
+// di tracert. `remaining` dice quanti altri ne seguiranno.
+function sendEchoRequest(host: Host, what: Omit<AwaitedEcho, "sequence">): HostOutput {
+  const echo: AwaitedEcho = { ...what, sequence: host.nextEchoSequence };
+  const { targetIp } = echo;
   host.nextEchoSequence += 1;
 
   // Un ping a se stessi non passa dalla rete: l'host si risponde da solo,
@@ -162,7 +227,8 @@ function sendEchoRequest(host: Host, targetIp: Ipv4Address, remaining: number): 
 
   host.awaitedEchoes.push(echo);
   const request = makeEchoRequest(PING_IDENTIFIER, echo.sequence);
-  const sent = sendIpv4Packet(host, makeIpv4Packet(host.ip, targetIp, request));
+  const packet = makeIpv4Packet(host.ip, targetIp, request);
+  const sent = sendIpv4Packet(host, echo.sendTtl === undefined ? packet : { ...packet, ttl: echo.sendTtl });
   return {
     ...sent,
     startTimers: [
@@ -188,12 +254,42 @@ function concludeEcho(
   outcome: PingResult["outcome"],
   answer: { from: Ipv4Address | null; ttl: number | null } = { from: null, ttl: null },
 ): HostOutput {
-  const result: PingResult = { ...echo, outcome, ...answer };
-  if (echo.remaining === 0) {
+  if (echo.probe !== undefined) {
+    return concludeProbe(host, echo, echo.probe, outcome, answer.from);
+  }
+  const { targetIp, sequence, remaining } = echo;
+  const result: PingResult = { targetIp, sequence, remaining, outcome, ...answer };
+  if (remaining === 0) {
     return { ...NOTHING, pingResults: [result] };
   }
-  const next = sendEchoRequest(host, echo.targetIp, echo.remaining - 1);
+  // Il successivo parte con lo stesso TTL del precedente.
+  const next = sendEchoRequest(host, { ...echo, remaining: remaining - 1 });
   return { ...next, pingResults: [result, ...next.pingResults] };
+}
+
+// Chiude una sonda di tracert. Se un router l'ha fermata, o se nessuno ha
+// risposto, parte la sonda successiva, con un salto in più; se ha risposto
+// la destinazione, o se non si può proseguire, tracert finisce.
+function concludeProbe(
+  host: Host,
+  echo: AwaitedEcho,
+  probe: NonNullable<AwaitedEcho["probe"]>,
+  outcome: PingResult["outcome"],
+  from: Ipv4Address | null,
+): HostOutput {
+  const found: TraceHop["outcome"] = outcome === "reply" ? "reached" : outcome === "ttl-expired" ? "hop" : outcome;
+  const goesOn = (found === "hop" || found === "timeout") && probe.hop < probe.maxHops;
+  const hop: TraceHop = { targetIp: echo.targetIp, hop: probe.hop, outcome: found, from, done: !goesOn };
+  if (!goesOn) {
+    return { ...NOTHING, traceHops: [hop] };
+  }
+  const next = sendEchoRequest(host, {
+    targetIp: echo.targetIp,
+    remaining: 0,
+    sendTtl: probe.hop + 1,
+    probe: { hop: probe.hop + 1, maxHops: probe.maxHops },
+  });
+  return { ...next, traceHops: [hop, ...next.traceHops] };
 }
 
 // Unisce due elenchi di cose da fare in uno solo.
@@ -203,6 +299,7 @@ function merge(a: HostOutput, b: HostOutput): HostOutput {
     startTimers: [...a.startTimers, ...b.startTimers],
     cancelTimers: [...a.cancelTimers, ...b.cancelTimers],
     pingResults: [...a.pingResults, ...b.pingResults],
+    traceHops: [...a.traceHops, ...b.traceHops],
   };
 }
 

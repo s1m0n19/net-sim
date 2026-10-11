@@ -3,11 +3,12 @@ import type { DeviceTemplate } from "./editing";
 import type { Ipv4Address } from "./model/addresses";
 import type { IpConfig } from "./model/ip-config";
 import type { PortRef, StaticRoute } from "./model/network";
-import { DEFAULT_PING_COUNT } from "./protocols/icmp";
+import { DEFAULT_MAX_HOPS, DEFAULT_PING_COUNT } from "./protocols/icmp";
 
 // Le azioni sono l'unico modo in cui l'esterno comanda il motore.
 export type Action =
-  | { kind: "ping"; deviceId: string; targetIp: Ipv4Address; count: number }
+  | { kind: "ping"; deviceId: string; targetIp: Ipv4Address; count: number; ttl?: number }
+  | { kind: "tracert"; deviceId: string; targetIp: Ipv4Address; maxHops: number }
   | { kind: "resolve-address"; deviceId: string; targetIp: Ipv4Address }
   | { kind: "set-link-connected"; linkId: string; connected: boolean }
   | { kind: "set-device-powered"; deviceId: string; powered: boolean }
@@ -32,14 +33,28 @@ export type Action =
  * @param deviceId - identificativo dell'host che fa il ping
  * @param targetIp - indirizzo IP da raggiungere
  * @param count - quanti echo request mandare, uno dopo l'altro; se manca, quattro
+ * @param ttl - il TTL con cui farli partire, da 1 a 255; se manca, 128
  * @returns l'azione da passare a `Simulator.dispatch`
  */
 export function ping(
   deviceId: string,
   targetIp: Ipv4Address,
   count: number = DEFAULT_PING_COUNT,
+  ttl?: number,
 ): Action {
-  return { kind: "ping", deviceId, targetIp, count };
+  return ttl === undefined ? { kind: "ping", deviceId, targetIp, count } : { kind: "ping", deviceId, targetIp, count, ttl };
+}
+
+/**
+ * Crea l'azione "questo host traccia la strada verso questo indirizzo IP".
+ *
+ * @param deviceId - identificativo dell'host
+ * @param targetIp - indirizzo IP da raggiungere
+ * @param maxHops - a quale salto fermarsi comunque, da 1 a 255; se manca, trenta
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function tracert(deviceId: string, targetIp: Ipv4Address, maxHops: number = DEFAULT_MAX_HOPS): Action {
+  return { kind: "tracert", deviceId, targetIp, maxHops };
 }
 
 /**

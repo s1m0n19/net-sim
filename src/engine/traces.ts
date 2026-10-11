@@ -5,7 +5,7 @@
 // eventi. Una traccia dice che cosa è successo, a chi e quando.
 
 import type { Action } from "./actions";
-import type { DropReason, PingResult } from "./devices/host";
+import type { DropReason, PingResult, TraceHop } from "./devices/host";
 import type { RouterDropReason } from "./devices/router";
 import type { SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
@@ -69,6 +69,19 @@ export type Trace =
       // Chi ha risposto, e con quale TTL: vedi `PingResult`.
       from: PingResult["from"];
       ttl: PingResult["ttl"];
+      conversationId: number;
+    }
+  | {
+      // Una sonda di tracert è arrivata a una conclusione: è la riga che
+      // il comando tracert stampa per quel salto.
+      time: number;
+      kind: "trace-hop";
+      deviceId: string;
+      targetIp: TraceHop["targetIp"];
+      hop: number;
+      outcome: TraceHop["outcome"];
+      from: TraceHop["from"];
+      done: boolean;
       conversationId: number;
     }
   | {

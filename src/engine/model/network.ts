@@ -39,6 +39,11 @@ export interface AwaitedEcho {
   sequence: number;
   // Quanti echo request dello stesso ping devono ancora partire dopo questo.
   remaining: number;
+  // Il TTL con cui è partito, se non è quello solito (`ping -i`, `tracert`).
+  sendTtl?: number;
+  // Se è una sonda di tracert: a quale salto corrisponde, e fino a quale
+  // salto proseguire.
+  probe?: { hop: number; maxHops: number };
 }
 
 export interface Host {

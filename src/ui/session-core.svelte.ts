@@ -6,7 +6,7 @@
 // session.svelte.ts). Questo è l'unico che crea il simulatore; gli altri
 // due lo comandano attraverso `run`.
 
-import { ping, type Action } from "../engine/actions";
+import { ping, tracert, type Action } from "../engine/actions";
 import type { DeviceTemplate } from "../engine/editing";
 import { Simulator, type Trace } from "../engine/simulator";
 import { loadNetworkFile, type Position } from "../storage/load";
@@ -184,13 +184,33 @@ export class SessionCore {
    * @param deviceId - l'host che fa il ping
    * @param targetIp - l'indirizzo da raggiungere
    * @param count - quanti echo request mandare
+   * @param ttl - il TTL con cui farli partire; se manca, quello solito
    * @returns null se il ping è partito, altrimenti il motivo per cui non
    *   è stato possibile lanciarlo (per esempio un indirizzo scritto male)
    */
-  ping(deviceId: string, targetIp: string, count: number): string | null {
+  ping(deviceId: string, targetIp: string, count: number, ttl?: number): string | null {
+    return this.launch(ping(deviceId, targetIp, count, ttl));
+  }
+
+  /**
+   * Lancia un tracert da un host.
+   *
+   * @param deviceId - l'host che traccia la strada
+   * @param targetIp - l'indirizzo da raggiungere
+   * @param maxHops - a quale salto fermarsi comunque
+   * @returns null se è partito, altrimenti il motivo per cui non è stato
+   *   possibile lanciarlo
+   */
+  tracert(deviceId: string, targetIp: string, maxHops: number): string | null {
+    return this.launch(tracert(deviceId, targetIp, maxHops));
+  }
+
+  // Manda al simulatore un'azione che genera traffico. Restituisce il
+  // motivo del rifiuto, oppure null.
+  private launch(action: Action): string | null {
     if (this.simulator === null) return "Nessuna rete aperta.";
     try {
-      this.simulator.dispatch(ping(deviceId, targetIp, count));
+      this.simulator.dispatch(action);
     } catch (problem) {
       return messageOf(problem);
     }

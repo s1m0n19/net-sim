@@ -385,6 +385,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-81 | 11 ott 2026 | Nelle statistiche di `ping` ogni risposta conta come pacchetto ricevuto, anche quando è un avviso di errore (`Destination net unreachable`, `Destination host unreachable`, `TTL expired in transit`), come su Windows. Vale anche per l'«host unreachable» detto dal PC stesso, che prima era contato come perso. La riga di risposta riporta il TTL con cui l'echo reply è arrivato | È ciò che gli studenti vedono su un PC vero, incongruenza compresa. Il TTL vero permette di contare i router dal solo ping | Confermata |
 | D-82 | 11 ott 2026 | Le buste dei messaggi ICMP di errore restano etichettate `ICMP`; negli eventi e nel pannello si chiamano «ICMP time exceeded» e «ICMP destination unreachable» | In inglese come gli altri nomi di protocollo | Confermata |
 | D-83 | 11 ott 2026 | Per vedere `TTL expired in transit` in un ciclo di routing si aggiunge a `ping` l'opzione `-i TTL`, che esiste su Windows; la scadenza del ping resta di 40 tick. Da realizzare insieme a `tracert` | Con TTL 128 e un tick per salto un ciclo dura 127 tick, più della scadenza del ping: `ping` stamperebbe `Request timed out`, e a schermo il giro durerebbe minuti. Con `ping -i 6` il ciclo si mostra in pochi passi, senza toccare i tempi del rilascio 1 | Confermata |
+| D-84 | 11 ott 2026 | `tracert` stampa le righe di Windows: un asterisco e `Request timed out.` per un salto muto, proseguendo fino al limite (trenta, o quello chiesto con `-h`); `<router>  reports: Destination net unreachable.` quando un router avvisa, e lì finisce; `Transmit error: code 1231.` quando il PC non può spedire | Sono le righe che gli studenti troveranno su un PC vero, anche quando sono criptiche | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -408,7 +409,7 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). Sono fatti i passaggi 1, 2 e 3 su sette: il router esiste nel modello e nei file, si aggiunge e si configura nel motore, inoltra (ARP per interfaccia, tabella di routing, TTL che scende, MAC riscritti) e avvisa il mittente con i tre messaggi ICMP di errore, che `ping` stampa come Windows. Sul disegno le buste si vedono passare dal router, e il pannello ne mostra interfacce, tabella di routing e tabella ARP, in sola lettura. Mancano `tracert` (passaggio 4), il router da posare e configurare a schermo (5), il server (6). Tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). Sono fatti i passaggi da 1 a 4 su sette, cioè tutto il motore del routing: il router esiste nel modello e nei file, si aggiunge e si configura, inoltra (ARP per interfaccia, tabella di routing, TTL che scende, MAC riscritti), avvisa il mittente con i tre messaggi ICMP di errore, e dal terminale dei PC funzionano `tracert` e `ping -i`. Sul disegno le buste si vedono passare dal router, e il pannello ne mostra interfacce, tabella di routing e tabella ARP, in sola lettura. Manca la parte a schermo: il router da posare e configurare (passaggio 5), il server (6), esempi e test della lezione (7). Tappe successive: nulla è iniziato.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
@@ -428,7 +429,7 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 ### Che cosa esiste oltre ai requisiti
 
 - 8 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
-- 583 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- 621 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Quattro reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
 

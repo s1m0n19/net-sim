@@ -1,7 +1,7 @@
 // Ciò che i componenti disegnano: la rete descritta con le parole dello
 // schermo (nomi, etichette, posizioni), già pronta. La prepara view.ts.
 
-import type { PingResult } from "../engine/devices/host";
+import type { PingResult, TraceHop } from "../engine/devices/host";
 import type { EthernetFrame } from "../engine/model/frames";
 import type { Device } from "../engine/model/network";
 import type { Position } from "../storage/load";
@@ -138,6 +138,16 @@ export interface PingResultView {
   ttl: number | null;
 }
 
+// Un salto scoperto da un tracert, e quando.
+export interface TraceHopView {
+  conversationId: number;
+  time: number;
+  hop: number;
+  outcome: TraceHop["outcome"];
+  from: string | null;
+  done: boolean;
+}
+
 // Una conversazione tra cui scegliere nel filtro.
 export interface ConversationView {
   id: number;
@@ -166,6 +176,7 @@ export interface NetworkView {
   events: EventView[];
   conversations: ConversationView[];
   pingResults: PingResultView[];
+  traceHops: TraceHopView[];
   bounds: Bounds;
   // Stato della simulazione.
   time: number;

@@ -3,6 +3,7 @@ import {
   formatArpTable,
   formatIpconfig,
   formatPing,
+  formatTracert,
   parseCommand,
   type HostInfo,
 } from "../../src/shell/windows";
@@ -37,7 +38,7 @@ describe("capire un comando", () => {
   });
 
   test("ping senza indirizzo, o con un numero di richieste sbagliato, spiega come si usa", () => {
-    expect(parseCommand("ping")).toEqual({ kind: "error", lines: ["Usage: ping [-n count] target_address"] });
+    expect(parseCommand("ping")).toEqual({ kind: "error", lines: ["Usage: ping [-n count] [-i TTL] target_address"] });
     expect(parseCommand("ping -n 0 192.168.1.11")).toMatchObject({ kind: "error" });
     expect(parseCommand("ping -n tre 192.168.1.11")).toMatchObject({ kind: "error" });
   });
@@ -202,5 +203,115 @@ describe("ping attraverso i router", () => {
     expect(formatPing(TARGET, 2, 0, results, "192.168.1.10").at(-1)).toBe(
       "    Packets: Sent = 2, Received = 0, Lost = 2 (100% loss),",
     );
+  });
+});
+
+describe("capire tracert e ping -i", () => {
+  test("tracert con un indirizzo, e con il limite dei salti", () => {
+    expect(parseCommand("tracert 192.168.2.10")).toEqual({ kind: "tracert", target: "192.168.2.10", maxHops: 30 });
+    expect(parseCommand("TRACERT -h 5 192.168.2.10")).toEqual({ kind: "tracert", target: "192.168.2.10", maxHops: 5 });
+    expect(parseCommand("tracert 192.168.2.10 -h 5")).toEqual({ kind: "tracert", target: "192.168.2.10", maxHops: 5 });
+  });
+
+  test("tracert usato male spiega come si usa", () => {
+    expect(parseCommand("tracert")).toEqual({ kind: "error", lines: ["Usage: tracert [-h maximum_hops] target_name"] });
+    expect(parseCommand("tracert -h 0 192.168.2.10")).toEqual({ kind: "error", lines: ["Bad value for option -h."] });
+    expect(parseCommand("tracert pc2")).toEqual({
+      kind: "error",
+      lines: ["Unable to resolve target system name pc2."],
+    });
+    expect(parseCommand("tracert 192.168.2.10 boh")).toEqual({
+      kind: "error",
+      lines: ["boh is not a valid command option."],
+    });
+  });
+
+  test("ping -i imposta il TTL di partenza, insieme alle altre opzioni", () => {
+    expect(parseCommand("ping -i 6 172.16.0.1")).toEqual({ kind: "ping", target: "172.16.0.1", count: 4, ttl: 6 });
+    expect(parseCommand("ping -n 1 -i 6 172.16.0.1")).toEqual({ kind: "ping", target: "172.16.0.1", count: 1, ttl: 6 });
+  });
+
+  test("senza -i il comando non porta un TTL", () => {
+    expect(parseCommand("ping 172.16.0.1")).toEqual({ kind: "ping", target: "172.16.0.1", count: 4 });
+  });
+
+  test("un TTL fuori da 1-255 viene rifiutato", () => {
+    const error = { kind: "error", lines: ["Bad value for option -i, valid range is from 1 to 255."] };
+
+    expect(parseCommand("ping -i 0 172.16.0.1")).toEqual(error);
+    expect(parseCommand("ping -i 256 172.16.0.1")).toEqual(error);
+    expect(parseCommand("ping -i")).toEqual(error);
+  });
+});
+
+describe("tracert", () => {
+  const TARGET = "192.168.2.10";
+
+  test("appena lanciato stampa solo l'intestazione", () => {
+    expect(formatTracert(TARGET, 30, 0, [], "192.168.1.10")).toEqual([
+      "",
+      "Tracing route to 192.168.2.10 over a maximum of 30 hops",
+      "",
+    ]);
+  });
+
+  test("una riga per salto, con la durata della sua sonda, e alla fine \"Trace complete.\"", () => {
+    const lines = formatTracert(
+      TARGET,
+      30,
+      0,
+      [
+        { time: 4, hop: 1, outcome: "hop", from: "192.168.1.1", done: false },
+        { time: 10, hop: 2, outcome: "hop", from: "10.0.0.2", done: false },
+        { time: 18, hop: 3, outcome: "reached", from: TARGET, done: true },
+      ],
+      "192.168.1.10",
+    );
+
+    expect(lines.slice(3)).toEqual([
+      "  1     4 ms  192.168.1.1",
+      "  2     6 ms  10.0.0.2",
+      "  3     8 ms  192.168.2.10",
+      "",
+      "Trace complete.",
+    ]);
+  });
+
+  test("finché non è finito non compare \"Trace complete.\"", () => {
+    const lines = formatTracert(TARGET, 30, 0, [{ time: 4, hop: 1, outcome: "hop", from: "192.168.1.1", done: false }], null);
+
+    expect(lines.at(-1)).toBe("  1     4 ms  192.168.1.1");
+  });
+
+  test("un salto che non risponde ha un asterisco", () => {
+    const lines = formatTracert(TARGET, 30, 0, [{ time: 40, hop: 2, outcome: "timeout", from: null, done: false }], null);
+
+    expect(lines.at(-1)).toBe("  2     *     Request timed out.");
+  });
+
+  test("un router che avvisa compare con il suo indirizzo e il motivo", () => {
+    const line = (outcome: "net-unreachable" | "host-unreachable") =>
+      formatTracert(TARGET, 30, 0, [{ time: 6, hop: 2, outcome, from: "192.168.1.1", done: true }], null)[3];
+
+    expect(line("net-unreachable")).toBe("  2  192.168.1.1  reports: Destination net unreachable.");
+    expect(line("host-unreachable")).toBe("  2  192.168.1.1  reports: Destination host unreachable.");
+  });
+
+  test("se è il PC a non trovare la destinazione nella sua LAN, compare il suo indirizzo", () => {
+    const lines = formatTracert("192.168.1.77", 30, 0, [{ time: 20, hop: 1, outcome: "unreachable", from: null, done: true }], "192.168.1.10");
+
+    expect(lines[3]).toBe("  1  192.168.1.10  reports: Destination host unreachable.");
+  });
+
+  test("se non può nemmeno partire stampa l'errore di trasmissione di Windows", () => {
+    const lines = formatTracert(TARGET, 30, 0, [{ time: 0, hop: 1, outcome: "transmit-failed", from: null, done: true }], null);
+
+    expect(lines.slice(3)).toEqual(["  1  Transmit error: code 1231.", "", "Trace complete."]);
+  });
+
+  test("una risposta immediata dura meno di un millisecondo", () => {
+    const lines = formatTracert("192.168.1.10", 30, 0, [{ time: 0, hop: 1, outcome: "reached", from: "192.168.1.10", done: true }], "192.168.1.10");
+
+    expect(lines[3]).toBe("  1    <1 ms  192.168.1.10");
   });
 });

@@ -240,7 +240,8 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 
 | Azione | Che cosa fa |
 | --- | --- |
-| `ping(deviceId, targetIp, count)` | L'host manda `count` echo request, uno alla volta. Se `count` manca, quattro |
+| `ping(deviceId, targetIp, count, ttl)` | L'host manda `count` echo request, uno alla volta. Se `count` manca, quattro. `ttl`, facoltativo, è il TTL di partenza: 128 se manca |
+| `tracert(deviceId, targetIp, maxHops)` | L'host traccia la strada verso un indirizzo, una sonda per salto. Se `maxHops` manca, trenta |
 | `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
 | `disconnectLink(linkId)`, `connectLink(linkId)` | Stacca o riattacca un cavo |
 | `powerOff(deviceId)`, `powerOn(deviceId)` | Spegne o accende un dispositivo |
@@ -407,6 +408,26 @@ Come gli host, il router non spedisce e non misura il tempo: restituisce i frame
 
 Dal punto di vista di un host non cambia nulla: `nextHopFor` consegna al gateway ciò che non è della propria rete, e l'host chiede con ARP il MAC del gateway, non quello della destinazione.
 
+### Tracert (`devices/host.ts`)
+
+`startTracert` scopre i router sulla strada verso un indirizzo usando il TTL al contrario del solito: lo imposta troppo basso apposta.
+
+1. La prima **sonda** è un echo request con TTL 1. Il primo router la ferma e avvisa con «time exceeded»: così dice chi è.
+2. La seconda parte con TTL 2 e arriva un router più in là. E così via.
+3. Quando risponde la destinazione con un echo reply, la strada è finita.
+
+Una sonda alla volta: la successiva parte quando la precedente si è conclusa. Ogni conclusione è una traccia `trace-hop`, con il numero del salto, chi ha risposto e se tracert finisce lì.
+
+| Che cosa succede alla sonda | Esito del salto | Tracert |
+| --- | --- | --- |
+| Un router la ferma per il TTL | `hop` | prosegue |
+| Risponde la destinazione | `reached` | finisce |
+| Nessuno risponde in tempo | `timeout` | prosegue, fino al limite dei salti |
+| Un router avvisa che non si passa | `net-unreachable`, `host-unreachable` | finisce |
+| L'host non trova a chi consegnarla, o non può spedirla | `unreachable`, `transmit-failed` | finisce |
+
+Lo stesso meccanismo serve a `ping -i`: `startPing` accetta un TTL di partenza, e tutti gli echo request di quel ping partono con quello.
+
 ### Switch
 
 Per ogni frame ricevuto su una porta:
@@ -444,7 +465,8 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Proxy ARP | Su molti router si può attivare | Assente: il router risponde solo per l'indirizzo dell'interfaccia interrogata |
 | Messaggi ICMP di errore | Molti tipi e codici; riportano l'intestazione IP e i primi 8 byte del pacchetto scartato | Tre: TTL scaduto, rete non raggiungibile, host non raggiungibile. Riportano indirizzi, tipo e numero di sequenza del pacchetto scartato |
 | Statistiche di `ping` | Windows conta come ricevute anche le risposte di errore | Lo stesso: dopo un `Destination net unreachable` le statistiche dicono `Lost = 0` |
-| Ciclo di routing | Il pacchetto gira in pochi millisecondi e `ping` stampa `TTL expired in transit` | Il giro dura 127 tick, più della scadenza del ping (40): `ping` stampa `Request timed out`, e l'avviso del router arriva tardi e viene ignorato |
+| Ciclo di routing | Il pacchetto gira in pochi millisecondi e `ping` stampa `TTL expired in transit` | Con il TTL solito il giro dura 127 tick, più della scadenza del ping (40): `ping` stampa `Request timed out`. Per vederlo si parte con un TTL piccolo, `ping -i 6` (D-83) |
+| `tracert` | Tre sonde per salto, in UDP o ICMP secondo il sistema; cerca anche i nomi | Una sonda ICMP per salto (D-73); solo indirizzi |
 | Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11) |
 
@@ -581,8 +603,6 @@ Non ancora nel codice:
 
 - **Porta spenta** (requisito SIM-7, rilascio 2).
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
-- **`ping -i TTL`** (decisione D-83), per vedere `TTL expired in transit` in un ciclo di routing partendo con un TTL piccolo.
-- **`tracert`** sugli host (CFG-3).
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
@@ -635,6 +655,7 @@ I file di test, uno per argomento:
 | `routing.test.ts` | Tabella di routing e scelta della rotta |
 | `router-forwarding.test.ts` | Ping attraverso uno e due router: ARP sui due lati, MAC, TTL, rotte mancanti, ciclo di routing |
 | `icmp-errors.test.ts` | I tre messaggi ICMP di errore, chi li manda e che cosa ne fa l'host; TTL della risposta |
+| `tracert.test.ts` | Tracert con uno e due router, salti muti, cicli; ping con TTL a scelta |
 | `reset.test.ts` | Ricominciare la simulazione |
 | `snapshot.test.ts` | Fotografare la configurazione e tornarci |
 
