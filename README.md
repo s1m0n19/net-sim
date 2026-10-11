@@ -40,7 +40,7 @@ Poi si apre http://localhost:5173 nel browser.
 
 All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quelli di esempio stanno nella cartella [examples/](examples/).
 
-Il router è in costruzione (rilascio 2). Un file che ne contiene uno, come `due-lan-router`, si apre e si salva, e il router inoltra: imposta il gateway `192.168.1.1` su PC1 e un ping verso `192.168.2.10` attraversa il router, con i MAC che cambiano e il TTL che scende di uno. Il pannello ne mostra interfacce, tabella di routing e tabella ARP. Per ora il router non si posa dalla colonna e non si configura dall'app, e un pacchetto senza rotta viene scartato in silenzio.
+Il router è in costruzione (rilascio 2). Un file che ne contiene uno, come `due-lan-router`, si apre e si salva, e il router inoltra: imposta il gateway `192.168.1.1` su PC1 e un ping verso `192.168.2.10` attraversa il router, con i MAC che cambiano e il TTL che scende di uno (la risposta arriva con `TTL=127`). Quando non può consegnare un pacchetto il router avvisa il mittente, e `ping` lo stampa come su Windows: per esempio `Reply from 192.168.2.1: Destination net unreachable.` per un ping da PC2 verso `10.9.9.9`. Il pannello mostra interfacce, tabella di routing e tabella ARP del router. Per ora il router non si posa dalla colonna e non si configura dall'app.
 
 **Costruire.** Dalla colonna a sinistra si posano i dispositivi, in due modi:
 

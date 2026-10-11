@@ -12,11 +12,11 @@ import {
   type Ipv4Address,
   type MacAddress,
 } from "../model/addresses";
-import type { ArpPacket, EthernetFrame, Ipv4Packet } from "../model/frames";
+import type { ArpPacket, EthernetFrame, IcmpError, Ipv4Packet } from "../model/frames";
 import type { AwaitedEcho, Host } from "../model/network";
 import { ARP_TIMEOUT_TICKS, makeArpReply, makeArpRequest } from "../protocols/arp";
-import { ECHO_TIMEOUT_TICKS, makeEchoReply, makeEchoRequest } from "../protocols/icmp";
-import { makeIpv4Packet, nextHopFor } from "../protocols/ipv4";
+import { ECHO_TIMEOUT_TICKS, isEcho, makeEchoReply, makeEchoRequest } from "../protocols/icmp";
+import { DEFAULT_TTL, makeIpv4Packet, nextHopFor } from "../protocols/ipv4";
 
 // Perché un frame è stato scartato. Serve ai test: l'interfaccia mostra
 // che il frame è stato scartato, ma non ne spiega la causa.
@@ -63,7 +63,20 @@ export interface PingResult {
     // L'host non ha nemmeno potuto provarci: non sente il segnale sul
     // cavo, non ha un indirizzo, oppure la destinazione è in un'altra
     // rete e non c'è una strada.
-    | "transmit-failed";
+    | "transmit-failed"
+    // Un router lungo la strada ha avvisato che non ha una rotta verso
+    // la rete di destinazione.
+    | "net-unreachable"
+    // L'ultimo router ha avvisato che la destinazione non risponde.
+    | "host-unreachable"
+    // Un router ha avvisato che il TTL si è esaurito prima dell'arrivo.
+    | "ttl-expired";
+  // Chi ha risposto: la destinazione, per un echo reply; il router che ha
+  // mandato l'avviso, per un errore. Null se non ha risposto nessuno.
+  from: Ipv4Address | null;
+  // Il TTL con cui è arrivato l'echo reply: 128 meno i router attraversati
+  // al ritorno. Null se non è arrivato un echo reply.
+  ttl: number | null;
 }
 
 // Richiesta di avviare un'attesa che scadrà dopo `delay` tick.
@@ -138,7 +151,7 @@ function sendEchoRequest(host: Host, targetIp: Ipv4Address, remaining: number): 
   // Un ping a se stessi non passa dalla rete: l'host si risponde da solo,
   // subito, e sul cavo non esce nulla.
   if (isOwnAddress(host, targetIp)) {
-    return concludeEcho(host, echo, "reply");
+    return concludeEcho(host, echo, "reply", { from: targetIp, ttl: DEFAULT_TTL });
   }
 
   // Senza segnale sul cavo, senza un indirizzo, o senza una strada verso
@@ -169,8 +182,13 @@ function isOwnAddress(host: Host, ip: Ipv4Address): boolean {
 
 // Chiude un echo request con il suo esito. Se il ping ne prevede altri,
 // fa partire subito il successivo.
-function concludeEcho(host: Host, echo: AwaitedEcho, outcome: PingResult["outcome"]): HostOutput {
-  const result: PingResult = { ...echo, outcome };
+function concludeEcho(
+  host: Host,
+  echo: AwaitedEcho,
+  outcome: PingResult["outcome"],
+  answer: { from: Ipv4Address | null; ttl: number | null } = { from: null, ttl: null },
+): HostOutput {
+  const result: PingResult = { ...echo, outcome, ...answer };
   if (echo.remaining === 0) {
     return { ...NOTHING, pingResults: [result] };
   }
@@ -315,10 +333,14 @@ function receiveIpv4(host: Host, packet: Ipv4Packet): HostReaction {
   }
 
   const icmp = packet.payload;
-  if (icmp.type === "echo-request") {
+  if (isEcho(icmp) && icmp.type === "echo-request") {
     // Rispondo a chi ha chiesto: sorgente e destinazione si scambiano.
     const reply = makeIpv4Packet(host.ip, packet.srcIp, makeEchoReply(icmp));
     return { ...sendIpv4Packet(host, reply), dropped: null, tableChanged: false };
+  }
+
+  if (!isEcho(icmp)) {
+    return { ...receiveIcmpError(host, packet.srcIp, icmp), dropped: null, tableChanged: false };
   }
 
   // È un echo reply. Se lo stavo aspettando, il ping è andato a buon fine
@@ -332,7 +354,28 @@ function receiveIpv4(host: Host, packet: Ipv4Packet): HostReaction {
     ...NOTHING,
     cancelTimers: [{ kind: "echo-timeout", sequence: awaited.sequence }],
   };
-  return { ...merge(cancel, concludeEcho(host, awaited, "reply")), dropped: null, tableChanged: false };
+  const answer = { from: packet.srcIp, ttl: packet.ttl };
+  return { ...merge(cancel, concludeEcho(host, awaited, "reply", answer)), dropped: null, tableChanged: false };
+}
+
+// Un router avvisa che un mio pacchetto non è arrivato. Se riguarda un
+// echo request che sto ancora aspettando, quel ping finisce qui, con
+// l'esito che l'avviso riporta: non serve aspettare la scadenza.
+function receiveIcmpError(host: Host, reporter: Ipv4Address, error: IcmpError): HostOutput {
+  const { original } = error;
+  // L'avviso riguarda un mio echo request? Un errore su altro (una mia
+  // risposta, o un pacchetto non mio) viene ricevuto e ignorato.
+  if (original.type !== "echo-request" || original.srcIp !== host.ip) return NOTHING;
+  const awaited = stopAwaiting(host, original.dstIp, original.sequence);
+  if (awaited === null) return NOTHING;
+
+  const outcome =
+    error.type === "time-exceeded" ? "ttl-expired" : error.code === "net" ? "net-unreachable" : "host-unreachable";
+  const cancel: HostOutput = {
+    ...NOTHING,
+    cancelTimers: [{ kind: "echo-timeout", sequence: awaited.sequence }],
+  };
+  return merge(cancel, concludeEcho(host, awaited, outcome, { from: reporter, ttl: null }));
 }
 
 // Spedisce un pacchetto IP: lo incapsula in un frame Ethernet diretto al

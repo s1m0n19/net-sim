@@ -1,6 +1,7 @@
 // Ciò che i componenti disegnano: la rete descritta con le parole dello
 // schermo (nomi, etichette, posizioni), già pronta. La prepara view.ts.
 
+import type { PingResult } from "../engine/devices/host";
 import type { EthernetFrame } from "../engine/model/frames";
 import type { Device } from "../engine/model/network";
 import type { Position } from "../storage/load";
@@ -131,7 +132,10 @@ export interface EventView {
 export interface PingResultView {
   conversationId: number;
   time: number;
-  outcome: "reply" | "timeout" | "unreachable" | "transmit-failed";
+  outcome: PingResult["outcome"];
+  // Chi ha risposto, e con quale TTL è arrivata la risposta.
+  from: string | null;
+  ttl: number | null;
 }
 
 // Una conversazione tra cui scegliere nel filtro.

@@ -151,7 +151,7 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     })),
     pingResults: simulator.traces.flatMap((trace) =>
       trace.kind === "ping-result"
-        ? [{ conversationId: trace.conversationId, time: trace.time, outcome: trace.outcome }]
+        ? [{ conversationId: trace.conversationId, time: trace.time, outcome: trace.outcome, from: trace.from, ttl: trace.ttl }]
         : [],
     ),
     bounds: boundsOf(devices),

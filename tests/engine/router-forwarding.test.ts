@@ -132,14 +132,14 @@ describe("un router tra due LAN", () => {
     sim.dispatch(ping("d1", "192.168.2.10", 1));
     run(sim);
 
-    expect(results(sim)).toEqual(["timeout"]);
+    expect(results(sim)).toEqual(["net-unreachable"]);
     const dropped = sim.traces.find((t) => t.kind === "frame-dropped" && t.at.deviceId === "r1");
     expect(dropped?.kind === "frame-dropped" && dropped.reason).toBe("no-route");
 
     sim.dispatch(enableInterface("r1", "Gi0/1"));
     sim.dispatch(ping("d1", "192.168.2.10", 1));
     run(sim);
-    expect(results(sim)).toEqual(["timeout", "reply"]);
+    expect(results(sim)).toEqual(["net-unreachable", "reply"]);
   });
 
   test("se PC2 è spento, il router chiede il suo MAC, non ottiene risposta e rinuncia", () => {
@@ -149,7 +149,7 @@ describe("un router tra due LAN", () => {
     sim.dispatch(ping("d1", "192.168.2.10", 1));
     run(sim);
 
-    expect(results(sim)).toEqual(["timeout"]);
+    expect(results(sim)).toEqual(["host-unreachable"]);
     const given = sim.traces.find((t) => t.kind === "packet-dropped" && t.deviceId === "r1");
     expect(given).toBeDefined();
     expect(r1.pendingPackets).toEqual([]);
@@ -210,7 +210,7 @@ describe("due router in fila", () => {
     sim.dispatch(ping("d1", "192.168.2.10", 1));
     run(sim);
 
-    expect(results(sim)).toEqual(["timeout"]);
+    expect(results(sim)).toEqual(["net-unreachable"]);
     const dropped = sim.traces.find((t) => t.kind === "frame-dropped" && t.at.deviceId === "r1");
     expect(dropped?.kind === "frame-dropped" && dropped.reason).toBe("no-route");
     expect(sentBy(sim, "r2")).toEqual([]);
@@ -278,11 +278,16 @@ describe("due router in fila", () => {
     sim.dispatch(ping("d1", "172.16.0.1", 1)); // una rete che non esiste
     run(sim);
 
+    // Il giro dura 127 tick, più della scadenza del ping (40): chi ha fatto
+    // il ping ha già rinunciato quando il TTL si esaurisce.
     expect(results(sim)).toEqual(["timeout"]);
     const expired = sim.traces.find((t) => t.kind === "frame-dropped" && t.reason === "ttl-expired");
     expect(expired).toBeDefined();
     // Il pacchetto ha fatto avanti e indietro tra i due router: 127 inoltri.
-    expect(ipPacketsSentBy(sim, "r1").length + ipPacketsSentBy(sim, "r2").length).toBe(127);
+    const forwards = [...ipPacketsSentBy(sim, "r1"), ...ipPacketsSentBy(sim, "r2")].filter(
+      (sent) => sent.packet.payload.type === "echo-request",
+    );
+    expect(forwards).toHaveLength(127);
     expect(sim.suspended).toBe(false); // non è una tempesta di broadcast
   });
 

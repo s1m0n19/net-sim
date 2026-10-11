@@ -148,8 +148,24 @@ export function formatArpTable(host: HostInfo): string[] {
 // Com'è finito un echo request, e quando.
 export interface EchoResult {
   time: number;
-  outcome: "reply" | "timeout" | "unreachable" | "transmit-failed";
+  outcome:
+    | "reply"
+    | "timeout"
+    | "unreachable"
+    | "transmit-failed"
+    | "net-unreachable"
+    | "host-unreachable"
+    | "ttl-expired";
+  // Chi ha risposto: la destinazione, oppure il router che ha avvisato.
+  from?: string | null;
+  // Il TTL con cui è arrivata la risposta.
+  ttl?: number | null;
 }
+
+// Gli esiti in cui qualcuno ha risposto, anche solo per dire che non si
+// passa. Windows li conta tutti come pacchetti ricevuti: dopo un
+// "Destination net unreachable" le statistiche dicono "Lost = 0".
+const ANSWERED: EchoResult["outcome"][] = ["reply", "unreachable", "net-unreachable", "host-unreachable", "ttl-expired"];
 
 /**
  * Le righe che `ping` ha stampato finora: l'intestazione, una riga per
@@ -179,7 +195,7 @@ export function formatPing(
   }
 
   if (results.length >= count) {
-    const received = results.filter((result) => result.outcome === "reply").length;
+    const received = results.filter((result) => ANSWERED.includes(result.outcome)).length;
     const lost = count - received;
     lines.push("");
     lines.push(`Ping statistics for ${target}:`);
@@ -197,7 +213,9 @@ function formatEcho(target: string, result: EchoResult, ticks: number, ownIp: st
       // Windows: un tick viene scritto come un millisecondo. È un numero
       // di comodo, che dice quanti cavi ha attraversato lo scambio.
       const time = ticks === 0 ? "time<1ms" : `time=${ticks}ms`;
-      return `Reply from ${target}: bytes=32 ${time} TTL=${DEFAULT_TTL}`;
+      // Il TTL è quello con cui la risposta è arrivata: 128 meno i router
+      // attraversati al ritorno.
+      return `Reply from ${result.from ?? target}: bytes=32 ${time} TTL=${result.ttl ?? DEFAULT_TTL}`;
     }
     case "timeout":
       return "Request timed out.";
@@ -206,5 +224,13 @@ function formatEcho(target: string, result: EchoResult, ticks: number, ownIp: st
       return `Reply from ${ownIp ?? ""}: Destination host unreachable.`;
     case "transmit-failed":
       return "PING: transmit failed. General failure.";
+    // Gli avvisi di un router: compare il suo indirizzo, non quello della
+    // destinazione.
+    case "net-unreachable":
+      return `Reply from ${result.from ?? ""}: Destination net unreachable.`;
+    case "host-unreachable":
+      return `Reply from ${result.from ?? ""}: Destination host unreachable.`;
+    case "ttl-expired":
+      return `Reply from ${result.from ?? ""}: TTL expired in transit.`;
   }
 }

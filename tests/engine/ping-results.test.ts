@@ -33,6 +33,8 @@ describe("esito del ping: risposta", () => {
         sequence: 1,
         outcome: "reply",
         remaining: 0,
+        from: PC2_IP,
+        ttl: 128,
         conversationId: 1,
       },
     ]);

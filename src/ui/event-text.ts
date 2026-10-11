@@ -56,6 +56,9 @@ const OUTCOMES = {
   timeout: () => "ping: richiesta scaduta",
   unreachable: () => "ping: host di destinazione non raggiungibile",
   "transmit-failed": () => "ping: trasmissione non riuscita",
+  "net-unreachable": () => "ping: rete di destinazione non raggiungibile",
+  "host-unreachable": () => "ping: host di destinazione non raggiungibile",
+  "ttl-expired": () => "ping: TTL scaduto lungo la strada",
 };
 
 // Trasforma una traccia del motore in una riga dell'elenco degli eventi.

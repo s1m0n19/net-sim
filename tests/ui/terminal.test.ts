@@ -134,7 +134,8 @@ describe("ping dal terminale", () => {
       "Reply from 192.168.1.10: Destination host unreachable.",
       "",
       "Ping statistics for 192.168.1.99:",
-      "    Packets: Sent = 1, Received = 0, Lost = 1 (100% loss),",
+      // Come su Windows: una risposta di errore conta come ricevuta.
+      "    Packets: Sent = 1, Received = 1, Lost = 0 (0% loss),",
     ]);
   });
 

@@ -391,6 +391,18 @@ Il router unisce reti diverse: riceve un pacchetto IP da un'interfaccia e lo fa 
 4. Se ne conosce il MAC spedisce. Altrimenti manda una richiesta ARP dall'interfaccia di uscita e tiene il pacchetto in attesa, con la scadenza degli host (20 tick); se la risposta non arriva, rinuncia.
 5. Il frame che riparte ha come sorgente il MAC dell'interfaccia di uscita e come destinazione il MAC del prossimo salto. Gli indirizzi IP non cambiano.
 
+**Quando non può consegnare** un pacchetto, il router lo scarta e avvisa il mittente con un messaggio ICMP di errore (`makeIcmpError`, in `protocols/icmp.ts`):
+
+| Situazione | Messaggio | Esito del ping |
+| --- | --- | --- |
+| Il TTL si è esaurito | `time-exceeded` | `ttl-expired` |
+| Nessuna rotta verso la destinazione | `destination-unreachable`, codice `net` | `net-unreachable` |
+| La destinazione, o il prossimo salto, non risponde ad ARP | `destination-unreachable`, codice `host` | `host-unreachable` |
+
+L'avviso parte dall'indirizzo dell'interfaccia su cui il pacchetto era arrivato e viene instradato come ogni altro pacchetto; se non trova la strada, viene scartato in silenzio. Riporta indirizzi, tipo e numero di sequenza del pacchetto scartato: è così che l'host riconosce a quale echo request si riferisce e lo chiude subito, senza aspettare la scadenza. Su un messaggio di errore non si manda mai un altro errore.
+
+L'esito del ping riporta anche chi ha risposto (`from`: la destinazione, oppure il router che ha avvisato) e, per un echo reply, il TTL con cui è arrivato (`ttl`): 128 meno i router attraversati al ritorno.
+
 Come gli host, il router non spedisce e non misura il tempo: restituisce i frame da inviare, ciascuno con la sua interfaccia, e le attese da avviare o annullare.
 
 Dal punto di vista di un host non cambia nulla: `nextHopFor` consegna al gateway ciò che non è della propria rete, e l'host chiede con ARP il MAC del gateway, non quello della destinazione.
@@ -426,11 +438,13 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Collisioni, velocità, duplex | Dipendono dal mezzo fisico | Assenti: ogni collegamento è punto-punto e senza errori |
 | Dimensione dei frame, MTU, frammentazione | Presenti | Assenti |
 | Durata dei percorsi | Variabile | 1 tick per collegamento |
-| TTL | Diminuisce a ogni router | Diminuisce a ogni router. Un pacchetto il cui TTL si esaurisce viene scartato; il messaggio ICMP che avvisa il mittente non c'è ancora |
+| TTL | Diminuisce a ogni router | Diminuisce a ogni router. Quando si esaurisce il router scarta il pacchetto e avvisa il mittente |
 | Rotta statica con prossimo salto non collegato | Il router cerca a sua volta una rotta per il prossimo salto | La rotta resta in tabella ma non viene usata |
 | Più rotte equivalenti | Il traffico viene diviso tra le rotte | Vince la prima della tabella |
 | Proxy ARP | Su molti router si può attivare | Assente: il router risponde solo per l'indirizzo dell'interfaccia interrogata |
-| Pacchetto senza rotta | Il router avvisa il mittente con un messaggio ICMP | Per ora scartato in silenzio: i messaggi ICMP di errore sono il prossimo passaggio |
+| Messaggi ICMP di errore | Molti tipi e codici; riportano l'intestazione IP e i primi 8 byte del pacchetto scartato | Tre: TTL scaduto, rete non raggiungibile, host non raggiungibile. Riportano indirizzi, tipo e numero di sequenza del pacchetto scartato |
+| Statistiche di `ping` | Windows conta come ricevute anche le risposte di errore | Lo stesso: dopo un `Destination net unreachable` le statistiche dicono `Lost = 0` |
+| Ciclo di routing | Il pacchetto gira in pochi millisecondi e `ping` stampa `TTL expired in transit` | Il giro dura 127 tick, più della scadenza del ping (40): `ping` stampa `Request timed out`, e l'avviso del router arriva tardi e viene ignorato |
 | Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11) |
 
@@ -567,7 +581,7 @@ Non ancora nel codice:
 
 - **Porta spenta** (requisito SIM-7, rilascio 2).
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
-- **Messaggi ICMP di errore** (rilascio 2, requisito SIM-18): TTL scaduto, rete non raggiungibile, host non raggiungibile. Oggi il router scarta in silenzio e chi fa il ping vede `Request timed out`.
+- **`ping -i TTL`** (decisione D-83), per vedere `TTL expired in transit` in un ciclo di routing partendo con un TTL piccolo.
 - **`tracert`** sugli host (CFG-3).
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
@@ -620,6 +634,7 @@ I file di test, uno per argomento:
 | `router-editing.test.ts` | Aggiungere un router, interfacce, rotte, e annullare |
 | `routing.test.ts` | Tabella di routing e scelta della rotta |
 | `router-forwarding.test.ts` | Ping attraverso uno e due router: ARP sui due lati, MAC, TTL, rotte mancanti, ciclo di routing |
+| `icmp-errors.test.ts` | I tre messaggi ICMP di errore, chi li manda e che cosa ne fa l'host; TTL della risposta |
 | `reset.test.ts` | Ricominciare la simulazione |
 | `snapshot.test.ts` | Fotografare la configurazione e tornarci |
 

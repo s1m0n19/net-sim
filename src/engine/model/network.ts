@@ -110,6 +110,9 @@ export interface Router {
 // salto, ricorda da quale interfaccia dovrà uscire.
 export interface RouterPendingPacket extends PendingPacket {
   portName: string;
+  // L'interfaccia da cui era arrivato: se il router dovrà rinunciare, è da
+  // lì che avviserà il mittente. Null per un pacchetto nato sul router.
+  arrivedOn: string | null;
 }
 
 export type Device = Host | Switch | Router;

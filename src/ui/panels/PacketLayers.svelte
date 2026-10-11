@@ -4,6 +4,9 @@
   import type { EthernetFrame } from "../../engine/model/frames";
 
   let { frame }: { frame: EthernetFrame } = $props();
+
+  // Il messaggio ICMP dentro il pacchetto IP, se il frame ne porta uno.
+  const icmp = $derived(frame.etherType === "IPv4" ? frame.payload.payload : null);
 </script>
 
 <div class="layer">
@@ -46,17 +49,33 @@
         <dt>Protocollo</dt>
         <dd>{frame.payload.protocol}</dd>
       </dl>
+      {#if icmp !== null}
       <div class="layer icmp">
         <strong>ICMP</strong>
         <dl>
           <dt>Tipo</dt>
-          <dd>{frame.payload.payload.type.replace("-", " ")}</dd>
-          <dt>Identificativo</dt>
-          <dd>{frame.payload.payload.identifier}</dd>
-          <dt>Sequenza</dt>
-          <dd>{frame.payload.payload.sequence}</dd>
+          <dd>{icmp.type.replace("-", " ")}</dd>
+          {#if !("original" in icmp)}
+            <dt>Identificativo</dt>
+            <dd>{icmp.identifier}</dd>
+            <dt>Sequenza</dt>
+            <dd>{icmp.sequence}</dd>
+          {:else}
+            <!-- Un avviso: dice quale pacchetto non è arrivato. -->
+            {#if icmp.type === "destination-unreachable"}
+              <dt>Codice</dt>
+              <dd>{icmp.code} unreachable</dd>
+            {/if}
+            <dt>Scartato</dt>
+            <dd>{icmp.original.type.replace("-", " ")} n. {icmp.original.sequence}</dd>
+            <dt>Da</dt>
+            <dd>{icmp.original.srcIp}</dd>
+            <dt>Per</dt>
+            <dd>{icmp.original.dstIp}</dd>
+          {/if}
         </dl>
       </div>
+      {/if}
     </div>
   {/if}
 </div>

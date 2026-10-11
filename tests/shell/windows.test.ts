@@ -162,3 +162,45 @@ describe("ping", () => {
     ]);
   });
 });
+
+describe("ping attraverso i router", () => {
+  const TARGET = "192.168.2.10";
+
+  test("la risposta riporta il TTL con cui è arrivata", () => {
+    const lines = formatPing(TARGET, 1, 0, [{ time: 12, outcome: "reply", from: TARGET, ttl: 126 }], "192.168.1.10");
+
+    expect(lines[2]).toBe("Reply from 192.168.2.10: bytes=32 time=12ms TTL=126");
+  });
+
+  test("gli avvisi di un router riportano l'indirizzo del router, non della destinazione", () => {
+    const from = "192.168.1.1";
+    const line = (outcome: "net-unreachable" | "host-unreachable" | "ttl-expired") =>
+      formatPing(TARGET, 4, 0, [{ time: 4, outcome, from, ttl: null }], "192.168.1.10")[2];
+
+    expect(line("net-unreachable")).toBe("Reply from 192.168.1.1: Destination net unreachable.");
+    expect(line("host-unreachable")).toBe("Reply from 192.168.1.1: Destination host unreachable.");
+    expect(line("ttl-expired")).toBe("Reply from 192.168.1.1: TTL expired in transit.");
+  });
+
+  test("come su Windows, un avviso conta come pacchetto ricevuto", () => {
+    const results = [
+      { time: 4, outcome: "net-unreachable" as const, from: "192.168.1.1", ttl: null },
+      { time: 6, outcome: "net-unreachable" as const, from: "192.168.1.1", ttl: null },
+    ];
+
+    expect(formatPing(TARGET, 2, 0, results, "192.168.1.10").at(-1)).toBe(
+      "    Packets: Sent = 2, Received = 2, Lost = 0 (0% loss),",
+    );
+  });
+
+  test("una richiesta scaduta e una trasmissione non riuscita restano perse", () => {
+    const results = [
+      { time: 40, outcome: "timeout" as const },
+      { time: 40, outcome: "transmit-failed" as const },
+    ];
+
+    expect(formatPing(TARGET, 2, 0, results, "192.168.1.10").at(-1)).toBe(
+      "    Packets: Sent = 2, Received = 0, Lost = 2 (100% loss),",
+    );
+  });
+});

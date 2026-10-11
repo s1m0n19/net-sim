@@ -266,7 +266,7 @@ export class Simulator {
   private fireTimer(event: TimerExpiry, produced: Trace[]): void {
     const host = findDevice(this.network, event.deviceId);
     if (host.kind === "router") {
-      const reaction = routerTimerExpired(host, event.timer);
+      const reaction = routerTimerExpired(host, event.timer, routingTableOf(this.network, host));
       for (const packet of reaction.droppedPackets) {
         produced.push({
           time: this.time,
@@ -342,6 +342,9 @@ export class Simulator {
     if (reaction.dropped !== null) {
       const reason = reaction.dropped;
       produced.push({ time: this.time, kind: "frame-dropped", frameId, at: to, frame, reason, conversationId });
+      // Anche scartando, il router può avere qualcosa da spedire: l'avviso
+      // al mittente che il suo pacchetto non è arrivato.
+      this.applyRouter(router, reaction, conversationId, produced);
       return;
     }
 

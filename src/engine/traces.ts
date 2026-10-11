@@ -66,6 +66,9 @@ export type Trace =
       sequence: number;
       outcome: PingResult["outcome"];
       remaining: number;
+      // Chi ha risposto, e con quale TTL: vedi `PingResult`.
+      from: PingResult["from"];
+      ttl: PingResult["ttl"];
       conversationId: number;
     }
   | {

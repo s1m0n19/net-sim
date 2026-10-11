@@ -265,10 +265,15 @@ L'output di `ping` cresce mentre la simulazione avanza: una riga per ogni echo r
 
 | Esito | Riga stampata |
 | --- | --- |
-| Risposta | `Reply from 192.168.1.11: bytes=32 time=8ms TTL=128` |
+| Risposta | `Reply from 192.168.1.11: bytes=32 time=8ms TTL=128`. Il TTL è quello con cui la risposta è arrivata: 127 dopo un router, 126 dopo due |
 | Richiesta scaduta | `Request timed out.` |
 | Host non raggiungibile | `Reply from 192.168.1.10: Destination host unreachable.` (l'indirizzo è quello del PC che fa ping, come su Windows) |
 | Trasmissione non riuscita | `PING: transmit failed. General failure.` |
+| Rete non raggiungibile, detto da un router | `Reply from 192.168.1.1: Destination net unreachable.` (l'indirizzo è quello del router che non ha la rotta) |
+| Host non raggiungibile, detto da un router | `Reply from 10.0.0.2: Destination host unreachable.` (l'ultimo router non ha trovato la destinazione) |
+| TTL scaduto | `Reply from 10.0.0.2: TTL expired in transit.` |
+
+Come su Windows, nelle statistiche finali ogni riga che comincia con `Reply from` conta come pacchetto ricevuto, anche quando è un avviso di errore: dopo un `Destination net unreachable` si legge `Received = 1, Lost = 0`. Contano come persi solo le richieste scadute e le trasmissioni non riuscite.
 
 La durata è scritta in millisecondi, come su Windows, ma è un numero di comodo: un tick del tempo simulato vale un millisecondo (D-65), quindi `time=8ms` dice che lo scambio ha attraversato otto tratti di cavo. Una risposta immediata, come dal loopback, è `time<1ms`.
 
