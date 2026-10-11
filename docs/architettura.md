@@ -68,8 +68,13 @@ net-sim/
 │   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
 │   │   ├── devices/           host.ts, switch.ts
-│   │   ├── simulator.ts       coda degli eventi, tempo, tracce
+│   │   ├── simulator.ts       coda degli eventi, tempo, consegna dei frame
+│   │   ├── events.ts          ciò che sta in coda: arrivi di frame e scadenze
+│   │   ├── traces.ts          le tracce: la registrazione di ciò che è successo
+│   │   ├── faults.ts          guasti e segnale: cavo staccato, dispositivo spento
+│   │   ├── storm.ts           come si riconosce una tempesta di broadcast
 │   │   ├── editing.ts         modifiche alla rete: aggiungere, togliere, collegare, configurare
+│   │   ├── network-changes.ts le stesse modifiche a simulazione in corso
 │   │   ├── snapshot.ts        fotografia della configurazione, per annullare e ripristinare
 │   │   └── actions.ts         le azioni accettate dal motore
 │   ├── storage/
@@ -80,8 +85,11 @@ net-sim/
 │   │   └── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
-│       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore
-│       ├── view.ts            prepara ciò che il disegno mostra
+│       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
+│       │                      è fatta di tre strati (session-core, -demo, -editing)
+│       ├── view.ts            prepara ciò che il disegno mostra (tipi in view-types.ts,
+│       │                      testo degli eventi in event-text.ts)
+│       ├── presentation.ts    modalità presentazione e scorciatoie
 │       ├── preferences.svelte.ts  tema, etichette, pannelli aperti
 │       ├── theme/             colori, caratteri, sagome dei dispositivi
 │       └── layout/  topology/  panels/  strip/  simulation/
@@ -100,7 +108,7 @@ Cartelle *previste* e non ancora esistenti:
 
 ## Convenzioni del codice
 
-- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti.
+- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi; restano poco sopra `simulator.ts` (il ciclo degli eventi e la consegna, che si leggono meglio di seguito) e `session-editing.svelte.ts`.
 - **I nomi seguono la teoria.** Un campo si chiama come sul libro di testo e negli standard: `ttl`, `etherType`, `senderMac`.
 - **Identificatori in inglese, commenti e messaggi in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. È la decisione D-15.
 - **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola. Esempi: `chooseOutputPorts`, `nextHopFor`, `sameNetwork`.

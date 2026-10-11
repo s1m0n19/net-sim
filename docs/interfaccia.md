@@ -363,14 +363,19 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | File o cartella | Contenuto |
 | --- | --- |
 | `App.svelte` | L'ossatura: la griglia che dispone le aree. I componenti non sanno dove si trovano |
-| `session.svelte.ts` | La rete aperta, ciò che di lei va disegnato, la selezione e i comandi (ping, guasti, passo). È l'unico punto che parla con il simulatore |
+| `session.svelte.ts` | `session`, l'unico punto che parla con il simulatore. È fatta di tre strati, uno sopra l'altro; i metodi si chiamano tutti su `session` |
+| `session-core.svelte.ts` | Primo strato: la rete aperta, ciò che di lei va disegnato, il tempo a schermo, il file, la selezione, i gesti a metà, l'inquadratura |
+| `session-demo.svelte.ts` | Secondo strato: guasti, ping col mouse, terminali, tabelle appuntate, filtro |
+| `session-editing.svelte.ts` | Terzo strato: le modifiche alla rete e la cronologia per annullare |
+| `session-types.ts` | I tipi di selezione, tabelle appuntate, terminali e punti della cronologia |
 | `view.ts` | Trasforma rete e posizioni in ciò che i componenti disegnano: etichette, segnale sui cavi, inquadratura. Non usa il browser, quindi ha i suoi test |
+| `view-types.ts`, `event-text.ts` | I tipi di ciò che si disegna; il testo di ogni riga dell'elenco degli eventi |
 | `preferences.svelte.ts` | Ciò che riguarda solo chi guarda: tema, etichette accese, pannelli aperti |
 | `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi |
 | `presentation.ts` | Modalità presentazione: entrare, uscire, scorciatoie. L'ingrandimento sta in `preferences` |
-| `topology/` | Il disegno: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi, pulsanti dell'inquadratura. `camera.ts` e `geometry.ts` contengono i calcoli, senza schermo |
+| `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts` e `geometry.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
 | `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |

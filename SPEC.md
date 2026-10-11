@@ -258,7 +258,6 @@ Punti ancora da decidere:
 - [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
 - [ ] Da decidere dopo il collaudo: come alleggerire il passo-passo di un ping da quattro richieste (oggi si usa `ping -n 1`); quale icona dare al pulsante che stacca e riattacca un cavo.
 - [ ] LIM usata con il dito: UI-4 esclude i gesti tattili, ma trascinamenti e clic vanno provati; la rotella non c'è, restano i pulsanti − e +.
-- [ ] Riordino dei quattro file oltre le 300 righe (`session.svelte.ts`, `simulator.ts`, `Topology.svelte`, `view.ts`): deciso l'11 ottobre 2026, da fare dopo i test della pagina, un file per volta e senza cambiare comportamento.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
 - [ ] In quale rilascio collocare il salvataggio facoltativo delle tabelle (FILE-5). Proposta: R2.
@@ -339,6 +338,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-65 | 11 ott 2026 | Nell'output di `ping` la durata è scritta in millisecondi, come su Windows: un tick vale un millisecondo (`time=8ms`), e una risposta immediata è `time<1ms` | La riga deve essere quella che gli studenti vedranno su un PC vero. Il numero è di comodo, ma resta leggibile: dice quanti tratti di cavo ha attraversato lo scambio | Confermata |
 | D-66 | 11 ott 2026 | L'app è rivolta alle classi del docente e ai colleghi. Il repository resta privato; il codice del motore lo mostra il docente in classe | Aprire il codice richiede di scegliere una licenza e di curare marchi e sintassi Cisco: non serve per usare l'app dal sito. Si potrà aprire in seguito | Confermata |
 | D-67 | 11 ott 2026 | La pagina ha pochi test che eseguono i percorsi principali in un browser vero (Playwright, sul sito costruito): la lezione del criterio di accettazione, costruire una rete, salvare e riaprire, inquadratura e presentazione. A ogni push GitHub Actions esegue test, controllo dei tipi e build, e segna l'esito sul commit; è un avviso, non blocca la pubblicazione | I componenti a schermo erano verificati solo a occhio, e ogni push pubblica. Pochi percorsi veri coprono clic e trascinamenti che un browser simulato non vede; un avviso basta finché si lavora su un ramo solo | Confermata |
+| D-68 | 11 ott 2026 | I quattro file oltre le 300 righe sono stati divisi per argomento, senza cambiare comportamento né i nomi usati dal resto del codice. `session` è diventata tre classi una sopra l'altra (rete e simulazione; dimostrazione; modifiche), i cui metodi si chiamano ancora tutti su `session` | La convenzione "un concetto, un file" serve a chi legge, studenti compresi. Dividere `session` a strati evita di toccare tutti i componenti e i test che la usano | Confermata |
 
 ## 9. Stato di avanzamento
 
