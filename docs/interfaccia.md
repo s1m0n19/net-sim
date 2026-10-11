@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** in costruzione. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026. Dei nove passaggi del piano, in fondo al documento, sono fatti i primi sei: ossatura, temi, disegno della rete, apertura di un file; barra della simulazione, tempo reale, buste animate, attese; selezione, barretta delle azioni, pannello laterale; scheda Eventi con il filtro; tabelle appuntate; terminale degli host. Tutto il resto è descritto qui ma non esiste ancora. La pagina provvisoria usata all'inizio è stata cancellata.
+**Stato:** costruita, da provare in aula. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026 e realizzata nei nove passaggi del piano in fondo al documento, tutti fatti. Dove il codice si è scostato dal progetto iniziale, il documento descrive il codice.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 
@@ -263,12 +263,12 @@ L'output di `ping` cresce mentre la simulazione avanza: una riga per ogni echo r
 
 | Esito | Riga stampata |
 | --- | --- |
-| Risposta | `Reply from 192.168.1.11: bytes=32 time=8 ticks TTL=128` |
+| Risposta | `Reply from 192.168.1.11: bytes=32 time=8ms TTL=128` |
 | Richiesta scaduta | `Request timed out.` |
 | Host non raggiungibile | `Reply from 192.168.1.10: Destination host unreachable.` (l'indirizzo è quello del PC che fa ping, come su Windows) |
 | Trasmissione non riuscita | `PING: transmit failed. General failure.` |
 
-La durata è scritta in tick, perché è l'unità del tempo simulato: Windows scriverebbe `time<1ms`. Una risposta immediata, come dal loopback, è `time<1 tick`.
+La durata è scritta in millisecondi, come su Windows, ma è un numero di comodo: un tick del tempo simulato vale un millisecondo (D-65), quindi `time=8ms` dice che lo scambio ha attraversato otto tratti di cavo. Una risposta immediata, come dal loopback, è `time<1ms`.
 
 Altre cose da sapere:
 
@@ -301,7 +301,7 @@ Ogni riga dice che cosa è successo, non perché: "PC3 scarta ARP request", senz
 Si attiva dal pulsante Presenta e si lascia con Esc o con il pulsante Esci, che ne prende il posto.
 
 - **Che cosa sparisce** (D-62): la colonna dei dispositivi; nella barra in alto Nuova, Apri, Salva, annulla e le etichette; sulla barretta Collega ed Elimina. Il tasto Canc e Ctrl+S non fanno nulla.
-- **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello.
+- **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello. Ctrl+Z annulla ancora: rimette a posto un indirizzo cambiato o un dispositivo spostato per sbaglio, senza uscire.
 - **Ingrandimento** (D-61): un solo fattore, di partenza 140%, regolabile dal 100% al 200% con A− e A+ nella barra in alto. Barre, pannello e fascia si ingrandiscono per intero. Nel disegno crescono dispositivi, scritte, buste, tabelle appuntate e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete. La barretta delle azioni non cresce.
 - **Inquadratura**: entrando, e a ogni cambio di ingrandimento, la rete viene inquadrata per intero. I pulsanti −, + e Adatta salgono nell'angolo in alto a destra del disegno, perché in basso la barra della simulazione è più larga.
 - **La fascia in basso parte chiusa.**
@@ -356,7 +356,7 @@ Sono i valori del bozzetto: un punto di partenza, da ritoccare quando l'interfac
 
 ## Come è organizzato il codice
 
-L'interfaccia sta in `src/ui/`, divisa per area. Le parti segnate *previsto* non esistono ancora.
+L'interfaccia sta in `src/ui/`, divisa per area. 
 
 | File o cartella | Contenuto |
 | --- | --- |

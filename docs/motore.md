@@ -1,6 +1,6 @@
 # Motore di simulazione
 
-**Stato:** descrive il codice al 9 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
+**Stato:** descrive il codice all'11 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
 
 Il motore è la parte dell'app che fa funzionare la rete: decide che cosa fa un dispositivo quando riceve un frame, tiene le tabelle, fa scorrere il tempo. Non disegna nulla. Sta in `src/engine/` e non dipende da altro (vedi [architettura.md](architettura.md)).
 
@@ -360,7 +360,7 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Richiesta ARP ricevuta da chi non è il destinatario | Può aggiornare una voce già presente | Viene scartata senza effetti |
 | Richiesta ARP senza risposta | Viene ripetuta alcune volte, poi i pacchetti in attesa sono scartati | Non viene ripetuta: dopo 20 tick i pacchetti in attesa sono scartati |
 | ARP gratuito, rilevamento di indirizzi duplicati | Presenti | Assenti |
-| Ping | Windows manda quattro echo request, a un secondo l'uno dall'altro | Quattro echo request senza pausa nel motore: il successivo parte quando il precedente si conclude. In tempo reale l'interfaccia aggiungerà una breve pausa a schermo (decisione D-29) |
+| Ping | Windows manda quattro echo request, a un secondo l'uno dall'altro | Quattro echo request senza pausa nel motore: il successivo parte quando il precedente si conclude. In tempo reale l'interfaccia aggiunge una breve pausa a schermo (decisione D-29) |
 | Identificativo ICMP | Varia secondo il sistema | Sempre 1 |
 | Checksum e FCS | Calcolati e verificati | Assenti: i frame non si corrompono |
 | Collisioni, velocità, duplex | Dipendono dal mezzo fisico | Assenti: ogni collegamento è punto-punto e senza errori |
@@ -495,7 +495,6 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 Non ancora nel codice:
 
 - **Porta spenta** (requisito SIM-7, rilascio 2).
-- **Tempo reale** (SIM-2, SIM-3): un orologio dell'interfaccia che chiama `step()` da solo, a velocità regolabile. Il motore non cambia. In questa modalità l'interfaccia farà una breve pausa tra un echo request e il successivo (SIM-16).
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
 - **Router**, con più porte ciascuna con il proprio indirizzo, tabella di routing e decremento del TTL (rilascio 2).
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
@@ -545,5 +544,7 @@ I file di test, uno per argomento:
 | `link-faults.test.ts` | Cavo staccato |
 | `power-faults.test.ts` | Dispositivo spento |
 | `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
+| `reset.test.ts` | Ricominciare la simulazione |
+| `snapshot.test.ts` | Fotografare la configurazione e tornarci |
 
 I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.

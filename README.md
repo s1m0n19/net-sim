@@ -177,7 +177,7 @@ Il codice è diviso in due parti che non si mescolano:
 - **`src/engine/`**: il motore di simulazione. Contiene tutta la logica di rete, in TypeScript puro, e non sa nulla della grafica.
 - **`src/ui/`**: l'interfaccia, in Svelte. Mostra lo stato del motore e gli invia i comandi.
 
-`src/storage/` legge i file delle reti. I test stanno in `tests/` e coprono il motore, la lettura dei file e la preparazione del disegno, non i componenti a schermo.
+`src/storage/` legge e scrive i file delle reti, e `src/shell/` interpreta i comandi del terminale. I test stanno in `tests/` e coprono il motore, i file, il terminale e la logica dell'interfaccia (modifiche, cronologia, inquadratura, presentazione), non i componenti a schermo.
 
 Il motore è scritto per essere letto: un file per protocollo, nomi dei campi come sul libro di testo, commenti che spiegano il perché. Un buon punto di partenza è [src/engine/protocols/arp.ts](src/engine/protocols/arp.ts), seguito da [src/engine/devices/host.ts](src/engine/devices/host.ts).
 

@@ -1,6 +1,6 @@
 # Architettura
 
-**Stato:** descrive il codice al 10 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
+**Stato:** descrive il codice all'11 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
 
 L'app è divisa in due parti che non si mescolano: un **motore di simulazione**, che contiene tutta la logica di rete, e un'**interfaccia**, che lo mostra e lo comanda. Il motore non sa di essere disegnato su uno schermo.
 
@@ -115,7 +115,7 @@ Cartelle *previste* e non ancora esistenti:
 | Configurazione | dispositivi, porte, collegamenti, indirizzi | nei dispositivi della rete (`Host`, `Switch`) | sì |
 | Posizioni sul disegno | coordinate di ogni dispositivo | fuori dal motore, in `LoadedFile.positions` | sì |
 | Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator` | oggi no. *Previsto* (D-25): le sole tabelle MAC e ARP, se chi salva lo chiede |
-| Stato della vista | rete di esempio scelta, host e indirizzo del ping | in `App.svelte` | no |
+| Stato della vista | selezione, tabelle appuntate, terminali aperti, filtro, inquadratura, cronologia per annullare; tema, etichette, pannelli aperti, presentazione | in `session` e in `preferences` (`src/ui/`) | no |
 
 `createHost` e `createSwitch` costruiscono un dispositivo "appena acceso": la configurazione data più lo stato di esecuzione iniziale. Li usano il lettore dei file e i test, così lo stato iniziale è definito in un solo punto.
 

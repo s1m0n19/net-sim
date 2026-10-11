@@ -74,7 +74,7 @@ Il motore non importa mai da `ui/`, da Svelte o dal browser. Dentro `src/engine/
 
 Un ciclo tra switch produce una tempesta di broadcast, che il simulatore interrompe sospendendosi (`sim.suspended`). Per far avanzare la rete fino alla fine si usa `while (sim.canStep())`, mai la lunghezza della coda: a simulazione sospesa la coda non si svuota.
 
-Ogni frame e ogni attesa portano un `conversationId`: ciò che nasce elaborandoli eredita il loro numero. Servirà a mostrare solo la conversazione seguita.
+Ogni frame e ogni attesa portano un `conversationId`: ciò che nasce elaborandoli eredita il loro numero. Il filtro della scheda Eventi lo usa per mostrare solo la conversazione seguita.
 
 ### Configurazione e stato di esecuzione
 

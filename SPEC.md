@@ -2,8 +2,8 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** in sviluppo. Il motore del rilascio 1 è completo; l'interfaccia è in costruzione, a due terzi del piano. Il dettaglio è nella sezione 9.
-- **Ultimo aggiornamento:** 10 ottobre 2026.
+- **Stato:** in sviluppo. Il rilascio 1 è costruito, motore e interfaccia, ed è pubblicato; resta da provarlo in aula. Il rilascio 2 non è iniziato. Il dettaglio è nella sezione 9.
+- **Ultimo aggiornamento:** 11 ottobre 2026.
 - **Nome dell'app:** da decidere. In questo documento si usa il nome provvisorio *net-sim*.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
@@ -266,7 +266,7 @@ Punti ancora da decidere:
 
 Registro delle scelte tecniche importanti, con il motivo. Ogni nuova scelta si aggiunge in fondo; una scelta superata non si cancella, si marca come sostituita. I dettagli stanno in [docs/](docs/README.md).
 
-Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docente, *adottata* se è già nel codice su proposta di chi sviluppa ma non è ancora stata discussa. Il 9 ottobre 2026 tutte le decisioni adottate fino a quel momento sono state discusse e confermate o sostituite.
+Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docente, *adottata* se è già nel codice su proposta di chi sviluppa ma non è ancora stata discussa. Il 9 ottobre 2026 tutte le decisioni adottate fino a quel momento sono state discusse e confermate o sostituite. L'11 ottobre 2026 lo stesso è stato fatto per quelle successive: resta adottata la sola D-61, in attesa della prova in aula.
 
 | N. | Data | Decisione | Motivo | Stato |
 | --- | --- | --- | --- | --- |
@@ -311,14 +311,14 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-39 | 10 ott 2026 | In tempo reale un tratto di cavo dura 1,4 secondi a 1× (un secondo, alla prima prova, è risultato troppo rapido); le attese non si aspettano davvero ma si mostrano con un indicatore che si svuota in pochi secondi | È il ritmo per commentare a voce, senza tempi morti quando non viaggia nulla | Confermata, da realizzare |
 | D-40 | 10 ott 2026 | Un campo di configurazione ha effetto alla conferma; la maschera viene proposta in base alla classe dell'indirizzo | Evita stati intermedi mentre si scrive, e permette di rispettare la regola "indirizzo e maschera insieme" un campo alla volta | Confermata, da realizzare |
 | D-41 | 10 ott 2026 | All'avvio sempre un foglio vuoto; nessuna rete ricordata e nessun esempio integrato | Prevedibile, e adatto ai PC del laboratorio che vengono ripuliti | Confermata, da realizzare |
-| D-42 | 10 ott 2026 | I caratteri dell'interfaccia sono inclusi nel sito, non caricati da un servizio esterno | L'app deve funzionare offline e dietro il filtro della scuola | Adottata |
+| D-42 | 10 ott 2026 | I caratteri dell'interfaccia sono inclusi nel sito, non caricati da un servizio esterno | L'app deve funzionare offline e dietro il filtro della scuola | Confermata |
 | D-43 | 10 ott 2026 | Durante la costruzione della nuova interfaccia la pagina provvisoria resta raggiungibile all'indirizzo `/#provvisoria` | Finché la nuova non sa lanciare un ping, togliere la vecchia lascerebbe l'app senza modo di mostrare la simulazione | Superata: la pagina provvisoria è stata cancellata quando la nuova interfaccia l'ha sostituita |
-| D-44 | 10 ott 2026 | Nell'output di `ping` la durata è scritta in tick: `time=8 ticks`, e `time<1 tick` per una risposta immediata | È l'unità del tempo simulato; scrivere millisecondi sarebbe inventare un numero | Adottata |
-| D-45 | 10 ott 2026 | Ricominciando la simulazione i terminali restano aperti ma si svuotano | I PC tornano come appena accesi; l'output di prima parlerebbe di una rete che non esiste più | Adottata |
-| D-46 | 10 ott 2026 | Identificativi, nomi, porte e indirizzi MAC di un dispositivo nuovo li sceglie il motore, prendendo il primo libero della serie | L'utente dice solo che cosa vuole aggiungere; la scelta è sempre la stessa a parità di rete, quindi i test restano ripetibili | Adottata |
-| D-47 | 10 ott 2026 | Due dispositivi non possono avere lo stesso nome | Il nome è ciò che l'utente vede nell'elenco degli eventi e nel terminale: due uguali non si distinguerebbero | Adottata |
-| D-48 | 10 ott 2026 | Cambiando la configurazione IP, un host dimentica tabella ARP e attese; gli altri host tengono le loro tabelle | È ciò che succede riavviando una scheda di rete, e lascia agli altri una riga ARP vecchia, che è un caso reale da diagnosticare | Adottata |
-| D-49 | 10 ott 2026 | Il disegno parte da un foglio di base e l'inquadratura si allarga solo quando un dispositivo ne esce | Se l'inquadratura seguisse sempre la rete, il disegno si sposterebbe a ogni dispositivo posato o trascinato. Lo zoom manuale arriverà con il passaggio 8 | Adottata |
+| D-44 | 10 ott 2026 | Nell'output di `ping` la durata è scritta in tick: `time=8 ticks`, e `time<1 tick` per una risposta immediata | È l'unità del tempo simulato; scrivere millisecondi sarebbe inventare un numero | Sostituita da D-65 |
+| D-45 | 10 ott 2026 | Ricominciando la simulazione i terminali restano aperti ma si svuotano | I PC tornano come appena accesi; l'output di prima parlerebbe di una rete che non esiste più | Confermata |
+| D-46 | 10 ott 2026 | Identificativi, nomi, porte e indirizzi MAC di un dispositivo nuovo li sceglie il motore, prendendo il primo libero della serie | L'utente dice solo che cosa vuole aggiungere; la scelta è sempre la stessa a parità di rete, quindi i test restano ripetibili | Confermata |
+| D-47 | 10 ott 2026 | Due dispositivi non possono avere lo stesso nome | Il nome è ciò che l'utente vede nell'elenco degli eventi e nel terminale: due uguali non si distinguerebbero | Confermata |
+| D-48 | 10 ott 2026 | Cambiando la configurazione IP, un host dimentica tabella ARP e attese; gli altri host tengono le loro tabelle | È ciò che succede riavviando una scheda di rete, e lascia agli altri una riga ARP vecchia, che è un caso reale da diagnosticare | Confermata |
+| D-49 | 10 ott 2026 | Il disegno parte da un foglio di base e l'inquadratura si allarga solo quando un dispositivo ne esce | Se l'inquadratura seguisse sempre la rete, il disegno si sposterebbe a ogni dispositivo posato o trascinato. Lo zoom manuale arriverà con il passaggio 8 | Confermata, insieme a D-59 che la completa |
 | D-50 | 10 ott 2026 | I nomi delle porte di un cavo selezionato si vedono sempre, anche con l'etichetta Porte spenta | Cambiare porta parte da un clic sul nome: se il nome non si vedesse, non ci sarebbe modo di farlo. Sugli altri cavi resta l'etichetta a decidere | Confermata |
 | D-51 | 10 ott 2026 | Con lo strumento Cavo attivo un cavo si tira anche con due clic, sul primo dispositivo e poi sul secondo, oltre che trascinando | Su una LIM o con un touchpad trascinare è scomodo. È lo stesso gesto del pulsante Collega | Confermata |
 | D-52 | 10 ott 2026 | Svuotare il campo dell'indirizzo IP toglie anche subnet mask e gateway | Indirizzo e maschera vanno impostati insieme (CFG-7): modificando un campo alla volta non ci sarebbe modo di togliere la configurazione a un host, perché ogni passo intermedio verrebbe rifiutato | Confermata |
@@ -330,23 +330,24 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-58 | 10 ott 2026 | La rete risulta modificata quando il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Con modifiche non salvate, Nuova, Apri e la chiusura della pagina chiedono conferma | Confrontare i file è più semplice e più giusto che contare le modifiche: annullare tutto riporta a "salvata", e il traffico non conta. La conferma evita di perdere con un clic una rete costruita in classe | Confermata |
 | D-59 | 10 ott 2026 | L'inquadratura è automatica (il foglio di base, D-49) finché l'utente non ingrandisce, sposta la vista o preme Adatta; da lì è un rettangolo fisso che cambia solo lui. Nuova torna a quella automatica | Chi costruisce una rete da zero non deve pensare alla vista; chi l'ha scelta non deve vedersela cambiare da un dispositivo posato | Confermata |
 | D-60 | 10 ott 2026 | Un file appena aperto viene inquadrato per intero, come con Adatta. Adatta lascia margine per etichette e barra della simulazione, e non ingrandisce oltre un riquadro minimo | Con il solo foglio di base le reti di esempio apparivano piccole. Senza il riquadro minimo un PC da solo riempirebbe lo schermo | Confermata |
-| D-61 | 10 ott 2026 | In presentazione l'ingrandimento è un solo fattore, regolabile dal 100% al 200% (di partenza 140%). Barre, pannello e fascia si ingrandiscono per intero; nel disegno crescono dispositivi, scritte, buste, tabelle e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete | Un fattore solo è facile da regolare guardando dal fondo dell'aula. Ingrandire gli elementi e non le distanze è ciò che rende leggibile una rete grande, che altrimenti verrebbe solo rimpicciolita dall'inquadratura | Adottata |
-| D-62 | 10 ott 2026 | In presentazione spariscono i comandi per costruire (colonna, file, annulla, etichette, Collega, Elimina, tasto Canc); restano guasti, ping, terminale, tabelle appuntate, spostamento dei dispositivi e modifica di nome e indirizzi dal pannello | Durante una dimostrazione servono i guasti e il cambio di un indirizzo (criterio di accettazione, punto 7); eliminare un dispositivo per sbaglio davanti alla classe no | Adottata |
-| D-63 | 10 ott 2026 | Le scorciatoie Spazio, Freccia destra, E e T valgono solo in presentazione, e mai mentre si scrive in una casella o nel terminale. Esc prima lascia andare un gesto a metà, poi esce | Fuori dalla presentazione quei tasti si premono per altri motivi. Così UI-14 è rispettato senza sorprese | Adottata |
+| D-61 | 10 ott 2026 | In presentazione l'ingrandimento è un solo fattore, regolabile dal 100% al 200% (di partenza 140%). Barre, pannello e fascia si ingrandiscono per intero; nel disegno crescono dispositivi, scritte, buste, tabelle e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete | Un fattore solo è facile da regolare guardando dal fondo dell'aula. Ingrandire gli elementi e non le distanze è ciò che rende leggibile una rete grande, che altrimenti verrebbe solo rimpicciolita dall'inquadratura | Adottata: da decidere dopo la prova in aula |
+| D-62 | 10 ott 2026 | In presentazione spariscono i comandi per costruire (colonna, file, annulla, etichette, Collega, Elimina, tasto Canc); restano guasti, ping, terminale, tabelle appuntate, spostamento dei dispositivi, modifica di nome e indirizzi dal pannello, e Ctrl+Z per annullare | Durante una dimostrazione servono i guasti e il cambio di un indirizzo (criterio di accettazione, punto 7); eliminare un dispositivo per sbaglio davanti alla classe no | Confermata |
+| D-63 | 10 ott 2026 | Le scorciatoie Spazio, Freccia destra, E e T valgono solo in presentazione, e mai mentre si scrive in una casella o nel terminale. Esc prima lascia andare un gesto a metà, poi esce | Fuori dalla presentazione quei tasti si premono per altri motivi. Così UI-14 è rispettato senza sorprese | Confermata |
 | D-64 | 11 ott 2026 | Il sito è pubblicato su Cloudflare, nel piano gratuito, e si aggiorna da solo a ogni push sul ramo `main`. Il repository resta privato. Le prove si fanno in locale | È gratuito senza un tetto mensile che possa sospendere il sito, non obbliga a rendere pubblico il codice prima di aver deciso destinatari e licenza, e accetta un dominio `.it` comprato altrove | Confermata |
+| D-65 | 11 ott 2026 | Nell'output di `ping` la durata è scritta in millisecondi, come su Windows: un tick vale un millisecondo (`time=8ms`), e una risposta immediata è `time<1ms` | La riga deve essere quella che gli studenti vedranno su un PC vero. Il numero è di comodo, ma resta leggibile: dice quanti tratti di cavo ha attraversato lo scambio | Confermata |
 
 ## 9. Stato di avanzamento
 
-Aggiornato al 10 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
+Aggiornato all'11 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
 
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
 | Rilascio 1 intero | circa 98%: costruito, da provare in aula |
-| Prima versione (rilasci 1 e 2) | circa 20% |
-| Progetto completo, fino alla tappa T8 | circa 8% |
+| Prima versione (rilasci 1 e 2) | circa 55% |
+| Progetto completo, fino alla tappa T8 | circa 20% |
 
-Il motore è molto più avanti dell'interfaccia: ciò che separa il progetto dalla prima lezione è quasi tutto a schermo. L'interfaccia definitiva è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e va costruita in nove passaggi; sono fatti i primi sette: l'ultimo, l'editor, si è chiuso con annulla e ripristina. Sono fatti anche l'ottavo (Nuova, Salva, zoom e spostamento della vista) e il nono (modalità presentazione e scorciatoie). Ciò che resta del rilascio 1 è la prova: in aula, su LIM o proiettore, e con reti grandi.
+Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e costruita in nove passaggi, tutti fatti. Ciò che resta del rilascio 1 è la prova: in aula, su LIM o proiettore, e con reti grandi. Il sito è pubblicato (D-64).
 
 ### Requisiti del rilascio 1
 
@@ -374,9 +375,9 @@ Rilascio 2 e tappe successive: nulla è iniziato.
 
 ### Che cosa esiste oltre ai requisiti
 
-- 463 test automatici su motore, lettura dei file, comandi del terminale, preparazione del disegno e orologio del tempo reale.
+- 463 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Tre reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello.
-- La nuova interfaccia, al sesto dei nove passaggi (ora anche con le tabelle appuntate e il terminale degli host): apre una rete, la disegna, ne mostra la simulazione in tempo reale o a passi, permette di selezionare dispositivi, cavi e pacchetti, lanciare un ping, provocare guasti e seguire gli eventi con un filtro.
+- Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
 
 ### Difetti noti
 

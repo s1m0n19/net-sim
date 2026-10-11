@@ -2,7 +2,7 @@
 
 Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'app deve fare, stanno in [SPEC.md](../SPEC.md); lo stato di avanzamento è nella sua sezione 9.
 
-**Stato:** i documenti descrivono il codice com'è al 9 ottobre 2026. Dove parlano di qualcosa che ancora non esiste lo dicono, con la parola *previsto*. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
+**Stato:** i documenti descrivono il codice com'è all'11 ottobre 2026. Dove parlano di qualcosa che ancora non esiste lo dicono, con la parola *previsto*. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
 
 ## Documenti
 
@@ -11,11 +11,11 @@ Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'ap
 | [architettura.md](architettura.md) | Tecnologie scelte, parti dell'app, struttura delle cartelle, convenzioni del codice |
 | [motore.md](motore.md) | Il motore di simulazione: modello dei dati, eventi, tempo, attese, protocolli e loro semplificazioni |
 | [formato-file.md](formato-file.md) | Il formato dei file delle reti |
-| [interfaccia.md](interfaccia.md) | L'interfaccia definitiva: ossatura, comportamento, aspetto e piano di costruzione. È un progetto, non ancora realizzato |
+| [interfaccia.md](interfaccia.md) | L'interfaccia: ossatura, comportamento di ogni parte, aspetto, organizzazione del codice e piano con cui è stata costruita |
 
 Documenti previsti, da scrivere quando si arriva alla parte corrispondente:
 
-- `cli.md`: interprete dei comandi IOS e terminale degli host (rilasci 1 e 2).
+- `cli.md`: interprete dei comandi IOS (rilascio 2). Il terminale degli host esiste già ed è descritto in [interfaccia.md](interfaccia.md).
 - `esercizi.md`: obiettivi, verifica automatica, protezione dei file (tappa T1).
 
 ## A chi si rivolge
