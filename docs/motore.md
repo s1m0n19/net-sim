@@ -187,7 +187,8 @@ Il simulatore è diviso in più file, uno per argomento:
 
 | File | Contenuto |
 | --- | --- |
-| `simulator.ts` | La classe `Simulator`: la coda, il tempo, `dispatch`, `step`, la consegna dei frame a host e switch |
+| `simulator.ts` | La classe `Simulator`: la coda, il tempo, `dispatch`, `step`, e le tre operazioni che servono alla consegna (mettere un frame sul cavo, avviare e annullare un'attesa) |
+| `delivery.ts` | La consegna: che cosa succede quando un frame arriva a un host, a uno switch o a un router, e quando scade un'attesa. Esegue ciò che il dispositivo ha chiesto |
 | `events.ts` | I tipi di ciò che sta in coda: arrivo di un frame, scadenza di un'attesa |
 | `traces.ts` | Il tipo `Trace`, con tutte le tracce possibili, e le conversazioni |
 | `faults.ts` | Cavo staccato e dispositivo spento; chi sente il segnale |
@@ -525,7 +526,7 @@ I guasti fanno parte della configurazione: un file può contenere un dispositivo
 
 ## Modificare la rete
 
-Le modifiche stanno in `src/engine/editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
+Le modifiche stanno in `src/engine/editing.ts`, e quelle che riguardano solo i router (interfacce, rotte statiche) in `src/engine/router-editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
 
 ### Tornare a una configurazione di prima
 

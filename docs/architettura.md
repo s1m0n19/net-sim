@@ -68,12 +68,14 @@ net-sim/
 │   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
 │   │   ├── devices/           host.ts (con host-output, host-sending, host-ping), switch.ts, router.ts
-│   │   ├── simulator.ts       coda degli eventi, tempo, consegna dei frame
+│   │   ├── simulator.ts       coda degli eventi, tempo, azioni
+│   │   ├── delivery.ts        consegna di un frame a host, switch e router; attese scadute
 │   │   ├── events.ts          ciò che sta in coda: arrivi di frame e scadenze
 │   │   ├── traces.ts          le tracce: la registrazione di ciò che è successo
 │   │   ├── faults.ts          guasti e segnale: cavo staccato, dispositivo spento
 │   │   ├── storm.ts           come si riconosce una tempesta di broadcast
 │   │   ├── editing.ts         modifiche alla rete: aggiungere, togliere, collegare, configurare
+│   │   ├── router-editing.ts  modifiche a un router: interfacce e rotte statiche
 │   │   ├── network-changes.ts le stesse modifiche a simulazione in corso
 │   │   ├── snapshot.ts        fotografia della configurazione, per annullare e ripristinare
 │   │   └── actions.ts         le azioni accettate dal motore
@@ -86,7 +88,7 @@ net-sim/
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
-│       │                      è fatta di tre strati (session-core, -demo, -editing)
+│       │                      è fatta di quattro strati (session-core, -demo, -editing, -router)
 │       ├── view.ts            prepara ciò che il disegno mostra (tipi in view-types.ts,
 │       │                      testo degli eventi in event-text.ts)
 │       ├── presentation.ts    modalità presentazione e scorciatoie
@@ -108,7 +110,7 @@ Cartelle *previste* e non ancora esistenti:
 
 ## Convenzioni del codice
 
-- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`; restano poco sopra `simulator.ts` (il ciclo degli eventi e la consegna, che si leggono meglio di seguito) e `session-editing.svelte.ts`.
+- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`, `simulator.ts` (la consegna è passata in `delivery.ts`), `editing.ts` e `session-editing.svelte.ts` (le parti sui router sono passate in `router-editing.ts` e `session-router.svelte.ts`). Restano poco sopra le 300 righe `session-editing.svelte.ts` e `session-core.svelte.ts`.svelte.ts`.
 - **I nomi seguono la teoria.** Un campo si chiama come sul libro di testo e negli standard: `ttl`, `etherType`, `senderMac`.
 - **Identificatori in inglese, commenti e messaggi in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. È la decisione D-15.
 - **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola. Esempi: `chooseOutputPorts`, `nextHopFor`, `sameNetwork`.
