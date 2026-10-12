@@ -287,7 +287,6 @@ Punti ancora da decidere:
 - [ ] Dominio `.it` per il sito, da comprare quando il nome dell'app sarà scelto, e prima del funzionamento offline (NF-2): chi ha installato l'app da un indirizzo dovrebbe reinstallarla dal nuovo.
 - [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
 - [ ] Da decidere dopo il collaudo: come alleggerire il passo-passo di un ping da quattro richieste (oggi si usa `ping -n 1`); quale icona dare al pulsante che stacca e riattacca un cavo.
-- [ ] Icona del router (oggi un cerchio con una croce): probabilmente da rivedere. Segnalato dal docente l'11 ottobre 2026; da riprendere quando il router avrà la sua forma a schermo (passaggio 5 del rilascio 2).
 - [ ] LIM usata con il dito: UI-4 esclude i gesti tattili, ma trascinamenti e clic vanno provati; la rotella non c'è, restano i pulsanti − e +.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
@@ -386,6 +385,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-82 | 11 ott 2026 | Le buste dei messaggi ICMP di errore restano etichettate `ICMP`; negli eventi e nel pannello si chiamano «ICMP time exceeded» e «ICMP destination unreachable» | In inglese come gli altri nomi di protocollo | Confermata |
 | D-83 | 11 ott 2026 | Per vedere `TTL expired in transit` in un ciclo di routing si aggiunge a `ping` l'opzione `-i TTL`, che esiste su Windows; la scadenza del ping resta di 40 tick. Da realizzare insieme a `tracert` | Con TTL 128 e un tick per salto un ciclo dura 127 tick, più della scadenza del ping: `ping` stamperebbe `Request timed out`, e a schermo il giro durerebbe minuti. Con `ping -i 6` il ciclo si mostra in pochi passi, senza toccare i tempi del rilascio 1 | Confermata |
 | D-84 | 11 ott 2026 | `tracert` stampa le righe di Windows: un asterisco e `Request timed out.` per un salto muto, proseguendo fino al limite (trenta, o quello chiesto con `-h`); `<router>  reports: Destination net unreachable.` quando un router avvisa, e lì finisce; `Transmit error: code 1231.` quando il PC non può spedire | Sono le righe che gli studenti troveranno su un PC vero, anche quando sono criptiche | Confermata |
+| D-85 | 12 ott 2026 | Le icone di router e switch sono i simboli degli schemi di rete: per il router un cerchio con quattro frecce, due che entrano e due che escono; per lo switch un rettangolo con quattro frecce a versi alternati | Sono i simboli che gli studenti trovano sui libri, quindi si riconoscono senza spiegazioni, e tra loro si distinguono anche da lontano. Scelte dal docente tra cinque proposte per ciascuno | Confermata |
 
 ## 9. Stato di avanzamento
 
