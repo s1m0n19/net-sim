@@ -300,7 +300,16 @@ interface HostOutput {
 }
 ```
 
-Le funzioni di un host (`devices/host.ts`):
+Il comportamento di un host è diviso in quattro file, per argomento:
+
+| File | Contenuto |
+| --- | --- |
+| `devices/host.ts` | Che cosa fa l'host con un frame che arriva (ARP, IP) e con un'attesa che scade. È il punto da cui cominciare a leggere, e ripropone ciò che sta negli altri tre |
+| `devices/host-sending.ts` | Spedire un pacchetto IP: prossimo salto, tabella ARP, pacchetti in attesa del MAC |
+| `devices/host-ping.ts` | Ping e tracert: gli echo request in sospeso e come si concludono |
+| `devices/host-output.ts` | I tipi di ciò che un host chiede al simulatore: `HostOutput`, attese, esiti |
+
+Le funzioni di un host:
 
 | Funzione | Quando viene chiamata | Che cosa restituisce in più |
 | --- | --- | --- |
@@ -412,7 +421,7 @@ Come gli host, il router non spedisce e non misura il tempo: restituisce i frame
 
 Dal punto di vista di un host non cambia nulla: `nextHopFor` consegna al gateway ciò che non è della propria rete, e l'host chiede con ARP il MAC del gateway, non quello della destinazione.
 
-### Tracert (`devices/host.ts`)
+### Tracert (`devices/host-ping.ts`)
 
 `startTracert` scopre i router sulla strada verso un indirizzo usando il TTL al contrario del solito: lo imposta troppo basso apposta.
 

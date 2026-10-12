@@ -67,7 +67,7 @@ net-sim/
 │   ├── engine/                motore di simulazione, senza dipendenze
 │   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
-│   │   ├── devices/           host.ts, switch.ts
+│   │   ├── devices/           host.ts (con host-output, host-sending, host-ping), switch.ts, router.ts
 │   │   ├── simulator.ts       coda degli eventi, tempo, consegna dei frame
 │   │   ├── events.ts          ciò che sta in coda: arrivi di frame e scadenze
 │   │   ├── traces.ts          le tracce: la registrazione di ciò che è successo
@@ -108,7 +108,7 @@ Cartelle *previste* e non ancora esistenti:
 
 ## Convenzioni del codice
 
-- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi; restano poco sopra `simulator.ts` (il ciclo degli eventi e la consegna, che si leggono meglio di seguito) e `session-editing.svelte.ts`.
+- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`; restano poco sopra `simulator.ts` (il ciclo degli eventi e la consegna, che si leggono meglio di seguito) e `session-editing.svelte.ts`.
 - **I nomi seguono la teoria.** Un campo si chiama come sul libro di testo e negli standard: `ttl`, `etherType`, `senderMac`.
 - **Identificatori in inglese, commenti e messaggi in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. È la decisione D-15.
 - **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola. Esempi: `chooseOutputPorts`, `nextHopFor`, `sameNetwork`.
