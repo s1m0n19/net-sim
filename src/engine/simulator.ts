@@ -5,33 +5,20 @@
 // scade") e a ogni passo salta al prossimo istante in cui succede qualcosa.
 
 import type { Action } from "./actions";
+import { applyHostOutput, deliverFrame, fireTimer, type Wire } from "./delivery";
 import {
-  receiveFrame,
   sameTimer,
   startArpResolution,
   startPing,
   startTracert,
-  timerExpired,
   type HostOutput,
   type HostTimer,
+  type TimerRequest,
 } from "./devices/host";
-import { receiveFrameOnRouter, routerTimerExpired, type RouterOutput } from "./devices/router";
-import { receiveFrameOnSwitch } from "./devices/switch";
-import type { FrameArrival, SimEvent, TimerExpiry } from "./events";
+import type { SimEvent } from "./events";
 import { hasCarrier, refreshLinkState, setDevicePowered, setLinkConnected } from "./faults";
 import type { EthernetFrame } from "./model/frames";
-import {
-  clearRuntimeState,
-  findDevice,
-  findLink,
-  otherEndOf,
-  type Host,
-  type Network,
-  type PortRef,
-  type Router,
-  type Switch,
-} from "./model/network";
-import { routingTableOf } from "./protocols/routing";
+import { clearRuntimeState, findDevice, findLink, otherEndOf, type Network, type PortRef } from "./model/network";
 import { applyEdit } from "./network-changes";
 import { stormSize } from "./storm";
 import type { Conversation, Trace } from "./traces";
@@ -45,7 +32,7 @@ export { STORM_FRAME_LIMIT, STORM_LAPS } from "./storm";
 // Tempo, in tick, per attraversare un collegamento.
 export const LINK_TRANSIT_TICKS = 1;
 
-export class Simulator {
+export class Simulator implements Wire {
   readonly network: Network;
   time = 0;
   queue: SimEvent[] = [];
@@ -150,7 +137,7 @@ export class Simulator {
       // Tutto ciò che questa azione provoca avrà lo stesso numero.
       const conversationId = this.nextConversationId++;
       this.conversations.push({ id: conversationId, action });
-      this.apply(host, output, conversationId, produced);
+      applyHostOutput(this, host, output, conversationId, produced);
     }
   }
 
@@ -176,9 +163,9 @@ export class Simulator {
     while (this.queue.length > 0 && this.queue[0].time === this.time) {
       const event = this.queue.shift()!;
       if (event.kind === "frame-arrival") {
-        this.deliver(event, produced);
+        deliverFrame(this, event, produced);
       } else {
-        this.fireTimer(event, produced);
+        fireTimer(this, event, produced);
       }
     }
     this.suspendIfStorm(produced);
@@ -225,41 +212,6 @@ export class Simulator {
     produced.push({ time: this.time, kind: "simulation-suspended", cause: "switch-loop", framesInFlight });
   }
 
-  // Esegue ciò che un host ha chiesto: registrare gli esiti dei ping,
-  // spedire frame, avviare attese, annullare attese.
-  private apply(host: Host, output: HostOutput, conversationId: number, produced: Trace[]): void {
-    for (const result of output.pingResults) {
-      produced.push({
-        time: this.time,
-        kind: "ping-result",
-        deviceId: host.id,
-        ...result,
-        conversationId,
-      });
-    }
-    for (const hop of output.traceHops) {
-      produced.push({ time: this.time, kind: "trace-hop", deviceId: host.id, ...hop, conversationId });
-    }
-    const port = { deviceId: host.id, portName: host.ports[0].name };
-    for (const frame of output.send) {
-      // Un frame che nasce da un host non è ancora passato da nessuno switch.
-      this.transmit(port, frame, conversationId, 0, produced);
-    }
-    // Prima si annullano le attese vecchie, poi si avviano le nuove.
-    for (const timer of output.cancelTimers) {
-      this.cancelTimer(host.id, timer);
-    }
-    for (const request of output.startTimers) {
-      this.schedule({
-        time: this.time + request.delay,
-        kind: "timer",
-        deviceId: host.id,
-        timer: request.timer,
-        conversationId,
-      });
-    }
-  }
-
   // Aggiunge un evento alla coda, tenendola ordinata per istante.
   // A parità di istante vale l'ordine di inserimento.
   private schedule(event: SimEvent): void {
@@ -267,49 +219,43 @@ export class Simulator {
     this.queue.sort((a, b) => a.time - b.time);
   }
 
-  // Toglie dalla coda le attese di un host uguali a quella indicata.
-  private cancelTimer(deviceId: string, timer: HostTimer): void {
+  /**
+   * Avvia un'attesa di un dispositivo: scadrà dopo i tick richiesti. La
+   * usa la consegna (delivery.ts) per conto di host e router.
+   *
+   * @param deviceId - il dispositivo che aspetta
+   * @param request - che cosa aspetta, e per quanto
+   * @param conversationId - la conversazione a cui l'attesa appartiene
+   */
+  startTimer(deviceId: string, request: TimerRequest, conversationId: number): void {
+    this.schedule({ time: this.time + request.delay, kind: "timer", deviceId, timer: request.timer, conversationId });
+  }
+
+  /**
+   * Toglie dalla coda le attese di un dispositivo uguali a quella indicata.
+   * La usa la consegna (delivery.ts).
+   *
+   * @param deviceId - il dispositivo che aspettava
+   * @param timer - l'attesa da annullare
+   */
+  cancelTimer(deviceId: string, timer: HostTimer): void {
     const matches = (event: SimEvent) =>
       event.kind === "timer" && event.deviceId === deviceId && sameTimer(event.timer, timer);
     this.queue = this.queue.filter((event) => !matches(event));
   }
 
-  // Un'attesa è scaduta: il dispositivo che aspettava decide che cosa fare.
-  private fireTimer(event: TimerExpiry, produced: Trace[]): void {
-    const host = findDevice(this.network, event.deviceId);
-    if (host.kind === "router") {
-      const reaction = routerTimerExpired(host, event.timer, routingTableOf(this.network, host));
-      for (const packet of reaction.droppedPackets) {
-        produced.push({
-          time: this.time,
-          kind: "packet-dropped",
-          deviceId: host.id,
-          packet,
-          reason: "arp-timeout",
-          conversationId: event.conversationId,
-        });
-      }
-      this.applyRouter(host, reaction, event.conversationId, produced);
-      return;
-    }
-    if (host.kind !== "host") return;
-
-    const reaction = timerExpired(host, event.timer);
-    for (const packet of reaction.droppedPackets) {
-      produced.push({
-        time: this.time,
-        kind: "packet-dropped",
-        deviceId: host.id,
-        packet,
-        reason: "arp-timeout",
-        conversationId: event.conversationId,
-      });
-    }
-    this.apply(host, reaction, event.conversationId, produced);
-  }
-
-  // Mette un frame sul cavo collegato a `from`. Arriverà dopo un tick.
-  private transmit(
+  /**
+   * Mette un frame sul cavo collegato a una porta: arriverà all'altro capo
+   * dopo un tick. Senza cavo, o senza segnale, il frame non parte. La usa
+   * la consegna (delivery.ts).
+   *
+   * @param from - la porta da cui il frame esce
+   * @param frame - il frame
+   * @param conversationId - la conversazione a cui appartiene
+   * @param hops - da quanti switch è già stato inoltrato
+   * @param produced - l'elenco a cui aggiungere la traccia dell'invio
+   */
+  transmit(
     from: PortRef,
     frame: EthernetFrame,
     conversationId: number,
@@ -334,124 +280,4 @@ export class Simulator {
     });
   }
 
-  // Consegna un frame al dispositivo a cui è arrivato. Ogni tipo di
-  // dispositivo reagisce a modo suo.
-  private deliver(event: FrameArrival, produced: Trace[]): void {
-    const device = findDevice(this.network, event.to.deviceId);
-    if (device.kind === "host") {
-      this.deliverToHost(device, event, produced);
-    } else if (device.kind === "switch") {
-      this.deliverToSwitch(device, event, produced);
-    } else {
-      this.deliverToRouter(device, event, produced);
-    }
-  }
-
-  private deliverToRouter(router: Router, event: FrameArrival, produced: Trace[]): void {
-    const { frameId, frame, conversationId, to } = event;
-    const reaction = receiveFrameOnRouter(router, to.portName, frame, routingTableOf(this.network, router));
-
-    if (reaction.dropped !== null) {
-      const reason = reaction.dropped;
-      produced.push({ time: this.time, kind: "frame-dropped", frameId, at: to, frame, reason, conversationId });
-      // Anche scartando, il router può avere qualcosa da spedire: l'avviso
-      // al mittente che il suo pacchetto non è arrivato.
-      this.applyRouter(router, reaction, conversationId, produced);
-      return;
-    }
-
-    produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
-    if (reaction.tableChanged) {
-      produced.push({ time: this.time, kind: "table-changed", deviceId: router.id, table: "arp", conversationId });
-    }
-    this.applyRouter(router, reaction, conversationId, produced);
-  }
-
-  // Esegue ciò che un router ha chiesto: spedire frame dalle interfacce
-  // indicate, annullare e avviare attese.
-  private applyRouter(router: Router, output: RouterOutput, conversationId: number, produced: Trace[]): void {
-    for (const { portName, frame } of output.send) {
-      // Il router scrive un frame nuovo: non è ancora passato da nessuno switch.
-      this.transmit({ deviceId: router.id, portName }, frame, conversationId, 0, produced);
-    }
-    for (const timer of output.cancelTimers) {
-      this.cancelTimer(router.id, timer);
-    }
-    for (const request of output.startTimers) {
-      this.schedule({
-        time: this.time + request.delay,
-        kind: "timer",
-        deviceId: router.id,
-        timer: request.timer,
-        conversationId,
-      });
-    }
-  }
-
-  private deliverToHost(host: Host, event: FrameArrival, produced: Trace[]): void {
-    const { frameId, frame, conversationId, to } = event;
-    const reaction = receiveFrame(host, frame);
-
-    if (reaction.dropped !== null) {
-      produced.push({
-        time: this.time,
-        kind: "frame-dropped",
-        frameId,
-        at: to,
-        frame,
-        reason: reaction.dropped,
-        conversationId,
-      });
-      return;
-    }
-
-    produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
-    if (reaction.tableChanged) {
-      produced.push({
-        time: this.time,
-        kind: "table-changed",
-        deviceId: host.id,
-        table: "arp",
-        conversationId,
-      });
-    }
-    // Ciò che nasce da un frame appartiene alla stessa conversazione.
-    this.apply(host, reaction, conversationId, produced);
-  }
-
-  private deliverToSwitch(sw: Switch, event: FrameArrival, produced: Trace[]): void {
-    const { frameId, frame, conversationId, to, hops } = event;
-    const reaction = receiveFrameOnSwitch(sw, to.portName, frame);
-
-    // Lo switch impara dal frame anche quando poi lo scarta.
-    produced.push({ time: this.time, kind: "frame-received", frameId, at: to, frame, conversationId });
-    if (reaction.tableChanged) {
-      produced.push({
-        time: this.time,
-        kind: "table-changed",
-        deviceId: sw.id,
-        table: "mac",
-        conversationId,
-      });
-    }
-
-    if (reaction.dropped !== null) {
-      produced.push({
-        time: this.time,
-        kind: "frame-dropped",
-        frameId,
-        at: to,
-        frame,
-        reason: reaction.dropped,
-        conversationId,
-      });
-      return;
-    }
-
-    // Lo switch inoltra il frame così com'è, senza modificarlo. Le copie
-    // partono nello stesso istante e arriveranno insieme.
-    for (const portName of reaction.forwardTo) {
-      this.transmit({ deviceId: sw.id, portName }, frame, conversationId, hops + 1, produced);
-    }
-  }
 }
