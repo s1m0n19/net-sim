@@ -59,6 +59,9 @@
   onkeydown={onKey}
 >
   <title>{packet.description}</title>
+  <!-- Un riquadro invisibile sotto sigla e busta: così un clic vale su
+       tutta la sagoma, anche tra le lettere della sigla. -->
+  <rect class="hit" x="-20" y="-28" width="40" height="44" />
   {#if selected}
     <rect class="selection" x="-20" y="-28" width="40" height="44" rx="6" />
   {:else if highlighted}
@@ -83,7 +86,10 @@
     stroke-width: 2;
     stroke-dasharray: 4 4;
   }
-  .packet:focus-visible rect:not(.selection) {
+  .hit {
+    fill: transparent;
+  }
+  .packet:focus-visible rect:not(.selection):not(.hit) {
     stroke: var(--accent);
     stroke-width: 3;
   }
@@ -93,7 +99,7 @@
   .icmp {
     --protocol: var(--icmp);
   }
-  rect:not(.selection) {
+  rect:not(.selection):not(.hit) {
     fill: var(--protocol);
     stroke: var(--canvas);
     stroke-width: 1.5;

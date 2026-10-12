@@ -2,8 +2,8 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** in sviluppo. Il rilascio 1 è costruito, motore e interfaccia, ed è pubblicato; resta da provarlo in aula. Il rilascio 2 non è iniziato. Il dettaglio è nella sezione 9.
-- **Ultimo aggiornamento:** 11 ottobre 2026.
+- **Stato:** in sviluppo. Il rilascio 1 è costruito e pubblicato; resta da provarlo in aula. Del rilascio 2 è costruita la parte sul routing (router, rotte statiche, `tracert`, server); mancano CLI, offline, strumenti dell'editor e tabelle nel file. Il dettaglio è nella sezione 9.
+- **Ultimo aggiornamento:** 12 ottobre 2026.
 - **Nome dell'app:** *Doppino*, scelto l'11 ottobre 2026 con riserva di cambiarlo. Finché non è definitivo l'app, i file e il repository restano *net-sim*, e così questo documento.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
@@ -392,14 +392,14 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 
 ## 9. Stato di avanzamento
 
-Aggiornato all'11 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
+Aggiornato al 12 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
 
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
 | Rilascio 1 intero | circa 98%: costruito, da provare in aula |
-| Prima versione (rilasci 1 e 2) | circa 55% |
-| Progetto completo, fino alla tappa T8 | circa 20% |
+| Prima versione (rilasci 1 e 2) | circa 75% |
+| Progetto completo, fino alla tappa T8 | circa 27% |
 
 Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e costruita in nove passaggi, tutti fatti. Ciò che resta del rilascio 1 è la prova: in aula, su LIM o proiettore, e con reti grandi. Il sito è pubblicato (D-64).
 
@@ -412,7 +412,22 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). Sono fatti i passaggi da 1 a 6 su sette: tutto il motore del routing, il router a schermo (colonna, interfacce, rotte statiche, tabelle appuntabili, indirizzi accanto ai cavi) e il server, che si posa e si usa come un PC. Tutta la lezione del criterio di accettazione del rilascio 2 si svolge nell'app, e la sua seconda metà è eseguita da un test nel browser. Manca la prima metà della lezione come test (7). Poi, nell'ordine deciso: CLI in stile IOS, offline, strumenti dell'editor, tabelle nel file. Tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). **La parte sul routing è costruita**: sono fatti tutti e sette i passaggi. Il motore instrada, avvisa con i messaggi ICMP di errore e offre `tracert` e `ping -i`; a schermo il router si posa, si configura (interfacce, rotte statiche), mostra le sue tabelle e i suoi indirizzi; il server si usa come un PC. La lezione del criterio di accettazione si svolge nell'app ed è eseguita per intero da due test nel browser. Restano, nell'ordine deciso: CLI in stile IOS, funzionamento offline, strumenti dell'editor, tabelle nel file. Tappe successive: nulla è iniziato.
+
+### Rispetto al criterio di accettazione del rilascio 2
+
+| Punto | Stato |
+| --- | --- |
+| 1. Aprire un file con due LAN unite da un router | Funziona |
+| 2. Senza gateway il ping fallisce subito, senza frame | Funziona |
+| 3. Con il gateway: ARP verso il router, poi il router cerca PC2 | Funziona |
+| 4. Prima e dopo il router: stessi IP, MAC cambiati, TTL sceso di uno | Funziona |
+| 5. Spegnere un'interfaccia del router, e riaccenderla | Funziona |
+| 6. Tre reti e due router: senza rotte, `Destination net unreachable` | Funziona |
+| 7. Rotta di andata, poi anche quella di ritorno | Funziona |
+| 8. `tracert` mostra i due router e la destinazione | Funziona |
+
+Come per il rilascio 1, gli otto punti sono eseguiti di fila da test automatici in un browser vero (`tests/e2e/router.spec.ts`); resta la prova in aula.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
@@ -431,7 +446,7 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 
 ### Che cosa esiste oltre ai requisiti
 
-- 10 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
+- 11 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
 - 675 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Cinque reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router, tre reti con due router in fila.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
