@@ -4,7 +4,7 @@
   import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import type { LinkView } from "../view";
-  import { pointNear, portLabelPoint } from "./geometry";
+  import { addressLabelPoint, pointNear, portLabelPoint } from "./geometry";
 
   let { link }: { link: LinkView } = $props();
 
@@ -13,6 +13,35 @@
   // I pallini del segnale stanno sul cavo, poco fuori dal dispositivo.
   const signalFrom = $derived(pointNear(link.from, link.to, 42 * preferences.scale));
   const signalTo = $derived(pointNear(link.to, link.from, 42 * preferences.scale));
+
+  const cableLength = $derived(Math.hypot(link.to.x - link.from.x, link.to.y - link.from.y));
+
+  // Un cavo corto tra due router: i due indirizzi, uno di fila all'altro
+  // sopra il cavo, non ci stanno. Allora quello del capo b va sotto.
+  const crowded = $derived.by(() => {
+    if (link.fromAddress === null || link.toAddress === null || !preferences.labels.ip) return false;
+    const k = preferences.scale;
+    const length = Math.hypot(link.to.x - link.from.x, link.to.y - link.from.y);
+    // Circa 7,3 unità per carattere, più lo spazio lasciato accanto ai router.
+    const needed = (link.fromAddress.length + link.toAddress.length) * 7.3 * k + 2 * 52 * k + 16 * k;
+    return length < needed;
+  });
+
+  // Gli indirizzi delle interfacce di router, uno per capo: stanno accanto
+  // al cavo, vicino al router, così si vede quale indirizzo guarda quale rete.
+  const addresses = $derived(
+    (["a", "b"] as const).flatMap((end) => {
+      const text = end === "a" ? link.fromAddress : link.toAddress;
+      if (text === null) return [];
+      const below = end === "b" && crowded;
+      // Da sola su un cavo corto, partendo dal router finirebbe sopra il
+      // dispositivo all'altro capo: allora sta centrata a metà cavo.
+      const k = preferences.scale;
+      const alone = link.fromAddress === null || link.toAddress === null;
+      const centred = alone && cableLength < text.length * 7.3 * k + 52 * k + 40 * k;
+      return [{ end, text, at: addressLabelPoint(link.from, link.to, end, k, below, centred) }];
+    }),
+  );
 
   // Mezza larghezza del quadratino che segna un'interfaccia spenta.
   const shutHalf = $derived(4.5 * preferences.scale);
@@ -24,7 +53,8 @@
       end,
       name: end === "a" ? link.fromPort : link.toPort,
       deviceName: end === "a" ? link.fromName : link.toName,
-      at: portLabelPoint(link.from, link.to, end, preferences.scale),
+      // Dove il capo b ha l'indirizzo sotto il cavo, il nome della porta va sopra.
+      at: portLabelPoint(link.from, link.to, end, preferences.scale, end === "b" && crowded),
       // Il capo è un'interfaccia di router spenta.
       off: end === "a" ? link.fromOff : link.toOff,
       open: session.portMenu?.linkId === link.id && session.portMenu.end === end,
@@ -69,6 +99,12 @@
 {/if}
 {#if link.toOff}
   <rect class="shut" x={signalTo.x - shutHalf} y={signalTo.y - shutHalf} width={shutHalf * 2} height={shutHalf * 2} />
+{/if}
+
+{#if preferences.labels.ip}
+  {#each addresses as address (address.end)}
+    <text class="address" x={address.at.x} y={address.at.y} text-anchor={address.at.anchor}>{address.text}</text>
+  {/each}
 {/if}
 
 <!-- Una riga larga e invisibile sopra il cavo: lo rende facile da cliccare. -->
@@ -142,6 +178,13 @@
   }
   .signal {
     fill: var(--up);
+  }
+  /* Come l'indirizzo sotto un PC. È solo una scritta: i clic passano al cavo. */
+  .address {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    font-size: calc(12px * var(--k, 1));
+    pointer-events: none;
   }
   .shut {
     fill: var(--canvas);

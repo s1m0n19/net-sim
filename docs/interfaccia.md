@@ -65,7 +65,7 @@ Dopo i primi sei passaggi:
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `tracert`, `arp -a`, `cls` e `help`;
 - l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica;
-- il **router** (rilascio 2, in costruzione): si posa dalla colonna nelle tre varianti; dal pannello se ne accendono le interfacce, se ne impostano gli indirizzi e si aggiungono e tolgono le rotte statiche; tabella di routing e tabella ARP si appuntano sul disegno. Mancano gli indirizzi accanto ai cavi;
+- il **router** (rilascio 2): si posa dalla colonna nelle tre varianti; dal pannello se ne accendono le interfacce, se ne impostano gli indirizzi e si aggiungono e tolgono le rotte statiche; tabella di routing e tabella ARP si appuntano sul disegno; gli indirizzi delle interfacce sono scritti accanto ai cavi;
 - la **modalità presentazione**, con l'ingrandimento regolabile e le scorciatoie da tastiera.
 
 Con questo i nove passaggi del piano sono fatti.
@@ -245,6 +245,12 @@ In fondo, la **tabella ARP** del router.
 Tutte e due le tabelle si appuntano sul disegno, ciascuna con il suo pulsante; nascono una a sinistra e una a destra sotto il router. Dalla barretta si appunta la tabella di routing, che è quella che serve in lezione.
 
 Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta».
+
+**Indirizzi sul disegno** (D-75). Un router non ha un indirizzo solo, quindi sotto di lui resta soltanto il nome: l'indirizzo di ogni interfaccia è scritto accanto al suo cavo, sul capo vicino al router, con il prefisso (`192.168.1.1/24`). Così si vede a colpo d'occhio quale indirizzo guarda quale rete. Li accende e li spegne l'interruttore IP, come per i PC.
+
+La scritta comincia appena fuori dal router e si allontana da lui, sopra il cavo; se il cavo sale sta invece sotto, così non lo attraversa mai. Su un cavo corto tra due router i due indirizzi non starebbero di fila: quello del secondo capo va sotto il cavo, e il nome della sua porta, se acceso, passa sopra. Su un cavo troppo corto perché la scritta ci stia partendo dal router, come capita in presentazione, la scritta sta centrata a metà del cavo, così non finisce sopra il dispositivo all'altro capo.
+
+Limite noto: la posizione di ogni scritta è calcolata guardando solo il suo cavo. Con più cavi vicini sullo stesso router, in certe posizioni indirizzi e nomi delle porte possono sovrapporsi tra loro; spostando un dispositivo si separano.
 
 ### Cavo
 

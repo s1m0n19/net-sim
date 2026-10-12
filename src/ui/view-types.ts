@@ -86,6 +86,10 @@ export interface LinkView {
   // true se quel capo è un'interfaccia di router spenta.
   fromOff: boolean;
   toOff: boolean;
+  // L'indirizzo dell'interfaccia di router a quel capo, "192.168.1.1/24";
+  // null se il capo non è un router o se l'interfaccia non ha un indirizzo.
+  fromAddress: string | null;
+  toAddress: string | null;
   connected: boolean;
   // Sul cavo passa il segnale: è collegato e i due dispositivi sono accesi.
   signal: boolean;

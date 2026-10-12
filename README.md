@@ -40,7 +40,7 @@ Poi si apre http://localhost:5173 nel browser.
 
 All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quelli di esempio stanno nella cartella [examples/](examples/).
 
-Il **router** (rilascio 2, in costruzione) si posa dalla colonna: passando su **Router** si sceglie tra 2, 4 e 8 interfacce. Nasce con le interfacce spente, come un Cisco: selezionalo e, nel pannello a destra, accendi ogni interfaccia con il suo interruttore e scrivi indirizzo e maschera. Un'interfaccia spenta si riconosce sul disegno da un quadratino rosso sul suo capo del cavo.
+Il **router** (rilascio 2, in costruzione) si posa dalla colonna: passando su **Router** si sceglie tra 2, 4 e 8 interfacce. Nasce con le interfacce spente, come un Cisco: selezionalo e, nel pannello a destra, accendi ogni interfaccia con il suo interruttore e scrivi indirizzo e maschera. Un'interfaccia spenta si riconosce sul disegno da un quadratino rosso sul suo capo del cavo, e l'indirizzo di ogni interfaccia è scritto accanto al suo cavo, vicino al router.
 
 - La maschera viene proposta dalla classe dell'indirizzo; per una maschera diversa scrivi il prefisso insieme all'indirizzo, per esempio `10.0.0.1/30`.
 - Due interfacce dello stesso router non possono avere reti che si sovrappongono.
@@ -170,6 +170,7 @@ Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una 
 
 ## Limiti noti
 
+- **Attorno a un router le scritte a volte si sovrappongono.** Con più cavi vicini, in certe posizioni gli indirizzi delle interfacce e i nomi delle porte finiscono uno sull'altro. Basta spostare un dispositivo.
 - **Salvare funziona al meglio in Chrome ed Edge.** Lì Salva scrive nel file scelto e poi sempre nello stesso; in Firefox e Safari ogni salvataggio scarica una copia nuova nella cartella dei download.
 - **Un ping completo, a passi, richiede molti clic.** Con le quattro richieste di Windows sono venti. Con Avvia scorre da solo.
 

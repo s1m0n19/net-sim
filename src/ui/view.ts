@@ -127,6 +127,8 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     toChoices: portChoices(network, link.b.deviceId, link.b.portName),
     fromOff: interfaceIsOff(network, link.a.deviceId, link.a.portName),
     toOff: interfaceIsOff(network, link.b.deviceId, link.b.portName),
+    fromAddress: interfaceAddress(network, link.a.deviceId, link.a.portName),
+    toAddress: interfaceAddress(network, link.b.deviceId, link.b.portName),
     connected: link.connected,
     signal: linkCarriesSignal(network, link),
   }));
@@ -199,6 +201,15 @@ function interfaceIsOff(network: Network, deviceId: string, portName: string): b
   const device = network.devices.find((d) => d.id === deviceId);
   if (device?.kind !== "router") return false;
   return device.ports.find((port) => port.name === portName)?.enabled === false;
+}
+
+// L'indirizzo di un'interfaccia di router, con il prefisso; null per le
+// porte degli altri dispositivi e per un'interfaccia senza indirizzo.
+function interfaceAddress(network: Network, deviceId: string, portName: string): string | null {
+  const device = network.devices.find((d) => d.id === deviceId);
+  if (device?.kind !== "router") return null;
+  const port = device.ports.find((p) => p.name === portName);
+  return port === undefined ? null : ipLabelOf(port.ip, port.mask);
 }
 
 // Le porte di un dispositivo su cui un cavo può stare: quella che occupa
