@@ -14,6 +14,9 @@
   const signalFrom = $derived(pointNear(link.from, link.to, 42 * preferences.scale));
   const signalTo = $derived(pointNear(link.to, link.from, 42 * preferences.scale));
 
+  // Mezza larghezza del quadratino che segna un'interfaccia spenta.
+  const shutHalf = $derived(4.5 * preferences.scale);
+
   // I nomi delle due porte. Si vedono se le etichette sono accese, e
   // comunque sul cavo selezionato: è da lì che si cambia porta.
   const ports = $derived(
@@ -22,6 +25,8 @@
       name: end === "a" ? link.fromPort : link.toPort,
       deviceName: end === "a" ? link.fromName : link.toName,
       at: portLabelPoint(link.from, link.to, end, preferences.scale),
+      // Il capo è un'interfaccia di router spenta.
+      off: end === "a" ? link.fromOff : link.toOff,
       open: session.portMenu?.linkId === link.id && session.portMenu.end === end,
     })),
   );
@@ -55,6 +60,15 @@
   <!-- Un pallino a ogni capo che sente il segnale. -->
   <circle class="signal" cx={signalFrom.x} cy={signalFrom.y} r={4 * preferences.scale} />
   <circle class="signal" cx={signalTo.x} cy={signalTo.y} r={4 * preferences.scale} />
+{/if}
+
+<!-- Un'interfaccia di router spenta: sul suo capo del cavo, al posto del
+     pallino del segnale, un quadratino rosso vuoto. Colore e forma. -->
+{#if link.fromOff}
+  <rect class="shut" x={signalFrom.x - shutHalf} y={signalFrom.y - shutHalf} width={shutHalf * 2} height={shutHalf * 2} />
+{/if}
+{#if link.toOff}
+  <rect class="shut" x={signalTo.x - shutHalf} y={signalTo.y - shutHalf} width={shutHalf * 2} height={shutHalf * 2} />
 {/if}
 
 <!-- Una riga larga e invisibile sopra il cavo: lo rende facile da cliccare. -->
@@ -91,7 +105,7 @@
         session.openPortMenu(link.id, port.end);
       }}
       onkeydown={(event) => onKey(event, () => session.openPortMenu(link.id, port.end))}
-    >{port.name}</text>
+    >{port.name}{port.off ? " · spenta" : ""}</text>
   {/each}
 {/if}
 
@@ -128,6 +142,11 @@
   }
   .signal {
     fill: var(--up);
+  }
+  .shut {
+    fill: var(--canvas);
+    stroke: var(--down);
+    stroke-width: calc(2px * var(--k, 1));
   }
   .port {
     fill: var(--muted);

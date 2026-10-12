@@ -140,6 +140,7 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 | `costruire.spec.ts` | Una rete costruita da zero con il mouse; spostare, annullare, eliminare |
 | `file.spec.ts` | Salvare e riaprire, modifiche non salvate, file non valido |
 | `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione |
+| `router.spec.ts` | Due LAN e un router costruiti con il mouse: interfacce, indirizzi, ping, tracert |
 
 Le finestre di Chrome per scegliere dove aprire e salvare non si possono comandare da un test: lì l'app viene provata con il ripiego che usa negli altri browser, cioè campo di tipo file e scaricamento. L'aspetto (colori, dimensioni, leggibilità) resta da guardare a occhio.
 

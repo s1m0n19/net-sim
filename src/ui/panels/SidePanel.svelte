@@ -6,6 +6,7 @@
   import { session } from "../session.svelte";
   import Chevron from "../theme/Chevron.svelte";
   import ConfigField from "./ConfigField.svelte";
+  import InterfaceFields from "./InterfaceFields.svelte";
   import PacketLayers from "./PacketLayers.svelte";
 
   const selection = $derived(session.selection);
@@ -105,20 +106,12 @@
         </div>
       {/key}
 
-      <!-- Per ora in sola lettura: interfacce e rotte si impostano nel file. -->
       <h3>Interfacce</h3>
-      <table>
-        <thead><tr><th>Nome</th><th>Indirizzo</th><th>Stato</th></tr></thead>
-        <tbody>
-          {#each device.interfaces as port (port.name)}
-            <tr>
-              <td>{port.name}</td>
-              <td>{port.ipLabel ?? "—"}</td>
-              <td class="plain">{port.enabled ? "accesa" : "spenta"}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+      {#key device.id}
+        {#each device.interfaces as port (port.name)}
+          <InterfaceFields deviceId={device.id} {port} />
+        {/each}
+      {/key}
 
       <!-- C = rete collegata, S = rotta statica, come su un Cisco. Una
            rotta statica senza interfaccia non è utilizzabile. -->
@@ -299,10 +292,6 @@
   td {
     padding: 3px 6px 3px 0;
     border-bottom: 1px solid var(--line);
-  }
-  /* Una cella di parole, non di indirizzi: carattere dell'interfaccia. */
-  td.plain {
-    font-family: var(--font-ui);
   }
   ul {
     margin: 0;

@@ -80,6 +80,9 @@ export interface LinkView {
   // libere dello stesso dispositivo, nell'ordine del dispositivo.
   fromChoices: string[];
   toChoices: string[];
+  // true se quel capo è un'interfaccia di router spenta.
+  fromOff: boolean;
+  toOff: boolean;
   connected: boolean;
   // Sul cavo passa il segnale: è collegato e i due dispositivi sono accesi.
   signal: boolean;

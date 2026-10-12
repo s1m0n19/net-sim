@@ -16,10 +16,18 @@
     { label: "Switch a 24 porte", template: { kind: "switch", portCount: 24 } as DeviceTemplate },
   ];
 
+  // Le varianti pronte del router: nasce con le interfacce spente.
+  const ROUTERS = [2, 4, 8].map((interfaceCount) => ({
+    label: `Router a ${interfaceCount} interfacce`,
+    template: { kind: "router", interfaceCount } as DeviceTemplate,
+  }));
+
   let switchMenuOpen = $state(false);
+  let routerMenuOpen = $state(false);
 
   const placingHost = $derived(session.placing?.kind === "host");
   const placingSwitch = $derived(session.placing?.kind === "switch");
+  const placingRouter = $derived(session.placing?.kind === "router");
 
   // Un clic sulla voce già scelta la lascia andare.
   function choose(template: DeviceTemplate) {
@@ -28,6 +36,7 @@
     session.cabling = false;
     session.linkFrom = null;
     switchMenuOpen = false;
+    routerMenuOpen = false;
   }
 
   // Lo strumento Cavo resta attivo finché non lo si spegne, con un altro
@@ -93,9 +102,34 @@
       {/if}
     </div>
 
-    <div class="tile soon" title="Non ancora disponibile">
-      <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="router" /></svg>
-      Router
+    <div class="with-menu" onmouseleave={() => (routerMenuOpen = false)} role="presentation">
+      <button
+        class="tile"
+        class:active={placingRouter}
+        aria-pressed={placingRouter}
+        aria-haspopup="menu"
+        aria-expanded={routerMenuOpen}
+        title="Router: scegli quante interfacce"
+        onmouseenter={() => (routerMenuOpen = true)}
+        onclick={() => (routerMenuOpen = !routerMenuOpen)}
+      >
+        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="router" /></svg>
+        Router ›
+      </button>
+      {#if routerMenuOpen}
+        <div class="menu" role="menu">
+          {#each ROUTERS as variant}
+            <button
+              role="menuitem"
+              draggable="true"
+              ondragstart={(event) => startDrag(event, variant.template)}
+              onclick={() => choose(variant.template)}
+            >
+              {variant.label}
+            </button>
+          {/each}
+        </div>
+      {/if}
     </div>
     <div class="tile soon" title="Non ancora disponibile">
       <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="server" /></svg>

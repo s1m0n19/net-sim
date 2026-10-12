@@ -65,6 +65,7 @@ Dopo i primi sei passaggi:
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `tracert`, `arp -a`, `cls` e `help`;
 - l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica;
+- il **router** (rilascio 2, in costruzione): si posa dalla colonna nelle tre varianti, e dal pannello se ne accendono le interfacce e se ne impostano gli indirizzi. Mancano le rotte statiche dal pannello, le tabelle appuntabili e gli indirizzi accanto ai cavi;
 - la **modalità presentazione**, con l'ingrandimento regolabile e le scorciatoie da tastiera.
 
 Con questo i nove passaggi del piano sono fatti.
@@ -83,10 +84,10 @@ L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: tr
 
 ## Colonna dei dispositivi e degli strumenti
 
-- **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte) si scelgono prima di posare: passando sulla voce si apre il loro elenco.
+- **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte; router a 2, 4 o 8 interfacce) si scelgono prima di posare: passando sulla voce si apre il loro elenco.
 - **Posare.** In due modi: trascinando la voce sul disegno, per posarne uno; oppure con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare, finché non si preme Esc. Nel secondo modo la voce resta evidenziata, il puntatore cambia e una riga in alto sul disegno dice che cosa fare. Il dispositivo appena posato viene selezionato.
 - **Strumento Cavo.** Finché è attivo, trascinare da un dispositivo a un altro tira un cavo invece di spostare; lo stesso si ottiene con un clic sul primo dispositivo e uno sul secondo (D-51). Mentre si trascina, una linea tratteggiata segue il mouse. Si disattiva con Esc o con un secondo clic sulla voce.
-- I tipi non ancora disponibili (router, server) compaiono attenuati.
+- I tipi non ancora disponibili (server) compaiono attenuati.
 
 Un dispositivo appena posato riceve un nome progressivo (PC1, PC2, SW1) e i suoi indirizzi MAC. Un PC nasce senza configurazione IP.
 
@@ -219,6 +220,23 @@ Esc, dentro un campo, rimette il valore della rete senza togliere la selezione. 
 **Togliere la configurazione.** Svuotare l'indirizzo svuota anche maschera e gateway (D-52). Svuotare la sola maschera viene rifiutato.
 
 **Maschera proposta.** Scritto l'indirizzo su un host senza maschera, la maschera si compila da sola con quella della classe dell'indirizzo (255.255.255.0 per 192.168.1.10), come fa Windows. Si può cambiare. Senza questo aiuto il primo indirizzo verrebbe rifiutato, perché indirizzo e maschera vanno impostati insieme.
+
+### Router
+
+Nome, stato, e poi le sue **interfacce**, una sotto l'altra. Ciascuna ha:
+
+- un **interruttore** che dice «accesa» o «spenta» e la cambia con un clic. Un router nasce con tutte le interfacce spente (D-70);
+- i campi **Indirizzo IP** e **Subnet mask**, con le stesse regole di conferma dei PC: Invio o uscita dal campo, bordo rosso e motivo se il valore viene rifiutato.
+
+Tre aiuti nello scrivere l'indirizzo di un'interfaccia:
+
+- la maschera viene proposta dalla classe dell'indirizzo, come per i PC;
+- se quella maschera farebbe sovrapporre la rete a quella di un'altra interfaccia dello stesso router, viene proposta la maschera di quell'altra: dopo `10.0.0.1/30` su un'interfaccia, `10.0.0.5` sull'altra diventa `/30` anche lei, invece di essere rifiutata come `/8`;
+- nel campo dell'indirizzo si può scrivere anche il prefisso, `10.0.0.5/30`, e indirizzo e maschera si impostano insieme.
+
+Sotto, in sola lettura per ora: la **tabella di routing** (C per una rete collegata, S per una rotta statica) e la **tabella ARP**. Aggiungere e togliere le rotte statiche dal pannello, e appuntare le tabelle, sono la prossima parte.
+
+Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta».
 
 ### Cavo
 
@@ -369,6 +387,7 @@ Sono i valori del bozzetto: un punto di partenza, da ritoccare quando l'interfac
 | --- | --- | --- |
 | Protocollo di un pacchetto | ambra, viola | la sigla sopra la busta |
 | Cavo staccato | rosso | tratteggio e croce |
+| Interfaccia di router spenta | rosso | un quadratino vuoto al posto del pallino, sul capo del cavo vicino al router; nel pannello la parola «spenta» |
 | Segnale su una porta | verde | il pallino c'è o non c'è |
 | Dispositivo spento | grigio | la scritta "spento" |
 | Campo rifiutato | bordo rosso | il motivo scritto sotto |

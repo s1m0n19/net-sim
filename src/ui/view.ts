@@ -123,6 +123,8 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
     toPort: link.b.portName,
     fromChoices: portChoices(network, link.a.deviceId, link.a.portName),
     toChoices: portChoices(network, link.b.deviceId, link.b.portName),
+    fromOff: interfaceIsOff(network, link.a.deviceId, link.a.portName),
+    toOff: interfaceIsOff(network, link.b.deviceId, link.b.portName),
     connected: link.connected,
     signal: linkCarriesSignal(network, link),
   }));
@@ -188,6 +190,13 @@ function nextEventOf(simulator: Simulator): NextEventView | null {
     }
   }
   return { time, waitingDeviceIds };
+}
+
+// Dice se una porta è un'interfaccia di router spenta.
+function interfaceIsOff(network: Network, deviceId: string, portName: string): boolean {
+  const device = network.devices.find((d) => d.id === deviceId);
+  if (device?.kind !== "router") return false;
+  return device.ports.find((port) => port.name === portName)?.enabled === false;
 }
 
 // Le porte di un dispositivo su cui un cavo può stare: quella che occupa

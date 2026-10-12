@@ -138,3 +138,19 @@ export function networksOverlap(
   const shorter = maskToPrefix(maskA) <= maskToPrefix(maskB) ? maskA : maskB;
   return sameNetwork(ipA, ipB, shorter);
 }
+
+/**
+ * Scrive la subnet mask che ha un certo numero di bit a 1: è il contrario
+ * di `maskToPrefix` (24 diventa 255.255.255.0).
+ *
+ * @param prefix - la lunghezza del prefisso, da 0 a 32
+ * @returns la maschera in notazione decimale puntata
+ * @throws Error se il prefisso non è un intero tra 0 e 32
+ */
+export function prefixToMask(prefix: number): Ipv4Address {
+  if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+    throw new Error(`Prefisso non valido: ${prefix}`);
+  }
+  const bits = "1".repeat(prefix).padEnd(32, "0");
+  return [0, 8, 16, 24].map((start) => parseInt(bits.slice(start, start + 8), 2)).join(".");
+}

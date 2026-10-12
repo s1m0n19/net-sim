@@ -40,7 +40,13 @@ Poi si apre http://localhost:5173 nel browser.
 
 All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quelli di esempio stanno nella cartella [examples/](examples/).
 
-Il router è in costruzione (rilascio 2). Un file che ne contiene uno, come `due-lan-router`, si apre e si salva, e il router inoltra: imposta il gateway `192.168.1.1` su PC1 e un ping verso `192.168.2.10` attraversa il router, con i MAC che cambiano e il TTL che scende di uno (la risposta arriva con `TTL=127`). Quando non può consegnare un pacchetto il router avvisa il mittente, e `ping` lo stampa come su Windows: per esempio `Reply from 192.168.2.1: Destination net unreachable.` per un ping da PC2 verso `10.9.9.9`. Il pannello mostra interfacce, tabella di routing e tabella ARP del router. Per ora il router non si posa dalla colonna e non si configura dall'app.
+Il **router** (rilascio 2, in costruzione) si posa dalla colonna: passando su **Router** si sceglie tra 2, 4 e 8 interfacce. Nasce con le interfacce spente, come un Cisco: selezionalo e, nel pannello a destra, accendi ogni interfaccia con il suo interruttore e scrivi indirizzo e maschera. Un'interfaccia spenta si riconosce sul disegno da un quadratino rosso sul suo capo del cavo.
+
+- La maschera viene proposta dalla classe dell'indirizzo; per una maschera diversa scrivi il prefisso insieme all'indirizzo, per esempio `10.0.0.1/30`.
+- Due interfacce dello stesso router non possono avere reti che si sovrappongono.
+- Ai PC va dato come gateway l'indirizzo dell'interfaccia del router sulla loro rete.
+
+A quel punto un ping da una LAN all'altra attraversa il router, con i MAC che cambiano e il TTL che scende di uno, e `tracert` mostra la strada. Quando non può consegnare un pacchetto il router avvisa il mittente, e `ping` lo stampa come su Windows (`Destination net unreachable`). Le rotte statiche per ora si impostano solo nel file: aggiungerle dal pannello è la prossima parte.
 
 **Costruire.** Dalla colonna a sinistra si posano i dispositivi, in due modi:
 

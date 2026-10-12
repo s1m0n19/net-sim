@@ -53,6 +53,12 @@ if (import.meta.env.DEV) {
     const [from, to] = pair.split(">").map(named);
     if (from !== undefined && to !== undefined) session.connect(from.id, to.id);
   }
+  // &accendi=R1:Gi0/0;R1:Gi0/1                accende interfacce di router
+  for (const item of (params.get("accendi") ?? "").split(";").filter((text) => text !== "")) {
+    const [name, portName] = item.split(":");
+    const router = named(name);
+    if (router !== undefined) session.toggleInterface(router.id, portName);
+  }
   // &cavo, &da=PC1                            accende lo strumento Cavo; comincia un cavo da PC1
   if (params.has("cavo")) session.cabling = true;
   const cableFrom = named(params.get("da"));
