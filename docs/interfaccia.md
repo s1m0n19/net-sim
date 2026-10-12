@@ -65,7 +65,7 @@ Dopo i primi sei passaggi:
 - le **tabelle appuntate** sul disegno, trascinabili, con la riga nuova o persa che si fa notare;
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `tracert`, `arp -a`, `cls` e `help`;
 - l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica;
-- il **router** (rilascio 2, in costruzione): si posa dalla colonna nelle tre varianti, e dal pannello se ne accendono le interfacce e se ne impostano gli indirizzi. Mancano le rotte statiche dal pannello, le tabelle appuntabili e gli indirizzi accanto ai cavi;
+- il **router** (rilascio 2, in costruzione): si posa dalla colonna nelle tre varianti; dal pannello se ne accendono le interfacce, se ne impostano gli indirizzi e si aggiungono e tolgono le rotte statiche; tabella di routing e tabella ARP si appuntano sul disegno. Mancano gli indirizzi accanto ai cavi;
 - la **modalità presentazione**, con l'ingrandimento regolabile e le scorciatoie da tastiera.
 
 Con questo i nove passaggi del piano sono fatti.
@@ -126,6 +126,7 @@ Accanto a ciò che è selezionato compare una **barretta** con le azioni princip
 | --- | --- |
 | Host | Spegni o accendi · Ping · Collega · Terminale · Appunta la tabella ARP · Elimina |
 | Switch | Spegni o accendi · Collega · Appunta la tabella MAC · Elimina |
+| Router | Spegni o accendi · Collega · Appunta la tabella di routing · Elimina |
 | Cavo | Stacca o riattacca · Elimina |
 
 **Ping dalla barretta.** Si preme Ping e poi si fa clic sul dispositivo di destinazione. Manda **un solo** echo request: è lo strumento per le dimostrazioni. Le quattro richieste di Windows si ottengono dal terminale.
@@ -234,7 +235,14 @@ Tre aiuti nello scrivere l'indirizzo di un'interfaccia:
 - se quella maschera farebbe sovrapporre la rete a quella di un'altra interfaccia dello stesso router, viene proposta la maschera di quell'altra: dopo `10.0.0.1/30` su un'interfaccia, `10.0.0.5` sull'altra diventa `/30` anche lei, invece di essere rifiutata come `/8`;
 - nel campo dell'indirizzo si può scrivere anche il prefisso, `10.0.0.5/30`, e indirizzo e maschera si impostano insieme.
 
-Sotto, in sola lettura per ora: la **tabella di routing** (C per una rete collegata, S per una rotta statica) e la **tabella ARP**. Aggiungere e togliere le rotte statiche dal pannello, e appuntare le tabelle, sono la prossima parte.
+Sotto le interfacce, la **tabella di routing**: una riga per rete, con la sigla C per una rete collegata e S per una rotta statica, il prossimo salto e l'interfaccia da cui si esce. Una rotta statica il cui prossimo salto non sta su una rete collegata non ha un'interfaccia: la riga è attenuata e dice «non usata».
+
+- **Togliere una rotta statica**: la crocetta in fondo alla sua riga.
+- **Aggiungerne una**: i tre campi sotto la tabella (rete, maschera, prossimo salto) e il pulsante Aggiungi rotta, o Invio. La maschera si scrive per esteso oppure come prefisso (`/24`); il prefisso può stare anche in coda alla rete (`192.168.2.0/24`). Una rotta rifiutata lascia i campi come sono, con il motivo sotto.
+
+In fondo, la **tabella ARP** del router.
+
+Tutte e due le tabelle si appuntano sul disegno, ciascuna con il suo pulsante; nascono una a sinistra e una a destra sotto il router. Dalla barretta si appunta la tabella di routing, che è quella che serve in lezione.
 
 Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta».
 

@@ -196,3 +196,133 @@ describe("una rete con un router costruita a mano", () => {
     expect(session.view.pingResults.at(-1)).toMatchObject({ outcome: "reply", ttl: 127 });
   });
 });
+
+describe("rotte statiche, dal pannello", () => {
+  // PC1 — R1 — R2 — PC2, senza rotte statiche.
+  beforeEach(async () => {
+    const file = await import("../../examples/tre-reti-due-router.netsim.json?raw");
+    session.open("tre-reti-due-router.netsim.json", file.default);
+  });
+
+  function rows(id = "r1") {
+    return router(id).routingRows.map((row) => [row.code, row.destination, row.nextHop, row.portName]);
+  }
+
+  test("una rotta aggiunta compare in tabella, con l'interfaccia da cui esce", () => {
+    expect(session.addRoute("r1", "192.168.2.0", "255.255.255.0", "10.0.0.2")).toBeNull();
+
+    expect(rows().at(-1)).toEqual(["S", "192.168.2.0/24", "10.0.0.2", "Gi0/1"]);
+  });
+
+  test("la maschera si può scrivere come prefisso, anche in coda alla rete", () => {
+    expect(session.addRoute("r1", "192.168.2.0", "/24", "10.0.0.2")).toBeNull();
+    expect(session.addRoute("r1", "172.16.0.0", "16", "10.0.0.2")).toBeNull();
+    expect(session.addRoute("r1", "0.0.0.0/0", "", "10.0.0.2")).toBeNull();
+
+    expect(rows().slice(2).map((row) => row[1])).toEqual(["192.168.2.0/24", "172.16.0.0/16", "0.0.0.0/0"]);
+  });
+
+  test("una rotta rifiutata restituisce il motivo, senza il nome del router", () => {
+    expect(session.addRoute("r1", "", "", "")).toBe("Servono la rete, la maschera e il prossimo salto.");
+    expect(session.addRoute("r1", "192.168.2.5", "/24", "10.0.0.2")).toBe(
+      "192.168.2.5 non è un indirizzo di rete con la maschera 255.255.255.0.",
+    );
+    expect(session.addRoute("r1", "192.168.2.0", "/40", "10.0.0.2")).toBe("Subnet mask non valida: /40.");
+    expect(session.addRoute("r1", "192.168.2.0", "/24", "ciao")).toBe("Prossimo salto non valido: ciao.");
+    session.addRoute("r1", "192.168.2.0", "/24", "10.0.0.2");
+    expect(session.addRoute("r1", "192.168.2.0", "/24", "10.0.0.2")).toBe("R1 ha già questa rotta.");
+
+    expect(router().routes).toHaveLength(1);
+  });
+
+  test("una rotta il cui prossimo salto non è su una rete collegata resta, ma non viene usata", () => {
+    session.addRoute("r1", "192.168.2.0", "/24", "172.31.0.1");
+
+    expect(rows().at(-1)).toEqual(["S", "192.168.2.0/24", "172.31.0.1", null]);
+  });
+
+  test("una rotta si toglie, e la modifica si annulla", () => {
+    session.addRoute("r1", "192.168.2.0", "/24", "10.0.0.2");
+    const [added] = router().routes;
+
+    session.removeRoute("r1", added);
+    expect(router().routes).toEqual([]);
+
+    session.undo();
+    expect(router().routes).toHaveLength(1);
+    session.undo();
+    expect(router().routes).toEqual([]);
+  });
+
+  test("la seconda metà della lezione: senza rotte, con una, con due", () => {
+    const pingOnce = () => {
+      session.ping("d1", "192.168.2.10", 1);
+      while (session.view.nextEvent !== null) session.step();
+      return session.view.pingResults.at(-1)!;
+    };
+
+    expect(pingOnce()).toMatchObject({ outcome: "net-unreachable", from: "192.168.1.1" });
+
+    session.addRoute("r1", "192.168.2.0", "/24", "10.0.0.2");
+    expect(pingOnce().outcome).toBe("timeout"); // la risposta si ferma su R2
+
+    session.addRoute("r2", "192.168.1.0", "/24", "10.0.0.1");
+    expect(pingOnce()).toMatchObject({ outcome: "reply", ttl: 126 });
+  });
+});
+
+describe("tabelle appuntate di un router", () => {
+  beforeEach(() => {
+    session.open("due-lan-router.netsim.json", routerFile);
+  });
+
+  test("dalla barretta si appunta la tabella di routing", () => {
+    session.togglePin("r1");
+
+    expect(session.pins).toMatchObject([{ deviceId: "r1", table: "routing" }]);
+    expect(session.isPinned("r1")).toBe(true);
+    expect(session.isPinned("r1", "arp")).toBe(false);
+  });
+
+  test("routing e ARP si appuntano separatamente, e non nascono una sull'altra", () => {
+    session.togglePin("r1", "routing");
+    session.togglePin("r1", "arp");
+
+    expect(session.pins.map((pin) => pin.table)).toEqual(["routing", "arp"]);
+    expect(session.pins[0].dx).not.toBe(session.pins[1].dx);
+
+    session.togglePin("r1", "routing");
+    expect(session.pins.map((pin) => pin.table)).toEqual(["arp"]);
+  });
+
+  test("spostarne una non sposta l'altra", () => {
+    session.togglePin("r1", "routing");
+    session.togglePin("r1", "arp");
+    const arpBefore = { ...session.pins[1] };
+
+    session.movePin("r1", 5, 6, "routing");
+
+    expect(session.pins[0]).toMatchObject({ dx: 5, dy: 6 });
+    expect(session.pins[1]).toMatchObject(arpBefore);
+  });
+
+  test("per PC e switch la tabella resta quella di sempre", () => {
+    session.togglePin("d1");
+    session.togglePin("s1");
+
+    expect(session.pins.map((pin) => [pin.deviceId, pin.table])).toEqual([
+      ["d1", "arp"],
+      ["s1", "mac"],
+    ]);
+  });
+
+  test("eliminando il router spariscono tutte e due le sue tabelle", () => {
+    session.togglePin("r1", "routing");
+    session.togglePin("r1", "arp");
+    session.select({ kind: "device", id: "r1" });
+
+    session.removeSelection();
+
+    expect(session.pins).toEqual([]);
+  });
+});

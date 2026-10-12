@@ -1,6 +1,7 @@
 <svelte:options namespace="svg" />
 
 <script lang="ts" module>
+  import type { PinTable } from "../session-types";
   import type { DeviceView } from "../view";
 
   // Misure del riquadro, in unità del disegno.
@@ -8,13 +9,23 @@
   const ROW = 17;
   const HEAD = 24;
 
-  function titleOf(device: DeviceView): string {
-    return `Tabella ${device.kind === "switch" ? "MAC" : "ARP"} · ${device.name}`;
+  const TITLES = { arp: "Tabella ARP", mac: "Tabella MAC", routing: "Tabella di routing" };
+
+  function titleOf(device: DeviceView, table: PinTable): string {
+    return `${TITLES[table]} · ${device.name}`;
   }
 
   // Le righe da mostrare: due colonne di testo, e una chiave per riconoscerle.
-  function rowsOf(device: DeviceView): { key: string; left: string; right: string }[] {
-    const rows = device.kind === "switch" ? device.macRows : device.arpRows;
+  function rowsOf(device: DeviceView, table: PinTable): { key: string; left: string; right: string }[] {
+    if (table === "routing") {
+      // "C 192.168.1.0/24   Gi0/0" e "S 192.168.2.0/24   via 10.0.0.2 Gi0/1".
+      return device.routingRows.map((row) => ({
+        key: `${row.code} ${row.destination} ${row.nextHop}`,
+        left: `${row.code} ${row.destination}`,
+        right: `${row.nextHop === null ? "" : `via ${row.nextHop} `}${row.portName ?? "non usata"}`,
+      }));
+    }
+    const rows = table === "mac" ? device.macRows : device.arpRows;
     return rows.map(([left, right]) => ({ key: left, left, right }));
   }
 
@@ -22,9 +33,9 @@
    * Quanto è grande il riquadro della tabella appuntata di un dispositivo.
    * Serve anche a chi deve fargli posto nell'inquadratura.
    */
-  export function pinnedSize(device: DeviceView): { width: number; height: number } {
-    const rows = rowsOf(device);
-    const widest = Math.max(titleOf(device).length + 4, ...rows.map((row) => row.left.length + row.right.length + 3));
+  export function pinnedSize(device: DeviceView, table: PinTable): { width: number; height: number } {
+    const rows = rowsOf(device, table);
+    const widest = Math.max(titleOf(device, table).length + 4, ...rows.map((row) => row.left.length + row.right.length + 3));
     return { width: widest * CHAR + 20, height: HEAD + Math.max(rows.length, 1) * ROW + 8 };
   }
 </script>
@@ -38,8 +49,9 @@
   // Si trascina; la riga appena imparata o appena persa si fa notare.
   let { pin, device }: { pin: Pin; device: DeviceView } = $props();
 
-  const rows = $derived(rowsOf(device));
-  const size = $derived(pinnedSize(device));
+  const rows = $derived(rowsOf(device, pin.table));
+  const size = $derived(pinnedSize(device, pin.table));
+  const title = $derived(titleOf(device, pin.table));
   // In presentazione tutto è ingrandito: il riquadro, e la sua distanza
   // dal dispositivo, che è cresciuto anche lui.
   const k = $derived(preferences.scale);
@@ -108,6 +120,7 @@
       device.id,
       drag.dx + (event.clientX - drag.startX) / (drag.scale * k),
       drag.dy + (event.clientY - drag.startY) / (drag.scale * k),
+      pin.table,
     );
   }
 
@@ -119,7 +132,7 @@
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       event.stopPropagation();
-      session.togglePin(device.id);
+      session.togglePin(device.id, pin.table);
     }
   }
 </script>
@@ -136,20 +149,20 @@
   onpointercancel={up}
   onclick={(event) => event.stopPropagation()}
 >
-  <title>{titleOf(device)}: trascina per spostarla</title>
+  <title>{title}: trascina per spostarla</title>
   <rect class="frame" width={size.width} height={size.height} rx="3" />
-  <text class="head" x="10" y="16">{titleOf(device)}</text>
+  <text class="head" x="10" y="16">{title}</text>
 
   <g
     class="close"
     transform="translate({size.width - 18} 5)"
     role="button"
     tabindex="0"
-    aria-label="Togli la {titleOf(device)} dal disegno"
+    aria-label="Togli la {title} dal disegno"
     onpointerdown={(event) => event.stopPropagation()}
     onclick={(event) => {
       event.stopPropagation();
-      session.togglePin(device.id);
+      session.togglePin(device.id, pin.table);
     }}
     onkeydown={onKey}
   >

@@ -12,9 +12,14 @@ export interface HistoryEntry {
   positions: Map<string, Position>;
 }
 
+// Quale tabella di un dispositivo: ARP (host e router), MAC (switch), di
+// routing (router).
+export type PinTable = "arp" | "mac" | "routing";
+
 // Una tabella appuntata sul disegno, accanto al suo dispositivo.
 export interface Pin {
   deviceId: string;
+  table: PinTable;
   // Dove sta l'angolo in alto a sinistra, rispetto al centro del dispositivo.
   dx: number;
   dy: number;

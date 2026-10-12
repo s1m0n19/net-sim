@@ -7,6 +7,7 @@
   import Chevron from "../theme/Chevron.svelte";
   import ConfigField from "./ConfigField.svelte";
   import InterfaceFields from "./InterfaceFields.svelte";
+  import RouteEditor from "./RouteEditor.svelte";
   import PacketLayers from "./PacketLayers.svelte";
 
   const selection = $derived(session.selection);
@@ -113,28 +114,22 @@
         {/each}
       {/key}
 
-      <!-- C = rete collegata, S = rotta statica, come su un Cisco. Una
-           rotta statica senza interfaccia non è utilizzabile. -->
-      <h3>Tabella di routing</h3>
-      {#if device.routingRows.length === 0}
-        <p>Vuota.</p>
-      {:else}
-        <table>
-          <thead><tr><th></th><th>Rete</th><th>Prossimo salto</th><th>Esce da</th></tr></thead>
-          <tbody>
-            {#each device.routingRows as row (`${row.code} ${row.destination} ${row.nextHop}`)}
-              <tr>
-                <td>{row.code}</td>
-                <td>{row.destination}</td>
-                <td>{row.nextHop ?? "—"}</td>
-                <td>{row.portName ?? "—"}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      {/if}
+      <h3>
+        Tabella di routing
+        <button class="btn pin" class:on={session.isPinned(device.id, "routing")} aria-pressed={session.isPinned(device.id, "routing")} onclick={() => session.togglePin(device.id, "routing")}>
+          {session.isPinned(device.id, "routing") ? "appuntata" : "appunta"}
+        </button>
+      </h3>
+      {#key device.id}
+        <RouteEditor {device} />
+      {/key}
 
-      <h3>Tabella ARP</h3>
+      <h3>
+        Tabella ARP
+        <button class="btn pin" class:on={session.isPinned(device.id, "arp")} aria-pressed={session.isPinned(device.id, "arp")} onclick={() => session.togglePin(device.id, "arp")}>
+          {session.isPinned(device.id, "arp") ? "appuntata" : "appunta"}
+        </button>
+      </h3>
       {#if device.arpRows.length === 0}
         <p>Vuota.</p>
       {:else}

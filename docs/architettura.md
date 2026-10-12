@@ -61,7 +61,7 @@ net-sim/
 ├── README.md                  come avviare e provare l'app
 ├── CLAUDE.md                  regole di lavoro per Claude Code
 ├── docs/                      questa documentazione
-├── examples/                  reti di esempio: due-pc, lan-switch, anello-switch, due-lan-router
+├── examples/                  reti di esempio: due-pc, lan-switch, anello-switch, due-lan-router, tre-reti-due-router
 ├── src/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
@@ -140,7 +140,7 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 | `costruire.spec.ts` | Una rete costruita da zero con il mouse; spostare, annullare, eliminare |
 | `file.spec.ts` | Salvare e riaprire, modifiche non salvate, file non valido |
 | `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione |
-| `router.spec.ts` | Due LAN e un router costruiti con il mouse: interfacce, indirizzi, ping, tracert |
+| `router.spec.ts` | Due LAN e un router costruiti con il mouse; la lezione sul routing statico con tre reti e due router |
 
 Le finestre di Chrome per scegliere dove aprire e salvare non si possono comandare da un test: lì l'app viene provata con il ripiego che usa negli altri browser, cioè campo di tipo file e scaricamento. L'aspetto (colori, dimensioni, leggibilità) resta da guardare a occhio.
 

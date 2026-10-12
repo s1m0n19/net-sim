@@ -74,18 +74,15 @@ export function selectionBar(): SelectionBar | null {
       label: `Elimina ${device.name}, con i suoi cavi`,
       run: () => session.removeSelection(),
     };
-    // Le tabelle di un router non si appuntano ancora.
-    if (device.kind !== "router") {
-      const table = device.kind === "host" ? "ARP" : "MAC";
-      actions.push({
-        icon: "pin",
-        label: session.isPinned(device.id)
-          ? `Togli la tabella ${table} di ${device.name} dal disegno`
-          : `Appunta la tabella ${table} di ${device.name} sul disegno`,
-        active: session.isPinned(device.id),
-        run: () => session.togglePin(device.id),
-      });
-    }
+    const table = device.kind === "host" ? "ARP" : device.kind === "switch" ? "MAC" : "di routing";
+    actions.push({
+      icon: "pin",
+      label: session.isPinned(device.id)
+        ? `Togli la tabella ${table} di ${device.name} dal disegno`
+        : `Appunta la tabella ${table} di ${device.name} sul disegno`,
+      active: session.isPinned(device.id),
+      run: () => session.togglePin(device.id),
+    });
     if (!preferences.presenting) actions.push(removeDevice);
     return { x: device.x, y: device.y - 42 * preferences.scale, actions };
   }

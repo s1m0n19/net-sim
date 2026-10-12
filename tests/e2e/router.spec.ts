@@ -84,3 +84,65 @@ test("due LAN unite da un router costruito da zero", async ({ page }) => {
   await page.getByRole("button", { name: /Avvia/ }).click();
   await expect(terminal(page)).toContainText("Reply from 192.168.1.1: Destination net unreachable.", { timeout: 40_000 });
 });
+
+test("la lezione sul routing statico: tre reti, due router", async ({ page }) => {
+  const { exampleFile, openNetwork } = await import("./helpers");
+  await openApp(page);
+  await openNetwork(page, "tre-reti-due-router.netsim.json", exampleFile("tre-reti-due-router"));
+  await expect(device(page, "R2")).toBeVisible();
+
+  // Aggiunge una rotta statica al router selezionato.
+  const addRoute = async (network: string, mask: string, nextHop: string) => {
+    await page.locator('[data-field="route-network"]').fill(network);
+    await page.locator('[data-field="route-mask"]').fill(mask);
+    await page.locator('[data-field="route-next-hop"]').fill(nextHop);
+    await page.getByRole("button", { name: "Aggiungi rotta" }).click();
+  };
+  const pingFromPc1 = async () => {
+    await page.getByRole("tab", { name: "Terminale · PC1" }).click();
+    await typeCommand(page, "ping -n 1 192.168.2.10");
+  };
+
+  // 6. Senza rotte statiche, il primo router avvisa che la rete non si raggiunge.
+  await device(page, "PC1").click();
+  await action(page, "Apri il terminale").click();
+  await typeCommand(page, "ping -n 1 192.168.2.10");
+  await page.getByRole("button", { name: /Avvia/ }).click();
+  await expect(terminal(page)).toContainText("Reply from 192.168.1.1: Destination net unreachable.", { timeout: 40_000 });
+
+  // La tabella di routing di R1, appuntata, resta in vista sul disegno.
+  await device(page, "R1").click();
+  await action(page, "Appunta la tabella di routing di R1").click();
+  await expect(page.locator("g.table")).toContainText("Tabella di routing · R1");
+
+  // 7a. Con la sola rotta di andata la richiesta arriva, ma la risposta
+  //     si ferma al secondo router: chi ha fatto il ping aspetta invano.
+  await addRoute("192.168.2.0", "/24", "10.0.0.2");
+  await expect(sidePanel(page)).toContainText("192.168.2.0/24");
+  await expect(page.locator("g.table")).toContainText("via 10.0.0.2 Gi0/1");
+  await pingFromPc1();
+  await expect(terminal(page)).toContainText("Request timed out.", { timeout: 60_000 });
+
+  // Una rotta scritta male viene rifiutata, con il motivo.
+  await device(page, "R2").click();
+  await addRoute("192.168.1.7", "/24", "10.0.0.1");
+  await expect(sidePanel(page)).toContainText("non è un indirizzo di rete");
+
+  // 7b. Con anche la rotta di ritorno il ping riesce, con due salti in meno.
+  await addRoute("192.168.1.0", "255.255.255.0", "10.0.0.1");
+  await pingFromPc1();
+  await expect(terminal(page)).toContainText("TTL=126", { timeout: 40_000 });
+
+  // 8. tracert mostra i due router e la destinazione.
+  await typeCommand(page, "tracert 192.168.2.10");
+  await expect(terminal(page)).toContainText("Trace complete.", { timeout: 60_000 });
+  await expect(terminal(page)).toContainText(/1 +\d+ ms {2}192\.168\.1\.1/);
+  await expect(terminal(page)).toContainText(/2 +\d+ ms {2}10\.0\.0\.2/);
+  await expect(terminal(page)).toContainText(/3 +\d+ ms {2}192\.168\.2\.10/);
+
+  // Tolta la rotta di andata, la riga sparisce dal pannello.
+  await page.getByRole("button", { name: /Pausa/ }).click();
+  await device(page, "R1").click();
+  await page.getByRole("button", { name: "Togli la rotta verso 192.168.2.0/24 via 10.0.0.2" }).click();
+  await expect(sidePanel(page).getByText("192.168.2.0/24")).toHaveCount(0);
+});

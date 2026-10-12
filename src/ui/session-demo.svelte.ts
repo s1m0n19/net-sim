@@ -14,7 +14,7 @@ import {
   parseCommand,
 } from "../shell/windows";
 import { SessionCore } from "./session-core.svelte";
-import type { Pin, Terminal, TerminalEntry } from "./session-types";
+import type { Pin, PinTable, Terminal, TerminalEntry } from "./session-types";
 import type { Protocol } from "./view";
 
 export class SessionDemo extends SessionCore {
@@ -174,34 +174,53 @@ export class SessionDemo extends SessionCore {
     return done < last.count;
   }
 
-  /** Dice se la tabella di un dispositivo è appuntata sul disegno. */
-  isPinned(deviceId: string): boolean {
-    return this.pins.some((pin) => pin.deviceId === deviceId);
+  /**
+   * Dice se una tabella di un dispositivo è appuntata sul disegno.
+   *
+   * @param table - quale tabella; se manca, quella principale del
+   *   dispositivo: ARP per un host, MAC per uno switch, di routing per un router
+   */
+  isPinned(deviceId: string, table?: PinTable): boolean {
+    const which = table ?? this.mainTableOf(deviceId);
+    return this.pins.some((pin) => pin.deviceId === deviceId && pin.table === which);
   }
 
   /**
-   * Appunta sul disegno la tabella di un dispositivo (MAC per uno switch,
-   * ARP per un host), oppure la toglie se è già appuntata. Nasce sotto il
-   * dispositivo, e da lì si può trascinare.
+   * Appunta sul disegno una tabella di un dispositivo, oppure la toglie se
+   * è già appuntata. Nasce sotto il dispositivo, e da lì si può trascinare.
+   *
+   * @param table - quale tabella; se manca, quella principale del dispositivo
    */
-  togglePin(deviceId: string): void {
-    if (this.isPinned(deviceId)) {
-      this.pins = this.pins.filter((pin) => pin.deviceId !== deviceId);
+  togglePin(deviceId: string, table?: PinTable): void {
+    const device = this.view.devices.find((d) => d.id === deviceId);
+    const which = table ?? this.mainTableOf(deviceId);
+    if (device === undefined || which === null) return;
+    if (this.isPinned(deviceId, which)) {
+      this.pins = this.pins.filter((pin) => !(pin.deviceId === deviceId && pin.table === which));
       return;
     }
-    const device = this.view.devices.find((d) => d.id === deviceId);
-    if (device === undefined) return;
-    // Sotto un host ci sono più righe di etichetta che sotto uno switch.
-    this.pins.push({ deviceId, dx: -100, dy: device.kind === "host" ? 92 : 62 });
+    // Sotto un host ci sono più righe di etichetta che sotto gli altri. Le
+    // due tabelle di un router nascono una a sinistra e una a destra.
+    const dx = device.kind === "router" ? (which === "routing" ? -190 : 30) : -100;
+    this.pins.push({ deviceId, table: which, dx, dy: device.kind === "host" ? 92 : 62 });
   }
 
   /** Sposta una tabella appuntata a una nuova distanza dal suo dispositivo. */
-  movePin(deviceId: string, dx: number, dy: number): void {
-    const pin = this.pins.find((p) => p.deviceId === deviceId);
+  movePin(deviceId: string, dx: number, dy: number, table?: PinTable): void {
+    const which = table ?? this.mainTableOf(deviceId);
+    const pin = this.pins.find((p) => p.deviceId === deviceId && p.table === which);
     if (pin !== undefined) {
       pin.dx = dx;
       pin.dy = dy;
     }
+  }
+
+  // La tabella che si appunta dalla barretta: ARP per un host, MAC per uno
+  // switch, di routing per un router.
+  private mainTableOf(deviceId: string): PinTable | null {
+    const device = this.view.devices.find((d) => d.id === deviceId);
+    if (device === undefined) return null;
+    return device.kind === "host" ? "arp" : device.kind === "switch" ? "mac" : "routing";
   }
 
   /** Spegne un dispositivo acceso, o accende uno spento. */

@@ -80,6 +80,8 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
           destination: `${networkAddress(route.network, route.mask)}/${maskToPrefix(route.mask)}`,
           nextHop: route.nextHop,
           portName: route.portName,
+          network: route.network,
+          mask: route.mask,
         })),
         interfaces: device.ports.map((port) => ({
           name: port.name,

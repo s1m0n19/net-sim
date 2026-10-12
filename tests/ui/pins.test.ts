@@ -57,7 +57,7 @@ describe("tabelle appuntate", () => {
 
     session.restart();
 
-    expect(session.pins).toEqual([{ deviceId: "s1", dx: 40, dy: -120 }]);
+    expect(session.pins).toEqual([{ deviceId: "s1", table: "mac", dx: 40, dy: -120 }]);
   });
 
   test("aprire un'altra rete, o tornare al foglio vuoto, le toglie", () => {

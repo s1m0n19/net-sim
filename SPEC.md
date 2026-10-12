@@ -388,6 +388,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-85 | 12 ott 2026 | Le icone di router e switch sono i simboli degli schemi di rete: per il router un cerchio con quattro frecce, due che entrano e due che escono; per lo switch un rettangolo con quattro frecce a versi alternati | Sono i simboli che gli studenti trovano sui libri, quindi si riconoscono senza spiegazioni, e tra loro si distinguono anche da lontano. Scelte dal docente tra cinque proposte per ciascuno | Confermata |
 | D-86 | 12 ott 2026 | Un'interfaccia di router spenta si riconosce sul disegno da un quadratino rosso vuoto, al posto del pallino del segnale, sul capo del cavo vicino al router; con l'etichetta Porte accesa compare anche la scritta «spenta». Sulla barretta del router non ci sono Ping né Terminale fino alla CLI, e per appuntare c'è la sola tabella di routing | Colore più un secondo segno, come per gli altri stati. Il ping dal router richiede di scegliere un indirizzo sorgente, cosa che si fa dalla CLI | Confermata |
 | D-87 | 12 ott 2026 | Scrivendo l'indirizzo di un'interfaccia di router si può aggiungere il prefisso (`10.0.0.5/30`). Senza prefisso la maschera proposta è quella della classe, a meno che non faccia sovrapporre la rete a quella di un'altra interfaccia: in quel caso si propone la maschera di quell'altra | Sui router le maschere lunghe sono la norma, e con la sola maschera della classe la seconda interfaccia di una rete `10.x` verrebbe rifiutata prima di poterne scrivere la maschera | Confermata il 12 ottobre 2026, con riserva di rivederla |
+| D-88 | 12 ott 2026 | Nel pannello del router la maschera di una rotta statica si scrive per esteso o come prefisso (`/24`), anche in coda alla rete. Una rotta che non viene usata resta in tabella, attenuata e con la scritta «non usata». Un router ha due tabelle appuntabili, di routing e ARP, ciascuna con il suo pulsante nel pannello; dalla barretta si appunta quella di routing | Le rotte si scrivono spesso con il prefisso. La rotta inutilizzabile deve restare visibile perché è l'errore da diagnosticare. In lezione serve la tabella di routing, ma la tabella ARP del router mostra che cerca il vicino e non la destinazione | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -411,7 +412,7 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). Sono fatti i passaggi da 1 a 4 su sette, cioè tutto il motore del routing, e la prima di tre parti del passaggio 5: il router si posa dalla colonna nelle tre varianti, e dal pannello se ne accendono le interfacce e se ne impostano gli indirizzi; un'interfaccia spenta si vede sul disegno. Con questo la prima metà della lezione del criterio di accettazione (due LAN e un router) si svolge nell'app. Mancano le rotte statiche dal pannello e le tabelle appuntabili (5b), gli indirizzi accanto ai cavi (5c), il server (6), esempi e test della lezione (7). Tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). Sono fatti i passaggi da 1 a 4 su sette, cioè tutto il motore del routing, e due delle tre parti del passaggio 5: il router si posa dalla colonna, e dal pannello se ne accendono le interfacce, se ne impostano gli indirizzi e si aggiungono e tolgono le rotte statiche; le sue tabelle si appuntano sul disegno. Con questo tutta la lezione del criterio di accettazione del rilascio 2 si svolge nell'app, e la sua seconda metà è eseguita da un test nel browser. Mancano gli indirizzi accanto ai cavi (5c), il server (6), e la prima metà della lezione come test (7). Tappe successive: nulla è iniziato.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
@@ -430,9 +431,9 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 
 ### Che cosa esiste oltre ai requisiti
 
-- 9 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
-- 644 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
-- Quattro reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router.
+- 10 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
+- 655 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- Cinque reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router, tre reti con due router in fila.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
 
 ### Difetti noti

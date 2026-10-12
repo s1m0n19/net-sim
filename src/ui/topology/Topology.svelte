@@ -27,7 +27,7 @@
   // Dove sta ogni tabella appuntata, come rettangolo del disegno.
   const pinnedBoxes = $derived(
     pinned.map(({ pin, device }) => {
-      const size = pinnedSize(device);
+      const size = pinnedSize(device, pin.table);
       const k = preferences.scale;
       return { x: device.x + pin.dx * k, y: device.y + pin.dy * k, width: size.width * k, height: size.height * k };
     }),
@@ -57,7 +57,7 @@
     let right = x + width;
     let bottom = y + height;
     for (const { pin, device } of pinned) {
-      const size = pinnedSize(device);
+      const size = pinnedSize(device, pin.table);
       const left = device.x + pin.dx;
       const top = device.y + pin.dy;
       x = Math.min(x, left - 16);
@@ -174,7 +174,7 @@
       {#each session.view.devices as device (device.id)}
         <DeviceNode {device} />
       {/each}
-      {#each pinned as { pin, device } (device.id)}
+      {#each pinned as { pin, device } (`${device.id} ${pin.table}`)}
         <PinnedTable {pin} {device} />
       {/each}
       {#each packets as packet (`${session.generation}-${packet.id}`)}

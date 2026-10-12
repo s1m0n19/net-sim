@@ -46,7 +46,11 @@ Il **router** (rilascio 2, in costruzione) si posa dalla colonna: passando su **
 - Due interfacce dello stesso router non possono avere reti che si sovrappongono.
 - Ai PC va dato come gateway l'indirizzo dell'interfaccia del router sulla loro rete.
 
-A quel punto un ping da una LAN all'altra attraversa il router, con i MAC che cambiano e il TTL che scende di uno, e `tracert` mostra la strada. Quando non può consegnare un pacchetto il router avvisa il mittente, e `ping` lo stampa come su Windows (`Destination net unreachable`). Le rotte statiche per ora si impostano solo nel file: aggiungerle dal pannello è la prossima parte.
+A quel punto un ping da una LAN all'altra attraversa il router, con i MAC che cambiano e il TTL che scende di uno, e `tracert` mostra la strada. Quando non può consegnare un pacchetto il router avvisa il mittente, e `ping` lo stampa come su Windows (`Destination net unreachable`). Le **rotte statiche** si aggiungono dal pannello del router, sotto la tabella di routing: rete, maschera (anche come prefisso, `/24`) e prossimo salto, cioè l'indirizzo del router vicino. Una crocetta toglie una rotta. In tabella le reti collegate hanno la sigla C e le rotte statiche la S; una rotta il cui prossimo salto non è su una rete collegata resta in elenco ma è segnata «non usata».
+
+La tabella di routing si appunta sul disegno dalla barretta del router, per tenerla in vista mentre i pacchetti viaggiano; dal pannello si appunta anche la tabella ARP.
+
+Per provare: apri `examples/tre-reti-due-router.netsim.json`. Senza rotte un ping da PC1 a `192.168.2.10` riceve `Destination net unreachable`; aggiunta su R1 la rotta verso `192.168.2.0/24` via `10.0.0.2` la richiesta arriva ma la risposta si ferma su R2; aggiunta su R2 quella verso `192.168.1.0/24` via `10.0.0.1` il ping riesce, e `tracert` mostra i due router.
 
 **Costruire.** Dalla colonna a sinistra si posano i dispositivi, in due modi:
 

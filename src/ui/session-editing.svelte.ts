@@ -8,6 +8,7 @@
 import {
   addHost,
   addLink,
+  addRoute,
   addRouter,
   addSwitch,
   configureHost,
@@ -17,6 +18,7 @@ import {
   moveLinkEnd,
   removeDevice,
   removeLink,
+  removeRoute,
   renameDevice,
   restoreConfiguration,
   type Action,
@@ -24,7 +26,7 @@ import {
 import { freePortsOf, type DeviceTemplate } from "../engine/editing";
 import { networksOverlap, prefixToMask } from "../engine/model/addresses";
 import { checkIpConfig, defaultMaskFor, type IpConfig } from "../engine/model/ip-config";
-import { checkInterfaceAddress } from "../engine/model/router-config";
+import { checkInterfaceAddress, checkRoute } from "../engine/model/router-config";
 import { takeSnapshot } from "../engine/snapshot";
 import type { Position } from "../storage/load";
 import { messageOf } from "./session-core.svelte";
@@ -310,6 +312,47 @@ export class SessionEditing extends SessionDemo {
       if (networksOverlap(ip, byClass, other.ip, other.mask)) return other.mask;
     }
     return byClass;
+  }
+
+  /**
+   * Aggiunge una rotta statica a un router, come scritta nel pannello.
+   *
+   * La maschera si può scrivere per esteso (255.255.255.0) oppure come
+   * prefisso (/24, o 24); il prefisso può stare anche in coda alla rete
+   * (192.168.2.0/24), e allora il campo della maschera può restare vuoto.
+   *
+   * @returns null se la rotta è stata aggiunta, altrimenti il motivo del
+   *   rifiuto, da scrivere sotto i campi
+   */
+  addRoute(deviceId: string, network: string, mask: string, nextHop: string): string | null {
+    let net = network.trim();
+    let maskText = mask.trim();
+    const withPrefix = /^(.+)\/(\d{1,2})$/.exec(net);
+    if (withPrefix !== null && maskText === "") {
+      net = withPrefix[1];
+      maskText = `/${withPrefix[2]}`;
+    }
+    if (net === "" || maskText === "" || nextHop.trim() === "") {
+      return "Servono la rete, la maschera e il prossimo salto.";
+    }
+    const prefix = /^\/?(\d{1,2})$/.exec(maskText);
+    if (prefix !== null && Number(prefix[1]) > 32) return `Subnet mask non valida: ${maskText}.`;
+    const route = {
+      network: net,
+      mask: prefix === null ? maskText : prefixToMask(Number(prefix[1])),
+      nextHop: nextHop.trim(),
+    };
+    const problem = checkRoute(route);
+    if (problem !== null) return sentence(problem);
+    const refused = this.attempt(addRoute(deviceId, route));
+    // Il motore mette davanti "R1: ": nel pannello è di troppo.
+    return refused === null ? null : sentence(refused.replace(/^[^:]+: /, "").replace(/\.$/, ""));
+  }
+
+  /** Toglie una rotta statica da un router. */
+  removeRoute(deviceId: string, route: { network: string; mask: string; nextHop: string }): void {
+    const problem = this.attempt(removeRoute(deviceId, route));
+    if (problem !== null) this.notice = problem;
   }
 
   private interfaceOf(deviceId: string, portName: string) {

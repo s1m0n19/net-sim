@@ -16,7 +16,7 @@
 import { SessionEditing } from "./session-editing.svelte";
 
 export { FILE_EXTENSION } from "./session-core.svelte";
-export type { Pin, Selection, Terminal, TerminalEntry } from "./session-types";
+export type { Pin, PinTable, Selection, Terminal, TerminalEntry } from "./session-types";
 
 class Session extends SessionEditing {}
 

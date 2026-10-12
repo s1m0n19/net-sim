@@ -44,6 +44,9 @@ export interface RoutingRowView {
   nextHop: string | null;
   // L'interfaccia di uscita; null se la rotta non è utilizzabile.
   portName: string | null;
+  // Rete e maschera come sono state impostate: servono a togliere la rotta.
+  network: string;
+  mask: string;
 }
 
 // Un'interfaccia di un router.
