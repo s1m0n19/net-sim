@@ -68,7 +68,7 @@ I dispositivi sono generici, non modelli commerciali. Non esistono moduli da ins
 | DEV-5 | Server come dispositivo distinto dal PC, predisposto a ospitare servizi. Nel rilascio 2 è un host con un'altra icona e nome `SRV1`: una interfaccia, indirizzo, gateway e terminale come un PC | R2 |
 | DEV-6 | VLAN: porte access e trunk 802.1Q, routing tra VLAN | T2 |
 | DEV-7 | Servizi sul server: DHCP, DNS, web | T3 |
-| DEV-8 | Routing dinamico con i protocolli RIP, RIPv2 e OSPF, e NAT/PAT | T5 |
+| DEV-8 | Routing dinamico con i protocolli RIP versione 1, RIP versione 2 e OSPF, e NAT/PAT. La CLI va costruita in modo che i loro comandi (`router rip`, `version 2`, `network`, `router ospf`) si possano aggiungere senza rifarla | T5 |
 | DEV-9 | ACL sul router e firewall dedicato con zone e DMZ | T6 |
 | DEV-10 | Access point e client Wi-Fi | T7 |
 | DEV-11 | Spanning tree (STP) sugli switch: in presenza di un ciclo, gli switch bloccano da soli una porta | T2 |
@@ -80,13 +80,23 @@ I dispositivi sono generici, non modelli commerciali. Non esistono moduli da ins
 | CFG-1 | Pannello grafico per configurare il dispositivo selezionato | R1 |
 | CFG-2 | Terminale degli host in stile Windows: `ipconfig`, `ping`, `arp -a`. I messaggi sono in inglese, come sui libri e in rete | R1 |
 | CFG-3 | `tracert` sugli host: una sonda per salto, con TTL crescente, fino a 30 salti | R2 |
-| CFG-4 | CLI di switch e router con sintassi Cisco IOS: modalità (`enable`, `configure terminal`, `interface`), abbreviazioni dei comandi, completamento con Tab, aiuto con `?` | R2 |
+| CFG-4 | CLI di switch e router in stile Cisco IOS: modalità (`enable`, `configure terminal`, `interface`), abbreviazioni dei comandi purché non ambigue, completamento con Tab, aiuto con `?`. Output e messaggi di errore nel formato di IOS, senza intestazioni né diciture di marca | R2 |
 | CFG-5 | CLI e pannello grafico sincronizzati: una modifica fatta in uno compare subito nell'altro | R2 |
 | CFG-6 | `nslookup` sugli host | T3 |
 | CFG-7 | La configurazione IP di un host è accettata o rifiutata come farebbe Windows. Indirizzo e subnet mask si impostano insieme, oppure nessuno dei due; il gateway è facoltativo. Sono rifiutati gli indirizzi scritti male, le maschere con bit non contigui e, come indirizzo dell'host o del gateway, l'indirizzo di rete e quello di broadcast della sottorete, 0.0.0.0, gli indirizzi 127.x.x.x e quelli da 224 in su. Tutto il resto è ammesso, anche se sbagliato per quella rete. Un gateway fuori dalla sottorete dell'host è ammesso | R1 |
 | CFG-8 | Un campo del pannello di configurazione ha effetto alla conferma (Invio o uscita dal campo). Se il valore non è accettabile il campo si segna in rosso con il motivo, e la rete conserva il valore di prima. Scritto l'indirizzo su un host senza maschera, la maschera viene proposta in base alla classe dell'indirizzo, come fa Windows | R1 |
 
-Il sottoinsieme dei comandi IOS è un punto aperto (sezione 7). Proposta iniziale per R2: `enable`, `configure terminal`, `hostname`, `interface`, `ip address`, `shutdown`, `no shutdown`, `ip route`, `exit`, `end`, `show running-config`, `show ip interface brief`, `show ip route`, `show mac address-table`, `show arp`, `ping`, `traceroute`.
+I comandi del rilascio 2, decisi l'11 ottobre 2026 (D-89):
+
+| Gruppo | Comandi |
+| --- | --- |
+| Modalità | `enable`, `disable`, `configure terminal`, `interface`, `exit`, `end` |
+| Configurare | `hostname`; `ip address` e `no ip address`; `shutdown` e `no shutdown`; `ip route` e `no ip route` (solo router) |
+| Guardare | `show running-config`, `show startup-config`, `show ip interface brief`, `show ip route`, `show arp`, `show interfaces`; sullo switch anche `show mac address-table` |
+| Provare | `ping` e `traceroute`, dal router |
+| Per abitudine | `copy running-config startup-config` e `write memory`: rispondono `[OK]` e non fanno nulla |
+
+Sullo switch, finché non ci sono le VLAN, la CLI mostra, rinomina e spegne le porte.
 
 ### 3.4 Simulazione
 
@@ -255,6 +265,34 @@ Deciso nell'intervista dell'11 ottobre 2026. Prima il routing, costruito a picco
 
 Poi, in quest'ordine: CLI in stile IOS, funzionamento offline (che richiede nome e dominio definitivi), strumenti dell'editor, tabelle nel file.
 
+### Criterio di accettazione della CLI
+
+La CLI è pronta quando questa lezione si svolge dall'inizio alla fine senza uscire dall'app, configurando tutto dai terminali:
+
+1. Su un foglio vuoto il docente posa due PC e due router, li collega in fila e dà ai PC indirizzo e gateway.
+2. Apre la CLI del primo router: `enable`, `configure terminal`, `hostname`.
+3. Per ogni interfaccia: `interface`, `ip address`, `no shutdown`. Mentre scrive, il pannello laterale e il disegno mostrano le stesse cose.
+4. Usa le abbreviazioni (`conf t`, `int gi0/0`, `no shut`), il Tab e `?` per farsi suggerire ciò che segue.
+5. Aggiunge la rotta statica con `ip route`; ripete tutto sul secondo router.
+6. Controlla con `show ip interface brief`, `show ip route` e `show running-config`.
+7. Dal router lancia `ping` verso il PC lontano, e legge la fila di simboli; poi `traceroute`.
+8. Sbaglia apposta un comando e legge il messaggio di errore con il segno `^` sotto il punto sbagliato.
+9. Aggiunge uno switch tra un router e un PC; dalla sua CLI guarda `show mac address-table` e spegne una porta, che si vede spenta sul disegno.
+
+### Piano di costruzione della CLI
+
+Deciso nell'intervista del 12 ottobre 2026.
+
+| N. | Passaggio | Che cosa si può fare dopo |
+| --- | --- | --- |
+| 1 | Porte spente sugli switch, nel motore, nei file e sul disegno | Una porta di switch si spegne, e si vede |
+| 2 | Il nucleo dell'interprete: modalità, albero dei comandi, abbreviazioni, `?`, Tab, messaggi di errore. Solo testo, senza effetti sulla rete | Nei test, ogni riga scritta viene capita o rifiutata come farebbe IOS |
+| 3 | I comandi che configurano, collegati alle azioni del motore | `hostname`, `ip address`, `shutdown`, `ip route` cambiano la rete |
+| 4 | I comandi `show` | La configurazione e le tabelle si leggono dal terminale |
+| 5 | `ping` e `traceroute` dal router | Il router genera traffico, con l'output di IOS |
+| 6 | Il terminale a schermo per router e switch | Si apre dalla barretta, in una scheda, con Tab e `?` |
+| 7 | La lezione come test nel browser, documento `docs/cli.md` | La CLI è collaudabile |
+
 ## 6. Fuori ambito
 
 - Modelli commerciali di dispositivi, moduli hardware, viste di rack e armadi.
@@ -282,7 +320,7 @@ Punti ancora da decidere:
 
 - [ ] Nome dell'app: scelto *Doppino*, con riserva (`doppino.it` risultava libero l'11 ottobre 2026; marchi non verificati). Da rendere definitivo, e applicare a schermo, file e repository, prima del funzionamento offline (NF-2). Altre proposte considerate: Instrada, Trama, Salto, PacketLab, Salto a salto, Primo Ping, Simulareti, Banco di rete, Fil di rete.
 - [ ] Condizioni d'uso per i colleghi: una nota breve da scrivere sul sito o nel README (destinatari decisi: D-66). Prima della CLI del rilascio 2, rivedere i testi per marchi e sintassi Cisco.
-- [ ] Sottoinsieme dei comandi IOS (proposta nella sezione 3.3).
+- [ ] Rivedere i testi per marchi Cisco prima di pubblicare la CLI: si parla sempre di «stile IOS», e l'output non riporta intestazioni, versioni o diciture di marca (D-90).
 - [ ] Verificare che il filtro della scuola non blocchi il sito pubblicato (`net-sim.simon-nucifora.workers.dev`), aprendolo da un PC dell'aula. Dove pubblicare è deciso: D-64.
 - [ ] Dominio `.it` per il sito, da comprare quando il nome dell'app sarà scelto, e prima del funzionamento offline (NF-2): chi ha installato l'app da un indirizzo dovrebbe reinstallarla dal nuovo.
 - [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
@@ -389,6 +427,11 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-86 | 12 ott 2026 | Un'interfaccia di router spenta si riconosce sul disegno da un quadratino rosso vuoto, al posto del pallino del segnale, sul capo del cavo vicino al router; con l'etichetta Porte accesa compare anche la scritta «spenta». Sulla barretta del router non ci sono Ping né Terminale fino alla CLI, e per appuntare c'è la sola tabella di routing | Colore più un secondo segno, come per gli altri stati. Il ping dal router richiede di scegliere un indirizzo sorgente, cosa che si fa dalla CLI | Confermata |
 | D-87 | 12 ott 2026 | Scrivendo l'indirizzo di un'interfaccia di router si può aggiungere il prefisso (`10.0.0.5/30`). Senza prefisso la maschera proposta è quella della classe, a meno che non faccia sovrapporre la rete a quella di un'altra interfaccia: in quel caso si propone la maschera di quell'altra | Sui router le maschere lunghe sono la norma, e con la sola maschera della classe la seconda interfaccia di una rete `10.x` verrebbe rifiutata prima di poterne scrivere la maschera | Confermata il 12 ottobre 2026, con riserva di rivederla |
 | D-88 | 12 ott 2026 | Nel pannello del router la maschera di una rotta statica si scrive per esteso o come prefisso (`/24`), anche in coda alla rete. Una rotta che non viene usata resta in tabella, attenuata e con la scritta «non usata». Un router ha due tabelle appuntabili, di routing e ARP, ciascuna con il suo pulsante nel pannello; dalla barretta si appunta quella di routing | Le rotte si scrivono spesso con il prefisso. La rotta inutilizzabile deve restare visibile perché è l'errore da diagnosticare. In lezione serve la tabella di routing, ma la tabella ARP del router mostra che cerca il vicino e non la destinazione | Confermata |
+| D-89 | 12 ott 2026 | La CLI in stile IOS del rilascio 2 comprende i comandi di configurazione di base, i `show` delle tabelle e della configurazione, e `ping` e `traceroute` dal router. Sugli switch mostra, rinomina e spegne le porte. Si scrive come su IOS: abbreviazioni non ambigue, Tab, `?`. I comandi di RIP versione 1 e 2 e di OSPF restano alla tappa T5, e l'interprete va costruito perché si possano aggiungere | Serve a svolgere la lezione sul routing interamente da terminale, come su un apparato vero. Abbreviazioni, Tab e `?` sono il modo in cui si lavora davvero su IOS | Confermata |
+| D-90 | 12 ott 2026 | Output e messaggi di errore della CLI hanno il formato di IOS (`% Invalid input detected at '^' marker.`, le sigle di `show ip route`), ma senza intestazioni, numeri di versione o diciture di marca | È ciò che gli studenti troveranno sugli apparati e sui libri. Evitare i testi di marca tiene l'app, che andrà ai colleghi, lontana dal prodotto di un altro | Confermata |
+| D-91 | 12 ott 2026 | Dal router `ping` manda cinque richieste e stampa i simboli di IOS (`!` risposta, `.` scadenza, `U` irraggiungibile) con la percentuale di successo; `traceroute` una riga per salto. L'indirizzo sorgente è quello dell'interfaccia da cui il pacchetto esce | È il primo output di IOS che si impara a leggere, diverso apposta da quello di Windows | Confermata |
+| D-92 | 12 ott 2026 | `copy running-config startup-config` e `write memory` sono accettati e rispondono `[OK]`, ma non fanno nulla: non esiste una configurazione di avvio separata, e la rete si salva con il file. `show startup-config` mostra la configurazione in uso | L'abitudine giusta non va punita con un errore; simulare due configurazioni aggiungerebbe uno stato a ogni dispositivo senza che la lezione sul routing lo richieda | Confermata |
+| D-93 | 12 ott 2026 | Le porte degli switch si possono spegnere, e nascono accese; si spengono dalla CLI. Sul disegno una porta spenta si vede come un'interfaccia di router spenta | Completa il requisito SIM-7 e dà alla CLI dello switch qualcosa da configurare prima delle VLAN. Su uno switch vero le porte nascono accese | Confermata |
 
 ## 9. Stato di avanzamento
 
