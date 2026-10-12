@@ -9,6 +9,8 @@ import type { Position } from "../storage/load";
 export interface DeviceView {
   id: string;
   kind: Device["kind"];
+  // Per un host: PC o server. Null per gli altri dispositivi.
+  role: "pc" | "server" | null;
   name: string;
   x: number;
   y: number;

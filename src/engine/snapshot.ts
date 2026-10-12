@@ -63,7 +63,8 @@ export function takeSnapshot(network: Network): Snapshot {
     switch (device.kind) {
       case "host": {
         const ports = device.ports.map((port) => ({ ...port }));
-        return { kind: "host", ...common, ports, ip: device.ip, mask: device.mask, gateway: device.gateway };
+        const { role, ip, mask, gateway } = device;
+        return { kind: "host", ...common, role, ports, ip, mask, gateway };
       }
       case "switch":
         return { kind: "switch", ...common, ports: device.ports.map((port) => ({ ...port })) };

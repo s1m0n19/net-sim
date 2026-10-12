@@ -87,7 +87,7 @@ L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: tr
 - **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte; router a 2, 4 o 8 interfacce) si scelgono prima di posare: passando sulla voce si apre il loro elenco.
 - **Posare.** In due modi: trascinando la voce sul disegno, per posarne uno; oppure con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare, finché non si preme Esc. Nel secondo modo la voce resta evidenziata, il puntatore cambia e una riga in alto sul disegno dice che cosa fare. Il dispositivo appena posato viene selezionato.
 - **Strumento Cavo.** Finché è attivo, trascinare da un dispositivo a un altro tira un cavo invece di spostare; lo stesso si ottiene con un clic sul primo dispositivo e uno sul secondo (D-51). Mentre si trascina, una linea tratteggiata segue il mouse. Si disattiva con Esc o con un secondo clic sulla voce.
-- I tipi non ancora disponibili (server) compaiono attenuati.
+- **Server.** Si posa come un PC. Per la rete è un host identico a un PC, con indirizzo, gateway e terminale; cambiano l'icona e il nome (`SRV1`). I servizi che ospiterà arrivano più avanti.
 
 Un dispositivo appena posato riceve un nome progressivo (PC1, PC2, SW1) e i suoi indirizzi MAC. Un PC nasce senza configurazione IP.
 
@@ -124,7 +124,7 @@ Accanto a ciò che è selezionato compare una **barretta** con le azioni princip
 
 | Selezionato | Azioni sulla barretta |
 | --- | --- |
-| Host | Spegni o accendi · Ping · Collega · Terminale · Appunta la tabella ARP · Elimina |
+| Host (PC o server) | Spegni o accendi · Ping · Collega · Terminale · Appunta la tabella ARP · Elimina |
 | Switch | Spegni o accendi · Collega · Appunta la tabella MAC · Elimina |
 | Router | Spegni o accendi · Collega · Appunta la tabella di routing · Elimina |
 | Cavo | Stacca o riattacca · Elimina |

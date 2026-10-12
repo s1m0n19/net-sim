@@ -24,7 +24,8 @@ export function serializeNetwork(network: Network, positions: Map<string, Positi
     const position = positions.get(device.id) ?? { x: 0, y: 0 };
     return {
       id: device.id,
-      kind: device.kind,
+      // Un server è un host, ma nel file si scrive con il suo nome.
+      kind: device.kind === "host" && device.role === "server" ? "server" : device.kind,
       name: device.name,
       position: { x: position.x, y: position.y },
       // Le interfacce di un router portano con sé indirizzo e stato.

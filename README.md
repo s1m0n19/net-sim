@@ -57,7 +57,7 @@ Per provare: apri `examples/tre-reti-due-router.netsim.json`. Senza rotte un pin
 - trascinando la voce **PC** sul disegno;
 - con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare. Esc per finire.
 
-Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con il cestino sulla sua barretta o con il tasto Canc.
+Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte. Il **Server** si posa e si usa come un PC: stesso pannello, stesso terminale; prende il nome SRV1. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con il cestino sulla sua barretta o con il tasto Canc.
 
 Per collegare due dispositivi ci sono due modi:
 
@@ -157,7 +157,6 @@ I messaggi sono in inglese. L'output di `ping` cresce mentre la simulazione avan
 
 I pacchetti sono buste colorate con la sigla sopra: ambra per ARP, viola per ICMP. Quando non viaggia nulla e un PC sta aspettando una risposta che non arriva, accanto a lui compare un anello con una clessidra che si svuota in due o tre secondi; poi il tempo salta alla scadenza.
 
-Le voci Router e Server della colonna si vedono ma non sono ancora attive.
 
 Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una certa situazione. Nel sito pubblicato queste scorciatoie non esistono.
 

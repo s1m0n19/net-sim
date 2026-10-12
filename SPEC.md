@@ -412,7 +412,7 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). Sono fatti i passaggi da 1 a 5 su sette: tutto il motore del routing, e il router a schermo. Si posa dalla colonna; dal pannello se ne accendono le interfacce, se ne impostano gli indirizzi e si aggiungono e tolgono le rotte statiche; le sue tabelle si appuntano sul disegno; gli indirizzi delle interfacce sono scritti accanto ai cavi. Tutta la lezione del criterio di accettazione del rilascio 2 si svolge nell'app, e la sua seconda metà è eseguita da un test nel browser. Mancano il server (6) e la prima metà della lezione come test (7). Tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). Sono fatti i passaggi da 1 a 6 su sette: tutto il motore del routing, il router a schermo (colonna, interfacce, rotte statiche, tabelle appuntabili, indirizzi accanto ai cavi) e il server, che si posa e si usa come un PC. Tutta la lezione del criterio di accettazione del rilascio 2 si svolge nell'app, e la sua seconda metà è eseguita da un test nel browser. Manca la prima metà della lezione come test (7). Poi, nell'ordine deciso: CLI in stile IOS, offline, strumenti dell'editor, tabelle nel file. Tappe successive: nulla è iniziato.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
@@ -432,7 +432,7 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 ### Che cosa esiste oltre ai requisiti
 
 - 10 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
-- 667 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- 675 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Cinque reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router, tre reti con due router in fila.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
 

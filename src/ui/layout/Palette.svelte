@@ -10,6 +10,7 @@
   import DeviceIcon from "../theme/DeviceIcon.svelte";
 
   const PC: DeviceTemplate = { kind: "host" };
+  const SERVER: DeviceTemplate = { kind: "server" };
   // Le varianti pronte dello switch, tra cui scegliere prima di posarlo.
   const SWITCHES = [
     { label: "Switch a 8 porte", template: { kind: "switch", portCount: 8 } as DeviceTemplate },
@@ -28,6 +29,7 @@
   const placingHost = $derived(session.placing?.kind === "host");
   const placingSwitch = $derived(session.placing?.kind === "switch");
   const placingRouter = $derived(session.placing?.kind === "router");
+  const placingServer = $derived(session.placing?.kind === "server");
 
   // Un clic sulla voce già scelta la lascia andare.
   function choose(template: DeviceTemplate) {
@@ -131,10 +133,18 @@
         </div>
       {/if}
     </div>
-    <div class="tile soon" title="Non ancora disponibile">
+    <button
+      class="tile"
+      class:active={placingServer}
+      aria-pressed={placingServer}
+      title="Server: trascinalo sul disegno, oppure fai clic qui e poi sul disegno"
+      draggable="true"
+      ondragstart={(event) => startDrag(event, SERVER)}
+      onclick={() => choose(SERVER)}
+    >
       <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="server" /></svg>
       Server
-    </div>
+    </button>
 
     <div class="caption">Strumenti</div>
     <button
@@ -217,9 +227,6 @@
     border-color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent);
     color: var(--accent);
-  }
-  .tile.soon {
-    opacity: 0.45;
   }
   .tile svg {
     width: 34px;

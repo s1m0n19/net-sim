@@ -41,6 +41,8 @@ if (import.meta.env.DEV) {
     const template =
       what === "PC"
         ? ({ kind: "host" } as const)
+        : what === "SRV"
+          ? ({ kind: "server" } as const)
         : what.startsWith("R")
           ? ({ kind: "router", interfaceCount: Number(what.slice(1)) } as const)
           : ({ kind: "switch", portCount: Number(what.slice(2)) } as const);

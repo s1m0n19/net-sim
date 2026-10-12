@@ -460,3 +460,27 @@ describe("rinominare dal pannello", () => {
     expect(names()).toEqual(["PC1", "PC2"]);
   });
 });
+
+describe("server", () => {
+  test("si posa come un PC, con il suo nome e il suo terminale", () => {
+    session.clear();
+    session.addDevice({ kind: "server" }, { x: 300, y: 200 });
+    const server = session.view.devices[0];
+    expect(server).toMatchObject({ kind: "host", role: "server", name: "SRV1" });
+
+    session.configure(server.id, "ip", "192.168.1.100");
+    session.openTerminal(server.id);
+    session.execute(server.id, "ping -n 1 127.0.0.1");
+
+    expect(session.view.devices[0].ipLabel).toBe("192.168.1.100/24");
+    const [entry] = session.terminals[0].entries;
+    expect(session.outputOf(server.id, entry).join("\n")).toContain("Reply from 127.0.0.1");
+  });
+
+  test("un PC resta un PC", () => {
+    session.clear();
+    session.addDevice(PC, { x: 100, y: 100 });
+
+    expect(session.view.devices[0].role).toBe("pc");
+  });
+});

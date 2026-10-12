@@ -136,7 +136,7 @@
     <rect class="highlight" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
   {/if}
   <rect class="box" x={-halfWidth} y="-26" width={halfWidth * 2} height="52" rx="10" />
-  <g class="icon"><DeviceIcon kind={device.kind} /></g>
+  <g class="icon"><DeviceIcon kind={device.role === "server" ? "server" : device.kind} /></g>
 
   <text class="name" y="46">{device.name}</text>
 

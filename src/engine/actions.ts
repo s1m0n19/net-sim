@@ -119,6 +119,16 @@ export function addHost(): Action {
 }
 
 /**
+ * Crea l'azione "aggiungi un server alla rete". Per la rete è un host come
+ * un PC; si chiama SRV1, SRV2…
+ *
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function addServer(): Action {
+  return { kind: "add-device", template: { kind: "server" } };
+}
+
+/**
  * Crea l'azione "aggiungi uno switch alla rete".
  *
  * @param portCount - quante porte ha lo switch

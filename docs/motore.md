@@ -131,6 +131,10 @@ interface Switch {
 
 `createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali. `clearRuntimeState(device)` riporta un dispositivo a quello stato: è ciò che succede quando lo si spegne.
 
+### PC e server
+
+Un `Host` ha un ruolo, `role`: `"pc"` oppure `"server"`. Per la rete non cambia nulla: un server è un host con un indirizzo, risponde ad ARP e al ping come un PC. Cambiano il nome che riceve alla creazione (`SRV1` invece di `PC1`) e l'icona con cui viene disegnato. I servizi che un server ospita (DHCP, DNS, web) sono previsti in una tappa successiva.
+
 ### Router (`network.ts`, `router-config.ts`)
 
 Un `Router` ha più **interfacce** (`RouterInterface`): porte che, oltre a nome e MAC, hanno un indirizzo IP, una maschera e uno stato acceso o spento (`enabled`). Su un router le interfacce nascono spente, come su un Cisco (decisione D-70). Ha poi un elenco di rotte statiche (`StaticRoute`: rete, maschera, prossimo salto) e, come stato di esecuzione, una tabella ARP e i pacchetti in attesa del MAC. Lo crea `createRouter`.
@@ -245,7 +249,7 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
 | `disconnectLink(linkId)`, `connectLink(linkId)` | Stacca o riattacca un cavo |
 | `powerOff(deviceId)`, `powerOn(deviceId)` | Spegne o accende un dispositivo |
-| `addHost()`, `addSwitch(portCount)`, `addRouter(interfaceCount)` | Aggiunge un PC, uno switch con quel numero di porte, o un router con quel numero di interfacce |
+| `addHost()`, `addServer()`, `addSwitch(portCount)`, `addRouter(interfaceCount)` | Aggiunge un PC, un server, uno switch con quel numero di porte, o un router con quel numero di interfacce |
 | `removeDevice(deviceId)` | Toglie un dispositivo, con i cavi che gli erano attaccati |
 | `addLink(a, b)`, `removeLink(linkId)` | Collega due porte con un cavo nuovo, o toglie un cavo |
 | `moveLinkEnd(linkId, end, portName)` | Sposta un capo di un cavo su un'altra porta dello stesso dispositivo |
@@ -538,7 +542,7 @@ Chi aggiunge un dispositivo dice solo che cosa vuole: un PC, uno switch con un c
 | Che cosa | Come viene scelto | Esempio |
 | --- | --- | --- |
 | Identificativo | Il primo libero della serie | `d1`, `d2` per gli host; `s1` per gli switch; `r1` per i router; `l1` per i cavi |
-| Nome | Il primo libero della serie | `PC1`, `PC2`; `SW1`; `R1` |
+| Nome | Il primo libero della serie | `PC1`, `PC2`; `SRV1`; `SW1`; `R1` |
 | Porte | Una per un PC, numerate per uno switch e per un router | `Fa0`; `Fa0/1` … `Fa0/24`; `Gi0/0` … `Gi0/7` |
 | Indirizzi MAC | I primi non ancora usati nella rete | `02:00:00:00:00:01`, `02:00:00:00:00:02` |
 

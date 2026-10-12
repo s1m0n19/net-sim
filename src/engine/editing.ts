@@ -30,6 +30,7 @@ import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } fr
 // porte, oppure un router con un certo numero di interfacce.
 export type DeviceTemplate =
   | { kind: "host" }
+  | { kind: "server" }
   | { kind: "switch"; portCount: number }
   | { kind: "router"; interfaceCount: number };
 
@@ -53,7 +54,9 @@ export function addDevice(network: Network, template: DeviceTemplate): Device {
 function newDevice(network: Network, template: DeviceTemplate): Device {
   switch (template.kind) {
     case "host":
-      return newHost(network);
+      return newHost(network, "pc");
+    case "server":
+      return newHost(network, "server");
     case "switch":
       return newSwitch(network, template.portCount);
     case "router":
@@ -61,11 +64,13 @@ function newDevice(network: Network, template: DeviceTemplate): Device {
   }
 }
 
-function newHost(network: Network): Host {
+// Un PC e un server nascono uguali, salvo il nome: PC1, PC2… e SRV1, SRV2…
+function newHost(network: Network, role: Host["role"]): Host {
   const [mac] = freeMacs(network, 1);
   return createHost({
+    role,
     id: freeName(usedIds(network), "d"),
-    name: freeName(usedNames(network), "PC"),
+    name: freeName(usedNames(network), role === "server" ? "SRV" : "PC"),
     ports: [{ name: "Fa0", mac }],
     ip: null,
     mask: null,

@@ -48,7 +48,8 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
 
   const devices = network.devices.map((device): DeviceView => {
     const { x, y } = at(device.id);
-    const base = { id: device.id, kind: device.kind, name: device.name, x, y, powered: device.powered };
+    const role = device.kind === "host" ? device.role : null;
+    const base = { id: device.id, kind: device.kind, role, name: device.name, x, y, powered: device.powered };
     const none = {
       ipLabel: null,
       ip: null,

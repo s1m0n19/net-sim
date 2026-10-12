@@ -92,11 +92,11 @@ Campi di ogni dispositivo:
 | Campo | Contenuto | Presente in |
 | --- | --- | --- |
 | `id` | Identificativo interno, usato dai collegamenti | tutti |
-| `kind` | Il tipo: `"host"` oppure `"switch"` | tutti |
+| `kind` | Il tipo: `"host"` (un PC), `"server"`, `"switch"` oppure `"router"` | tutti |
 | `name` | Il nome mostrato all'utente | tutti |
 | `position` | Coordinate `x` e `y` sul disegno | tutti |
 | `ports` | Le porte, ciascuna con `name` e `mac` | tutti |
-| `ip`, `mask`, `gateway` | La configurazione IPv4. Ciascuno può essere `null` | solo host |
+| `ip`, `mask`, `gateway` | La configurazione IPv4. Ciascuno può essere `null` | host e server |
 | `powered` | `false` se il dispositivo è spento. Facoltativo: se manca, è acceso | tutti |
 
 Campi di ogni collegamento:
@@ -112,6 +112,10 @@ I due campi dei guasti sono facoltativi, quindi i file scritti prima che esistes
 Gli identificativi (`id`) sono interni: i collegamenti si riferiscono a quelli, così un dispositivo potrà cambiare nome senza rompere nulla.
 
 La posizione riguarda il disegno, non la rete: il lettore la restituisce a parte (`LoadedFile.positions`), fuori dal modello del motore.
+
+## Server
+
+Un server (dal rilascio 2) si scrive come un PC, con `"kind": "server"` al posto di `"host"`: stessi campi, stessi controlli. Per il motore i due sono lo stesso tipo di dispositivo, un host, con un ruolo diverso.
 
 ## Router
 

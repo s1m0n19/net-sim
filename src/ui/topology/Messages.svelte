@@ -9,6 +9,7 @@
     const template = session.placing;
     if (template === null) return "";
     if (template.kind === "host") return "PC";
+    if (template.kind === "server") return "Server";
     if (template.kind === "switch") return `Switch a ${template.portCount} porte`;
     return `Router a ${template.interfaceCount} interfacce`;
   });

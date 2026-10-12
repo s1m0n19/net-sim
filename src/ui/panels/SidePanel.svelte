@@ -29,7 +29,8 @@
   const deviceSummary = $derived.by(() => {
     if (device === undefined) return "";
     const kinds = { host: "PC", switch: "Switch", router: "Router" };
-    const parts = [kinds[device.kind], device.powered ? "acceso" : "spento"];
+    const what = device.role === "server" ? "Server" : kinds[device.kind];
+    const parts = [what, device.powered ? "acceso" : "spento"];
     if (device.kind === "host" && device.powered) {
       parts.push(device.linkUp ? "segnale presente" : "senza segnale");
     }

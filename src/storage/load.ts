@@ -108,7 +108,10 @@ function readDevice(d: any, where: string): { device: Device; position: Position
   const powered = readFlag(d, "powered", name);
 
   switch (kind) {
-    case "host": {
+    // Un server è un host come un PC: nel file ha il suo tipo, così si
+    // riconosce a colpo d'occhio.
+    case "host":
+    case "server": {
       const config = {
         ip: readTextOrNull(d, "ip", name),
         mask: readTextOrNull(d, "mask", name),
@@ -118,7 +121,8 @@ function readDevice(d: any, where: string): { device: Device; position: Position
       if (problem !== null) {
         throw new Error(`${name}: ${problem}.`);
       }
-      return { device: createHost({ id, name, ports, powered, ...config }), position };
+      const role = kind === "server" ? "server" : "pc";
+      return { device: createHost({ id, name, role, ports, powered, ...config }), position };
     }
     case "switch":
       return { device: createSwitch({ id, name, ports, powered }), position };

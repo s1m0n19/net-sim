@@ -10,6 +10,7 @@ import {
   addLink,
   addRoute,
   addRouter,
+  addServer,
   addSwitch,
   configureHost,
   configureInterface,
@@ -68,7 +69,9 @@ export class SessionEditing extends SessionDemo {
     const action =
       template.kind === "host"
         ? addHost()
-        : template.kind === "switch"
+        : template.kind === "server"
+          ? addServer()
+          : template.kind === "switch"
           ? addSwitch(template.portCount)
           : addRouter(template.interfaceCount);
     const before = this.capture();

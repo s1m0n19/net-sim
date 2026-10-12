@@ -48,6 +48,10 @@ export interface AwaitedEcho {
 
 export interface Host {
   kind: "host";
+  // Un PC o un server. Per la rete sono la stessa cosa, un host con un
+  // indirizzo: cambiano l'icona e il nome. I servizi che un server ospita
+  // (DHCP, DNS, web) arriveranno in seguito.
+  role: "pc" | "server";
   id: string;
   name: string;
   ports: Port[]; // un PC ne ha una sola
@@ -124,8 +128,10 @@ export type Device = Host | Switch | Router;
 
 // La parte di un dispositivo che l'utente imposta e che si salva nel file.
 // `powered` si può omettere: un dispositivo nasce acceso.
+// Anche `role` si può omettere: un host è un PC, se non si dice altro.
 export type HostConfig = Pick<Host, "id" | "name" | "ports" | "ip" | "mask" | "gateway"> & {
   powered?: boolean;
+  role?: Host["role"];
 };
 export type SwitchConfig = Pick<Switch, "id" | "name" | "ports"> & { powered?: boolean };
 export type RouterConfig = Pick<Router, "id" | "name" | "ports" | "routes"> & { powered?: boolean };
@@ -142,6 +148,7 @@ export function createHost(config: HostConfig): Host {
   return {
     kind: "host",
     ...config,
+    role: config.role ?? "pc",
     powered: config.powered ?? true,
     linkUp: false,
     arpTable: new Map(),
