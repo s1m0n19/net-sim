@@ -94,7 +94,8 @@ net-sim/
 │   │       ├── parser.ts          dalla riga al comando: abbreviazioni ed errori
 │   │       ├── help.ts            il punto interrogativo e il tasto Tab
 │   │       ├── interpreter.ts     il punto d'ingresso: riga e modalità in entrata, esito in uscita
-│   │       └── configure.ts       dai comandi di configurazione alle azioni del motore, con i rifiuti di IOS
+│   │       ├── configure.ts       dai comandi di configurazione alle azioni del motore, con i rifiuti di IOS
+│   │       └── show.ts            i comandi show: configurazione e tabelle, scritte come le scrive IOS
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
@@ -115,7 +116,7 @@ net-sim/
 
 Cartelle *previste* e non ancora esistenti:
 
-- In `src/shell/ios/` la CLI in stile IOS di switch e router (rilascio 2) è cominciata: esiste l'interprete, che capisce le righe, cambia modalità, suggerisce e completa, e traduce i comandi di configurazione nelle azioni del motore (`configure.ts`), le stesse del pannello laterale. Non esegue nulla da sé: propone l'azione a chi lo chiama. Non è ancora collegato allo schermo. I comandi sono un albero scritto come dati (`commands.ts`): aggiungerne uno, o una modalità per i protocolli di routing, non richiede di toccare il resto. Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
+- In `src/shell/ios/` la CLI in stile IOS di switch e router (rilascio 2) è cominciata: esiste l'interprete, che capisce le righe, cambia modalità, suggerisce e completa, e traduce i comandi di configurazione nelle azioni del motore (`configure.ts`), le stesse del pannello laterale, e risponde ai comandi `show` (`show.ts`). Non esegue nulla da sé: propone l'azione a chi lo chiama. Non è ancora collegato allo schermo. I comandi sono un albero scritto come dati (`commands.ts`): aggiungerne uno, o una modalità per i protocolli di routing, non richiede di toccare il resto. Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
 - Migrazioni di versione dei file in `src/storage/`.
 
 ## Convenzioni del codice
