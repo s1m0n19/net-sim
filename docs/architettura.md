@@ -85,7 +85,15 @@ net-sim/
 │   │   ├── save.ts            scrittura dei file di rete
 │   │   └── browser-files.ts   scelta, lettura e scrittura di un file nel browser
 │   ├── shell/
-│   │   └── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
+│   │   ├── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
+│   │   └── ios/               la CLI in stile IOS di router e switch (in costruzione)
+│   │       ├── modes.ts           le modalità e i loro prompt
+│   │       ├── grammar.ts         di che cosa è fatto un comando: parole chiave, argomenti, albero
+│   │       ├── commands.ts        l'albero dei comandi, scritto come dati
+│   │       ├── interface-names.ts nomi delle interfacce: brevi, per esteso, abbreviati
+│   │       ├── parser.ts          dalla riga al comando: abbreviazioni ed errori
+│   │       ├── help.ts            il punto interrogativo e il tasto Tab
+│   │       └── interpreter.ts     il punto d'ingresso: riga e modalità in entrata, esito in uscita
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
@@ -106,7 +114,7 @@ net-sim/
 
 Cartelle *previste* e non ancora esistenti:
 
-- In `src/shell/`, accanto al prompt degli host che esiste già, la CLI in stile IOS di switch e router (rilascio 2). Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
+- In `src/shell/ios/` la CLI in stile IOS di switch e router (rilascio 2) è cominciata: esiste l'interprete, che capisce le righe, cambia modalità, suggerisce e completa, ma non è ancora collegato né al motore né allo schermo. I comandi sono un albero scritto come dati (`commands.ts`): aggiungerne uno, o una modalità per i protocolli di routing, non richiede di toccare il resto. Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
 - Migrazioni di versione dei file in `src/storage/`.
 
 ## Convenzioni del codice
