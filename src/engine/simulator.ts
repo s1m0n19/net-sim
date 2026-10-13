@@ -5,18 +5,11 @@
 // scade") e a ogni passo salta al prossimo istante in cui succede qualcosa.
 
 import type { Action } from "./actions";
-import { applyHostOutput, deliverFrame, fireTimer, type Wire } from "./delivery";
-import {
-  sameTimer,
-  startArpResolution,
-  startPing,
-  startTracert,
-  type HostOutput,
-  type HostTimer,
-  type TimerRequest,
-} from "./devices/host";
+import { applyHostOutput, applyRouterOutput, deliverFrame, fireTimer, type Wire } from "./delivery";
+import { sameTimer, type HostTimer, type TimerRequest } from "./devices/host";
 import type { SimEvent } from "./events";
 import { hasCarrier, refreshLinkState, setDevicePowered, setLinkConnected } from "./faults";
+import { hasSomethingToDo, startOnHost, startOnRouter, type TrafficAction } from "./launching";
 import type { EthernetFrame } from "./model/frames";
 import { clearRuntimeState, findDevice, findLink, otherEndOf, type Network, type PortRef } from "./model/network";
 import { applyEdit } from "./network-changes";
@@ -66,8 +59,7 @@ export class Simulator implements Wire {
    * @returns le tracce prodotte da questa azione
    * @throws Error se la simulazione è sospesa; se l'azione indica un
    *   dispositivo o un collegamento che non esiste; se chiede a uno switch
-   *   qualcosa che solo un host può fare, o a un host spento di fare
-   *   qualcosa
+   *   di fare un ping, o a un dispositivo spento di fare qualcosa
    */
   dispatch(action: Action): Trace[] {
     if (this.suspended) {
@@ -78,7 +70,7 @@ export class Simulator implements Wire {
       case "ping":
       case "tracert":
       case "resolve-address":
-        this.runHostAction(action, produced);
+        this.runTrafficAction(action, produced);
         break;
       case "set-link-connected":
         setLinkConnected(this, findLink(this.network, action.linkId), action.connected, produced);
@@ -93,52 +85,34 @@ export class Simulator implements Wire {
     return produced;
   }
 
-  // Esegue un'azione che riguarda un host: ping o richiesta ARP.
-  private runHostAction(
-    action: Extract<Action, { kind: "ping" | "tracert" | "resolve-address" }>,
-    produced: Trace[],
-  ): void {
-    const host = findDevice(this.network, action.deviceId);
-    if (host.kind !== "host") {
-      throw new Error(`${host.name} non è un host: non può eseguire questa azione.`);
-    }
-    if (!host.powered) {
-      throw new Error(`${host.name} è spento.`);
+  // Esegue un'azione che fa nascere traffico: un ping o un tracert, da un
+  // host o da un router, oppure una richiesta ARP di un host.
+  private runTrafficAction(action: TrafficAction, produced: Trace[]): void {
+    const device = findDevice(this.network, action.deviceId);
+    const refuse = () => new Error(`${device.name} non è un host: non può eseguire questa azione.`);
+    if (device.kind === "switch") throw refuse();
+    if (!device.powered) {
+      throw new Error(`${device.name} è spento.`);
     }
 
-    // L'host dice che cosa vuole fare per compiere l'azione.
-    let output: HostOutput;
-    switch (action.kind) {
-      case "ping":
-        output = startPing(host, action.targetIp, action.count, action.ttl);
-        break;
-      case "tracert":
-        output = startTracert(host, action.targetIp, action.maxHops);
-        break;
-      case "resolve-address": {
-        const request = startArpResolution(host, action.targetIp);
-        output = {
-          send: request === null ? [] : [request],
-          startTimers: [],
-          cancelTimers: [],
-          pingResults: [],
-          traceHops: [],
-        };
-        break;
-      }
+    // Il dispositivo dice che cosa vuole fare per compiere l'azione; tutto
+    // ciò che ne nasce avrà lo stesso numero di conversazione.
+    if (device.kind === "router") {
+      // Un router fa ping e traccia strade, ma non lancia ARP a mano.
+      if (action.kind === "resolve-address") throw refuse();
+      const output = startOnRouter(this.network, device, action);
+      if (hasSomethingToDo(output)) applyRouterOutput(this, device, output, this.openConversation(action), produced);
+    } else {
+      const output = startOnHost(device, action);
+      if (hasSomethingToDo(output)) applyHostOutput(this, device, output, this.openConversation(action), produced);
     }
+  }
 
-    const somethingToDo =
-      output.send.length > 0 ||
-      output.startTimers.length > 0 ||
-      output.pingResults.length > 0 ||
-      output.traceHops.length > 0;
-    if (somethingToDo) {
-      // Tutto ciò che questa azione provoca avrà lo stesso numero.
-      const conversationId = this.nextConversationId++;
-      this.conversations.push({ id: conversationId, action });
-      applyHostOutput(this, host, output, conversationId, produced);
-    }
+  // Apre una conversazione nuova per un'azione, e ne restituisce il numero.
+  private openConversation(action: TrafficAction): number {
+    const conversationId = this.nextConversationId++;
+    this.conversations.push({ id: conversationId, action });
+    return conversationId;
   }
 
   /**

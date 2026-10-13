@@ -96,18 +96,7 @@ export function fireTimer(sim: Wire, event: TimerExpiry, produced: Trace[]): voi
  * @param produced - l'elenco a cui aggiungere le tracce di ciò che succede
  */
 export function applyHostOutput(sim: Wire, host: Host, output: HostOutput, conversationId: number, produced: Trace[]): void {
-  for (const result of output.pingResults) {
-    produced.push({
-      time: sim.time,
-      kind: "ping-result",
-      deviceId: host.id,
-      ...result,
-      conversationId,
-    });
-  }
-  for (const hop of output.traceHops) {
-    produced.push({ time: sim.time, kind: "trace-hop", deviceId: host.id, ...hop, conversationId });
-  }
+  recordConclusions(sim, host.id, output, conversationId, produced);
   const port = { deviceId: host.id, portName: host.ports[0].name };
   for (const frame of output.send) {
     // Un frame che nasce da un host non è ancora passato da nessuno switch.
@@ -209,9 +198,18 @@ function deliverToRouter(sim: Wire, router: Router, event: FrameArrival, produce
   applyRouterOutput(sim, router, reaction, conversationId, produced);
 }
 
-// Esegue ciò che un router ha chiesto: spedire frame dalle interfacce
-// indicate, annullare e avviare attese.
-function applyRouterOutput(sim: Wire, router: Router, output: RouterOutput, conversationId: number, produced: Trace[]): void {
+/**
+ * Esegue ciò che un router ha chiesto: registrare gli esiti dei suoi ping,
+ * spedire frame dalle interfacce indicate, annullare e avviare attese.
+ *
+ * @param sim - il simulatore, per spedire e per le attese
+ * @param router - il router che lo ha chiesto
+ * @param output - le cose da fare
+ * @param conversationId - la conversazione a cui appartengono
+ * @param produced - l'elenco a cui aggiungere le tracce di ciò che succede
+ */
+export function applyRouterOutput(sim: Wire, router: Router, output: RouterOutput, conversationId: number, produced: Trace[]): void {
+  recordConclusions(sim, router.id, output, conversationId, produced);
   for (const { portName, frame } of output.send) {
     // Il router scrive un frame nuovo: non è ancora passato da nessuno switch.
     sim.transmit({ deviceId: router.id, portName }, frame, conversationId, 0, produced);
@@ -221,5 +219,22 @@ function applyRouterOutput(sim: Wire, router: Router, output: RouterOutput, conv
   }
   for (const request of output.startTimers) {
     sim.startTimer(router.id, request, conversationId);
+  }
+}
+
+// Registra gli echo request e le sonde arrivati a una conclusione: sono le
+// righe che ping e tracert stampano a chi li ha lanciati.
+function recordConclusions(
+  sim: Wire,
+  deviceId: string,
+  output: Pick<HostOutput, "pingResults" | "traceHops">,
+  conversationId: number,
+  produced: Trace[],
+): void {
+  for (const result of output.pingResults) {
+    produced.push({ time: sim.time, kind: "ping-result", deviceId, ...result, conversationId });
+  }
+  for (const hop of output.traceHops) {
+    produced.push({ time: sim.time, kind: "trace-hop", deviceId, ...hop, conversationId });
   }
 }

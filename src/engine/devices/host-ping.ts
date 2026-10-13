@@ -11,7 +11,8 @@ import type { EchoMessage, IcmpError, Ipv4Packet } from "../model/frames";
 import type { AwaitedEcho, Host } from "../model/network";
 import { ECHO_TIMEOUT_TICKS, makeEchoRequest } from "../protocols/icmp";
 import { DEFAULT_TTL, makeIpv4Packet, nextHopFor } from "../protocols/ipv4";
-import { merge, NOTHING, type HostOutput, type PingResult, type TimerReaction, type TraceHop } from "./host-output";
+import { conclude, outcomeOfError, stopAwaiting, type EchoToSend } from "./echo-series";
+import { merge, NOTHING, type HostOutput, type PingResult, type TimerReaction } from "./host-output";
 import { sendIpv4Packet } from "./host-sending";
 
 // Identificativo degli echo request. Windows usa sempre lo stesso valore
@@ -110,8 +111,7 @@ export function receiveIcmpError(host: Host, reporter: Ipv4Address, error: IcmpE
   const awaited = stopAwaiting(host, original.dstIp, original.sequence);
   if (awaited === null) return NOTHING;
 
-  const outcome =
-    error.type === "time-exceeded" ? "ttl-expired" : error.code === "net" ? "net-unreachable" : "host-unreachable";
+  const outcome = outcomeOfError(error);
   return merge(cancelEchoTimeout(awaited), concludeEcho(host, awaited, outcome, { from: reporter, ttl: null }));
 }
 
@@ -155,7 +155,7 @@ function requireTtl(ttl: number): void {
 
 // Prepara un echo request: uno dei quattro di un ping, oppure una sonda
 // di tracert. `remaining` dice quanti altri ne seguiranno.
-function sendEchoRequest(host: Host, what: Omit<AwaitedEcho, "sequence">): HostOutput {
+function sendEchoRequest(host: Host, what: EchoToSend): HostOutput {
   const echo: AwaitedEcho = { ...what, sequence: host.nextEchoSequence };
   const { targetIp } = echo;
   host.nextEchoSequence += 1;
@@ -193,60 +193,18 @@ function isOwnAddress(host: Host, ip: Ipv4Address): boolean {
   return host.ip !== null && ipToNumber(host.ip) === ipToNumber(ip);
 }
 
-// Chiude un echo request con il suo esito. Se il ping ne prevede altri,
-// fa partire subito il successivo.
+// Chiude un echo request con il suo esito e, se la serie continua, fa
+// partire subito il successivo. Che cosa si conclude e che cosa segue lo
+// decide echo-series.ts; qui lo si spedisce.
 function concludeEcho(
   host: Host,
   echo: AwaitedEcho,
   outcome: PingResult["outcome"],
-  answer: { from: Ipv4Address | null; ttl: number | null } = { from: null, ttl: null },
+  answer?: { from: Ipv4Address | null; ttl: number | null },
 ): HostOutput {
-  if (echo.probe !== undefined) {
-    return concludeProbe(host, echo, echo.probe, outcome, answer.from);
-  }
-  const { targetIp, sequence, remaining } = echo;
-  const result: PingResult = { targetIp, sequence, remaining, outcome, ...answer };
-  if (remaining === 0) {
-    return { ...NOTHING, pingResults: [result] };
-  }
-  // Il successivo parte con lo stesso TTL del precedente.
-  const next = sendEchoRequest(host, { ...echo, remaining: remaining - 1 });
-  return { ...next, pingResults: [result, ...next.pingResults] };
-}
-
-// Chiude una sonda di tracert. Se un router l'ha fermata, o se nessuno ha
-// risposto, parte la sonda successiva, con un salto in più; se ha risposto
-// la destinazione, o se non si può proseguire, tracert finisce.
-function concludeProbe(
-  host: Host,
-  echo: AwaitedEcho,
-  probe: NonNullable<AwaitedEcho["probe"]>,
-  outcome: PingResult["outcome"],
-  from: Ipv4Address | null,
-): HostOutput {
-  const found: TraceHop["outcome"] = outcome === "reply" ? "reached" : outcome === "ttl-expired" ? "hop" : outcome;
-  const goesOn = (found === "hop" || found === "timeout") && probe.hop < probe.maxHops;
-  const hop: TraceHop = { targetIp: echo.targetIp, hop: probe.hop, outcome: found, from, done: !goesOn };
-  if (!goesOn) {
-    return { ...NOTHING, traceHops: [hop] };
-  }
-  const next = sendEchoRequest(host, {
-    targetIp: echo.targetIp,
-    remaining: 0,
-    sendTtl: probe.hop + 1,
-    probe: { hop: probe.hop + 1, maxHops: probe.maxHops },
-  });
-  return { ...next, traceHops: [hop, ...next.traceHops] };
-}
-
-// Smette di aspettare un echo reply. Restituisce ciò che si stava
-// aspettando, oppure null se non si stava aspettando nulla del genere.
-function stopAwaiting(host: Host, targetIp: Ipv4Address, sequence: number) {
-  const index = host.awaitedEchoes.findIndex(
-    (awaited) => awaited.targetIp === targetIp && awaited.sequence === sequence,
-  );
-  if (index === -1) return null;
-  return host.awaitedEchoes.splice(index, 1)[0];
+  const { next, pingResults, traceHops } = conclude(echo, outcome, answer);
+  const done: HostOutput = { ...NOTHING, pingResults, traceHops };
+  return next === null ? done : merge(done, sendEchoRequest(host, next));
 }
 
 // L'attesa della risposta a un echo request, da annullare perché si è concluso.

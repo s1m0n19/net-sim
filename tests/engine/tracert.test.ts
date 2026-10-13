@@ -180,7 +180,6 @@ describe("tracert", () => {
 
     expect(() => sim.dispatch(tracert("d1", "192.168.2"))).toThrow();
     expect(() => sim.dispatch(tracert("d1", "192.168.2.10", 0))).toThrow("TTL non valido");
-    expect(() => sim.dispatch(tracert("r1", "192.168.2.10"))).toThrow("non è un host");
   });
 
   test("non lascia esiti di ping: tracert e ping sono due cose distinte", () => {

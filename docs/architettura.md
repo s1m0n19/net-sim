@@ -67,7 +67,9 @@ net-sim/
 │   ├── engine/                motore di simulazione, senza dipendenze
 │   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
-│   │   ├── devices/           host.ts (con host-output, host-sending, host-ping), switch.ts, router.ts
+│   │   ├── devices/           host.ts (con host-output, host-sending, host-ping), switch.ts,
+│   │   │                      router.ts (con router-sending, router-ping), echo-series.ts
+│   │   ├── launching.ts       che cosa fa un dispositivo quando gli si chiede un ping o un tracert
 │   │   ├── simulator.ts       coda degli eventi, tempo, azioni
 │   │   ├── delivery.ts        consegna di un frame a host, switch e router; attese scadute
 │   │   ├── events.ts          ciò che sta in coda: arrivi di frame e scadenze
@@ -95,7 +97,8 @@ net-sim/
 │   │       ├── help.ts            il punto interrogativo e il tasto Tab
 │   │       ├── interpreter.ts     il punto d'ingresso: riga e modalità in entrata, esito in uscita
 │   │       ├── configure.ts       dai comandi di configurazione alle azioni del motore, con i rifiuti di IOS
-│   │       └── show.ts            i comandi show: configurazione e tabelle, scritte come le scrive IOS
+│   │       ├── show.ts            i comandi show: configurazione e tabelle, scritte come le scrive IOS
+│   │       └── ping.ts            ping e traceroute dal router: dagli esiti al testo
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;

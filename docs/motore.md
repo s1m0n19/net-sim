@@ -189,6 +189,7 @@ Il simulatore è diviso in più file, uno per argomento:
 | File | Contenuto |
 | --- | --- |
 | `simulator.ts` | La classe `Simulator`: la coda, il tempo, `dispatch`, `step`, e le tre operazioni che servono alla consegna (mettere un frame sul cavo, avviare e annullare un'attesa) |
+| `launching.ts` | Far nascere il traffico: che cosa fa un host o un router quando gli si chiede un ping, un tracert o una richiesta ARP |
 | `delivery.ts` | La consegna: che cosa succede quando un frame arriva a un host, a uno switch o a un router, e quando scade un'attesa. Esegue ciò che il dispositivo ha chiesto |
 | `events.ts` | I tipi di ciò che sta in coda: arrivo di un frame, scadenza di un'attesa |
 | `traces.ts` | Il tipo `Trace`, con tutte le tracce possibili, e le conversazioni |
@@ -246,8 +247,8 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 
 | Azione | Che cosa fa |
 | --- | --- |
-| `ping(deviceId, targetIp, count, ttl)` | L'host manda `count` echo request, uno alla volta. Se `count` manca, quattro. `ttl`, facoltativo, è il TTL di partenza: 128 se manca |
-| `tracert(deviceId, targetIp, maxHops)` | L'host traccia la strada verso un indirizzo, una sonda per salto. Se `maxHops` manca, trenta |
+| `ping(deviceId, targetIp, count, ttl)` | L'host o il router manda `count` echo request, uno alla volta. Se `count` manca, quattro. `ttl`, facoltativo, è il TTL di partenza di un host: 128 se manca. Per un router non conta: parte sempre da 255 |
+| `tracert(deviceId, targetIp, maxHops)` | L'host o il router traccia la strada verso un indirizzo, una sonda per salto. Se `maxHops` manca, trenta |
 | `resolveAddress(deviceId, targetIp)` | L'host manda una richiesta ARP. Nella realtà nessuno lancia un ARP a mano: serve a provare ARP da solo nei test |
 | `disconnectLink(linkId)`, `connectLink(linkId)` | Stacca o riattacca un cavo |
 | `powerOff(deviceId)`, `powerOn(deviceId)` | Spegne o accende un dispositivo |
@@ -385,6 +386,14 @@ Durate tipiche, nella LAN di esempio con uno switch:
 
 Il router unisce reti diverse: riceve un pacchetto IP da un'interfaccia e lo fa uscire da un'altra.
 
+Come l'host, è diviso in file per argomento:
+
+| File | Contenuto |
+| --- | --- |
+| `devices/router.ts` | Che cosa fa il router con un frame che arriva e con un'attesa che scade. Ripropone ciò che sta negli altri due |
+| `devices/router-sending.ts` | Spedire un pacchetto IP: rotta, MAC del prossimo salto, pacchetti in attesa, avvisi ICMP. E i tipi di ciò che un router chiede al simulatore (`RouterOutput`) |
+| `devices/router-ping.ts` | Ping e traceroute lanciati dal router |
+
 **La tabella di routing** (`routingTableOf`) si ricalcola ogni volta che serve, e contiene:
 
 - le reti **collegate**: una per ogni interfaccia accesa, con un indirizzo, e che sente il segnale sul cavo. Staccando il cavo, la rete sparisce;
@@ -443,6 +452,20 @@ Una sonda alla volta: la successiva parte quando la precedente si è conclusa. O
 
 Lo stesso meccanismo serve a `ping -i`: `startPing` accetta un TTL di partenza, e tutti gli echo request di quel ping partono con quello.
 
+### Ping e traceroute dal router (`devices/router-ping.ts`, `devices/echo-series.ts`)
+
+Anche un router può fare ping e tracciare una strada: lo si chiede dalla sua CLI, e nel motore sono le stesse azioni `ping` e `tracert`, rivolte a un router. Gli esiti sono le stesse tracce `ping-result` e `trace-hop`.
+
+La logica della serie è una sola per host e router, e sta in `echo-series.ts`: `conclude` dice che cosa si conclude quando un echo request finisce (un esito di ping, o un salto di tracert) e quale echo request parte dopo. È una funzione che decide soltanto; a spedire pensano `host-ping.ts` e `router-ping.ts`, ciascuno a modo suo.
+
+Per il router cambiano tre cose:
+
+- **L'indirizzo sorgente** è quello dell'interfaccia da cui il pacchetto esce, perché un router non ha un solo indirizzo.
+- **La strada** la sceglie la tabella di routing, non un gateway. Senza una rotta l'echo request non parte (`transmit-failed`).
+- **Il TTL di partenza** è 255 (`ROUTER_TTL`), come su IOS, invece dei 128 di Windows.
+
+Un echo reply o un avviso ICMP indirizzato a uno degli indirizzi del router viene consegnato a `router-ping.ts`; se il router non lo stava aspettando, viene ignorato.
+
 ### Switch
 
 Per ogni frame ricevuto su una porta:
@@ -482,6 +505,8 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Statistiche di `ping` | Windows conta come ricevute anche le risposte di errore | Lo stesso: dopo un `Destination net unreachable` le statistiche dicono `Lost = 0` |
 | Ciclo di routing | Il pacchetto gira in pochi millisecondi e `ping` stampa `TTL expired in transit` | Con il TTL solito il giro dura 127 tick, più della scadenza del ping (40): `ping` stampa `Request timed out`. Per vederlo si parte con un TTL piccolo, `ping -i 6` (D-83) |
 | `tracert` | Tre sonde per salto, in UDP o ICMP secondo il sistema; cerca anche i nomi | Una sonda ICMP per salto (D-73); solo indirizzi |
+| Primo ping di un router verso un vicino mai visto | Il primo echo request va perso mentre parte l'ARP: `.!!!!` | Il pacchetto aspetta la risposta ARP e parte: `!!!!!` (D-97) |
+| `traceroute` di un router | Tre sonde per salto, in UDP | Una sonda ICMP per salto, come `tracert` |
 | Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11) |
 
@@ -674,6 +699,7 @@ I file di test, uno per argomento:
 | `routing.test.ts` | Tabella di routing e scelta della rotta |
 | `router-forwarding.test.ts` | Ping attraverso uno e due router: ARP sui due lati, MAC, TTL, rotte mancanti, ciclo di routing |
 | `icmp-errors.test.ts` | I tre messaggi ICMP di errore, chi li manda e che cosa ne fa l'host; TTL della risposta |
+| `router-ping.test.ts` | Ping e traceroute lanciati da un router: sorgente, TTL, rotte mancanti, scadenze |
 | `tracert.test.ts` | Tracert con uno e due router, salti muti, cicli; ping con TTL a scelta |
 | `reset.test.ts` | Ricominciare la simulazione |
 | `snapshot.test.ts` | Fotografare la configurazione e tornarci |

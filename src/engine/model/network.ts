@@ -121,6 +121,10 @@ export interface Router {
   arpTable: Map<Ipv4Address, MacAddress>;
   // Pacchetti da inoltrare, in attesa della risposta ARP.
   pendingPackets: RouterPendingPacket[];
+  // Anche un router può fare ping e tracciare una strada, dalla sua CLI:
+  // come un host, numera i suoi echo request e ricorda quelli in sospeso.
+  nextEchoSequence: number;
+  awaitedEchoes: AwaitedEcho[];
 }
 
 // Un pacchetto che un router non può ancora inoltrare: oltre al prossimo
@@ -185,7 +189,7 @@ export function createSwitch(config: SwitchConfig): Switch {
 
 /**
  * Crea un router appena acceso: con la configurazione data, la tabella ARP
- * vuota e nessun pacchetto in attesa.
+ * vuota, nessun pacchetto in attesa e nessun ping in corso.
  *
  * @param config - identificativo, nome, interfacce e rotte statiche
  * @returns il router pronto per essere messo in una rete
@@ -197,6 +201,8 @@ export function createRouter(config: RouterConfig): Router {
     powered: config.powered ?? true,
     arpTable: new Map(),
     pendingPackets: [],
+    nextEchoSequence: 1,
+    awaitedEchoes: [],
   };
 }
 
@@ -311,6 +317,8 @@ export function clearRuntimeState(device: Device): void {
   if (device.kind === "router") {
     device.arpTable.clear();
     device.pendingPackets = [];
+    device.nextEchoSequence = 1;
+    device.awaitedEchoes = [];
     return;
   }
   device.linkUp = false;
