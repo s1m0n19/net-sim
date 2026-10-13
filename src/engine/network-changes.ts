@@ -112,8 +112,9 @@ export function applyEdit(sim: SimulationState, action: EditAction, produced: Tr
       const changed = editing.setInterfaceEnabled(sim.network, deviceId, portName, enabled);
       if (!changed) break;
       if (!enabled) {
-        // Spegnere un'interfaccia è come staccarne il cavo: ciò che
-        // stava viaggiando lì va perso.
+        // Spegnere un'interfaccia o una porta è come staccarne il cavo:
+        // ciò che stava viaggiando lì va perso. Che lo switch dimentichi
+        // i MAC di quella porta lo sistema refreshLinkState, qui sotto.
         const link = linkAt(sim.network, { deviceId, portName });
         if (link !== null) loseFramesOn(sim, link, produced);
       }

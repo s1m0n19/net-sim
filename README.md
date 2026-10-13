@@ -111,7 +111,7 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 | **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |
 | **Le tre frecce** | Chiudono e riaprono i pannelli: in fondo alla colonna dei dispositivi, nell'angolo in alto del pannello di destra, a destra nella riga delle schede in basso |
 
-Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento".
+Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento". Un quadratino rosso al posto del pallino segna una porta spenta: un'interfaccia di router, oppure una porta di switch (per ora solo se il file la contiene già spenta, con `"enabled": false`; si spegnerà dalla CLI).
 
 Aperta una rete, in basso al centro del disegno compare la **barra della simulazione**:
 

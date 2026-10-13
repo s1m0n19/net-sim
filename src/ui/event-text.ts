@@ -138,8 +138,12 @@ export function describeTrace(network: Network, trace: Trace, index: number): Ev
       return row(trace.deviceId, "cambia configurazione IP");
     case "interface-configured":
       return row(trace.deviceId, `cambia l'indirizzo dell'interfaccia ${trace.portName}`);
-    case "interface-changed":
-      return row(trace.deviceId, `${trace.enabled ? "accende" : "spegne"} l'interfaccia ${trace.portName}`);
+    case "interface-changed": {
+      // Su un router si chiamano interfacce, su uno switch porte.
+      const isSwitch = network.devices.find((device) => device.id === trace.deviceId)?.kind === "switch";
+      const what = isSwitch ? "la porta" : "l'interfaccia";
+      return row(trace.deviceId, `${trace.enabled ? "accende" : "spegne"} ${what} ${trace.portName}`);
+    }
     case "route-added":
       return row(trace.deviceId, `aggiunge la rotta verso ${routeText(trace.route)}`);
     case "route-removed":

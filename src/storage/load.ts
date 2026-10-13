@@ -16,6 +16,7 @@ import {
   type PortRef,
   type RouterInterface,
   type StaticRoute,
+  type SwitchPort,
 } from "../engine/model/network";
 import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } from "../engine/model/router-config";
 
@@ -125,7 +126,7 @@ function readDevice(d: any, where: string): { device: Device; position: Position
       return { device: createHost({ id, name, role, ports, powered, ...config }), position };
     }
     case "switch":
-      return { device: createSwitch({ id, name, ports, powered }), position };
+      return { device: createSwitch({ id, name, ports: readSwitchPorts(d, ports, name), powered }), position };
     case "router": {
       const interfaces = readInterfaces(d, ports, name);
       const routes = readRoutes(d, name);
@@ -153,6 +154,16 @@ function readPorts(d: any, deviceName: string): Port[] {
     `${deviceName}: nome di porta duplicato`,
   );
   return ports;
+}
+
+// Le porte di uno switch: alle porte, già lette, si aggiunge lo stato. Una
+// porta senza il campo "enabled" è accesa, come nasce su uno switch: nel
+// file si scrive solo quando è spenta.
+function readSwitchPorts(d: any, ports: Port[], switchName: string): SwitchPort[] {
+  return ports.map((port, index) => ({
+    ...port,
+    enabled: readFlag(d.ports[index], "enabled", `${switchName} ${port.name}`),
+  }));
 }
 
 // Le interfacce di un router: alle porte, già lette, si aggiungono

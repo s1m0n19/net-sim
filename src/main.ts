@@ -56,11 +56,18 @@ if (import.meta.env.DEV) {
     if (from !== undefined && to !== undefined) session.connect(from.id, to.id);
   }
   // &accendi=R1:Gi0/0;R1:Gi0/1                accende interfacce di router
-  for (const item of (params.get("accendi") ?? "").split(";").filter((text) => text !== "")) {
-    const [name, portName] = item.split(":");
-    const router = named(name);
-    if (router !== undefined) session.toggleInterface(router.id, portName);
-  }
+  // &spegni=SW1:Fa0/1                         spegne porte di switch
+  // Entrambi cambiano lo stato: accesa diventa spenta, e viceversa. Con
+  // ?esempio= valgono sulla rete aperta, altrimenti su quella posata.
+  const togglePorts = () => {
+    const items = [params.get("accendi"), params.get("spegni")].join(";");
+    for (const item of items.split(";").filter((text) => text !== "")) {
+      const [name, portName] = item.split(":");
+      const device = named(name);
+      if (device !== undefined) session.toggleInterface(device.id, portName);
+    }
+  };
+  if (params.get("esempio") === null) togglePorts();
   // &cavo, &da=PC1                            accende lo strumento Cavo; comincia un cavo da PC1
   if (params.has("cavo")) session.cabling = true;
   const cableFrom = named(params.get("da"));
@@ -100,6 +107,7 @@ if (import.meta.env.DEV) {
       .then((response) => response.text())
       .then((text) => {
         session.open(fileName, text);
+        togglePorts();
         const [from, to] = (params.get("ping") ?? "").split(">");
         const source = session.view.devices.find((device) => device.name === from);
         if (source !== undefined && to !== undefined) {

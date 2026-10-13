@@ -85,7 +85,7 @@ export interface LinkView {
   // libere dello stesso dispositivo, nell'ordine del dispositivo.
   fromChoices: string[];
   toChoices: string[];
-  // true se quel capo è un'interfaccia di router spenta.
+  // true se quel capo è un'interfaccia di router o una porta di switch spenta.
   fromOff: boolean;
   toOff: boolean;
   // L'indirizzo dell'interfaccia di router a quel capo, "192.168.1.1/24";

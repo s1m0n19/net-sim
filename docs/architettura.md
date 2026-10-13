@@ -75,7 +75,8 @@ net-sim/
 │   │   ├── faults.ts          guasti e segnale: cavo staccato, dispositivo spento
 │   │   ├── storm.ts           come si riconosce una tempesta di broadcast
 │   │   ├── editing.ts         modifiche alla rete: aggiungere, togliere, collegare, configurare
-│   │   ├── router-editing.ts  modifiche a un router: interfacce e rotte statiche
+│   │   ├── port-editing.ts    accendere e spegnere una porta di switch o un'interfaccia di router
+│   │   ├── router-editing.ts  modifiche a un router: indirizzi delle interfacce e rotte statiche
 │   │   ├── network-changes.ts le stesse modifiche a simulazione in corso
 │   │   ├── snapshot.ts        fotografia della configurazione, per annullare e ripristinare
 │   │   └── actions.ts         le azioni accettate dal motore

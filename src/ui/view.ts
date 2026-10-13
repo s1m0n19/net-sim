@@ -197,10 +197,11 @@ function nextEventOf(simulator: Simulator): NextEventView | null {
   return { time, waitingDeviceIds };
 }
 
-// Dice se una porta è un'interfaccia di router spenta.
+// Dice se una porta è stata spenta: un'interfaccia di router o una porta
+// di switch. La scheda di un host non si spegne.
 function interfaceIsOff(network: Network, deviceId: string, portName: string): boolean {
   const device = network.devices.find((d) => d.id === deviceId);
-  if (device?.kind !== "router") return false;
+  if (device === undefined || device.kind === "host") return false;
   return device.ports.find((port) => port.name === portName)?.enabled === false;
 }
 

@@ -17,13 +17,15 @@ import {
   type Host,
   type Link,
   type Network,
-  type Port,
   type PortRef,
   type RouterInterface,
+  type SwitchPort,
 } from "./model/network";
 
-// Le modifiche che riguardano solo i router stanno in router-editing.ts;
-// chi usa questo file le trova anche qui.
+// Le modifiche che riguardano solo i router stanno in router-editing.ts, e
+// accendere e spegnere una porta in port-editing.ts; chi usa questo file
+// le trova anche qui.
+export * from "./port-editing";
 export * from "./router-editing";
 
 // Che cosa si può aggiungere: un PC, uno switch con un certo numero di
@@ -82,9 +84,11 @@ function newSwitch(network: Network, portCount: number): Device {
   if (!Number.isInteger(portCount) || portCount < 1) {
     throw new Error(`Numero di porte non valido: ${portCount}`);
   }
-  const ports: Port[] = freeMacs(network, portCount).map((mac, index) => ({
+  // Le porte di uno switch nascono accese: basta attaccare il cavo.
+  const ports: SwitchPort[] = freeMacs(network, portCount).map((mac, index) => ({
     name: `Fa0/${index + 1}`,
     mac,
+    enabled: true,
   }));
   return createSwitch({
     id: freeName(usedIds(network), "s"),

@@ -43,7 +43,7 @@
     }),
   );
 
-  // Mezza larghezza del quadratino che segna un'interfaccia spenta.
+  // Mezza larghezza del quadratino che segna un'interfaccia o una porta spenta.
   const shutHalf = $derived(4.5 * preferences.scale);
 
   // I nomi delle due porte. Si vedono se le etichette sono accese, e
@@ -55,7 +55,7 @@
       deviceName: end === "a" ? link.fromName : link.toName,
       // Dove il capo b ha l'indirizzo sotto il cavo, il nome della porta va sopra.
       at: portLabelPoint(link.from, link.to, end, preferences.scale, end === "b" && crowded),
-      // Il capo è un'interfaccia di router spenta.
+      // Il capo è un'interfaccia di router o una porta di switch spenta.
       off: end === "a" ? link.fromOff : link.toOff,
       open: session.portMenu?.linkId === link.id && session.portMenu.end === end,
     })),
@@ -92,7 +92,7 @@
   <circle class="signal" cx={signalTo.x} cy={signalTo.y} r={4 * preferences.scale} />
 {/if}
 
-<!-- Un'interfaccia di router spenta: sul suo capo del cavo, al posto del
+<!-- Un'interfaccia di router o una porta di switch spenta: sul suo capo del cavo, al posto del
      pallino del segnale, un quadratino rosso vuoto. Colore e forma. -->
 {#if link.fromOff}
   <rect class="shut" x={signalFrom.x - shutHalf} y={signalFrom.y - shutHalf} width={shutHalf * 2} height={shutHalf * 2} />

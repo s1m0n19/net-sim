@@ -245,11 +245,11 @@ export function configureInterface(
 }
 
 /**
- * Crea l'azione "accendi questa interfaccia di un router" (su un Cisco:
- * `no shutdown`).
+ * Crea l'azione "accendi questa interfaccia di un router, o questa porta di
+ * uno switch" (su un Cisco: `no shutdown`).
  *
- * @param deviceId - identificativo del router
- * @param portName - l'interfaccia
+ * @param deviceId - identificativo del router o dello switch
+ * @param portName - l'interfaccia o la porta
  * @returns l'azione da passare a `Simulator.dispatch`
  */
 export function enableInterface(deviceId: string, portName: string): Action {
@@ -257,11 +257,11 @@ export function enableInterface(deviceId: string, portName: string): Action {
 }
 
 /**
- * Crea l'azione "spegni questa interfaccia di un router" (su un Cisco:
- * `shutdown`).
+ * Crea l'azione "spegni questa interfaccia di un router, o questa porta di
+ * uno switch" (su un Cisco: `shutdown`).
  *
- * @param deviceId - identificativo del router
- * @param portName - l'interfaccia
+ * @param deviceId - identificativo del router o dello switch
+ * @param portName - l'interfaccia o la porta
  * @returns l'azione da passare a `Simulator.dispatch`
  */
 export function disableInterface(deviceId: string, portName: string): Action {

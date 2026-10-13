@@ -117,11 +117,11 @@ describe("accendere e spegnere un'interfaccia", () => {
     expect(sim.dispatch(enableInterface("r1", "Gi0/0"))).toEqual([]);
   });
 
-  test("un'interfaccia che non esiste, o un dispositivo che non è un router, vengono rifiutati", () => {
+  test("un'interfaccia che non esiste, o la scheda di un PC, vengono rifiutate", () => {
     const { sim } = twoLans();
 
     expect(() => sim.dispatch(enableInterface("r1", "Gi0/9"))).toThrow("R1 non ha un'interfaccia Gi0/9.");
-    expect(() => sim.dispatch(enableInterface("s1", "Fa0/1"))).toThrow("SW1 non è un router.");
+    expect(() => sim.dispatch(enableInterface("d1", "Fa0"))).toThrow("PC1 non ha porte che si possano spegnere.");
   });
 });
 

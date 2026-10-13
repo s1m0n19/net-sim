@@ -244,7 +244,7 @@ In fondo, la **tabella ARP** del router.
 
 Tutte e due le tabelle si appuntano sul disegno, ciascuna con il suo pulsante; nascono una a sinistra e una a destra sotto il router. Dalla barretta si appunta la tabella di routing, che è quella che serve in lezione.
 
-Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta».
+Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta». Una porta di switch spenta si vede allo stesso modo, sul capo del cavo vicino allo switch (D-93). Le porte degli switch non hanno un interruttore nel pannello: si spegneranno dalla CLI (*previsto*); per ora una porta spenta può solo arrivare da un file.
 
 **Indirizzi sul disegno** (D-75). Un router non ha un indirizzo solo, quindi sotto di lui resta soltanto il nome: l'indirizzo di ogni interfaccia è scritto accanto al suo cavo, sul capo vicino al router, con il prefisso (`192.168.1.1/24`). Così si vede a colpo d'occhio quale indirizzo guarda quale rete. Li accende e li spegne l'interruttore IP, come per i PC.
 
@@ -401,7 +401,7 @@ Sono i valori del bozzetto: un punto di partenza, da ritoccare quando l'interfac
 | --- | --- | --- |
 | Protocollo di un pacchetto | ambra, viola | la sigla sopra la busta |
 | Cavo staccato | rosso | tratteggio e croce |
-| Interfaccia di router spenta | rosso | un quadratino vuoto al posto del pallino, sul capo del cavo vicino al router; nel pannello la parola «spenta» |
+| Interfaccia di router o porta di switch spenta | rosso | un quadratino vuoto al posto del pallino, sul capo del cavo vicino al dispositivo; nel pannello del router la parola «spenta» |
 | Segnale su una porta | verde | il pallino c'è o non c'è |
 | Dispositivo spento | grigio | la scritta "spento" |
 | Campo rifiutato | bordo rosso | il motivo scritto sotto |

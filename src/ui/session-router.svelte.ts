@@ -19,9 +19,14 @@ import { checkInterfaceAddress, checkRoute } from "../engine/model/router-config
 import { sentence, SessionEditing } from "./session-editing.svelte";
 
 export class SessionRouter extends SessionEditing {
-  /** Accende un'interfaccia spenta di un router, o ne spegne una accesa. */
+  /**
+   * Accende un'interfaccia spenta di un router, o ne spegne una accesa.
+   * Vale anche per le porte di uno switch.
+   */
   toggleInterface(deviceId: string, portName: string): void {
-    const port = this.interfaceOf(deviceId, portName);
+    const device = this.simulator?.network.devices.find((d) => d.id === deviceId);
+    if (device === undefined || device.kind === "host") return;
+    const port = device.ports.find((p) => p.name === portName);
     if (port === undefined) return;
     const problem = this.attempt(port.enabled ? disableInterface(deviceId, portName) : enableInterface(deviceId, portName));
     if (problem !== null) this.notice = problem;

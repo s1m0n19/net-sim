@@ -110,7 +110,7 @@ I protocolli funzionano davvero, in forma semplificata: si simulano i campi prin
 | SIM-4 | Generare traffico dal terminale dell'host | R1 |
 | SIM-5 | Generare un ping con il mouse: pulsante Ping sulla barretta dell'host, poi clic sul dispositivo di destinazione. Manda un solo echo request | R1 |
 | SIM-6 | Guasti fisici: staccare un cavo, spegnere un dispositivo | R1 |
-| SIM-7 | Guasti fisici: spegnere una singola porta. Per le interfacce dei router arriva insieme al router, perché nascono spente (DEV-3); per le porte di switch e host in seguito | R2 |
+| SIM-7 | Guasti fisici: spegnere una singola porta. Per le interfacce dei router arriva insieme al router, perché nascono spente (DEV-3); per le porte degli switch insieme alla CLI (D-93); per la scheda di un host in seguito | R2 |
 | SIM-8 | Comportamento da rete vera davanti agli errori di configurazione: nessun avviso preventivo e nessuna spiegazione del fallimento. La causa si cerca con gli strumenti (`ping`, `tracert`, comandi `show`) | R1 |
 | SIM-13 | Il ping manda quattro echo request, o il numero richiesto, e conclude ciascuno con l'esito che stamperebbe Windows: risposta, richiesta scaduta, host di destinazione non raggiungibile, trasmissione non riuscita | R1 |
 | SIM-14 | Un ping al proprio indirizzo, o a un indirizzo 127.x.x.x, riceve risposta subito e senza che alcun frame esca sul cavo (loopback). Vale anche per un host senza configurazione IP, limitatamente a 127.x.x.x | R1 |
@@ -455,7 +455,7 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi, mai provate · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). **La parte sul routing è costruita**: sono fatti tutti e sette i passaggi. Il motore instrada, avvisa con i messaggi ICMP di errore e offre `tracert` e `ping -i`; a schermo il router si posa, si configura (interfacce, rotte statiche), mostra le sue tabelle e i suoi indirizzi; il server si usa come un PC. La lezione del criterio di accettazione si svolge nell'app ed è eseguita per intero da due test nel browser. Restano, nell'ordine deciso: CLI in stile IOS, funzionamento offline, strumenti dell'editor, tabelle nel file. Tappe successive: nulla è iniziato.
+Rilascio 2: progettato l'11 ottobre 2026 (criterio di accettazione e piano nella sezione 5). **La parte sul routing è costruita**: sono fatti tutti e sette i passaggi. Il motore instrada, avvisa con i messaggi ICMP di errore e offre `tracert` e `ping -i`; a schermo il router si posa, si configura (interfacce, rotte statiche), mostra le sue tabelle e i suoi indirizzi; il server si usa come un PC. La lezione del criterio di accettazione si svolge nell'app ed è eseguita per intero da due test nel browser. Restano, nell'ordine deciso: CLI in stile IOS, funzionamento offline, strumenti dell'editor, tabelle nel file. **La CLI è cominciata** (piano in sette passaggi nella sezione 5): è fatto il passaggio 1, le porte degli switch che si spengono, nel motore, nei file e sul disegno; a schermo non c'è ancora un comando per spegnerle, arriverà con il terminale. Tappe successive: nulla è iniziato.
 
 ### Rispetto al criterio di accettazione del rilascio 2
 
@@ -490,7 +490,7 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 ### Che cosa esiste oltre ai requisiti
 
 - 11 test della pagina in un browser vero (`tests/e2e/`), tra cui la lezione del criterio di accettazione eseguita per intero, e un controllo automatico a ogni push.
-- 675 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- 694 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Cinque reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router, tre reti con due router in fila.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `main`.
 

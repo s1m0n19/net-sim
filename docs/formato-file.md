@@ -12,7 +12,7 @@ Una rete sta in un file di testo in formato JSON: si può leggere, confrontare c
 
 ## Che cosa contiene
 
-Il file contiene la **configurazione** della rete: dispositivi, porte, collegamenti, indirizzi, posizioni sul disegno, e i guasti, cioè quali dispositivi sono spenti e quali cavi sono staccati.
+Il file contiene la **configurazione** della rete: dispositivi, porte, collegamenti, indirizzi, posizioni sul disegno, e i guasti, cioè quali dispositivi sono spenti e quali cavi sono staccati. Ne fa parte anche lo stato, acceso o spento, delle porte degli switch e delle interfacce dei router.
 
 Oggi non contiene nulla dello **stato di esecuzione**: una rete appena aperta è una rete appena accesa, con le tabelle vuote.
 
@@ -96,6 +96,7 @@ Campi di ogni dispositivo:
 | `name` | Il nome mostrato all'utente | tutti |
 | `position` | Coordinate `x` e `y` sul disegno | tutti |
 | `ports` | Le porte, ciascuna con `name` e `mac` | tutti |
+| `ports[].enabled` | `false` se la porta è spenta. Facoltativo: se manca, è accesa, e nel file si scrive solo quando è spenta. Per le interfacce di un router la regola è diversa, vedi sotto | switch |
 | `ip`, `mask`, `gateway` | La configurazione IPv4. Ciascuno può essere `null` | host e server |
 | `powered` | `false` se il dispositivo è spento. Facoltativo: se manca, è acceso | tutti |
 
@@ -212,6 +213,6 @@ Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere in
 
 - **Versioni.** Il numero di versione crescerà di uno ogni volta che il formato cambia in modo incompatibile (requisito FILE-2). Un file più vecchio verrà aggiornato in memoria con una funzione di migrazione per ogni salto di versione; un file più nuovo dell'app verrà rifiutato con l'invito ad aggiornarla. Aggiungere un campo facoltativo non richiederà una nuova versione.
 - **Tabelle MAC e ARP**, facoltative (D-25, requisito FILE-5): ogni dispositivo potrà portare con sé le proprie tabelle già compilate.
-- **Porta spenta** (requisito SIM-7, rilascio 2).
+- **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
 - **Annotazioni e vista**: note e riquadri sul disegno, inquadratura ed etichette visibili al momento del salvataggio.
 - **Esercizi e verifiche**: una sezione con consegna, obiettivi e parte protetta da password (tappa T1), e una con punteggio e registro delle attività (tappa T4).

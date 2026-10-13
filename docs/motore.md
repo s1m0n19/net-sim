@@ -122,14 +122,14 @@ interface Switch {
   kind: "switch";
   id: string;
   name: string;
-  ports: Port[];
+  ports: SwitchPort[];                // una porta, più `enabled`: false = spenta
   powered: boolean;                   // false = spento
   // stato di esecuzione
   macTable: Map<MacAddress, string>;  // MAC -> nome della porta
 }
 ```
 
-`createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali. `clearRuntimeState(device)` riporta un dispositivo a quello stato: è ciò che succede quando lo si spegne.
+`createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali. `clearRuntimeState(device)` riporta un dispositivo a quello stato: è ciò che succede quando lo si spegne. Le porte di uno switch (`SwitchPort`) si possono spegnere, e nascono accese (decisione D-93): `createSwitch` accende quelle di cui non si dice nulla.
 
 ### PC e server
 
@@ -257,7 +257,7 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `renameDevice(deviceId, name)` | Cambia il nome di un dispositivo |
 | `configureHost(deviceId, config)` | Cambia indirizzo, maschera e gateway di un host |
 | `configureInterface(deviceId, portName, ip, mask)` | Cambia l'indirizzo di un'interfaccia di un router; con `null` lo toglie |
-| `enableInterface(deviceId, portName)`, `disableInterface(deviceId, portName)` | Accende o spegne un'interfaccia di un router (su un Cisco: `no shutdown` e `shutdown`) |
+| `enableInterface(deviceId, portName)`, `disableInterface(deviceId, portName)` | Accende o spegne un'interfaccia di un router o una porta di uno switch (su un Cisco: `no shutdown` e `shutdown`). La scheda di un host non si spegne: l'azione viene rifiutata |
 | `addRoute(deviceId, route)`, `removeRoute(deviceId, route)` | Aggiunge o toglie una rotta statica di un router |
 
 Un ping rivolto a uno switch o lanciato da un host spento, e qualsiasi azione su un dispositivo o un collegamento inesistente, vengono rifiutati con un errore. Così anche qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
@@ -490,10 +490,12 @@ I guasti sono due: il **cavo staccato** e il **dispositivo spento**. Un collegam
 
 ### Il segnale sul cavo
 
-Il concetto su cui si regge tutto è il **segnale sul cavo**. Una porta sente il segnale se le è attaccato un cavo, il cavo non è staccato, i dispositivi ai due capi sono entrambi accesi e, se una delle due porte è un'interfaccia di router, questa non è spenta. Il simulatore lo ricalcola dopo ogni guasto o riparazione, e aggiorna ciò che i dispositivi sanno:
+Il concetto su cui si regge tutto è il **segnale sul cavo**. Una porta sente il segnale se le è attaccato un cavo, il cavo non è staccato, i dispositivi ai due capi sono entrambi accesi e nessuna delle due porte è spenta: si spengono le interfacce dei router e le porte degli switch. Il simulatore lo ricalcola dopo ogni guasto o riparazione, e aggiorna ciò che i dispositivi sanno:
 
 - **Host.** Il campo `linkUp` dice se la scheda sente il segnale. Senza segnale l'host sa di non poter trasmettere: un ping finisce subito con "trasmissione non riuscita", senza che parta nulla. È ciò che fa un PC vero con il cavo staccato, o collegato a uno switch spento.
 - **Switch.** Dimentica i MAC che aveva imparato sulla porta rimasta senza segnale, e su quella porta non inoltra più nulla.
+
+Una **porta spenta** (`enabled: false`) si comporta quindi come un cavo staccato, visto da quella porta: chi è collegato lì perde il segnale, i frame in viaggio su quel cavo vanno persi, lo switch dimentica i MAC che vi aveva imparato. La differenza è che non è un guasto ma configurazione: la si imposta con un comando (`shutdown`), si salva nel file e si annulla con Ctrl+Z.
 
 I frame che stavano viaggiando su un cavo al momento del distacco vanno persi (traccia `frame-lost`).
 
@@ -522,11 +524,11 @@ Le attese di un host acceso non vengono toccate da un guasto altrui: il suo ping
 
 I guasti fanno parte della configurazione: un file può contenere un dispositivo spento o un cavo staccato, e la rete parte già così (vedi [formato-file.md](formato-file.md)). Nella pagina si provocano con un clic sul cavo o sul dispositivo.
 
-*Previsto:* porta spenta (requisito SIM-7, rilascio 2).
+*Previsto:* spegnere la scheda di un host (ciò che resta del requisito SIM-7).
 
 ## Modificare la rete
 
-Le modifiche stanno in `src/engine/editing.ts`, e quelle che riguardano solo i router (interfacce, rotte statiche) in `src/engine/router-editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
+Le modifiche stanno in `src/engine/editing.ts`, quelle che riguardano solo i router (indirizzi delle interfacce, rotte statiche) in `src/engine/router-editing.ts`, e accendere e spegnere una porta in `src/engine/port-editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
 
 ### Tornare a una configurazione di prima
 
@@ -541,6 +543,7 @@ L'azione `restore-configuration` riporta la rete a una fotografia. Non sostituis
 | La configurazione IP di un host torna quella di prima | L'host dimentica tabella ARP e attese, come per ogni cambio di configurazione (D-48) |
 | Un cavo ha solo cambiato porta | Viene spostato, non tolto e rimesso |
 | Interfacce e rotte di un router | Indirizzo, stato acceso o spento e rotte tornano quelli della fotografia. Lo stato di un'interfaccia è configurazione, non un guasto: su un router si imposta |
+| Porte di uno switch | Lo stato acceso o spento torna quello della fotografia, per la stessa ragione |
 | Guasti | Non sono modifiche: ciò che c'è da entrambe le parti resta acceso o spento, collegato o staccato, com'è adesso. Ciò che torna, torna com'era nella fotografia |
 
 La fotografia deve venire dalla stessa rete, in un momento precedente o successivo della stessa serie di modifiche: è ciò che garantisce che nomi e porte da rimettere siano liberi.
@@ -558,7 +561,7 @@ Chi aggiunge un dispositivo dice solo che cosa vuole: un PC, uno switch con un c
 
 I MAC cominciano per `02`, il prefisso degli indirizzi assegnati localmente e non da un produttore. Un nome liberato da un dispositivo eliminato viene riusato.
 
-Un PC nuovo nasce acceso, senza cavi e senza configurazione IP. Un router nuovo nasce acceso, ma con tutte le interfacce spente e senza indirizzo, e senza rotte.
+Un PC nuovo nasce acceso, senza cavi e senza configurazione IP. Uno switch nuovo nasce acceso e con tutte le porte accese. Un router nuovo nasce acceso, ma con tutte le interfacce spente e senza indirizzo, e senza rotte.
 
 ### Che cosa viene rifiutato
 
@@ -615,7 +618,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 
 Non ancora nel codice:
 
-- **Porta spenta** (requisito SIM-7, rilascio 2).
+- **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
 - **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
@@ -663,6 +666,7 @@ I file di test, uno per argomento:
 | `storm.test.ts` | Tempesta di broadcast e sospensione |
 | `link-faults.test.ts` | Cavo staccato |
 | `power-faults.test.ts` | Dispositivo spento |
+| `switch-ports.test.ts` | Porta di switch spenta e riaccesa |
 | `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
 | `router-model.test.ts` | Il router nel modello: controlli su interfacce e rotte, reti sovrapposte, segnale |
 | `router-editing.test.ts` | Aggiungere un router, interfacce, rotte, e annullare |

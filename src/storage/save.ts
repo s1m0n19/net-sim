@@ -3,7 +3,7 @@
 // È il contrario di load.ts: ciò che questa funzione scrive, quella lo
 // rilegge uguale.
 
-import type { Network } from "../engine/model/network";
+import type { Device, Network } from "../engine/model/network";
 import { FILE_FORMAT, FILE_VERSION, type Position } from "./load";
 
 /**
@@ -28,17 +28,7 @@ export function serializeNetwork(network: Network, positions: Map<string, Positi
       kind: device.kind === "host" && device.role === "server" ? "server" : device.kind,
       name: device.name,
       position: { x: position.x, y: position.y },
-      // Le interfacce di un router portano con sé indirizzo e stato.
-      ports:
-        device.kind === "router"
-          ? device.ports.map((port) => ({
-              name: port.name,
-              mac: port.mac,
-              ip: port.ip,
-              mask: port.mask,
-              enabled: port.enabled,
-            }))
-          : device.ports.map((port) => ({ name: port.name, mac: port.mac })),
+      ports: portsToWrite(device),
       // Solo gli host hanno una configurazione IP propria, con il gateway.
       ...(device.kind === "host" ? { ip: device.ip, mask: device.mask, gateway: device.gateway } : {}),
       ...(device.kind === "router"
@@ -58,4 +48,30 @@ export function serializeNetwork(network: Network, positions: Map<string, Positi
 
   const file = { format: FILE_FORMAT, version: FILE_VERSION, network: { devices, links } };
   return `${JSON.stringify(file, null, 2)}\n`;
+}
+
+// Le porte di un dispositivo, come si scrivono nel file.
+function portsToWrite(device: Device) {
+  switch (device.kind) {
+    case "host":
+      return device.ports.map((port) => ({ name: port.name, mac: port.mac }));
+    case "switch":
+      // Una porta di switch nasce accesa: lo stato si scrive solo quando è
+      // spenta, così il file di una LAN resta corto.
+      return device.ports.map((port) => ({
+        name: port.name,
+        mac: port.mac,
+        ...(port.enabled ? {} : { enabled: false }),
+      }));
+    case "router":
+      // Le interfacce di un router portano con sé indirizzo e stato:
+      // nascono spente, quindi lo stato si scrive sempre.
+      return device.ports.map((port) => ({
+        name: port.name,
+        mac: port.mac,
+        ip: port.ip,
+        mask: port.mask,
+        enabled: port.enabled,
+      }));
+  }
 }

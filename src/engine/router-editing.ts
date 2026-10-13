@@ -1,5 +1,6 @@
-// Modifiche alla configurazione di un router: indirizzi e stato delle
-// interfacce, rotte statiche.
+// Modifiche alla configurazione di un router: indirizzi delle interfacce
+// e rotte statiche. Accendere e spegnere un'interfaccia vale anche per le
+// porte degli switch, e sta in port-editing.ts.
 //
 // Come le funzioni di editing.ts, cambiano la configurazione e nient'altro:
 // a tenere in ordine la simulazione pensa network-changes.ts. Ciò che un
@@ -44,29 +45,6 @@ export function configureInterface(
   port.ip = ip;
   port.mask = mask;
   return router;
-}
-
-/**
- * Accende o spegne un'interfaccia di un router. Spenta, è come se il suo
- * cavo non ci fosse.
- *
- * @param network - la rete da modificare
- * @param deviceId - il router
- * @param portName - l'interfaccia
- * @param enabled - true per accenderla, false per spegnerla
- * @returns true se lo stato è cambiato, false se era già così
- * @throws Error se il dispositivo non è un router o non ha quell'interfaccia
- */
-export function setInterfaceEnabled(
-  network: Network,
-  deviceId: string,
-  portName: string,
-  enabled: boolean,
-): boolean {
-  const port = findInterface(findRouter(network, deviceId), portName);
-  if (port.enabled === enabled) return false;
-  port.enabled = enabled;
-  return true;
 }
 
 /**

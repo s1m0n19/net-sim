@@ -13,14 +13,14 @@
 // con le stesse regole di qualsiasi altra modifica.
 
 import type { Action } from "./actions";
-import type { HostConfig, Link, Network, Router, RouterConfig, SwitchConfig } from "./model/network";
+import type { HostConfig, Link, Network, Router, RouterConfig, Switch } from "./model/network";
 import { sameRoute } from "./model/router-config";
 
 // Un dispositivo come sta nella fotografia: la sua configurazione, senza
 // stato di esecuzione.
 export type DeviceSnapshot =
   | ({ kind: "host" } & Required<HostConfig>)
-  | ({ kind: "switch" } & Required<SwitchConfig>)
+  | Pick<Switch, "kind" | "id" | "name" | "ports" | "powered">
   | ({ kind: "router" } & Required<RouterConfig>);
 
 export interface Snapshot {
@@ -141,6 +141,9 @@ export function stepsToRestore(network: Network, snapshot: Snapshot): RestoreSte
         steps.push({ kind: "configure-host", deviceId: device.id, config });
       }
     }
+    if (device.kind === "switch" && wanted.kind === "switch") {
+      steps.push(...portStateSteps(device, wanted));
+    }
     if (device.kind === "router" && wanted.kind === "router") {
       steps.push(...routerSteps(device, wanted));
     }
@@ -153,10 +156,26 @@ export function stepsToRestore(network: Network, snapshot: Snapshot): RestoreSte
   return steps;
 }
 
+// Le modifiche che riaccendono o rispengono le porte di uno switch, o le
+// interfacce di un router, come nella fotografia. Lo stato acceso o spento
+// di una porta è configurazione, non un guasto: lo si imposta con un
+// comando (`shutdown`), e si salva nel file.
+function portStateSteps(
+  device: Switch | Router,
+  wanted: Extract<DeviceSnapshot, { kind: "switch" | "router" }>,
+): RestoreStep[] {
+  const steps: RestoreStep[] = [];
+  for (const port of wanted.ports) {
+    const now = device.ports.find((p) => p.name === port.name);
+    if (now !== undefined && now.enabled !== port.enabled) {
+      steps.push({ kind: "set-interface-enabled", deviceId: device.id, portName: port.name, enabled: port.enabled });
+    }
+  }
+  return steps;
+}
+
 // Le modifiche che riportano un router alla sua fotografia: indirizzo e
-// stato di ogni interfaccia, e le rotte statiche. Lo stato acceso o spento
-// di un'interfaccia è configurazione, non un guasto: su un router si
-// imposta, e nasce spento.
+// stato di ogni interfaccia, e le rotte statiche.
 function routerSteps(router: Router, wanted: Extract<DeviceSnapshot, { kind: "router" }>): RestoreStep[] {
   const steps: RestoreStep[] = [];
   const deviceId = router.id;
@@ -166,10 +185,8 @@ function routerSteps(router: Router, wanted: Extract<DeviceSnapshot, { kind: "ro
     if (now.ip !== port.ip || now.mask !== port.mask) {
       steps.push({ kind: "configure-interface", deviceId, portName: port.name, ip: port.ip, mask: port.mask });
     }
-    if (now.enabled !== port.enabled) {
-      steps.push({ kind: "set-interface-enabled", deviceId, portName: port.name, enabled: port.enabled });
-    }
   }
+  steps.push(...portStateSteps(router, wanted));
   for (const route of router.routes) {
     if (!wanted.routes.some((other) => sameRoute(other, route))) {
       steps.push({ kind: "remove-route", deviceId, route: { ...route } });
