@@ -15,7 +15,7 @@ import {
 } from "../engine/actions";
 import { networksOverlap, prefixToMask } from "../engine/model/addresses";
 import { defaultMaskFor } from "../engine/model/ip-config";
-import { checkInterfaceAddress, checkRoute } from "../engine/model/router-config";
+import { checkInterfaceAddress, checkRoute, nextHopIsOwnAddress } from "../engine/model/router-config";
 import { sentence, SessionEditing } from "./session-editing.svelte";
 
 export class SessionRouter extends SessionEditing {
@@ -126,6 +126,11 @@ export class SessionRouter extends SessionEditing {
     };
     const problem = checkRoute(route);
     if (problem !== null) return sentence(problem);
+    // Il prossimo salto è un vicino: non può essere il router stesso.
+    const router = this.simulator?.network.devices.find((device) => device.id === deviceId);
+    if (router?.kind === "router" && nextHopIsOwnAddress(route, router.ports)) {
+      return `${route.nextHop} è un indirizzo di questo router: il prossimo salto deve essere un vicino.`;
+    }
     const refused = this.attempt(addRoute(deviceId, route));
     // Il motore mette davanti "R1: ": nel pannello è di troppo.
     return refused === null ? null : sentence(refused.replace(/^[^:]+: /, "").replace(/\.$/, ""));

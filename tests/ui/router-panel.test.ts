@@ -235,6 +235,15 @@ describe("rotte statiche, dal pannello", () => {
     expect(router().routes).toHaveLength(1);
   });
 
+  test("una rotta il cui prossimo salto è un indirizzo del router stesso viene rifiutata", () => {
+    // 10.0.0.1 è l'indirizzo di R1 verso R2.
+    expect(session.addRoute("r1", "192.168.2.0", "/24", "10.0.0.1")).toBe(
+      "10.0.0.1 è un indirizzo di questo router: il prossimo salto deve essere un vicino.",
+    );
+    expect(router().routes).toEqual([]);
+    expect(session.canUndo).toBe(false);
+  });
+
   test("una rotta il cui prossimo salto non è su una rete collegata resta, ma non viene usata", () => {
     session.addRoute("r1", "192.168.2.0", "/24", "172.31.0.1");
 

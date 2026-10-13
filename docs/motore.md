@@ -146,6 +146,7 @@ Un `Router` ha più **interfacce** (`RouterInterface`): porte che, oltre a nome 
 | `checkInterfaceAddress` | L'indirizzo di un'interfaccia, con le regole degli host |
 | `checkInterfacesApart` | Che due interfacce dello stesso router non abbiano reti sovrapposte |
 | `checkRoute` | Che una rotta abbia indirizzi validi, e una rete coerente con la maschera |
+| `nextHopIsOwnAddress` | Se il prossimo salto di una rotta è un indirizzo del router stesso. La CLI e il pannello rifiutano una rotta così mentre la si scrive; il motore e i file la ammettono, perché l'indirizzo può arrivare su un'interfaccia dopo la rotta |
 
 Le reti si confrontano con `networksOverlap` (`addresses.ts`), che guarda la più corta delle due maschere: se con quella i due indirizzi stanno nella stessa rete, la rete più piccola è dentro la più grande. Le maschere possono avere qualsiasi lunghezza: `10.0.0.1/30` e `10.0.0.5/30` sono reti diverse anche se appartengono alla stessa classe A.
 

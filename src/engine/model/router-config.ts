@@ -69,6 +69,24 @@ export function checkRoute(route: StaticRoute): string | null {
 }
 
 /**
+ * Dice se il prossimo salto di una rotta è il router stesso, cioè
+ * l'indirizzo di una delle sue interfacce. Una rotta così non porta da
+ * nessuna parte: il router cercherebbe sé stesso sul cavo.
+ *
+ * Un apparato vero la rifiuta mentre la si scrive, e così fanno la CLI e
+ * il pannello. Il motore e i file invece la ammettono: l'indirizzo può
+ * arrivare su un'interfaccia dopo la rotta, e allora è un errore di
+ * configurazione da diagnosticare.
+ *
+ * @param route - la rotta da controllare
+ * @param interfaces - le interfacce del router, con gli indirizzi di adesso
+ * @returns true se il prossimo salto coincide con l'indirizzo di un'interfaccia
+ */
+export function nextHopIsOwnAddress(route: StaticRoute, interfaces: RouterInterface[]): boolean {
+  return interfaces.some((port) => port.ip !== null && port.ip === route.nextHop);
+}
+
+/**
  * Dice se due rotte sono la stessa: stessa rete, stessa maschera, stesso
  * prossimo salto.
  */
