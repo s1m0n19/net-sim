@@ -127,7 +127,7 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 | Selezionato | Sulla barretta | Nel pannello di destra |
 | --- | --- | --- |
 | Un PC | Spegni o accendi · Ping · Terminale · Appunta la tabella · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
-| Uno switch | Spegni o accendi · Appunta la tabella · Elimina | Numero di porte, tabella MAC |
+| Uno switch | Spegni o accendi · Terminale · Appunta la tabella · Elimina | Numero di porte, tabella MAC |
 | Un cavo | Stacca o riattacca · Elimina | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 
@@ -148,6 +148,21 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 | `help` | Elenca i comandi |
 
 I messaggi sono in inglese. L'output di `ping` cresce mentre la simulazione avanza, quindi dopo aver lanciato il comando serve Avvia o Passo. La durata è in tick, l'unità del tempo simulato. Freccia su e freccia giù richiamano i comandi già scritti.
+
+**La CLI di router e switch.** Lo stesso pulsante, sulla barretta di un router o di uno switch, apre la sua CLI in stile IOS. Si comincia da `R1>`; `enable` porta a `R1#`, `configure terminal` a `R1(config)#`, `interface gi0/0` a `R1(config-if)#`. Le parole si possono abbreviare (`conf t`, `int gi0/0`, `no shut`, `sh ip int br`), Tab completa (anche il tipo di interfaccia: `int gi` diventa `int GigabitEthernet`) e `?` mostra subito che cosa si può scrivere. Ctrl+Z, dentro la CLI, torna a `R1#` come su IOS; per annullare una modifica si usano le frecce in alto.
+
+| Comando | Che cosa fa |
+| --- | --- |
+| `hostname Aula` | Cambia il nome del dispositivo |
+| `ip address 192.168.1.1 255.255.255.0`, `no ip address` | Imposta o toglie l'indirizzo dell'interfaccia (router) |
+| `shutdown`, `no shutdown` | Spegne o accende l'interfaccia, o la porta dello switch |
+| `ip route 192.168.2.0 255.255.255.0 10.0.0.2`, `no ip route …` | Aggiunge o toglie una rotta statica (router) |
+| `show running-config`, `show ip interface brief`, `show ip route`, `show arp`, `show interfaces`, `show mac address-table` | Mostrano configurazione e tabelle |
+| `ping 192.168.2.10`, `traceroute 192.168.2.10` | Dal router: cinque echo request (`!` risposta, `.` nulla, `U` irraggiungibile), o un salto per riga |
+| `do …` | Esegue un `show`, un `ping` o un `traceroute` senza uscire dalla configurazione |
+| `copy running-config startup-config`, `write memory` | Rispondono `[OK]`: la rete si salva con il file |
+
+Ciò che si configura dalla CLI compare subito nel pannello e sul disegno, e viceversa.
 
 **Eventi.** La fascia in basso elenca ciò che succede, una riga per fatto: tempo, dispositivo, sigla del protocollo, descrizione. L'ultima riga di un ping è il suo esito.
 

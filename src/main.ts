@@ -28,6 +28,7 @@ mount(App, { target: document.getElementById("app")! });
 //   &mira                                      preme Ping sul dispositivo selezionato
 //   &appunta=SW1,PC1                           appunta le tabelle di quei dispositivi
 //   &terminale=PC1&comando=arp -a              apre un terminale ed esegue un comando (ripetibile)
+//   &terminale=R1&aiuto=show%20                nella CLI, come premere ? dopo quel testo
 //   &poi=8                                     avanza di otto istanti dopo i comandi
 //   &segui=1                                   segue solo la prima conversazione
 //   &nascondi=ARP | ICMP                       spegne un protocollo nel filtro
@@ -134,6 +135,8 @@ if (import.meta.env.DEV) {
         if (terminalHost !== undefined) {
           session.openTerminal(terminalHost.id);
           for (const line of params.getAll("comando")) session.execute(terminalHost.id, line);
+          // &aiuto=show%20ip%20   nella CLI, come premere ? dopo quel testo
+          for (const line of params.getAll("aiuto")) session.help(terminalHost.id, line);
           for (let i = 0; i < Number(params.get("poi") ?? 0); i++) session.step();
         }
         if (params.has("fascia-chiusa")) preferences.stripOpen = false;

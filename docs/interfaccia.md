@@ -125,8 +125,8 @@ Accanto a ciò che è selezionato compare una **barretta** con le azioni princip
 | Selezionato | Azioni sulla barretta |
 | --- | --- |
 | Host (PC o server) | Spegni o accendi · Ping · Collega · Terminale · Appunta la tabella ARP · Elimina |
-| Switch | Spegni o accendi · Collega · Appunta la tabella MAC · Elimina |
-| Router | Spegni o accendi · Collega · Appunta la tabella di routing · Elimina |
+| Switch | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella MAC · Elimina |
+| Router | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella di routing · Elimina |
 | Cavo | Stacca o riattacca · Elimina |
 
 **Ping dalla barretta.** Si preme Ping e poi si fa clic sul dispositivo di destinazione. Manda **un solo** echo request: è lo strumento per le dimostrazioni. Le quattro richieste di Windows si ottengono dal terminale.
@@ -277,7 +277,7 @@ Corre sotto tutta la schermata. Si chiude lasciando visibile la sola riga delle 
 
 ### Terminali
 
-Ogni terminale aperto dalla barretta di un host diventa una **scheda**, con il nome dell'host e una crocetta per chiuderla. Si passa da PC1 a PC2 senza perdere la cronologia di nessuno dei due.
+Ogni terminale aperto dalla barretta diventa una **scheda**, con il nome del dispositivo e una crocetta per chiuderla. Si passa da PC1 a PC2 senza perdere la cronologia di nessuno dei due. Su un host il terminale è il prompt dei comandi di Windows; su un router o uno switch è la CLI in stile IOS (vedi sotto).
 
 Questa scelta è presa con riserva: se si rivelasse macchinosa, si passerà a un solo terminale che segue il dispositivo selezionato.
 
@@ -295,7 +295,7 @@ I comandi sono quelli di Windows e i **messaggi sono in inglese**, come sui libr
 | `cls` | Pulisce lo schermo |
 | `help` | Elenca i comandi disponibili |
 
-L'output di `ping` cresce mentre la simulazione avanza: una riga per ogni echo request che si conclude, poi le statistiche. Finché il ping non è finito il prompt non torna, come su un PC vero.
+L'output di `ping` cresce mentre la simulazione avanza: una riga per ogni echo request che si conclude, poi le statistiche. Finché il ping non è finito il prompt non torna, come su un PC vero. Se nel frattempo il dispositivo viene spento o riconfigurato, il prompt torna appena nella simulazione non resta più nulla di quel ping.
 
 | Esito | Riga stampata |
 | --- | --- |
@@ -306,6 +306,18 @@ L'output di `ping` cresce mentre la simulazione avanza: una riga per ogni echo r
 | Rete non raggiungibile, detto da un router | `Reply from 192.168.1.1: Destination net unreachable.` (l'indirizzo è quello del router che non ha la rotta) |
 | Host non raggiungibile, detto da un router | `Reply from 10.0.0.2: Destination host unreachable.` (l'ultimo router non ha trovato la destinazione) |
 | TTL scaduto | `Reply from 10.0.0.2: TTL expired in transit.` |
+
+### La CLI di router e switch
+
+Il terminale di un router o di uno switch è la CLI in stile IOS (D-89, D-90): il pulsante Terminale sulla barretta apre una scheda come quelle dei PC. Comandi, modalità e messaggi sono descritti in [SPEC.md](../SPEC.md), sezione 3.3; l'interprete sta in `src/shell/ios/`.
+
+- **Si parte da `R1>`**, la modalità utente, senza password. `enable`, `configure terminal`, `interface` portano a `R1#`, `R1(config)#`, `R1(config-if)#`; ogni riga resta sullo schermo con il prompt che aveva.
+- **Tab** completa la parola che si sta scrivendo, e il tipo di un'interfaccia (`int gi` diventa `int GigabitEthernet`, a cui va aggiunto il numero). **`?`** risponde appena lo si preme, senza Invio: stampa le possibilità sotto la riga scritta, che resta lì da finire.
+- **Ctrl+Z** dentro la CLI vale `end`, come su IOS: torna a `R1#`. Per annullare una modifica restano le frecce della barra in alto, e Ctrl+Z fuori dalla CLI.
+- **Ciò che si configura** passa dalle stesse azioni del pannello: compare subito nel pannello e sul disegno, e ogni comando che cambia qualcosa è un passo della cronologia. Un comando che non cambia nulla non lo è.
+- **`ping` e `traceroute`** dal router crescono mentre la simulazione avanza, come quelli dei PC, e intanto il prompt è occupato.
+- **Si torna a `R1>`** chiudendo la scheda, con Ricomincia e spegnendo il dispositivo (che su un apparato vero vuol dire riavviarlo).
+- Tra un comando e l'altro non c'è la riga vuota che lascia Windows.
 
 `tracert` stampa una riga per salto man mano che lo scopre, e alla fine `Trace complete.`:
 
@@ -368,7 +380,7 @@ Scorciatoie da tastiera, per condurre la dimostrazione senza cercare i pulsanti 
 | Spazio | Avvia o mette in pausa. Su un pulsante o su un dispositivo con il fuoco resta un clic |
 | Freccia destra | Un passo |
 | E | Apre la fascia sulla scheda Eventi; se è già lì, la chiude |
-| T | Apre la fascia sul terminale in primo piano, o sull'ultimo aperto; se è già lì, la chiude. Senza terminali aperti, apre quello del PC selezionato |
+| T | Apre la fascia sul terminale in primo piano, o sull'ultimo aperto; se è già lì, la chiude. Senza terminali aperti, apre quello del dispositivo selezionato |
 | Esc | Lascia andare un gesto a metà (ping da puntare, elenco delle porte); altrimenti esce dalla presentazione |
 
 ## Aspetto
@@ -414,11 +426,12 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | File o cartella | Contenuto |
 | --- | --- |
 | `App.svelte` | L'ossatura: la griglia che dispone le aree. I componenti non sanno dove si trovano |
-| `session.svelte.ts` | `session`, l'unico punto che parla con il simulatore. È fatta di quattro strati, uno sopra l'altro; i metodi si chiamano tutti su `session` |
+| `session.svelte.ts` | `session`, l'unico punto che parla con il simulatore. È fatta di cinque strati, uno sopra l'altro; i metodi si chiamano tutti su `session` |
 | `session-core.svelte.ts` | Primo strato: la rete aperta, ciò che di lei va disegnato, il tempo a schermo, il file, la selezione, i gesti a metà, l'inquadratura |
 | `session-demo.svelte.ts` | Secondo strato: guasti, ping col mouse, terminali, tabelle appuntate, filtro |
 | `session-editing.svelte.ts` | Terzo strato: le modifiche alla rete e la cronologia per annullare |
 | `session-router.svelte.ts` | Quarto strato: interfacce e rotte statiche dei router, dal pannello |
+| `session-cli.svelte.ts` | Quinto strato: la CLI di router e switch nei terminali |
 | `session-types.ts` | I tipi di selezione, tabelle appuntate, terminali e punti della cronologia |
 | `view.ts` | Trasforma rete e posizioni in ciò che i componenti disegnano: etichette, segnale sui cavi, inquadratura. Non usa il browser, quindi ha i suoi test |
 | `view-types.ts`, `event-text.ts` | I tipi di ciò che si disegna; il testo di ogni riga dell'elenco degli eventi |

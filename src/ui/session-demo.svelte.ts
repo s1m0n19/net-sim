@@ -12,7 +12,9 @@ import {
   formatPing,
   formatTracert,
   parseCommand,
+  PROMPT,
 } from "../shell/windows";
+import { INITIAL_STATE } from "../shell/ios/modes";
 import { SessionCore } from "./session-core.svelte";
 import type { Pin, PinTable, Terminal, TerminalEntry } from "./session-types";
 import type { Protocol } from "./view";
@@ -55,17 +57,22 @@ export class SessionDemo extends SessionCore {
   }
 
   /**
-   * Apre il terminale di un host e lo porta in primo piano. Se era già
-   * aperto, lo porta soltanto in primo piano.
+   * Apre il terminale di un dispositivo e lo porta in primo piano: il
+   * prompt dei comandi per un host, la CLI per un router o uno switch. Se
+   * era già aperto, lo porta soltanto in primo piano.
    */
   openTerminal(deviceId: string): void {
+    const device = this.view.devices.find((d) => d.id === deviceId);
+    if (device === undefined) return;
     if (!this.terminals.some((terminal) => terminal.deviceId === deviceId)) {
-      this.terminals.push({ deviceId, entries: [], history: [] });
+      // La CLI comincia sempre dalla modalità utente.
+      const cli = device.kind === "host" ? null : INITIAL_STATE;
+      this.terminals.push({ deviceId, entries: [], history: [], cli });
     }
     this.activeTab = deviceId;
   }
 
-  /** Chiude il terminale di un host. Il suo contenuto va perso. */
+  /** Chiude un terminale. Il suo contenuto va perso, e la CLI riparte da capo. */
   closeTerminal(deviceId: string): void {
     this.terminals = this.terminals.filter((terminal) => terminal.deviceId !== deviceId);
     if (this.activeTab === deviceId) this.activeTab = "events";
@@ -84,7 +91,7 @@ export class SessionDemo extends SessionCore {
 
     const command = parseCommand(line);
     if (line.trim() !== "") terminal.history.push(line.trim());
-    const print = (lines: string[]) => terminal.entries.push({ kind: "text", command: line, lines });
+    const print = (lines: string[]) => terminal.entries.push({ kind: "text", prompt: PROMPT, command: line, lines });
 
     switch (command.kind) {
       case "empty":
@@ -117,6 +124,7 @@ export class SessionDemo extends SessionCore {
         }
         terminal.entries.push({
           kind: "ping",
+          prompt: PROMPT,
           command: line,
           target: command.target,
           count: command.count,
@@ -136,6 +144,7 @@ export class SessionDemo extends SessionCore {
         }
         terminal.entries.push({
           kind: "tracert",
+          prompt: PROMPT,
           command: line,
           target: command.target,
           maxHops: command.maxHops,
@@ -166,6 +175,11 @@ export class SessionDemo extends SessionCore {
   isBusy(terminal: Terminal): boolean {
     const last = terminal.entries.at(-1);
     if (last === undefined || last.kind === "text") return false;
+    // Se nella simulazione non resta più nulla di quella conversazione, è
+    // finita comunque: per esempio perché il dispositivo è stato spento, o
+    // riconfigurato, mentre aspettava una risposta.
+    const pending = this.simulator?.queue.some((event) => event.conversationId === last.conversationId) ?? false;
+    if (!pending) return false;
     if (last.kind === "tracert") {
       const hops = this.view.traceHops.filter((hop) => hop.conversationId === last.conversationId);
       return hops.at(-1)?.done !== true;

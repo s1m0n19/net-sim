@@ -82,15 +82,15 @@ export function presentationKey(event: KeyboardEvent): boolean {
       break;
     case "t": {
       // Il terminale da mostrare: quello già in primo piano, altrimenti
-      // l'ultimo aperto, altrimenti quello del PC selezionato.
+      // l'ultimo aperto, altrimenti quello del dispositivo selezionato.
       const front = session.terminals.find((terminal) => terminal.deviceId === session.activeTab);
       const last = session.terminals.at(-1);
       const selected = session.selection?.kind === "device" ? session.selection.id : null;
-      const host = session.view.devices.find((device) => device.id === selected && device.kind === "host");
+      const device = session.view.devices.find((d) => d.id === selected);
       if (front !== undefined || last !== undefined) {
         toggleStrip((front ?? last)!.deviceId);
-      } else if (host !== undefined) {
-        session.openTerminal(host.id);
+      } else if (device !== undefined) {
+        session.openTerminal(device.id);
         preferences.stripOpen = true;
       }
       break;

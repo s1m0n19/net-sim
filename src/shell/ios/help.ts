@@ -53,6 +53,9 @@ export function helpFor(device: DeviceInfo, mode: Mode, text: string): string[] 
  * @param device - il dispositivo su cui gira la CLI
  * @param mode - la modalità in cui si trova la sessione
  * @param text - ciò che è scritto sulla riga
+ * Dove serve un'interfaccia completa il tipo, come IOS: `int gi` diventa
+ * `int GigabitEthernet`, senza spazio, perché subito dopo va il numero.
+ *
  * @returns la riga con l'ultima parola scritta per intero e uno spazio;
  *   la riga com'era, se le parole possibili sono più d'una o nessuna
  */
@@ -64,9 +67,17 @@ export function complete(device: DeviceInfo, mode: Mode, text: string): string {
   const reached = walk(commandsFor(mode), words.slice(0, -1), device);
   if (!reached.ok) return text;
 
-  const keywords = startingWith(reached.next, last.text.toLowerCase());
-  if (keywords.length !== 1) return text;
-  return `${text.slice(0, last.start)}${keywords[0]} `;
+  const typed = last.text.toLowerCase();
+  const keywords = startingWith(reached.next, typed);
+  if (keywords.length === 1) return `${text.slice(0, last.start)}${keywords[0]} `;
+
+  // Nessuna parola chiave: forse si sta scrivendo il tipo di un'interfaccia.
+  const wantsInterface = reached.next.some((node) => node.token.kind === "interface");
+  if (keywords.length === 0 && wantsInterface && /^[a-z]+$/.test(typed)) {
+    const types = interfaceTypesOf(device.interfaces).filter((type) => type.full.toLowerCase().startsWith(typed));
+    if (types.length === 1) return `${text.slice(0, last.start)}${types[0].full}`;
+  }
+  return text;
 }
 
 // Le parole chiave, tra quelle possibili, che cominciano con il testo dato.

@@ -102,7 +102,7 @@ net-sim/
 │   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
-│       │                      è fatta di quattro strati (session-core, -demo, -editing, -router)
+│       │                      è fatta di cinque strati (session-core, -demo, -editing, -router, -cli)
 │       ├── view.ts            prepara ciò che il disegno mostra (tipi in view-types.ts,
 │       │                      testo degli eventi in event-text.ts)
 │       ├── presentation.ts    modalità presentazione e scorciatoie
@@ -119,7 +119,7 @@ net-sim/
 
 Cartelle *previste* e non ancora esistenti:
 
-- In `src/shell/ios/` la CLI in stile IOS di switch e router (rilascio 2) è cominciata: esiste l'interprete, che capisce le righe, cambia modalità, suggerisce e completa, e traduce i comandi di configurazione nelle azioni del motore (`configure.ts`), le stesse del pannello laterale, e risponde ai comandi `show` (`show.ts`). Non esegue nulla da sé: propone l'azione a chi lo chiama. Non è ancora collegato allo schermo. I comandi sono un albero scritto come dati (`commands.ts`): aggiungerne uno, o una modalità per i protocolli di routing, non richiede di toccare il resto. Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
+- In `src/shell/ios/` la CLI in stile IOS di switch e router (rilascio 2) è cominciata: esiste l'interprete, che capisce le righe, cambia modalità, suggerisce e completa, e traduce i comandi di configurazione nelle azioni del motore (`configure.ts`), le stesse del pannello laterale, e risponde ai comandi `show` (`show.ts`). Non esegue nulla da sé: propone l'azione a chi lo chiama. Lo collega allo schermo il quinto strato della sessione, `session-cli.svelte.ts`. I comandi sono un albero scritto come dati (`commands.ts`): aggiungerne uno, o una modalità per i protocolli di routing, non richiede di toccare il resto. Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
 - Migrazioni di versione dei file in `src/storage/`.
 
 ## Convenzioni del codice

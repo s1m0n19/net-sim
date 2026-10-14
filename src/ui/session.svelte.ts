@@ -4,7 +4,7 @@
 // leggono `session.view` e chiamano i metodi di `session`; nessuno di loro
 // tocca il simulatore direttamente.
 //
-// La sessione è fatta di quattro strati, uno sopra l'altro, ciascuno nel suo
+// La sessione è fatta di cinque strati, uno sopra l'altro, ciascuno nel suo
 // file. Tutti i metodi si chiamano allo stesso modo, su `session`:
 //
 //   session-core.svelte.ts     la rete aperta, la simulazione, il file,
@@ -13,12 +13,13 @@
 //                              appuntate, filtro
 //   session-editing.svelte.ts  le modifiche alla rete e la cronologia
 //   session-router.svelte.ts   interfacce e rotte statiche dei router
+//   session-cli.svelte.ts      la CLI dei router e degli switch
 
-import { SessionRouter } from "./session-router.svelte";
+import { SessionCli } from "./session-cli.svelte";
 
 export { FILE_EXTENSION } from "./session-core.svelte";
 export type { Pin, PinTable, Selection, Terminal, TerminalEntry } from "./session-types";
 
-class Session extends SessionRouter {}
+class Session extends SessionCli {}
 
 export const session = new Session();

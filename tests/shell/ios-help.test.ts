@@ -84,6 +84,17 @@ describe("il tasto Tab", () => {
     expect(complete(R1, "privileged", "")).toBe("");
   });
 
+  test("dove serve un'interfaccia completa il tipo, senza spazio prima del numero", () => {
+    expect(complete(R1, "config", "int g")).toBe("int GigabitEthernet");
+    expect(complete(R1, "config", "interface GIGA")).toBe("interface GigabitEthernet");
+    expect(complete(SW1, "config", "int fa")).toBe("int FastEthernet");
+  });
+
+  test("non completa un tipo che il dispositivo non ha, né il numero", () => {
+    expect(complete(R1, "config", "int fa")).toBe("int fa");
+    expect(complete(R1, "config", "int gi0/")).toBe("int gi0/");
+  });
+
   test("completa solo i comandi della modalità in cui si è", () => {
     expect(complete(R1, "user", "conf")).toBe("conf");
     expect(complete(R1, "config", "host")).toBe("hostname ");

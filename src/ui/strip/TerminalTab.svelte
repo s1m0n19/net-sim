@@ -1,13 +1,16 @@
 <script lang="ts">
-  // Il prompt dei comandi di un host. Mostra ciò che i comandi hanno
-  // stampato e, quando l'host non è occupato, la riga in cui scrivere.
-  import { PROMPT } from "../../shell/windows";
+  // Un terminale: il prompt dei comandi di un host, oppure la CLI di un
+  // router o di uno switch. Mostra ciò che i comandi hanno stampato e,
+  // quando il dispositivo non è occupato, la riga in cui scrivere.
   import { session, type Terminal } from "../session.svelte";
 
   let { terminal }: { terminal: Terminal } = $props();
 
   const host = $derived(session.view.devices.find((device) => device.id === terminal.deviceId));
   const busy = $derived(session.isBusy(terminal));
+  // La CLI di un router o di uno switch; altrimenti il prompt di Windows.
+  const isCli = $derived(terminal.cli !== null);
+  const prompt = $derived(session.promptOf(terminal));
 
   let line = $state("");
   // Quale comando della cronologia si sta richiamando; -1 = nessuno.
@@ -48,8 +51,11 @@
     recalled = -1;
   }
 
-  // Freccia su e freccia giù richiamano i comandi già scritti.
+  // Freccia su e freccia giù richiamano i comandi già scritti. Nella CLI,
+  // in più: Tab completa la parola, il punto interrogativo risponde
+  // subito senza Invio, Ctrl+Z lascia la configurazione come `end`.
   function onKey(event: KeyboardEvent) {
+    if (isCli && cliKey(event)) return;
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
     const history = terminal.history;
@@ -61,6 +67,29 @@
     }
     line = recalled === -1 ? "" : history[recalled];
   }
+
+  // I tasti speciali della CLI. Restituisce true se il tasto è stato usato.
+  function cliKey(event: KeyboardEvent): boolean {
+    if (event.key === "Tab") {
+      event.preventDefault();
+      line = session.complete(terminal.deviceId, line);
+      return true;
+    }
+    if (event.key === "?") {
+      event.preventDefault();
+      session.help(terminal.deviceId, line);
+      return true;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+      // Qui Ctrl+Z non annulla: per annullare restano le frecce in alto.
+      event.preventDefault();
+      event.stopPropagation();
+      session.endConfiguration(terminal.deviceId);
+      line = "";
+      return true;
+    }
+    return false;
+  }
 </script>
 
 <svelte:window onpointerdown={onPointerDown} />
@@ -68,18 +97,19 @@
 <!-- Un clic in qualsiasi punto dello schermo porta il cursore sulla riga di comando. -->
 <div class="screen mono" bind:this={screen} onclick={() => input?.focus()} role="presentation">
   {#each terminal.entries as entry}
-    <div class="command">{PROMPT}{entry.command}</div>
+    <div class="command">{entry.prompt}{entry.command}</div>
     {#each session.outputOf(terminal.deviceId, entry) as output}
       <div class="output">{output}</div>
     {/each}
-    <div class="output"></div>
+    <!-- Windows lascia una riga vuota dopo ogni comando; IOS no. -->
+    {#if !isCli}<div class="output"></div>{/if}
   {/each}
 
   {#if host !== undefined && !host.powered}
     <div class="notice">{host.name} è spento.</div>
   {:else if !busy}
     <form onsubmit={submit}>
-      <label for="terminal-{terminal.deviceId}">{PROMPT}</label>
+      <label for="terminal-{terminal.deviceId}">{prompt}</label>
       <input
         id="terminal-{terminal.deviceId}"
         bind:this={input}
@@ -88,7 +118,7 @@
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
-        aria-label="Riga di comando di {host?.name ?? 'questo host'}"
+        aria-label="Riga di comando di {host?.name ?? 'questo dispositivo'}"
       />
     </form>
   {/if}

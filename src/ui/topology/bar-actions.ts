@@ -59,7 +59,8 @@ export function selectionBar(): SelectionBar | null {
         run: () => session.armLink(device.id),
       });
     }
-    if (device.kind === "host") {
+    {
+      // Il prompt dei comandi su un host, la CLI su un router o uno switch.
       actions.push({
         icon: "terminal",
         label: `Apri il terminale di ${device.name}`,
