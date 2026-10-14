@@ -12,10 +12,10 @@ Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'ap
 | [motore.md](motore.md) | Il motore di simulazione: modello dei dati, eventi, tempo, attese, protocolli e loro semplificazioni |
 | [formato-file.md](formato-file.md) | Il formato dei file delle reti |
 | [interfaccia.md](interfaccia.md) | L'interfaccia: ossatura, comportamento di ogni parte, aspetto, organizzazione del codice e piano con cui è stata costruita |
+| [cli.md](cli.md) | La CLI in stile IOS di router e switch: interprete, albero dei comandi, messaggi, differenze da IOS, come aggiungere comandi |
 
 Documenti previsti, da scrivere quando si arriva alla parte corrispondente:
 
-- `cli.md`: interprete dei comandi IOS (rilascio 2). Il terminale degli host esiste già ed è descritto in [interfaccia.md](interfaccia.md).
 - `esercizi.md`: obiettivi, verifica automatica, protezione dei file (tappa T1).
 
 ## A chi si rivolge

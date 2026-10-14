@@ -88,7 +88,7 @@ net-sim/
 │   │   └── browser-files.ts   scelta, lettura e scrittura di un file nel browser
 │   ├── shell/
 │   │   ├── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
-│   │   └── ios/               la CLI in stile IOS di router e switch (in costruzione)
+│   │   └── ios/               la CLI in stile IOS di router e switch (vedi cli.md)
 │   │       ├── modes.ts           le modalità e i loro prompt
 │   │       ├── grammar.ts         di che cosa è fatto un comando: parole chiave, argomenti, albero
 │   │       ├── commands.ts        l'albero dei comandi, scritto come dati
