@@ -2,7 +2,7 @@
 
 Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'app deve fare, stanno in [SPEC.md](../SPEC.md); lo stato di avanzamento è nella sua sezione 9.
 
-**Stato:** i documenti descrivono il codice com'è all'11 ottobre 2026. Dove parlano di qualcosa che ancora non esiste lo dicono, con la parola *previsto*. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
+**Stato:** ogni documento dice in cima a quale data descrive il codice; il 16 ottobre 2026 sono stati tutti riallineati alla CLI. Dove parlano di qualcosa che ancora non esiste lo dicono, con la parola *previsto*. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
 
 ## Documenti
 
@@ -28,7 +28,7 @@ A chi sviluppa l'app e agli studenti che ne leggono il codice. Per questo ogni d
 | --- | --- |
 | Rete | L'insieme di dispositivi e collegamenti |
 | Dispositivo | Un host (PC o server), uno switch o un router |
-| Porta | Punto di collegamento di un dispositivo, con un nome (per esempio `Fa0/1`) |
+| Porta | Punto di collegamento di un dispositivo, con un nome (per esempio `Fa0/1`, o `Gi0/0` per l'interfaccia di un router) |
 | Collegamento | Il cavo tra due porte |
 | Configurazione | Ciò che si imposta e che sta nel file: indirizzi, nomi, porte |
 | Stato di esecuzione | Ciò che cambia mentre la rete funziona: tabelle MAC e ARP, pacchetti in attesa, echo request in sospeso |

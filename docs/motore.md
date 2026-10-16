@@ -1,10 +1,10 @@
 # Motore di simulazione
 
-**Stato:** descrive il codice all'11 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
+**Stato:** descrive il codice al 16 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
 
 Il motore è la parte dell'app che fa funzionare la rete: decide che cosa fa un dispositivo quando riceve un frame, tiene le tabelle, fa scorrere il tempo. Non disegna nulla. Sta in `src/engine/` e non dipende da altro (vedi [architettura.md](architettura.md)).
 
-Oggi contiene host e switch, con Ethernet, ARP, IPv4 e ICMP echo.
+Oggi contiene host (PC e server), switch e router, con Ethernet, ARP, IPv4, ICMP (echo e tre messaggi di errore) e routing statico.
 
 ## L'idea in breve
 
@@ -54,7 +54,7 @@ Tre funzioni fanno i calcoli sugli indirizzi:
 
 Tutto il resto resta ammesso anche se sbagliato per quella rete: indirizzi duplicati, host della stessa LAN con maschere diverse, un gateway fuori dalla sottorete. Sono errori che lo studente deve saper diagnosticare (requisito SIM-8).
 
-Oggi la funzione è usata dal lettore dei file. La userà anche il pannello di configurazione, quando esisterà.
+La usano il lettore dei file, le modifiche della rete (`editing.ts`) e il pannello di configurazione, che mostra sotto il campo la frase del rifiuto.
 
 Gli indirizzi MAC di una rete aperta da file arrivano dal file; quelli di un dispositivo nuovo li sceglie il motore (vedi "Modificare la rete").
 
@@ -701,6 +701,7 @@ I file di test, uno per argomento:
 | `icmp-errors.test.ts` | I tre messaggi ICMP di errore, chi li manda e che cosa ne fa l'host; TTL della risposta |
 | `router-ping.test.ts` | Ping e traceroute lanciati da un router: sorgente, TTL, rotte mancanti, scadenze |
 | `tracert.test.ts` | Tracert con uno e due router, salti muti, cicli; ping con TTL a scelta |
+| `server.test.ts` | Il server: un host con il suo ruolo e il suo nome, nella rete, nei file e in annulla e ripristina |
 | `reset.test.ts` | Ricominciare la simulazione |
 | `snapshot.test.ts` | Fotografare la configurazione e tornarci |
 

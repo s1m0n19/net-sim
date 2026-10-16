@@ -8,11 +8,11 @@ Il nome è provvisorio.
 
 ## Stato
 
-Il progetto è in sviluppo. La parte che simula la rete funziona per una LAN: PC e switch, con ARP, ping e guasti.
+Il progetto è in sviluppo. Simula PC, server, switch e router, con ARP, IPv4, ping, `tracert`, routing statico, i messaggi ICMP di errore e i guasti.
 
-L'interfaccia del rilascio 1 è costruita: tutti e nove i passaggi previsti sono fatti, e resta da provarla in aula. Oggi apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi e terminale dei PC. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Con Presenta si proietta in aula.
+Oggi l'app apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi, terminale dei PC e CLI in stile IOS di router e switch. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Con Presenta si proietta in aula.
 
-Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9, e in [docs/interfaccia.md](docs/interfaccia.md).
+Mancano, per completare la prima versione: il funzionamento offline, alcuni strumenti dell'editor (duplicare, griglia, esportare come immagine, annotazioni) e le tabelle nel file. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
 
 ## Pubblicazione
 
@@ -40,7 +40,7 @@ Poi si apre http://localhost:5173 nel browser.
 
 All'avvio mostra un foglio vuoto. Con **Apri** si sceglie un file di rete: quelli di esempio stanno nella cartella [examples/](examples/).
 
-Il **router** (rilascio 2, in costruzione) si posa dalla colonna: passando su **Router** si sceglie tra 2, 4 e 8 interfacce. Nasce con le interfacce spente, come un Cisco: selezionalo e, nel pannello a destra, accendi ogni interfaccia con il suo interruttore e scrivi indirizzo e maschera. Un'interfaccia spenta si riconosce sul disegno da un quadratino rosso sul suo capo del cavo, e l'indirizzo di ogni interfaccia è scritto accanto al suo cavo, vicino al router.
+Il **router** si posa dalla colonna: passando su **Router** si sceglie tra 2, 4 e 8 interfacce. Nasce con le interfacce spente, come un apparato vero: selezionalo e, nel pannello a destra, accendi ogni interfaccia con il suo interruttore e scrivi indirizzo e maschera. Lo stesso si fa dalla sua CLI (più sotto). Un'interfaccia spenta si riconosce sul disegno da un quadratino rosso sul suo capo del cavo, e l'indirizzo di ogni interfaccia è scritto accanto al suo cavo, vicino al router.
 
 - La maschera viene proposta dalla classe dell'indirizzo; per una maschera diversa scrivi il prefisso insieme all'indirizzo, per esempio `10.0.0.1/30`.
 - Due interfacce dello stesso router non possono avere reti che si sovrappongono.
@@ -111,7 +111,7 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 | **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |
 | **Le tre frecce** | Chiudono e riaprono i pannelli: in fondo alla colonna dei dispositivi, nell'angolo in alto del pannello di destra, a destra nella riga delle schede in basso |
 
-Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento". Un quadratino rosso al posto del pallino segna una porta spenta: un'interfaccia di router, oppure una porta di switch (per ora solo se il file la contiene già spenta, con `"enabled": false`; si spegnerà dalla CLI).
+Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento". Un quadratino rosso al posto del pallino segna una porta spenta: un'interfaccia di router, oppure una porta di switch, che si spegne dalla CLI con `shutdown`.
 
 Aperta una rete, in basso al centro del disegno compare la **barra della simulazione**:
 
@@ -126,8 +126,9 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 
 | Selezionato | Sulla barretta | Nel pannello di destra |
 | --- | --- | --- |
-| Un PC | Spegni o accendi · Ping · Terminale · Appunta la tabella · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
-| Uno switch | Spegni o accendi · Terminale · Appunta la tabella · Elimina | Numero di porte, tabella MAC |
+| Un PC o un server | Spegni o accendi · Ping · Collega · Terminale · Appunta la tabella ARP · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
+| Uno switch | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella MAC · Elimina | Numero di porte, tabella MAC |
+| Un router | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella di routing · Elimina | Interfacce (accesa o spenta, indirizzo, maschera), tabella di routing con le rotte statiche, tabella ARP |
 | Un cavo | Stacca o riattacca · Elimina | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 
@@ -207,7 +208,7 @@ Il codice è diviso in due parti che non si mescolano:
 - **`src/engine/`**: il motore di simulazione. Contiene tutta la logica di rete, in TypeScript puro, e non sa nulla della grafica.
 - **`src/ui/`**: l'interfaccia, in Svelte. Mostra lo stato del motore e gli invia i comandi.
 
-`src/storage/` legge e scrive i file delle reti, e `src/shell/` interpreta i comandi del terminale. I test stanno in `tests/` e coprono il motore, i file, il terminale e la logica dell'interfaccia (modifiche, cronologia, inquadratura, presentazione), non i singoli componenti a schermo. La pagina intera è provata a parte, in un browser vero, dai test di `tests/e2e/`: tra questi c'è la lezione su ARP e ping eseguita dall'inizio alla fine. A ogni push GitHub esegue tutti i controlli e ne segna l'esito sul commit.
+`src/storage/` legge e scrive i file delle reti, e `src/shell/` interpreta i comandi del terminale. I test stanno in `tests/` e coprono il motore, i file, il terminale e la logica dell'interfaccia (modifiche, cronologia, inquadratura, presentazione), non i singoli componenti a schermo. La pagina intera è provata a parte, in un browser vero, dai test di `tests/e2e/`: tra questi ci sono le lezioni su ARP e ping, sul router e sulla CLI, eseguite dall'inizio alla fine. A ogni push GitHub esegue tutti i controlli e ne segna l'esito sul commit.
 
 Il motore è scritto per essere letto: un file per protocollo, nomi dei campi come sul libro di testo, commenti che spiegano il perché. Un buon punto di partenza è [src/engine/protocols/arp.ts](src/engine/protocols/arp.ts), seguito da [src/engine/devices/host.ts](src/engine/devices/host.ts).
 

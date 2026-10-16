@@ -44,7 +44,7 @@ La disposizione è una decisione presa con riserva: i pannelli sono componenti i
 
 ## Che cosa c'è già
 
-Dopo i primi sei passaggi:
+Dopo i nove passaggi del piano, e le parti del rilascio 2:
 
 - l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
@@ -58,7 +58,7 @@ Dopo i primi sei passaggi:
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
 - l'avviso della tempesta di broadcast;
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
-- la **barretta delle azioni**, per ora con le sole azioni che esistono: spegni o accendi, Ping, Collega, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
+- la **barretta delle azioni**: spegni o accendi, Ping, Collega, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
 - il **pannello laterale**: nome e configurazione IP del dispositivo, che si cambiano da lì, le sue tabelle, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
@@ -66,9 +66,9 @@ Dopo i primi sei passaggi:
 - il **terminale** degli host, una scheda per ciascuno, con `ipconfig`, `ping`, `tracert`, `arp -a`, `cls` e `help`;
 - l'**editor**: posare PC e switch dalla colonna, spostarli trascinandoli, eliminare dispositivi e cavi, collegarli con un cavo nuovo e scegliere la porta, rinominarli e configurarli dal pannello, annullare e ripristinare ogni modifica;
 - il **router** (rilascio 2): si posa dalla colonna nelle tre varianti; dal pannello se ne accendono le interfacce, se ne impostano gli indirizzi e si aggiungono e tolgono le rotte statiche; tabella di routing e tabella ARP si appuntano sul disegno; gli indirizzi delle interfacce sono scritti accanto ai cavi;
+- il **server** (rilascio 2), che si posa e si usa come un PC;
+- la **CLI in stile IOS** di router e switch (rilascio 2), in una scheda come il terminale dei PC;
 - la **modalità presentazione**, con l'ingrandimento regolabile e le scorciatoie da tastiera.
-
-Con questo i nove passaggi del piano sono fatti.
 
 ## File
 
@@ -244,7 +244,7 @@ In fondo, la **tabella ARP** del router.
 
 Tutte e due le tabelle si appuntano sul disegno, ciascuna con il suo pulsante; nascono una a sinistra e una a destra sotto il router. Dalla barretta si appunta la tabella di routing, che è quella che serve in lezione.
 
-Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta». Una porta di switch spenta si vede allo stesso modo, sul capo del cavo vicino allo switch (D-93). Le porte degli switch non hanno un interruttore nel pannello: si spegneranno dalla CLI (*previsto*); per ora una porta spenta può solo arrivare da un file.
+Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta». Una porta di switch spenta si vede allo stesso modo, sul capo del cavo vicino allo switch (D-93). Le porte degli switch non hanno un interruttore nel pannello: si spengono dalla CLI dello switch, con `shutdown`, oppure arrivano spente da un file.
 
 **Indirizzi sul disegno** (D-75). Un router non ha un indirizzo solo, quindi sotto di lui resta soltanto il nome: l'indirizzo di ogni interfaccia è scritto accanto al suo cavo, sul capo vicino al router, con il prefisso (`192.168.1.1/24`). Così si vede a colpo d'occhio quale indirizzo guarda quale rete. Li accende e li spegne l'interruttore IP, come per i PC.
 
@@ -450,13 +450,9 @@ I caratteri IBM Plex sono inclusi nel sito, non scaricati da un servizio esterno
 
 Restano valide le regole di [architettura.md](architettura.md): l'interfaccia comanda il motore solo con le azioni e ne legge lo stato dopo ogni comando. Ciò che riguarda solo lo schermo (selezione, tabelle appuntate, inquadratura, tema, filtro, terminali aperti) è stato della vista, e il motore non lo conosce.
 
-Il prompt dei comandi sta fuori da `src/ui/`, in `src/shell/windows.ts`: lì il testo diventa un comando e il risultato di un comando diventa testo, senza sapere nulla né del simulatore né dello schermo. È `session` a eseguire il comando e a tenere ciò che ogni terminale ha stampato.
+Gli interpreti dei comandi stanno fuori da `src/ui/`: il prompt dei PC in `src/shell/windows.ts`, la CLI di router e switch in `src/shell/ios/` ([cli.md](cli.md)). Lì il testo diventa un comando e il risultato di un comando diventa testo, senza sapere nulla né del simulatore né dello schermo. È `session` a eseguire il comando e a tenere ciò che ogni terminale ha stampato.
 
-Serviranno parti nuove fuori da `src/ui/`:
-
-- **azioni di modifica** nel motore: aggiungere, spostare, collegare, eliminare, rinominare, configurare;
-- **generazione degli indirizzi MAC** per i dispositivi nuovi;
-- **scrittura dei file** in `src/storage/`.
+Fuori da `src/ui/` stanno anche le parti su cui si appoggia l'editor: le azioni di modifica nel motore (`editing.ts`, `router-editing.ts`, `port-editing.ts`), che scelgono da sole nomi e indirizzi MAC dei dispositivi nuovi, e la scrittura dei file in `src/storage/`.
 
 ## Piano di costruzione
 

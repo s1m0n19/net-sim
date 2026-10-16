@@ -1,6 +1,6 @@
 # Architettura
 
-**Stato:** descrive il codice all'11 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
+**Stato:** descrive il codice al 16 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
 
 L'app è divisa in due parti che non si mescolano: un **motore di simulazione**, che contiene tutta la logica di rete, e un'**interfaccia**, che lo mostra e lo comanda. Il motore non sa di essere disegnato su uno schermo.
 
@@ -46,12 +46,12 @@ In pratica, dentro `src/engine/` sono vietati `document`, `window`, `setTimeout`
 
 ## Come comunicano le due parti
 
-1. L'interfaccia invia al motore un'**azione** con `Simulator.dispatch()`. Le azioni sono di tre tipi: traffico (`ping`, più `resolve-address` che serve solo ai test), guasti (staccare un cavo, spegnere un dispositivo) e modifiche alla rete.
+1. L'interfaccia invia al motore un'**azione** con `Simulator.dispatch()`. Le azioni sono di tre tipi: traffico (`ping` e `tracert`, più `resolve-address` che serve solo ai test), guasti (staccare un cavo, spegnere un dispositivo) e modifiche alla rete.
 2. L'interfaccia fa avanzare il tempo con `Simulator.step()`.
 3. Entrambe le chiamate restituiscono le **tracce** di ciò che è successo: frame inviati, ricevuti e scartati, tabelle cambiate, pacchetti a cui un host ha rinunciato, esiti dei ping.
 4. L'interfaccia legge lo stato del simulatore e lo copia in una propria variabile, che è ciò che la pagina disegna. Non osserva il simulatore e non ne modifica mai lo stato direttamente.
 
-Anche le modifiche alla rete sono azioni: aggiungere un dispositivo, collegare due porte, cambiare un indirizzo. L'interfaccia le usa per posare, collegare, rinominare, configurare ed eliminare. Pannello grafico e CLI passano dalle stesse azioni, ed è questo che li terrà sincronizzati (requisito CFG-5).
+Anche le modifiche alla rete sono azioni: aggiungere un dispositivo, collegare due porte, cambiare un indirizzo. L'interfaccia le usa per posare, collegare, rinominare, configurare ed eliminare. Pannello grafico e CLI passano dalle stesse azioni, ed è questo che li tiene sincronizzati (requisito CFG-5).
 
 ## Struttura delle cartelle
 
@@ -66,7 +66,7 @@ net-sim/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
 │   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts
-│   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts
+│   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts, routing.ts
 │   │   ├── devices/           host.ts (con host-output, host-sending, host-ping), switch.ts,
 │   │   │                      router.ts (con router-sending, router-ping), echo-series.ts
 │   │   ├── launching.ts       che cosa fa un dispositivo quando gli si chiede un ping o un tracert
@@ -99,7 +99,7 @@ net-sim/
 │   │       ├── configure.ts       dai comandi di configurazione alle azioni del motore, con i rifiuti di IOS
 │   │       ├── show.ts            i comandi show: configurazione e tabelle, scritte come le scrive IOS
 │   │       └── ping.ts            ping e traceroute dal router: dagli esiti al testo
-│   └── ui/                    la nuova interfaccia, descritta in interfaccia.md
+│   └── ui/                    l'interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
 │       │                      è fatta di cinque strati (session-core, -demo, -editing, -router, -cli)
@@ -117,14 +117,13 @@ net-sim/
     └── e2e/                   la pagina intera in un browser vero (Playwright)
 ```
 
-Cartelle *previste* e non ancora esistenti:
+Gli interpreti di `src/shell/` stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore. Non eseguono nulla da sé: propongono l'azione a chi li chiama, cioè a `session`. La CLI è descritta in [cli.md](cli.md).
 
-- In `src/shell/ios/` la CLI in stile IOS di switch e router (rilascio 2) è cominciata: esiste l'interprete, che capisce le righe, cambia modalità, suggerisce e completa, e traduce i comandi di configurazione nelle azioni del motore (`configure.ts`), le stesse del pannello laterale, e risponde ai comandi `show` (`show.ts`). Non esegue nulla da sé: propone l'azione a chi lo chiama. Lo collega allo schermo il quinto strato della sessione, `session-cli.svelte.ts`. I comandi sono un albero scritto come dati (`commands.ts`): aggiungerne uno, o una modalità per i protocolli di routing, non richiede di toccare il resto. Gli interpreti stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore.
-- Migrazioni di versione dei file in `src/storage/`.
+*Previste* e non ancora esistenti: le migrazioni di versione dei file, in `src/storage/`.
 
 ## Convenzioni del codice
 
-- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`, `simulator.ts` (la consegna è passata in `delivery.ts`), `editing.ts` e `session-editing.svelte.ts` (le parti sui router sono passate in `router-editing.ts` e `session-router.svelte.ts`). Restano poco sopra le 300 righe `session-editing.svelte.ts` e `session-core.svelte.ts`.svelte.ts`.
+- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`, `simulator.ts` (la consegna è passata in `delivery.ts`), `editing.ts` e `session-editing.svelte.ts` (le parti sui router sono passate in `router-editing.ts` e `session-router.svelte.ts`). Restano poco sopra le 300 righe `session-editing.svelte.ts`, `session-core.svelte.ts` e `session-demo.svelte.ts`.
 - **I nomi seguono la teoria.** Un campo si chiama come sul libro di testo e negli standard: `ttl`, `etherType`, `senderMac`.
 - **Identificatori in inglese, commenti e messaggi in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. È la decisione D-15.
 - **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola. Esempi: `chooseOutputPorts`, `nextHopFor`, `sameNetwork`.
@@ -137,10 +136,10 @@ Cartelle *previste* e non ancora esistenti:
 
 | Parte | Esempi | Dove sta oggi | Nel file |
 | --- | --- | --- | --- |
-| Configurazione | dispositivi, porte, collegamenti, indirizzi | nei dispositivi della rete (`Host`, `Switch`) | sì |
+| Configurazione | dispositivi, porte, collegamenti, indirizzi, rotte statiche | nei dispositivi della rete (`Host`, `Switch`, `Router`) | sì |
 | Posizioni sul disegno | coordinate di ogni dispositivo | fuori dal motore, in `LoadedFile.positions` | sì |
-| Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator` | oggi no. *Previsto* (D-25): le sole tabelle MAC e ARP, se chi salva lo chiede |
-| Stato della vista | selezione, tabelle appuntate, terminali aperti, filtro, inquadratura, cronologia per annullare; tema, etichette, pannelli aperti, presentazione | in `session` e in `preferences` (`src/ui/`) | no |
+| Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator` (la tabella di routing no: `routingTableOf` la calcola ogni volta da configurazione e segnale) | oggi no. *Previsto* (D-25): le sole tabelle MAC e ARP, se chi salva lo chiede |
+| Stato della vista | selezione, tabelle appuntate, terminali aperti e modalità della CLI, filtro, inquadratura, cronologia per annullare; tema, etichette, pannelli aperti, presentazione | in `session` e in `preferences` (`src/ui/`) | no |
 
 `createHost` e `createSwitch` costruiscono un dispositivo "appena acceso": la configurazione data più lo stato di esecuzione iniziale. Li usano il lettore dei file e i test, così lo stato iniziale è definito in un solo punto.
 
@@ -148,7 +147,7 @@ Annulla e ripristina (requisito ED-5) agiscono solo sulla configurazione e sulle
 
 ## Cosa non è coperto da test
 
-I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che non hanno bisogno di uno schermo: `view.ts`, che prepara il disegno, `simulation/playback.ts`, l'orologio, e `session`, con modifiche, cronologia e terminali. I singoli componenti a schermo non hanno test propri. La pagina intera è provata da pochi percorsi eseguiti in un browser vero (decisione D-67), in `tests/e2e/`, con Playwright, sul sito costruito e non sul server di sviluppo:
+I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che non hanno bisogno di uno schermo: `view.ts`, che prepara il disegno, `simulation/playback.ts`, l'orologio, e `session`, con modifiche, cronologia, terminali e CLI. I singoli componenti a schermo non hanno test propri. La pagina intera è provata da pochi percorsi eseguiti in un browser vero (decisione D-67), in `tests/e2e/`, con Playwright, sul sito costruito e non sul server di sviluppo:
 
 | File | Percorso |
 | --- | --- |
@@ -157,6 +156,7 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 | `file.spec.ts` | Salvare e riaprire, modifiche non salvate, file non valido |
 | `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione |
 | `router.spec.ts` | Due LAN e un router costruiti con il mouse; le due metà della lezione del criterio di accettazione del rilascio 2: gateway, MAC e TTL attraverso un router, poi routing statico con tre reti e due router |
+| `cli.spec.ts` | La lezione del criterio di accettazione della CLI: due router configurati da terminale, `show`, `ping` e `traceroute`, uno switch con una porta spenta |
 
 Le finestre di Chrome per scegliere dove aprire e salvare non si possono comandare da un test: lì l'app viene provata con il ripiego che usa negli altri browser, cioè campo di tipo file e scaricamento. L'aspetto (colori, dimensioni, leggibilità) resta da guardare a occhio.
 

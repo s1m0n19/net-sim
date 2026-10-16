@@ -1,6 +1,6 @@
 # Formato dei file
 
-**Stato:** descrive il codice al 10 ottobre 2026. L'app legge e scrive i file (requisito FILE-1); le tabelle nel file e le migrazioni di versione sono *previste*.
+**Stato:** descrive il codice al 16 ottobre 2026. L'app legge e scrive i file (requisito FILE-1); le tabelle nel file e le migrazioni di versione sono *previste*.
 
 Una rete sta in un file di testo in formato JSON: si può leggere, confrontare con un altro e distribuire con qualsiasi mezzo.
 
