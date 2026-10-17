@@ -16,11 +16,24 @@ Mancano, per completare la prima versione: il funzionamento offline, alcuni stru
 
 ## Pubblicazione
 
-Il sito pubblico sta su Cloudflare, nel piano gratuito, ed è collegato a questo repository: **a ogni push sul ramo `main`** Cloudflare esegue `npm run build` e pubblica la cartella `dist/`. Non c'è altro da fare, e non esiste un comando per pubblicare a mano.
+Il sito pubblico sta su Cloudflare, nel piano gratuito, ed è collegato a questo repository. Due rami (decisione D-99 in [SPEC.md](SPEC.md)):
+
+- **`stabile`** è il sito che si usa in classe: a ogni push su questo ramo Cloudflare esegue `npm run build` e pubblica la cartella `dist/` all'indirizzo pubblico.
+- **`main`** è il ramo su cui si lavora: Cloudflare lo costruisce come anteprima, a un indirizzo diverso, senza toccare il sito della classe.
+
+Per pubblicare si porta `main` su `stabile`, solo dopo che i controlli di GitHub Actions su quel commit sono passati:
+
+```sh
+git push origin main:stabile
+```
+
+Git accetta solo un avanzamento in avanti: `stabile` non può divergere da `main`.
+
+Come Cloudflare costruisce e pubblica è scritto in `wrangler.jsonc`: il sito è la cartella `dist/`, e il blocco `previews`, anche vuoto, serve alle anteprime dei rami.
 
 - La versione di Node usata per costruire è quella scritta in `.nvmrc`.
 - Sul sito pubblicato le scorciatoie di sviluppo nell'indirizzo (`?esempio=` e simili) non esistono, e le reti di esempio non sono incluse: si aprono dal proprio computer con Apri.
-- Le prove si fanno sempre in locale, con `npm run dev`: ciò che arriva su `main` è subito pubblico.
+- Le prove si fanno sempre in locale, con `npm run dev`; l'anteprima di `main` serve a guardare la versione costruita prima di pubblicarla.
 
 ## Requisiti
 

@@ -1,8 +1,9 @@
 # A ogni push: test, controllo dei tipi, costruzione del sito e test della
 # pagina in un browser vero. L'esito compare accanto al commit.
 #
-# È un avviso: il sito viene pubblicato da Cloudflare in ogni caso
-# (decisione D-67 in SPEC.md).
+# Gira su ogni ramo. Non blocca nulla da solo: il sito delle classi si
+# aggiorna solo con un push sul ramo stabile, che si fa dopo che questi
+# controlli sono passati su main (decisioni D-67 e D-99 in SPEC.md).
 name: Controlli
 
 on:

@@ -1,0 +1,13 @@
+// Configurazione di Cloudflare per il sito (decisione D-99 in SPEC.md).
+// Il sito è solo statico: Cloudflare serve la cartella dist/ costruita da
+// `npm run build`. Il ramo stabile è pubblicato con `wrangler deploy`;
+// gli altri rami, come main, diventano anteprime con `wrangler preview`,
+// che vuole il blocco `previews` anche se vuoto.
+{
+  "name": "net-sim",
+  "compatibility_date": "2026-10-18",
+  "assets": {
+    "directory": "./dist"
+  },
+  "previews": {}
+}

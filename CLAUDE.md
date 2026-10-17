@@ -41,7 +41,7 @@ npx playwright test lezione                # un solo file dei test della pagina
 npx playwright install chromium            # una volta sola: scarica il browser dei test
 ```
 
-Non c'è un linter. `npm run check` deve chiudersi senza errori né avvisi. A ogni push GitHub Actions (`.github/workflows/controlli.yml`) esegue test, controllo dei tipi e test della pagina e segna l'esito sul commit: dopo un push va controllato, insieme alla costruzione di Cloudflare.
+Non c'è un linter. `npm run check` deve chiudersi senza errori né avvisi. A ogni push GitHub Actions (`.github/workflows/controlli.yml`) esegue test, controllo dei tipi e test della pagina e segna l'esito sul commit: dopo un push va controllato, insieme alla costruzione di Cloudflare (l'anteprima di `main`, o il sito se il push era su `stabile`).
 
 Per vedere davvero la pagina, con il server di sviluppo acceso:
 
@@ -106,7 +106,7 @@ L'ordine previsto in `docs/motore.md`: tipo dell'unità dati in `model/`, compor
 
 ## Pubblicazione
 
-Il sito pubblico (https://net-sim.simon-nucifora.workers.dev) è su Cloudflare, collegato al repository: ogni push su `main` viene costruito con `npm run build` e pubblicato da solo. Un push è quindi una pubblicazione: prima vanno fatti passare `npm test`, `npm run check` e `npm run test:e2e` (che costruisce anche il sito). Le prove si fanno sempre con il server locale.
+Il sito pubblico (https://net-sim.simon-nucifora.workers.dev) è su Cloudflare, collegato al repository, e lo usano le classi. Due rami (D-99): ogni push su `stabile` viene costruito con `npm run build` e pubblicato sul sito; ogni push su `main` diventa solo un'anteprima, a un altro indirizzo. Si lavora su `main`. Prima di ogni push vanno fatti passare `npm test`, `npm run check` e `npm run test:e2e` (che costruisce anche il sito). Si pubblica con `git push origin main:stabile`, solo quando l'utente lo chiede e dopo che GitHub Actions ha dato esito positivo su quel commit. Le prove si fanno sempre con il server locale.
 
 ## Git
 - Non committare finché non lo chiedo esplicitamente
