@@ -5,7 +5,7 @@
 // che vuole il blocco `previews` anche se vuoto.
 {
   "name": "net-sim",
-  "compatibility_date": "2026-10-18",
+  "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./dist"
   },
