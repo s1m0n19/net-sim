@@ -37,7 +37,7 @@
   // chiede sempre dove, e da lì in poi il file della rete è quello nuovo.
   async function save(askWhere = false) {
     if (session.isEmpty()) return;
-    const text = session.serialize();
+    const draft = session.draftSave();
     let name = session.fileName ?? "rete";
     if (askWhere && !canChooseWhereToSave()) {
       // Dove il file si può solo scaricare, il nome si chiede qui.
@@ -46,10 +46,10 @@
       name = typed.replace(/(\.netsim)?\.json$/i, "");
     }
     try {
-      const saved = await writeNetworkFile(text, `${name}${FILE_EXTENSION}`, askWhere ? null : handle);
+      const saved = await writeNetworkFile(draft.text, `${name}${FILE_EXTENSION}`, askWhere ? null : handle);
       if (saved === null) return;
       handle = saved.handle;
-      session.markSaved(saved.name, text);
+      session.markSaved(saved.name, draft);
     } catch {
       session.notice = "Non è stato possibile salvare il file.";
     }
@@ -83,6 +83,8 @@
     <button class="btn" onclick={open}>Apri</button>
     <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un file (Ctrl+S)" onclick={() => save()}>Salva</button>
     <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un altro file (Ctrl+Maiusc+S)" onclick={() => save(true)}>Salva con nome</button>
+    <!-- Salvare anche le tabelle ARP e MAC, per una rete che riparte "già calda" (FILE-5). -->
+    <button class="btn" class:on={session.saveTables} aria-pressed={session.saveTables} title="Salva anche le tabelle ARP e MAC; Ricomincia torna a quelle salvate" onclick={() => (session.saveTables = !session.saveTables)}>Tabelle</button>
     <button class="btn" disabled={!session.canUndo} title="Annulla l'ultima modifica (Ctrl+Z)" aria-label="Annulla" onclick={() => session.undo()}>↶</button>
     <button class="btn" disabled={!session.canRedo} title="Ripristina la modifica annullata (Ctrl+Maiusc+Z)" aria-label="Ripristina" onclick={() => session.redo()}>↷</button>
   {/if}

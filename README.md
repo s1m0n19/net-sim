@@ -12,7 +12,7 @@ Il progetto è in sviluppo. Simula PC, server, switch e router, con ARP, IPv4, p
 
 Oggi l'app apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi, terminale dei PC e CLI in stile IOS di router e switch. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Con Presenta si proietta in aula.
 
-Mancano, per completare la prima versione: il funzionamento offline, alcuni strumenti dell'editor (duplicare, griglia, esportare come immagine, annotazioni) e le tabelle nel file. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
+Mancano, per completare la prima versione: il funzionamento offline e alcuni strumenti dell'editor (duplicare, griglia, esportare come immagine, annotazioni). Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
 
 ## Pubblicazione
 
@@ -102,12 +102,13 @@ In presentazione la simulazione si comanda anche da tastiera:
 
 Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannello restano disponibili. Per lo schermo intero usa il comando del browser (F11).
 
-**Salvare.** **Salva**, o Ctrl+S (Cmd+S su Mac), scrive la rete in un file `.netsim.json`: dispositivi, cavi, indirizzi, posizioni e guasti. Tabelle e pacchetti in viaggio non si salvano: una rete riaperta è una rete appena accesa.
+**Salvare.** **Salva**, o Ctrl+S (Cmd+S su Mac), scrive la rete in un file `.netsim.json`: dispositivi, cavi, indirizzi, posizioni e guasti. Pacchetti in viaggio e tempo non si salvano mai; le tabelle solo se lo chiedi.
 
 - In Chrome ed Edge la prima volta scegli dove salvare; da lì in poi Salva aggiorna lo stesso file. Vale anche per un file aperto con Apri: il browser chiede una volta il permesso di scriverci.
 - **Salva con nome**, o Ctrl+Maiusc+S, chiede sempre dove salvare e lascia intatto il file di partenza: da lì in poi Salva aggiorna il file nuovo.
 - In Firefox e Safari ogni Salva scarica il file nella cartella dei download; Salva con nome chiede prima il nome.
-- Accanto al nome compare «● modificata» finché ci sono modifiche non salvate. In quel caso **Nuova**, **Apri** e la chiusura della pagina chiedono conferma.
+- L'interruttore **Tabelle**, accanto a Salva con nome, fa salvare anche le tabelle ARP e MAC di ogni dispositivo, così come sono in quel momento. Serve a preparare una rete che riparte già calda (il ping a passi non comincia con l'ARP), oppure con una riga sbagliata da scoprire: fai un ping, cambia l'indirizzo di un PC, e gli altri restano con la riga vecchia. Si accende da solo aprendo un file con le tabelle; Ricomincia torna a quelle salvate.
+- Accanto al nome compare «● modificata» finché ci sono modifiche non salvate: contano le modifiche alla rete, gli spostamenti e i guasti, non il traffico. In quel caso **Nuova**, **Apri** e la chiusura della pagina chiedono conferma.
 
 **Annulla e ripristina.** Le due frecce nella barra in alto, oppure Ctrl+Z e Ctrl+Maiusc+Z (anche Ctrl+Y; Cmd su Mac), annullano e rifanno le modifiche alla rete, una alla volta, fino a cento:
 
@@ -130,7 +131,7 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 
 | Comando | Effetto |
 | --- | --- |
-| **Ricomincia** | Riporta la rete allo stato di una appena accesa: tabelle vuote, nessun pacchetto, tempo a zero. Guasti e configurazione restano |
+| **Ricomincia** | Riporta la rete allo stato di una appena accesa: nessun pacchetto, tempo a zero, tabelle vuote, o quelle salvate nel file. Guasti e configurazione restano |
 | **Avvia / Pausa** | Fa scorrere il tempo da solo, o lo ferma. Avviato, resta in ascolto: un ping lanciato dopo parte subito |
 | **Passo** | Fa arrivare a destinazione i pacchetti in viaggio e si ferma. Disponibile a tempo fermo |
 | **1×** | Cambia la velocità: 0,5×, 1×, 2×. A 1× un pacchetto impiega circa un secondo e mezzo a percorrere un cavo |
@@ -200,7 +201,7 @@ Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una 
 
 - **Attorno a un router le scritte a volte si sovrappongono.** Con più cavi vicini, in certe posizioni gli indirizzi delle interfacce e i nomi delle porte finiscono uno sull'altro. Basta spostare un dispositivo.
 - **Salvare funziona al meglio in Chrome ed Edge.** Lì Salva scrive nel file scelto e poi sempre nello stesso; in Firefox e Safari ogni salvataggio scarica una copia nuova nella cartella dei download.
-- **Un ping completo, a passi, richiede molti clic.** Con le quattro richieste di Windows sono venti. Con Avvia scorre da solo.
+- **Un ping completo, a passi, richiede molti clic.** Con le quattro richieste di Windows sono venti. Con Avvia scorre da solo; con una rete salvata con le tabelle si salta l'ARP.
 
 ## Comandi
 

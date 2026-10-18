@@ -1,6 +1,6 @@
 # Architettura
 
-**Stato:** descrive il codice al 16 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
+**Stato:** descrive il codice al 18 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
 
 L'app è divisa in due parti che non si mescolano: un **motore di simulazione**, che contiene tutta la logica di rete, e un'**interfaccia**, che lo mostra e lo comanda. Il motore non sa di essere disegnato su uno schermo.
 
@@ -66,7 +66,7 @@ net-sim/
 ├── src/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
-│   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts
+│   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts, tables.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts, routing.ts
 │   │   ├── devices/           host.ts (con host-output, host-sending, host-ping), switch.ts,
 │   │   │                      router.ts (con router-sending, router-ping), echo-series.ts
@@ -86,6 +86,8 @@ net-sim/
 │   ├── storage/
 │   │   ├── load.ts            lettura dei file di rete
 │   │   ├── save.ts            scrittura dei file di rete
+│   │   ├── tables-file.ts     le tabelle ARP e MAC nel file, da leggere e da scrivere
+│   │   ├── fields.ts          i controlli sui singoli campi di un file
 │   │   └── browser-files.ts   scelta, lettura e scrittura di un file nel browser
 │   ├── shell/
 │   │   ├── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
@@ -139,10 +141,10 @@ Gli interpreti di `src/shell/` stanno fuori dal motore perché traducono testo i
 | --- | --- | --- | --- |
 | Configurazione | dispositivi, porte, collegamenti, indirizzi, rotte statiche | nei dispositivi della rete (`Host`, `Switch`, `Router`) | sì |
 | Posizioni sul disegno | coordinate di ogni dispositivo | fuori dal motore, in `LoadedFile.positions` | sì |
-| Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator` (la tabella di routing no: `routingTableOf` la calcola ogni volta da configurazione e segnale) | oggi no. *Previsto* (D-25): le sole tabelle MAC e ARP, se chi salva lo chiede |
+| Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator`, che tiene anche le tabelle di partenza (la tabella di routing no: `routingTableOf` la calcola ogni volta da configurazione e segnale) | le sole tabelle MAC e ARP, se chi salva lo chiede (D-25, D-100); il resto mai |
 | Stato della vista | selezione, tabelle appuntate, terminali aperti e modalità della CLI, filtro, inquadratura, cronologia per annullare; tema, etichette, pannelli aperti, presentazione | in `session` e in `preferences` (`src/ui/`) | no |
 
-`createHost` e `createSwitch` costruiscono un dispositivo "appena acceso": la configurazione data più lo stato di esecuzione iniziale. Li usano il lettore dei file e i test, così lo stato iniziale è definito in un solo punto.
+`createHost` e `createSwitch` costruiscono un dispositivo "appena acceso": la configurazione data più lo stato di esecuzione iniziale. Li usano il lettore dei file e i test, così lo stato iniziale è definito in un solo punto. Le tabelle di un file salvato con le tabelle non passano da lì: il lettore le restituisce a parte, e il simulatore le aggiunge come tabelle di partenza (`model/tables.ts`).
 
 Annulla e ripristina (requisito ED-5) agiscono solo sulla configurazione e sulle posizioni. Prima di ogni modifica `session` fotografa la configurazione (`takeSnapshot`, in `src/engine/snapshot.ts`) e la mette su una pila insieme alle posizioni: è un oggetto piccolo, e una copia per ogni modifica è più semplice da capire di un meccanismo che inverte le singole operazioni. Annullare invia al motore l'azione `restore-configuration`, che calcola le modifiche tra la rete di adesso e la fotografia e le esegue una alla volta: la simulazione in corso viene trattata come per qualsiasi altra modifica (D-54).
 

@@ -1,6 +1,6 @@
 # Motore di simulazione
 
-**Stato:** descrive il codice al 16 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
+**Stato:** descrive il codice al 18 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
 
 Il motore è la parte dell'app che fa funzionare la rete: decide che cosa fa un dispositivo quando riceve un frame, tiene le tabelle, fa scorrere il tempo. Non disegna nulla. Sta in `src/engine/` e non dipende da altro (vedi [architettura.md](architettura.md)).
 
@@ -130,6 +130,15 @@ interface Switch {
 ```
 
 `createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali. `clearRuntimeState(device)` riporta un dispositivo a quello stato: è ciò che succede quando lo si spegne. Le porte di uno switch (`SwitchPort`) si possono spegnere, e nascono accese (decisione D-93): `createSwitch` accende quelle di cui non si dice nulla.
+
+### Tabelle di partenza (`tables.ts`)
+
+Una rete può partire con le tabelle già compilate, se il file le contiene (requisito FILE-5, decisione D-100). `tables.ts` tratta la tabella che ogni dispositivo impara (ARP per host e router, MAC per lo switch) come un elenco di coppie di testi, `TableRows`, e una rete intera come `NetworkTables`, per identificativo del dispositivo:
+
+- `copyTables(network)` copia le tabelle di adesso, una per dispositivo, anche vuota;
+- `fillTables(network, tables)` aggiunge le righe ai dispositivi, con le regole di sempre: salta un dispositivo spento e le righe di uno switch su una porta che non ha.
+
+Il `Simulator` riceve le tabelle di partenza dal costruttore, le applica subito e le tiene da parte: `reset()` svuota tutto e poi le rimette. `setStartingTables(tables)` le cambia senza toccare quelle di adesso; l'interfaccia lo chiama dopo un salvataggio con le tabelle. Eliminando un dispositivo si tolgono anche le sue, perché un dispositivo nuovo che ne prende l'identificativo non le erediti. Dopo le tabelle il simulatore ricalcola il segnale, e uno switch dimentica subito le righe di una porta senza segnale. Le tabelle di partenza non sono configurazione: annulla e ripristina non le toccano.
 
 ### PC e server
 
@@ -645,7 +654,6 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 Non ancora nel codice:
 
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
-- **Tabelle caricate da file** (FILE-5): un file potrà contenere tabelle MAC e ARP già compilate.
 - **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
@@ -703,6 +711,7 @@ I file di test, uno per argomento:
 | `tracert.test.ts` | Tracert con uno e due router, salti muti, cicli; ping con TTL a scelta |
 | `server.test.ts` | Il server: un host con il suo ruolo e il suo nome, nella rete, nei file e in annulla e ripristina |
 | `reset.test.ts` | Ricominciare la simulazione |
+| `starting-tables.test.ts` | Partire con le tabelle già compilate, e tornarci ricominciando |
 | `snapshot.test.ts` | Fotografare la configurazione e tornarci |
 
 I titoli dei test sono affermazioni in italiano: letti di seguito, sono un elenco delle regole che il motore rispetta.

@@ -1,8 +1,19 @@
-// Aprire, salvare e riaprire; le modifiche non salvate.
+// Aprire, salvare e riaprire; le modifiche non salvate; le tabelle nel file.
 
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { clickDrawing, device, exampleFile, fillField, openApp, openNetwork } from "./helpers";
+import {
+  action,
+  clickDrawing,
+  device,
+  exampleFile,
+  fillField,
+  openApp,
+  openNetwork,
+  sidePanel,
+  terminal,
+  typeCommand,
+} from "./helpers";
 
 const unsaved = "● modificata";
 
@@ -63,4 +74,42 @@ test("un file non valido viene rifiutato, e la rete aperta resta", async ({ page
 
   await expect(page.getByRole("alert")).toContainText("Il file non si può aprire");
   await expect(page.locator("g.device")).toHaveCount(2);
+});
+
+test("una rete salvata con le tabelle riparte già calda, anche dopo Ricomincia", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  const tables = page.getByRole("button", { name: "Tabelle" });
+  await expect(tables).toHaveAttribute("aria-pressed", "false");
+
+  // Un ping da PC1 a PC2, in tempo reale, riempie le tabelle.
+  await device(page, "PC1").click();
+  await action(page, "Apri il terminale di PC1").click();
+  await typeCommand(page, "ping -n 1 192.168.1.11");
+  await page.getByRole("button", { name: /Avvia/ }).click();
+  await expect(terminal(page)).toContainText("Reply from 192.168.1.11", { timeout: 40_000 });
+
+  // Salva con le tabelle: il file le contiene, e la rete non risulta modificata.
+  await tables.click();
+  await expect(tables).toHaveAttribute("aria-pressed", "true");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Salva", exact: true }).click();
+  const text = readFileSync(await (await download).path(), "utf-8");
+  expect(JSON.parse(text).network.devices.find((d: any) => d.name === "PC1").arpTable).toEqual([
+    { ip: "192.168.1.11", mac: "02:00:00:00:00:02" },
+  ]);
+  await expect(page.getByText(unsaved)).toHaveCount(0);
+
+  // Ricomincia torna alle tabelle appena salvate, non a tabelle vuote.
+  await page.getByRole("button", { name: /Ricomincia/ }).click();
+  await device(page, "PC1").click();
+  await expect(sidePanel(page)).toContainText("02:00:00:00:00:02");
+
+  // Riaperto dopo Nuova, il file accende l'interruttore e parte già caldo.
+  await page.getByRole("button", { name: "Nuova" }).click();
+  await expect(tables).toHaveAttribute("aria-pressed", "false");
+  await openNetwork(page, "calda.netsim.json", text);
+  await expect(tables).toHaveAttribute("aria-pressed", "true");
+  await device(page, "PC1").click();
+  await expect(sidePanel(page)).toContainText("02:00:00:00:00:02");
 });

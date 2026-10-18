@@ -3,7 +3,6 @@
 // Un file può arrivare modificato a mano o danneggiato: se qualcosa non
 // torna, il caricamento si ferma e dice che cosa non va. Non tenta di riparare.
 
-import { BROADCAST_MAC } from "../engine/model/addresses";
 import { checkIpConfig } from "../engine/model/ip-config";
 import {
   createHost,
@@ -19,6 +18,9 @@ import {
   type SwitchPort,
 } from "../engine/model/network";
 import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } from "../engine/model/router-config";
+import type { NetworkTables } from "../engine/model/tables";
+import { checkUnique, isUsableMac, readFlag, readNumber, readText, readTextOrNull } from "./fields";
+import { readTables } from "./tables-file";
 
 export const FILE_FORMAT = "net-sim";
 export const FILE_VERSION = 1;
@@ -33,22 +35,28 @@ export interface LoadedFile {
   // La posizione sul disegno riguarda l'interfaccia, non il motore:
   // per questo sta fuori dalla rete.
   positions: Map<string, Position>;
+  // Le tabelle con cui la rete parte, se il file le contiene (FILE-5);
+  // altrimenti null, e la rete parte con le tabelle vuote.
+  tables: NetworkTables | null;
 }
 
 /**
  * Legge una rete dal testo di un file, dopo averlo controllato.
- * Le tabelle dei dispositivi partono vuote: il file contiene solo la
- * configurazione, compresi i guasti (dispositivi spenti, cavi staccati).
+ * Il file contiene la configurazione, compresi i guasti (dispositivi
+ * spenti, cavi staccati), e se chi l'ha salvato lo ha chiesto le tabelle
+ * ARP e MAC. Le tabelle non si mettono nei dispositivi: le applica il
+ * simulatore, che le usa anche per ricominciare.
  *
  * @param text - il contenuto del file, in JSON
- * @returns la rete e le posizioni dei dispositivi sul disegno
+ * @returns la rete, le posizioni dei dispositivi sul disegno e le tabelle
  * @throws Error con un messaggio che dice che cosa non va, se: il testo non
  *   è JSON valido; non è un file di net-sim o è di una versione sconosciuta;
  *   a un dispositivo o a un collegamento manca un campo, o è del tipo
  *   sbagliato; un tipo di dispositivo è sconosciuto; identificativi,
  *   nomi di porta o indirizzi MAC sono duplicati; la configurazione IP di
  *   un host non è accettabile; un collegamento indica una porta che non
- *   esiste, o una porta ha più di un collegamento
+ *   esiste, o una porta ha più di un collegamento; una tabella non va
+ *   (vedi readTables in tables-file.ts)
  */
 export function loadNetworkFile(text: string): LoadedFile {
   let data: any;
@@ -94,11 +102,14 @@ export function loadNetworkFile(text: string): LoadedFile {
   );
   checkOneLinkPerPort(network);
 
-  return { network, positions };
+  const tables = readTables(data.network.devices, devices);
+
+  return { network, positions, tables };
 }
 
 // Costruisce un dispositivo a partire dai suoi dati nel file.
-// Una rete appena aperta è una rete appena accesa: le tabelle sono vuote.
+// Il dispositivo nasce appena acceso, con le tabelle vuote: quelle del
+// file, se ci sono, le aggiunge il simulatore.
 function readDevice(d: any, where: string): { device: Device; position: Position } {
   const id = readText(d, "id", where);
   const name = readText(d, "name", where);
@@ -252,53 +263,4 @@ function checkOneLinkPerPort(network: Network): void {
       used.add(key);
     }
   }
-}
-
-function checkUnique(values: string[], problem: string): void {
-  const seen = new Set<string>();
-  for (const value of values) {
-    if (seen.has(value)) {
-      throw new Error(`${problem}: ${value}.`);
-    }
-    seen.add(value);
-  }
-}
-
-// Sei coppie di cifre esadecimali separate da due punti. Il broadcast
-// non può essere l'indirizzo di una porta.
-function isUsableMac(mac: string): boolean {
-  return /^[0-9a-f]{2}(:[0-9a-f]{2}){5}$/i.test(mac) && mac.toLowerCase() !== BROADCAST_MAC;
-}
-
-function readText(source: any, field: string, where: string): string {
-  const value = source?.[field];
-  if (typeof value !== "string" || value === "") {
-    throw new Error(`${where}: il campo "${field}" manca o non è un testo.`);
-  }
-  return value;
-}
-
-function readTextOrNull(source: any, field: string, where: string): string | null {
-  const value = source?.[field];
-  if (value === null) return null;
-  return readText(source, field, where);
-}
-
-// Legge un campo sì/no facoltativo. Se manca vale "sì": un dispositivo è
-// acceso e un cavo è collegato, a meno che il file dica il contrario.
-function readFlag(source: any, field: string, where: string): boolean {
-  const value = source?.[field];
-  if (value === undefined) return true;
-  if (typeof value !== "boolean") {
-    throw new Error(`${where}: il campo "${field}" deve valere true o false.`);
-  }
-  return value;
-}
-
-function readNumber(source: any, field: string, where: string): number {
-  const value = source?.[field];
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Error(`${where}: la posizione "${field}" manca o non è un numero.`);
-  }
-  return value;
 }

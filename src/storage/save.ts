@@ -5,21 +5,25 @@
 
 import type { Device, Network } from "../engine/model/network";
 import { FILE_FORMAT, FILE_VERSION, type Position } from "./load";
+import { tableToWrite } from "./tables-file";
 
 /**
  * Trasforma una rete nel testo di un file.
  *
  * Nel file va la configurazione: dispositivi con porte e indirizzi, cavi,
  * posizioni sul disegno, e i guasti (dispositivi spenti, cavi staccati).
- * Lo stato di esecuzione non viene scritto: tabelle, pacchetti in viaggio,
- * attese e tempo restano fuori.
+ * Le tabelle ARP e MAC solo se chieste (FILE-5). Il resto dello stato di
+ * esecuzione non viene mai scritto: pacchetti in viaggio, attese e tempo
+ * restano fuori.
  *
  * @param network - la rete da salvare
  * @param positions - dove sta ogni dispositivo sul disegno; chi manca
  *   finisce nell'origine
+ * @param withTables - true per scrivere anche la tabella di ogni
+ *   dispositivo, così com'è adesso
  * @returns il contenuto del file, in JSON leggibile
  */
-export function serializeNetwork(network: Network, positions: Map<string, Position>): string {
+export function serializeNetwork(network: Network, positions: Map<string, Position>, withTables = false): string {
   const devices = network.devices.map((device) => {
     const position = positions.get(device.id) ?? { x: 0, y: 0 };
     return {
@@ -36,6 +40,7 @@ export function serializeNetwork(network: Network, positions: Map<string, Positi
         : {}),
       // I guasti si scrivono solo quando ci sono: un dispositivo nasce acceso.
       ...(device.powered ? {} : { powered: false }),
+      ...(withTables ? tableToWrite(device) : {}),
     };
   });
 

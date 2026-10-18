@@ -71,9 +71,9 @@ describe("salvare", () => {
 
   test("dopo il salvataggio la rete prende il nome del file e non ha più modifiche", () => {
     session.addDevice(PC, { x: 100, y: 120 });
-    const text = session.serialize();
+    const draft = session.draftSave();
 
-    session.markSaved("laboratorio.netsim.json", text);
+    session.markSaved("laboratorio.netsim.json", draft);
 
     expect(session.fileName).toBe("laboratorio");
     expect(session.dirty).toBe(false);
@@ -81,10 +81,10 @@ describe("salvare", () => {
 
   test("una modifica fatta mentre il file veniva scritto resta da salvare", () => {
     session.addDevice(PC, { x: 100, y: 120 });
-    const text = session.serialize();
+    const draft = session.draftSave();
     session.addDevice(PC, { x: 300, y: 120 });
 
-    session.markSaved("laboratorio.netsim.json", text);
+    session.markSaved("laboratorio.netsim.json", draft);
 
     expect(session.dirty).toBe(true);
   });
@@ -94,9 +94,86 @@ describe("salvare", () => {
     session.addDevice(PC, { x: 700, y: 400 });
     session.ping("d1", "192.168.1.11", 1);
 
-    session.markSaved("lan.netsim.json", session.serialize());
+    session.markSaved("lan.netsim.json", session.draftSave());
 
     expect(session.canUndo).toBe(true);
     expect(session.view.packets).toHaveLength(1);
+  });
+});
+
+describe("salvare le tabelle", () => {
+  // Le tabelle della rete aperta, come finirebbero nel file.
+  function tablesNow() {
+    const before = session.saveTables;
+    session.saveTables = true;
+    const tables = session.draftSave().tables!;
+    session.saveTables = before;
+    return tables;
+  }
+
+  // La LAN di esempio dopo un ping da PC1 a PC2, salvata con le tabelle.
+  function warmLanFile(): string {
+    session.open("lan-switch.netsim.json", lanFile);
+    session.ping("d1", "192.168.1.11", 1);
+    while (session.view.nextEvent !== null) session.step();
+    session.saveTables = true;
+    return session.draftSave().text;
+  }
+
+  test("l'interruttore parte spento, e Nuova lo spegne", () => {
+    expect(session.saveTables).toBe(false);
+    session.saveTables = true;
+
+    session.clear();
+
+    expect(session.saveTables).toBe(false);
+  });
+
+  test("un file senza tabelle lo lascia spento; uno con le tabelle lo accende e parte già caldo", () => {
+    const warm = warmLanFile();
+
+    session.open("lan-switch.netsim.json", lanFile);
+    expect(session.saveTables).toBe(false);
+
+    session.open("calda.netsim.json", warm);
+    expect(session.saveTables).toBe(true);
+    expect(tablesNow().get("d1")).toEqual([["192.168.1.11", "02:00:00:00:00:02"]]);
+  });
+
+  test("le tabelle cambiate dal traffico, e l'interruttore, non sono modifiche", () => {
+    session.open("calda.netsim.json", warmLanFile());
+
+    session.ping("d1", "192.168.1.12", 1);
+    while (session.view.nextEvent !== null) session.step();
+    session.saveTables = false;
+
+    expect(session.dirty).toBe(false);
+  });
+
+  test("Ricomincia torna alle tabelle del file", () => {
+    session.open("calda.netsim.json", warmLanFile());
+    session.ping("d1", "192.168.1.12", 1);
+    while (session.view.nextEvent !== null) session.step();
+
+    session.restart();
+
+    expect(tablesNow().get("d1")).toEqual([["192.168.1.11", "02:00:00:00:00:02"]]);
+  });
+
+  test("salvare con le tabelle le rende quelle a cui torna Ricomincia; salvare senza no", () => {
+    session.open("lan-switch.netsim.json", lanFile);
+    session.ping("d1", "192.168.1.11", 1);
+    while (session.view.nextEvent !== null) session.step();
+
+    session.markSaved("lan.netsim.json", session.draftSave());
+    session.restart();
+    expect(tablesNow().get("d1")).toEqual([]);
+
+    session.ping("d1", "192.168.1.11", 1);
+    while (session.view.nextEvent !== null) session.step();
+    session.saveTables = true;
+    session.markSaved("lan.netsim.json", session.draftSave());
+    session.restart();
+    expect(tablesNow().get("d1")).toEqual([["192.168.1.11", "02:00:00:00:00:02"]]);
   });
 });

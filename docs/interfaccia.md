@@ -49,7 +49,7 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 - l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
 - il foglio vuoto all'avvio;
-- **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, **Nuova**, che torna al foglio vuoto, **Salva** e **Salva con nome**, che scrivono la rete in un file;
+- **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, **Nuova**, che torna al foglio vuoto, **Salva** e **Salva con nome**, che scrivono la rete in un file, con le tabelle se l'interruttore **Tabelle** è acceso;
 - il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
 - gli interruttori delle etichette IP, MAC e Porte;
 - l'inquadratura: un foglio di base che si allarga solo se serve, la rotella per ingrandire, lo sfondo da trascinare per spostare la vista, i pulsanti −, + e Adatta;
@@ -74,7 +74,8 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 
 - **Salva** (Ctrl+S, Cmd+S su Mac) scrive la rete nel file da cui viene, quello aperto o quello dell'ultimo salvataggio; se non ce n'è uno chiede dove, proponendo il nome della rete. Dove il browser non lo permette, scarica il file (D-57). È spento sul foglio vuoto.
 - **Salva con nome** (Ctrl+Maiusc+S) chiede sempre dove, e da lì in poi il file della rete è quello nuovo: serve a non sovrascrivere il file di partenza. Dove il browser può solo scaricare, chiede il nome.
-- Accanto al nome della rete, **«● modificata»** dice che ci sono modifiche non salvate: il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Contano le modifiche alla rete, gli spostamenti e i guasti; non il traffico. Annullare tutto riporta a "salvata".
+- L'interruttore **Tabelle**, subito dopo, fa salvare anche le tabelle ARP e MAC di ogni dispositivo, così come sono in quel momento (FILE-5, D-100): serve a preparare una rete che riparte già calda, o con una riga sbagliata ottenuta con la rete stessa (un ping, poi un indirizzo cambiato). Si accende da solo aprendo un file che contiene le tabelle e si spegne con Nuova; acceso, Salva e Salva con nome lo seguono. Le tabelle salvate diventano quelle a cui torna Ricomincia.
+- Accanto al nome della rete, **«● modificata»** dice che ci sono modifiche non salvate: il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Contano le modifiche alla rete, gli spostamenti e i guasti; non il traffico, nemmeno quando le tabelle si salvano, e non l'interruttore Tabelle. Annullare tutto riporta a "salvata".
 - Con modifiche non salvate, **Nuova**, **Apri** e la chiusura della pagina chiedono conferma (D-58). Per ora la conferma, come la richiesta del nome, è una finestrella del browser; prima del rilascio completo diventeranno riquadri nello stile dell'app.
 - Salvare non tocca la simulazione, la selezione né la cronologia.
 
@@ -187,7 +188,7 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 
 | Comando | Effetto |
 | --- | --- |
-| Ricomincia | Riporta la rete allo stato di una appena accesa: tabelle vuote, nessun pacchetto, tempo a zero. Guasti e configurazione restano |
+| Ricomincia | Riporta la rete allo stato di una appena accesa: nessun pacchetto, tempo a zero, tabelle vuote, o quelle del file se è stato salvato con le tabelle. Guasti e configurazione restano |
 | Avvia / Pausa | Fa scorrere il tempo da solo, o lo ferma |
 | Passo | Avanza di un istante. Disponibile a simulazione ferma |
 | Velocità | 0,5×, 1×, 2× |

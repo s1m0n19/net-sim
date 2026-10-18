@@ -2,7 +2,7 @@
 
 Questa cartella descrive come è fatto net-sim. I requisiti, cioè che cosa l'app deve fare, stanno in [SPEC.md](../SPEC.md); lo stato di avanzamento è nella sua sezione 9.
 
-**Stato:** ogni documento dice in cima a quale data descrive il codice; il 16 ottobre 2026 sono stati tutti riallineati alla CLI. Dove parlano di qualcosa che ancora non esiste lo dicono, con la parola *previsto*. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
+**Stato:** ogni documento dice in cima a quale data descrive il codice; il 16 ottobre 2026 sono stati tutti riallineati alla CLI, e il 18 ottobre quelli toccati dalle tabelle nel file. Dove parlano di qualcosa che ancora non esiste lo dicono, con la parola *previsto*. Vanno aggiornati insieme al codice: quando i due divergono, è la documentazione a essere sbagliata.
 
 ## Documenti
 

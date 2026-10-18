@@ -1,6 +1,6 @@
 # Formato dei file
 
-**Stato:** descrive il codice al 16 ottobre 2026. L'app legge e scrive i file (requisito FILE-1); le tabelle nel file e le migrazioni di versione sono *previste*.
+**Stato:** descrive il codice al 18 ottobre 2026. L'app legge e scrive i file (requisito FILE-1), anche con le tabelle (FILE-5); le migrazioni di versione sono *previste*.
 
 Una rete sta in un file di testo in formato JSON: si può leggere, confrontare con un altro e distribuire con qualsiasi mezzo.
 
@@ -14,12 +14,10 @@ Una rete sta in un file di testo in formato JSON: si può leggere, confrontare c
 
 Il file contiene la **configurazione** della rete: dispositivi, porte, collegamenti, indirizzi, posizioni sul disegno, e i guasti, cioè quali dispositivi sono spenti e quali cavi sono staccati. Ne fa parte anche lo stato, acceso o spento, delle porte degli switch e delle interfacce dei router.
 
-Oggi non contiene nulla dello **stato di esecuzione**: una rete appena aperta è una rete appena accesa, con le tabelle vuote.
+Dello **stato di esecuzione** le decisioni D-25 e D-100 distinguono due parti:
 
-La decisione presa per il futuro (D-25) distingue due parti dello stato di esecuzione:
-
-- **Tabelle MAC e ARP**: si potranno includere nel file, se chi salva lo chiede. Servono a preparare una lezione che parte da una rete già calda, o un esercizio con una riga ARP sbagliata.
-- **Pacchetti in viaggio o in attesa, attese, tempo simulato**: non si salveranno mai. Una simulazione non si può riprendere a metà.
+- **Tabelle MAC e ARP**: sono nel file solo se chi salva lo chiede, con l'interruttore Tabelle. Servono a preparare una lezione che parte da una rete già calda, o un esercizio con una riga ARP sbagliata. Vedi «Tabelle», più sotto. Un file senza tabelle si apre come una rete appena accesa, con le tabelle vuote.
+- **Pacchetti in viaggio o in attesa, attese, tempo simulato**: non si salvano mai. Una simulazione non si può riprendere a metà.
 
 ## Esempio
 
@@ -99,6 +97,8 @@ Campi di ogni dispositivo:
 | `ports[].enabled` | `false` se la porta è spenta. Facoltativo: se manca, è accesa, e nel file si scrive solo quando è spenta. Per le interfacce di un router la regola è diversa, vedi sotto | switch |
 | `ip`, `mask`, `gateway` | La configurazione IPv4. Ciascuno può essere `null` | host e server |
 | `powered` | `false` se il dispositivo è spento. Facoltativo: se manca, è acceso | tutti |
+| `arpTable` | La tabella ARP, solo se salvata con le tabelle (vedi «Tabelle») | host, server e router |
+| `macTable` | La tabella MAC, solo se salvata con le tabelle | switch |
 
 Campi di ogni collegamento:
 
@@ -157,6 +157,38 @@ Controlli all'apertura, oltre a quelli comuni:
 
 Non viene controllato che il prossimo salto di una rotta sia raggiungibile: è un errore che lo studente deve saper diagnosticare.
 
+## Tabelle
+
+Un file salvato con l'interruttore **Tabelle** acceso (requisito FILE-5, decisione D-100) porta con sé la tabella che ogni dispositivo aveva in quel momento: `arpTable` per host, server e router, `macTable` per gli switch. Il campo c'è per ogni dispositivo, anche quando la tabella è vuota. Lettura e scrittura stanno in `src/storage/tables-file.ts`.
+
+```json
+"arpTable": [
+  { "ip": "192.168.1.11", "mac": "02:00:00:00:00:02" }
+]
+```
+
+```json
+"macTable": [
+  { "mac": "02:00:00:00:00:01", "port": "Fa0/1" },
+  { "mac": "02:00:00:00:00:02", "port": "Fa0/2" }
+]
+```
+
+Aprendo il file, le tabelle non entrano nei dispositivi letti: il lettore le restituisce a parte (`LoadedFile.tables`, null se il file non ne ha), e il simulatore le usa come **tabelle di partenza**. Le applica subito, e ci torna con Ricomincia. Valgono le regole di sempre: un dispositivo spento non sa nulla, e uno switch dimentica le righe di una porta senza segnale.
+
+All'apertura si controlla solo che le righe siano scritte bene. Una riga sbagliata per quella rete (un indirizzo di un'altra sottorete, il MAC di un altro PC) è ammessa: è proprio ciò che serve a un esercizio.
+
+| Controllo | Esempio di messaggio |
+| --- | --- |
+| Ogni dispositivo ha solo la tabella del suo tipo | «SW1: uno switch non ha il campo "arpTable".» |
+| La tabella è un elenco | «PC1: il campo "arpTable" deve essere un elenco.» |
+| Ogni riga ha i suoi due campi | «PC1, tabella ARP, riga n. 1: il campo "mac" manca o non è un testo.» |
+| Indirizzi IP e MAC sono scritti correttamente | «PC1, tabella ARP, riga n. 1: indirizzo IP non valido: 192.168.1.300.» |
+| Una riga di uno switch indica una sua porta | «SW1, tabella MAC, riga n. 1: indica una porta inesistente: Fa0/9.» |
+| Nessun indirizzo è ripetuto nella stessa tabella | «PC1: indirizzo ripetuto nella tabella ARP: 192.168.1.11.» |
+
+Sono campi facoltativi: i file scritti prima restano validi, e il numero di versione non cambia.
+
 ## Controlli all'apertura
 
 Un file può arrivare modificato a mano o danneggiato. Se un controllo fallisce, il lettore non apre il file e dice che cosa non va, nominando il dispositivo o il collegamento. Non tenta di riparare.
@@ -205,14 +237,13 @@ Ciò che **non** viene controllato, di proposito: la coerenza della configurazio
 
 ## Salvare
 
-`serializeNetwork` scrive dispositivi, cavi, posizioni e guasti. I campi facoltativi dei guasti (`powered`, `connected`) compaiono solo quando valgono `false`. Lo stato di esecuzione non viene scritto.
+`serializeNetwork` scrive dispositivi, cavi, posizioni e guasti. I campi facoltativi dei guasti (`powered`, `connected`) compaiono solo quando valgono `false`. Le tabelle si scrivono solo se chieste (il terzo parametro, `withTables`); il resto dello stato di esecuzione mai.
 
 Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere in un file scelto dall'utente (File System Access API): la prima volta Salva chiede dove, poi aggiorna lo stesso file, e lo stesso vale per un file aperto con Apri. Salva con nome chiede sempre dove. Dove questa funzione manca, il file viene scaricato ogni volta (D-57).
 
 ## Previsto
 
 - **Versioni.** Il numero di versione crescerà di uno ogni volta che il formato cambia in modo incompatibile (requisito FILE-2). Un file più vecchio verrà aggiornato in memoria con una funzione di migrazione per ogni salto di versione; un file più nuovo dell'app verrà rifiutato con l'invito ad aggiornarla. Aggiungere un campo facoltativo non richiederà una nuova versione.
-- **Tabelle MAC e ARP**, facoltative (D-25, requisito FILE-5): ogni dispositivo potrà portare con sé le proprie tabelle già compilate.
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
 - **Annotazioni e vista**: note e riquadri sul disegno, inquadratura ed etichette visibili al momento del salvataggio.
 - **Esercizi e verifiche**: una sezione con consegna, obiettivi e parte protetta da password (tappa T1), e una con punteggio e registro delle attività (tappa T4).

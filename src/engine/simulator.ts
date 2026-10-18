@@ -12,6 +12,7 @@ import { hasCarrier, refreshLinkState, setDevicePowered, setLinkConnected } from
 import { hasSomethingToDo, startOnHost, startOnRouter, type TrafficAction } from "./launching";
 import type { EthernetFrame } from "./model/frames";
 import { clearRuntimeState, findDevice, findLink, otherEndOf, type Network, type PortRef } from "./model/network";
+import { fillTables, type NetworkTables } from "./model/tables";
 import { applyEdit } from "./network-changes";
 import { stormSize } from "./storm";
 import type { Conversation, Trace } from "./traces";
@@ -41,15 +42,36 @@ export class Simulator implements Wire {
 
   private nextConversationId = 1;
 
+  // Le tabelle con cui la rete parte: quelle del file aperto, o dell'ultimo
+  // salvataggio con le tabelle. Ricomincia torna a queste (D-100).
+  private startingTables: NetworkTables;
+
   /**
    * Crea un simulatore fermo all'istante zero, con la coda vuota.
    *
    * @param network - la rete da simulare; il simulatore ne modifica lo stato
    *   di esecuzione (tabelle ARP e tabelle MAC, segnale sui cavi)
+   * @param startingTables - le tabelle con cui la rete parte, e a cui torna
+   *   ricominciando; se mancano, parte con le tabelle che ha
    */
-  constructor(network: Network) {
+  constructor(network: Network, startingTables: NetworkTables = new Map()) {
     this.network = network;
+    this.startingTables = startingTables;
+    fillTables(network, startingTables);
+    // Dopo le tabelle: uno switch dimentica subito ciò che sta su una porta
+    // senza segnale.
     refreshLinkState(this, []);
+  }
+
+  /**
+   * Cambia le tabelle con cui la rete parte, senza toccare quelle di adesso:
+   * conteranno da Ricomincia in poi.
+   *
+   * @param tables - le nuove tabelle di partenza, per identificativo del
+   *   dispositivo
+   */
+  setStartingTables(tables: NetworkTables): void {
+    this.startingTables = tables;
   }
 
   /**
@@ -80,6 +102,9 @@ export class Simulator implements Wire {
         break;
       default:
         applyEdit(this, action, produced);
+        // Un dispositivo eliminato non riparte con le sue tabelle, anche se
+        // un altro ne prenderà l'identificativo.
+        if (action.kind === "remove-device") this.startingTables.delete(action.deviceId);
     }
     this.traces.push(...produced);
     return produced;
@@ -149,8 +174,8 @@ export class Simulator implements Wire {
 
   /**
    * Riporta la rete allo stato di una appena accesa: tempo a zero, nessun
-   * frame in viaggio, nessuna attesa, tabelle vuote, tracce e conversazioni
-   * cancellate.
+   * frame in viaggio, nessuna attesa, tracce e conversazioni cancellate,
+   * tabelle di partenza (vuote, se la rete non ne ha).
    * La configurazione resta, guasti compresi: un cavo staccato resta
    * staccato e un dispositivo spento resta spento. Toglie anche la
    * sospensione dovuta a una tempesta di broadcast.
@@ -164,6 +189,7 @@ export class Simulator implements Wire {
     for (const device of this.network.devices) {
       clearRuntimeState(device);
     }
+    fillTables(this.network, this.startingTables);
     refreshLinkState(this, []);
   }
 

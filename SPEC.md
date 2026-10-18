@@ -2,8 +2,8 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** in sviluppo. Il rilascio 1 è costruito e pubblicato. Del rilascio 2 sono costruiti il routing (router, rotte statiche, `tracert`, server) e la CLI in stile IOS; mancano offline, strumenti dell'editor e tabelle nel file. Il dettaglio è nella sezione 9.
-- **Ultimo aggiornamento:** 17 ottobre 2026.
+- **Stato:** in sviluppo. Il rilascio 1 è costruito e pubblicato. Del rilascio 2 sono costruiti il routing (router, rotte statiche, `tracert`, server), la CLI in stile IOS e le tabelle nel file; mancano offline e strumenti dell'editor. Il dettaglio è nella sezione 9.
+- **Ultimo aggiornamento:** 18 ottobre 2026.
 - **Nome dell'app:** *Doppino*, scelto l'11 ottobre 2026 con riserva di cambiarlo. Finché non è definitivo l'app, i file e il repository restano *net-sim*, e così questo documento.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
@@ -329,7 +329,7 @@ Punti ancora da decidere:
 - [ ] LIM usata con il dito: UI-4 esclude i gesti tattili, ma trascinamenti e clic vanno provati; la rotella non c'è, restano i pulsanti − e +.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
-- [ ] In quale rilascio collocare il salvataggio facoltativo delle tabelle (FILE-5). Proposta: R2.
+- [x] In quale rilascio collocare il salvataggio facoltativo delle tabelle (FILE-5): R2, costruito il 18 ottobre 2026 (D-100).
 - [ ] Prima del rilascio completo: sostituire le finestrelle del browser (la conferma per le modifiche non salvate, la richiesta del nome in Salva con nome) con riquadri nello stile dell'app, che seguano il tema. Chiesto dall'utente il 10 ottobre 2026.
 
 ## 8. Decisioni
@@ -364,7 +364,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-22 | 9 ott 2026 | Una sola richiesta ARP per indirizzo alla volta; se non arriva risposta entro 20 tick i pacchetti in attesa sono scartati, senza ripetere la richiesta | Evita richieste doppie e pacchetti appesi per sempre. Venti tick bastano per andata e ritorno nelle reti previste | Confermata |
 | D-23 | 9 ott 2026 | Ogni echo request si conclude con uno di quattro esiti: risposta, richiesta scaduta (40 tick), host di destinazione non raggiungibile (ARP senza risposta), trasmissione non riuscita (nessuna strada) | Sono gli esiti che il ping di Windows stampa. Tenerli distinti serve a riconoscere i problemi di rotte e, più avanti, di ACL. Non spiegano la causa, quindi non contraddicono D-8 | Confermata |
 | D-24 | 9 ott 2026 | Un ping manda quattro echo request, o il numero richiesto, uno alla volta; il successivo parte nell'istante in cui il precedente si conclude | Quattro è il valore di Windows. Senza la pausa di un secondo tra una richiesta e l'altra il passo-passo non ha clic a vuoto | Confermata; per la pausa vedi D-29 |
-| D-25 | 9 ott 2026 | Il file contiene sempre la configurazione; le tabelle MAC e ARP solo se chi salva lo chiede. Pacchetti in viaggio, attese e tempo non si salvano mai | Serve a preparare lezioni che partono da una rete già calda ed esercizi con una riga ARP sbagliata. Lasciare fuori ciò che è in movimento tiene i file semplici e stabili tra versioni dell'app | Confermata, da realizzare |
+| D-25 | 9 ott 2026 | Il file contiene sempre la configurazione; le tabelle MAC e ARP solo se chi salva lo chiede. Pacchetti in viaggio, attese e tempo non si salvano mai | Serve a preparare lezioni che partono da una rete già calda ed esercizi con una riga ARP sbagliata. Lasciare fuori ciò che è in movimento tiene i file semplici e stabili tra versioni dell'app | Confermata, realizzata con D-100 |
 | D-26 | 9 ott 2026 | Un ciclo tra switch produce una tempesta di broadcast; dopo qualche giro la simulazione si sospende con un avviso che ne spiega la causa. Lo spanning tree arriverà in una tappa futura | Mostrare la tempesta fa capire a che cosa serve lo spanning tree; la sospensione impedisce che l'app si blocchi. L'avviso spiega la causa, in deroga a D-8, perché altrimenti sembrerebbe un difetto dell'app | Confermata |
 | D-30 | 9 ott 2026 | La tempesta di broadcast si riconosce con due segnali: un frame inoltrato più volte di 3 volte il numero degli switch, oppure più di 200 frame in viaggio | Una soglia sui soli frame in viaggio non basta: in un anello semplice il broadcast gira senza moltiplicarsi e non la supererebbe mai. Il conteggio degli inoltri è anche una prova certa del ciclo, quindi l'avviso non può sbagliare causa | Confermata |
 | D-27 | 9 ott 2026 | Un host risponde da solo a un ping verso il proprio indirizzo o verso 127.x.x.x, senza frame sul cavo | È il comportamento reale, e permette di spiegare il loopback e il primo controllo di ogni diagnosi | Confermata |
@@ -439,6 +439,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-97 | 13 ott 2026 | Un router fa ping e traceroute con le stesse azioni del motore degli host, e gli esiti sono le stesse tracce. La logica della serie di echo request è una sola per host e router (`echo-series.ts`). Il primo ping verso un vicino mai visto riesce (`!!!!!`): il pacchetto aspetta la risposta ARP invece di andare perso come su IOS (`.!!!!`). L'intestazione di `ping` non ha la riga `Type escape sequence to abort.` e riporta la scadenza vera, `timeout is 40 ms`. `traceroute` manda una sonda ICMP per salto. La scadenza resta di 40 tick: cinque echo request falliti durano 200 tick | Stesse azioni e stesse tracce vogliono dire che scheda Eventi e filtro funzionano senza modifiche. Riprodurre il punto iniziale costerebbe 40 tick di attesa a ogni primo ping. Il ping qui non si interrompe, e un'intestazione che dichiara due secondi sarebbe falsa. Il motore non ha UDP fino alla tappa T3 | Confermata |
 | D-98 | 14 ott 2026 | La CLI si apre dal pulsante Terminale della barretta di router e switch, in una scheda come quelle dei PC. `?` risponde appena premuto e lascia la riga com'era; Ctrl+Z nella CLI vale `end`, e per annullare restano le frecce in alto e Ctrl+Z fuori dalla CLI. Ogni comando che cambia la rete è un passo della cronologia. La CLI torna alla modalità utente chiudendo la scheda, con Ricomincia e spegnendo il dispositivo. Nessuna riga vuota tra un comando e l'altro. Un terminale non resta occupato da un ping se nella simulazione non c'è più nulla di quella conversazione | È il comportamento di IOS dove non contrasta con l'app. Un passo per comando è coerente con il pannello, dove ogni campo confermato è un passo. Spegnere un apparato vero vuol dire riavviarlo | Confermata |
 | D-99 | 17 ott 2026 | Il sito delle classi è costruito dal ramo `stabile`; `main`, su cui si lavora, diventa un'anteprima a un altro indirizzo. Si pubblica portando `main` su `stabile` (`git push origin main:stabile`), dopo che i controlli di GitHub Actions su quel commit sono passati | Con l'app in uso a lezione, un push sbagliato o una novità non ancora provata romperebbero il sito a metà settimana. Pubblicare diventa un gesto separato e voluto, senza cambiare né il servizio né il modo di lavorare | Confermata |
+| D-100 | 18 ott 2026 | Le tabelle nel file (FILE-5) si scelgono con l'interruttore Tabelle accanto a Salva con nome: vale per la rete aperta, si accende aprendo un file che le contiene e si spegne con Nuova. Si salvano le tabelle ARP di host e router e quelle MAC degli switch, come sono al salvataggio. Diventano le tabelle di partenza: aperto il file la rete parte con quelle, e Ricomincia ci torna. Le tabelle cambiate dal traffico non rendono la rete «modificata». Una riga sbagliata si prepara con la rete stessa, senza comandi nuovi. All'apertura si controlla solo che le righe siano scritte bene e indichino porte esistenti. Costruite prima di offline e strumenti dell'editor, cambiando l'ordine di D-69 | Un interruttore lascia Salva e Salva con nome come sono, e funziona anche dove la finestra di salvataggio è quella del sistema. Ricominciare dalle tabelle del file permette di ripetere la dimostrazione già calda. Il traffico non è una modifica da confermare (D-58). Cambiare un indirizzo dopo un ping è il modo in cui una riga sbagliata nasce davvero (D-48). Erano l'unica parte del rilascio 2 senza dipendenze esterne, e accorciano il passo-passo del ping | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -448,8 +449,8 @@ Aggiornato al 17 ottobre 2026. Le percentuali sono stime a occhio, pesate sul la
 | --- | --- |
 | Motore del rilascio 1 | completo |
 | Rilascio 1 intero | circa 98%: costruito, da provare in aula |
-| Rilascio 2 | circa 70%: routing e CLI costruiti; mancano offline, strumenti dell'editor e tabelle nel file |
-| Prima versione (rilasci 1 e 2) | circa 88% |
+| Rilascio 2 | circa 75%: routing, CLI e tabelle nel file costruiti; mancano offline e strumenti dell'editor |
+| Prima versione (rilasci 1 e 2) | circa 89% |
 | Progetto completo, fino alla tappa T8 | circa 33% |
 
 Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e costruita in nove passaggi, tutti fatti. Ciò che resta del rilascio 1 è la prova: in aula, su LIM o proiettore, e con reti grandi. Il sito è pubblicato (D-64).
@@ -462,20 +463,21 @@ Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è st
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
 | **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi: misurate il 17 ottobre 2026 in Chrome senza finestra, con la CPU rallentata 4 volte, su una rete di prova (un router, 4 switch, 45 PC): 60 fotogrammi al secondo, senza blocchi, a rete ferma, durante un ping attraverso il router, trascinando il router e durante una tempesta di broadcast su 50 dispositivi; resta da provare su un PC dell'aula, e a quella dimensione le scritte risultano molto piccole prima di ingrandire · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
-Rilascio 2: progettato l'11 ottobre 2026 (criteri di accettazione e piani nella sezione 5). Due delle sue parti sono costruite:
+Rilascio 2: progettato l'11 ottobre 2026 (criteri di accettazione e piani nella sezione 5). Tre delle sue parti sono costruite:
 
 - **Routing**, i sette passaggi del suo piano, dall'11 al 12 ottobre. Il motore instrada, avvisa con i messaggi ICMP di errore e offre `tracert` e `ping -i`. A schermo il router si posa, si configura (interfacce, rotte statiche), mostra le sue tabelle e i suoi indirizzi; il server si usa come un PC. La lezione del criterio di accettazione è eseguita per intero da `tests/e2e/router.spec.ts`.
 - **CLI in stile IOS**, i sette passaggi del suo piano, dal 13 al 14 ottobre. Le porte degli switch si spengono. L'interprete (`src/shell/ios/`) ha modalità, abbreviazioni, `?`, Tab, `do` e i messaggi di errore di IOS. I comandi di configurazione passano dalle azioni del pannello (D-95), i `show` leggono la rete (D-96), il router fa ping e traceroute (D-97). La CLI si apre dalla barretta di router e switch, e ogni comando che cambia la rete è un passo della cronologia (D-98). La lezione del criterio di accettazione è eseguita da `tests/e2e/cli.spec.ts`; il codice è descritto in `docs/cli.md`.
+- **Tabelle nel file**, il 18 ottobre (D-100). L'interruttore Tabelle fa salvare le tabelle ARP e MAC; un file che le contiene parte già caldo, e Ricomincia torna a quelle. Il percorso è eseguito da `tests/e2e/file.spec.ts`.
 
-Restano, nell'ordine deciso: funzionamento offline, strumenti dell'editor, tabelle nel file. Tappe successive: nulla è iniziato.
+Restano, nell'ordine deciso: funzionamento offline, strumenti dell'editor. Tappe successive: nulla è iniziato.
 
 ### Requisiti del rilascio 2
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | DEV-3 router · DEV-4 routing statico e tabella di routing · DEV-5 server · CFG-3 `tracert` · CFG-4 CLI in stile IOS · CFG-5 CLI e pannello sincronizzati · SIM-18 messaggi ICMP di errore |
+| **Fatto** | FILE-5 tabelle nel file · DEV-3 router · DEV-4 routing statico e tabella di routing · DEV-5 server · CFG-3 `tracert` · CFG-4 CLI in stile IOS · CFG-5 CLI e pannello sincronizzati · SIM-18 messaggi ICMP di errore |
 | **Fatto in parte** | SIM-7 porta spenta: interfacce dei router e porte degli switch sì, scheda di un host no |
-| **Da fare** | NF-2 offline e installabile · ED-6 copiare e duplicare · ED-7 griglia magnetica · ED-8 esportare come immagine · ED-9 annotazioni · FILE-5 tabelle nel file |
+| **Da fare** | NF-2 offline e installabile · ED-6 copiare e duplicare · ED-7 griglia magnetica · ED-8 esportare come immagine · ED-9 annotazioni |
 
 ### Rispetto al criterio di accettazione della CLI
 
@@ -525,8 +527,8 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 
 ### Che cosa esiste oltre ai requisiti
 
-- 13 test della pagina in un browser vero (`tests/e2e/`), tra cui le lezioni dei tre criteri di accettazione eseguite per intero, e un controllo automatico a ogni push.
-- 835 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- 14 test della pagina in un browser vero (`tests/e2e/`), tra cui le lezioni dei tre criteri di accettazione eseguite per intero, e un controllo automatico a ogni push.
+- 863 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Cinque reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router, tre reti con due router in fila.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `stabile` (D-99), e l'anteprima del ramo `main`.
 
