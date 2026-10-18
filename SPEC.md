@@ -294,6 +294,33 @@ Deciso nell'intervista del 12 ottobre 2026.
 | 6 | Il terminale a schermo per router e switch | Si apre dalla barretta, in una scheda, con Tab e `?` |
 | 7 | La lezione come test nel browser, documento `docs/cli.md` | La CLI è collaudabile |
 
+### Criterio di accettazione degli strumenti dell'editor
+
+Gli strumenti dell'editor sono pronti quando questa preparazione di una lezione si svolge dall'inizio alla fine senza uscire dall'app:
+
+1. Su un foglio vuoto il docente accende la griglia, posa uno switch e un PC: cadono sui punti della griglia.
+2. Configura il PC (192.168.1.10/24, gateway 192.168.1.1) e lo duplica quattro volte dalla barretta. Le copie si chiamano PC2…PC5, hanno MAC nuovi, indirizzi da 192.168.1.11 a 192.168.1.14, stessa maschera e stesso gateway, e nascono scollegate accanto all'originale. Le collega allo switch.
+3. Posa un router e lo duplica: la copia ha lo stesso numero di interfacce, tutte spente e senza indirizzi, e nessuna rotta.
+4. Disegna un riquadro attorno alla LAN, ne sceglie il colore e gli scrive «LAN 192.168.1.0/24»; posa accanto una nota con la consegna.
+5. Sposta il riquadro, lo ridimensiona dagli angoli, lo elimina e lo fa tornare con Annulla.
+6. Salva, riapre il file: riquadro e nota sono al loro posto.
+7. In presentazione riquadro e nota si vedono, ma non si spostano né si modificano.
+8. Esporta l'immagine, con il tema scuro attivo: ottiene un PNG di tutta la rete, su sfondo chiaro, con riquadro e nota e senza buste in viaggio.
+
+### Piano di costruzione degli strumenti dell'editor
+
+Deciso nell'intervista del 18 ottobre 2026, dopo la prova in aula. Dal più piccolo al più grande; l'esportazione viene per ultima perché deve includere le annotazioni.
+
+| N. | Passaggio | Che cosa si può fare dopo |
+| --- | --- | --- |
+| 1 | Griglia magnetica: interruttore nella barra in alto, scatto a 20 px nel posare e nel trascinare | Un disegno si tiene in ordine da solo |
+| 2 | Duplicare nel motore: un'azione nuova, con nome, MAC e indirizzo successivo liberi scelti dal motore (D-46) | Nei test, un PC configurato diventa cinque PC pronti |
+| 3 | Duplicare a schermo: pulsante Duplica sulla barretta, la copia nasce accanto e selezionata, con annulla | Una LAN da molti PC si costruisce in pochi clic |
+| 4 | Annotazioni nel modello della pagina e nei file: riquadri e note, con posizione, dimensione, colore e testo; nella cronologia di annulla e ripristina | Un file con annotazioni si apre, si salva e si riapre |
+| 5 | Annotazioni a schermo: strumenti Riquadro e Nota nella colonna, selezione e barretta, testo nel pannello laterale, ridimensionare dagli angoli, presentazione | Il disegno si commenta e si divide in sottoreti |
+| 6 | Esportare come immagine: PNG di tutta la rete, tema chiaro, doppia risoluzione | La rete va nelle slide e nelle verifiche su carta |
+| 7 | La preparazione del criterio di accettazione come test nel browser; documentazione | Gli strumenti dell'editor sono collaudabili |
+
 ## 6. Fuori ambito
 
 - Modelli commerciali di dispositivi, moduli hardware, viste di rack e armadi.
@@ -440,6 +467,10 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-98 | 14 ott 2026 | La CLI si apre dal pulsante Terminale della barretta di router e switch, in una scheda come quelle dei PC. `?` risponde appena premuto e lascia la riga com'era; Ctrl+Z nella CLI vale `end`, e per annullare restano le frecce in alto e Ctrl+Z fuori dalla CLI. Ogni comando che cambia la rete è un passo della cronologia. La CLI torna alla modalità utente chiudendo la scheda, con Ricomincia e spegnendo il dispositivo. Nessuna riga vuota tra un comando e l'altro. Un terminale non resta occupato da un ping se nella simulazione non c'è più nulla di quella conversazione | È il comportamento di IOS dove non contrasta con l'app. Un passo per comando è coerente con il pannello, dove ogni campo confermato è un passo. Spegnere un apparato vero vuol dire riavviarlo | Confermata |
 | D-99 | 17 ott 2026 | Il sito delle classi è costruito dal ramo `stabile`; `main`, su cui si lavora, diventa un'anteprima a un altro indirizzo. Si pubblica portando `main` su `stabile` (`git push origin main:stabile`), dopo che i controlli di GitHub Actions su quel commit sono passati | Con l'app in uso a lezione, un push sbagliato o una novità non ancora provata romperebbero il sito a metà settimana. Pubblicare diventa un gesto separato e voluto, senza cambiare né il servizio né il modo di lavorare | Confermata |
 | D-100 | 18 ott 2026 | Le tabelle nel file (FILE-5) si scelgono con l'interruttore Tabelle accanto a Salva con nome: vale per la rete aperta, si accende aprendo un file che le contiene e si spegne con Nuova. Si salvano le tabelle ARP di host e router e quelle MAC degli switch, come sono al salvataggio. Diventano le tabelle di partenza: aperto il file la rete parte con quelle, e Ricomincia ci torna. Le tabelle cambiate dal traffico non rendono la rete «modificata». Una riga sbagliata si prepara con la rete stessa, senza comandi nuovi. All'apertura si controlla solo che le righe siano scritte bene e indichino porte esistenti. Costruite prima di offline e strumenti dell'editor, cambiando l'ordine di D-69 | Un interruttore lascia Salva e Salva con nome come sono, e funziona anche dove la finestra di salvataggio è quella del sistema. Ricominciare dalle tabelle del file permette di ripetere la dimostrazione già calda. Il traffico non è una modifica da confermare (D-58). Cambiare un indirizzo dopo un ping è il modo in cui una riga sbagliata nasce davvero (D-48). Erano l'unica parte del rilascio 2 senza dipendenze esterne, e accorciano il passo-passo del ping | Confermata |
+| D-101 | 18 ott 2026 | Si duplica un dispositivo alla volta, con il pulsante Duplica della barretta; la copia nasce scollegata, accanto all'originale, e resta selezionata. Nome e MAC sono i successivi liberi. Un PC o un server copia maschera e gateway e prende il primo indirizzo libero della stessa sottorete dopo quello dell'originale (nessun indirizzo se non ce ne sono). Uno switch copia il numero di porte e quali sono spente; un router copia il numero di interfacce, che nascono spente e senza indirizzi, senza rotte. Niente selezione multipla | Dopo la prova in aula serve soprattutto a costruire in fretta una LAN da molti PC, e l'indirizzo successivo dà una LAN che funziona subito. Copiare gli indirizzi di un router produrrebbe solo conflitti. Un dispositivo alla volta rispetta «un clic seleziona» (UI-8) e lascia allo sfondo il compito di spostare la vista | Confermata |
+| D-102 | 18 ott 2026 | La griglia magnetica si accende con un interruttore nella barra in alto, accanto alle etichette, ed è invisibile: acceso, il centro di un dispositivo posato o trascinato scatta al punto più vicino di una griglia di 20 px | Il disegno si tiene ordinato senza segni in più sul foglio, che resta pulito anche proiettato. Spenta, il trascinamento resta libero come oggi | Confermata |
+| D-103 | 18 ott 2026 | Le annotazioni sono di due tipi: riquadri colorati e trasparenti, dietro ai dispositivi, con un'etichetta, e note di testo libere. Si posano con gli strumenti Riquadro e Nota della colonna, si selezionano con un clic, la barretta ha colore ed Elimina, il testo si scrive nel pannello laterale, il riquadro si ridimensiona dagli angoli. Cinque colori tenui fissi, leggibili nei due temi. Stanno nel file e in annulla e ripristina; in presentazione si vedono ma non si modificano. Non fanno parte della rete: stanno fuori dal motore, come le posizioni | I riquadri servono a mostrare le sottoreti, le note a scrivere una consegna sul disegno. Gli stessi gesti dei dispositivi non chiedono nulla di nuovo da imparare. Colori fissi evitano scelte illeggibili su un proiettore o in uno dei due temi (UI-7: il riquadro ha anche la sua etichetta) | Confermata |
+| D-104 | 18 ott 2026 | Esporta immagine produce un PNG di tutta la rete, inquadrata come con Adatta, con le etichette accese in quel momento, annotazioni e tabelle appuntate, senza buste in viaggio; sempre con il tema chiaro e a doppia risoluzione | L'immagine va nelle slide, nei compiti e nelle verifiche su carta: deve contenere tutta la rete, stampare nitida e su sfondo chiaro, qualunque cosa mostri lo schermo in quel momento | Confermata |
 
 ## 9. Stato di avanzamento
 
@@ -469,7 +500,7 @@ Rilascio 2: progettato l'11 ottobre 2026 (criteri di accettazione e piani nella 
 - **CLI in stile IOS**, i sette passaggi del suo piano, dal 13 al 14 ottobre. Le porte degli switch si spengono. L'interprete (`src/shell/ios/`) ha modalità, abbreviazioni, `?`, Tab, `do` e i messaggi di errore di IOS. I comandi di configurazione passano dalle azioni del pannello (D-95), i `show` leggono la rete (D-96), il router fa ping e traceroute (D-97). La CLI si apre dalla barretta di router e switch, e ogni comando che cambia la rete è un passo della cronologia (D-98). La lezione del criterio di accettazione è eseguita da `tests/e2e/cli.spec.ts`; il codice è descritto in `docs/cli.md`.
 - **Tabelle nel file**, il 18 ottobre (D-100). L'interruttore Tabelle fa salvare le tabelle ARP e MAC; un file che le contiene parte già caldo, e Ricomincia torna a quelle. Il percorso è eseguito da `tests/e2e/file.spec.ts`.
 
-Restano, nell'ordine deciso: funzionamento offline, strumenti dell'editor. Tappe successive: nulla è iniziato.
+Restano: strumenti dell'editor, progettati il 18 ottobre 2026 dopo la prova in aula (criterio di accettazione e piano nella sezione 5, decisioni D-101…D-104), e funzionamento offline, che aspetta nome e dominio. Tappe successive: nulla è iniziato.
 
 ### Requisiti del rilascio 2
 
