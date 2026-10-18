@@ -26,6 +26,7 @@ import type { Position } from "../storage/load";
 import { messageOf } from "./session-core.svelte";
 import { SessionDemo } from "./session-demo.svelte";
 import type { HistoryEntry } from "./session-types";
+import { snapToGrid } from "./topology/grid";
 
 /** Una frase del motore, pronta per essere mostrata: maiuscola e punto. */
 export function sentence(text: string): string {
@@ -52,6 +53,14 @@ export class SessionEditing extends SessionDemo {
   canRedo = $state(false);
 
   /**
+   * La griglia magnetica è accesa: i dispositivi posati o trascinati cadono
+   * sul punto più vicino di una griglia invisibile (D-102). È una scelta di
+   * chi disegna, non della rete: aprire un file o un foglio nuovo non la
+   * cambia.
+   */
+  grid = $state(false);
+
+  /**
    * Posa un dispositivo nuovo sul disegno e lo seleziona.
    *
    * @param template - che cosa posare: un PC, o uno switch con le sue porte
@@ -73,7 +82,7 @@ export class SessionEditing extends SessionDemo {
       const added = traces.find((trace) => trace.kind === "device-added");
       if (added !== undefined) {
         this.remember(before);
-        this.positions.set(added.deviceId, { x: Math.round(position.x), y: Math.round(position.y) });
+        this.positions.set(added.deviceId, this.placed(position));
         this.selection = { kind: "device", id: added.deviceId };
       }
       this.notice = null;
@@ -83,11 +92,21 @@ export class SessionEditing extends SessionDemo {
     this.refresh();
   }
 
-  /** Sposta un dispositivo in un altro punto del disegno. */
+  /**
+   * Sposta un dispositivo in un altro punto del disegno; con la griglia
+   * accesa, sul punto della griglia più vicino.
+   */
   moveDevice(deviceId: string, position: Position): void {
     if (!this.positions.has(deviceId)) return;
-    this.positions.set(deviceId, { x: Math.round(position.x), y: Math.round(position.y) });
+    this.positions.set(deviceId, this.placed(position));
     this.refresh();
+  }
+
+  // Dove finisce davvero un dispositivo messo in un punto: sulla griglia,
+  // se è accesa, e comunque a coordinate intere.
+  private placed(position: Position): Position {
+    const where = this.grid ? snapToGrid(position) : position;
+    return { x: Math.round(where.x), y: Math.round(where.y) };
   }
 
   /**

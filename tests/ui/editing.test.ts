@@ -484,3 +484,45 @@ describe("server", () => {
     expect(session.view.devices[0].role).toBe("pc");
   });
 });
+
+describe("griglia magnetica", () => {
+  test("spenta, un dispositivo resta dove lo si posa e dove lo si porta", () => {
+    session.addDevice(PC, { x: 127, y: 193 });
+    const id = session.view.devices[0].id;
+    session.moveDevice(id, { x: 251, y: 309 });
+
+    const pc = session.view.devices[0];
+    expect([pc.x, pc.y]).toEqual([251, 309]);
+  });
+
+  test("accesa, posare e trascinare portano al punto della griglia più vicino", () => {
+    session.grid = true;
+
+    session.addDevice(PC, { x: 127, y: 193 });
+    const id = session.view.devices[0].id;
+    expect([session.view.devices[0].x, session.view.devices[0].y]).toEqual([120, 200]);
+
+    session.moveDevice(id, { x: 251, y: 309 });
+    expect([session.view.devices[0].x, session.view.devices[0].y]).toEqual([260, 300]);
+    session.grid = false;
+  });
+
+  test("accenderla non sposta i dispositivi già posati", () => {
+    session.addDevice(PC, { x: 127, y: 193 });
+
+    session.grid = true;
+
+    expect([session.view.devices[0].x, session.view.devices[0].y]).toEqual([127, 193]);
+    session.grid = false;
+  });
+
+  test("è una scelta di chi disegna: Nuova e Apri non la cambiano", () => {
+    session.grid = true;
+
+    session.clear();
+    session.open("lan-switch.netsim.json", lanFile);
+
+    expect(session.grid).toBe(true);
+    session.grid = false;
+  });
+});

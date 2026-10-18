@@ -111,6 +111,8 @@
     <button class="btn" class:on={preferences.labels.ip} aria-pressed={preferences.labels.ip} onclick={() => (preferences.labels.ip = !preferences.labels.ip)}>IP</button>
     <button class="btn" class:on={preferences.labels.mac} aria-pressed={preferences.labels.mac} onclick={() => (preferences.labels.mac = !preferences.labels.mac)}>MAC</button>
     <button class="btn" class:on={preferences.labels.ports} aria-pressed={preferences.labels.ports} onclick={() => (preferences.labels.ports = !preferences.labels.ports)}>Porte</button>
+    <!-- Griglia magnetica invisibile: i dispositivi si allineano posandoli e trascinandoli (D-102). -->
+    <button class="btn" class:on={session.grid} aria-pressed={session.grid} title="Griglia magnetica: posando e trascinando, i dispositivi si allineano" onclick={() => (session.grid = !session.grid)}>Griglia</button>
   {/if}
 
   <button class="btn" onclick={() => preferences.toggleTheme()}>Tema</button>

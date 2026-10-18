@@ -51,7 +51,7 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 - il foglio vuoto all'avvio;
 - **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, **Nuova**, che torna al foglio vuoto, **Salva** e **Salva con nome**, che scrivono la rete in un file, con le tabelle se l'interruttore **Tabelle** è acceso;
 - il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
-- gli interruttori delle etichette IP, MAC e Porte;
+- gli interruttori delle etichette IP, MAC e Porte, e quello della griglia magnetica;
 - l'inquadratura: un foglio di base che si allarga solo se serve, la rotella per ingrandire, lo sfondo da trascinare per spostare la vista, i pulsanti −, + e Adatta;
 - la **barra della simulazione**: Ricomincia, Avvia e Pausa, Passo, velocità, tick;
 - le **buste** in viaggio, con colore e sigla del protocollo;
@@ -156,6 +156,8 @@ Ogni tabella (MAC di uno switch, ARP di un host) si può **appuntare** sul diseg
 ### Spostare ed eliminare
 
 Un dispositivo si sposta trascinandolo: cavi, buste in viaggio e tabella appuntata lo seguono. Un clic senza movimento resta un clic, e seleziona. Mentre si trascina l'inquadratura resta ferma, e si riadatta al rilascio.
+
+**Griglia magnetica** (ED-7, D-102). L'interruttore **Griglia**, nella barra in alto dopo le etichette, la accende e la spegne. Non si disegna: accesa, il centro di un dispositivo posato o trascinato scatta al punto più vicino di una griglia di 20 px (`topology/grid.ts`), e il trascinamento procede a scatti. Accenderla non sposta i dispositivi già posati. È una scelta di chi disegna, come le etichette: aprire un file o un foglio nuovo non la cambia, e in presentazione l'interruttore non c'è.
 
 Si elimina ciò che è selezionato con il cestino sulla barretta, oppure con il tasto Canc o Backspace. Eliminando un dispositivo spariscono anche i suoi cavi, la sua tabella appuntata e il suo terminale. Scrivendo in una casella di testo o nel terminale, Canc e Backspace cancellano solo il testo.
 
@@ -441,7 +443,7 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi |
 | `presentation.ts` | Modalità presentazione: entrare, uscire, scorciatoie. L'ingrandimento sta in `preferences` |
-| `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts` e `geometry.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
+| `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts`, `geometry.ts` e `grid.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
 | `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |

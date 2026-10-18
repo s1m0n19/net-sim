@@ -35,6 +35,8 @@ mount(App, { target: document.getElementById("app")! });
 //   &fascia-chiusa, &pannello-chiuso           chiude la fascia in basso o il pannello laterale
 if (import.meta.env.DEV) {
   const params = new URLSearchParams(location.search);
+  // &griglia                                 accende la griglia magnetica, prima di posare
+  if (params.has("griglia")) session.grid = true;
   // &posa=PC@200,150;SW8@450,150;R4@700,150   posa dispositivi su un foglio vuoto
   for (const item of (params.get("posa") ?? "").split(";").filter((text) => text !== "")) {
     const [what, where] = item.split("@");

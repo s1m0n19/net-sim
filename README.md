@@ -122,6 +122,7 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 | **Nuova** | Torna al foglio vuoto |
 | **Apri** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va |
 | **Etichette: IP, MAC, Porte** | Accendono e spengono ciò che è scritto sul disegno. All'apertura è acceso solo l'indirizzo IP |
+| **Griglia** | Griglia magnetica invisibile: accesa, i dispositivi posati o trascinati si allineano su punti ogni 20 px |
 | **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |
 | **Le tre frecce** | Chiudono e riaprono i pannelli: in fondo alla colonna dei dispositivi, nell'angolo in alto del pannello di destra, a destra nella riga delle schede in basso |
 
