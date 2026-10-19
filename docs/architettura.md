@@ -1,6 +1,6 @@
 # Architettura
 
-**Stato:** descrive il codice al 18 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
+**Stato:** descrive il codice al 19 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
 
 L'app è divisa in due parti che non si mescolano: un **motore di simulazione**, che contiene tutta la logica di rete, e un'**interfaccia**, che lo mostra e lo comanda. Il motore non sa di essere disegnato su uno schermo.
 
@@ -78,6 +78,7 @@ net-sim/
 │   │   ├── faults.ts          guasti e segnale: cavo staccato, dispositivo spento
 │   │   ├── storm.ts           come si riconosce una tempesta di broadcast
 │   │   ├── editing.ts         modifiche alla rete: aggiungere, togliere, collegare, configurare
+│   │   ├── duplicating.ts     duplicare un dispositivo, con l'indirizzo libero successivo
 │   │   ├── port-editing.ts    accendere e spegnere una porta di switch o un'interfaccia di router
 │   │   ├── router-editing.ts  modifiche a un router: indirizzi delle interfacce e rotte statiche
 │   │   ├── network-changes.ts le stesse modifiche a simulazione in corso

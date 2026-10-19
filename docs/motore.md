@@ -1,6 +1,6 @@
 # Motore di simulazione
 
-**Stato:** descrive il codice al 18 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
+**Stato:** descrive il codice al 19 ottobre 2026. Le parti non ancora realizzate sono raccolte nella sezione "Previsto".
 
 Il motore è la parte dell'app che fa funzionare la rete: decide che cosa fa un dispositivo quando riceve un frame, tiene le tabelle, fa scorrere il tempo. Non disegna nulla. Sta in `src/engine/` e non dipende da altro (vedi [architettura.md](architettura.md)).
 
@@ -262,6 +262,7 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `disconnectLink(linkId)`, `connectLink(linkId)` | Stacca o riattacca un cavo |
 | `powerOff(deviceId)`, `powerOn(deviceId)` | Spegne o accende un dispositivo |
 | `addHost()`, `addServer()`, `addSwitch(portCount)`, `addRouter(interfaceCount)` | Aggiunge un PC, un server, uno switch con quel numero di porte, o un router con quel numero di interfacce |
+| `duplicateDevice(deviceId)` | Aggiunge una copia di un dispositivo, accesa e senza cavi (vedi «Duplicare») |
 | `removeDevice(deviceId)` | Toglie un dispositivo, con i cavi che gli erano attaccati |
 | `addLink(a, b)`, `removeLink(linkId)` | Collega due porte con un cavo nuovo, o toglie un cavo |
 | `moveLinkEnd(linkId, end, portName)` | Sposta un capo di un cavo su un'altra porta dello stesso dispositivo |
@@ -598,6 +599,18 @@ I MAC cominciano per `02`, il prefisso degli indirizzi assegnati localmente e no
 
 Un PC nuovo nasce acceso, senza cavi e senza configurazione IP. Uno switch nuovo nasce acceso e con tutte le porte accese. Un router nuovo nasce acceso, ma con tutte le interfacce spente e senza indirizzo, e senza rotte.
 
+### Duplicare
+
+`duplicateDevice` (`duplicating.ts`, requisito ED-6, decisione D-101) aggiunge un dispositivo nuovo dello stesso tipo e della stessa grandezza, con identificativo, nome e MAC scelti come sopra, e gli passa una parte della configurazione dell'originale:
+
+| Originale | Che cosa prende la copia |
+| --- | --- |
+| PC o server | Maschera e gateway, e il primo indirizzo libero della stessa sottorete dopo quello dell'originale. Libero vuol dire non usato da un host né da un'interfaccia di router, diverso dal gateway, e accettato da `checkIpConfig` (quindi non il broadcast). Se non ce n'è, o se l'originale non è configurato, la copia nasce non configurata |
+| Switch | Il numero di porte, e quali sono spente |
+| Router | Solo il numero di interfacce: nascono spente e senza indirizzi, e non ci sono rotte. Copiare gli indirizzi produrrebbe soltanto conflitti |
+
+La copia nasce accesa, senza cavi e con le tabelle vuote, come ogni dispositivo nuovo; la traccia è quella di un dispositivo aggiunto (`device-added`). L'indirizzo successivo lo calcola `nextFreeAddress`, che scorre gli indirizzi come numeri con `ipToNumber` e `numberToIp` (`model/addresses.ts`). Dove mettere la copia sul disegno lo decide l'interfaccia.
+
 ### Che cosa viene rifiutato
 
 | Modifica | Rifiutata se |
@@ -702,6 +715,7 @@ I file di test, uno per argomento:
 | `power-faults.test.ts` | Dispositivo spento |
 | `switch-ports.test.ts` | Porta di switch spenta e riaccesa |
 | `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
+| `duplicating.test.ts` | Duplicare un PC, un server, uno switch e un router; l'indirizzo libero successivo |
 | `router-model.test.ts` | Il router nel modello: controlli su interfacce e rotte, reti sovrapposte, segnale |
 | `router-editing.test.ts` | Aggiungere un router, interfacce, rotte, e annullare |
 | `routing.test.ts` | Tabella di routing e scelta della rotta |

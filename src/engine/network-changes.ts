@@ -7,6 +7,7 @@
 
 import type { Action } from "./actions";
 import * as editing from "./editing";
+import { duplicateDevice } from "./duplicating";
 import type { SimulationState } from "./events";
 import { forgetTimersOf, loseFrames, loseFramesOn, refreshLinkState } from "./faults";
 import {
@@ -48,6 +49,11 @@ export function applyEdit(sim: SimulationState, action: EditAction, produced: Tr
     case "add-device": {
       const device = editing.addDevice(sim.network, action.template);
       produced.push({ time, kind: "device-added", deviceId: device.id });
+      break;
+    }
+    case "duplicate-device": {
+      const copy = duplicateDevice(sim.network, action.deviceId);
+      produced.push({ time, kind: "device-added", deviceId: copy.id });
       break;
     }
     case "remove-device": {

@@ -15,6 +15,7 @@ export type Action =
   // Modifiche alla rete.
   | { kind: "add-device"; template: DeviceTemplate }
   | { kind: "remove-device"; deviceId: string }
+  | { kind: "duplicate-device"; deviceId: string }
   | { kind: "add-link"; a: PortRef; b: PortRef }
   | { kind: "remove-link"; linkId: string }
   | { kind: "move-link-end"; linkId: string; end: "a" | "b"; portName: string }
@@ -147,6 +148,18 @@ export function addSwitch(portCount: number): Action {
  */
 export function addRouter(interfaceCount: number): Action {
   return { kind: "add-device", template: { kind: "router", interfaceCount } };
+}
+
+/**
+ * Crea l'azione "aggiungi una copia di questo dispositivo" (D-101). La copia
+ * nasce accesa e senza cavi; un PC o un server prende l'indirizzo libero
+ * successivo della stessa sottorete.
+ *
+ * @param deviceId - identificativo del dispositivo da copiare
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function duplicateDevice(deviceId: string): Action {
+  return { kind: "duplicate-device", deviceId };
 }
 
 /**

@@ -30,6 +30,22 @@ export function ipToNumber(ip: Ipv4Address): number {
 }
 
 /**
+ * Scrive un numero a 32 bit come indirizzo IPv4 in notazione decimale
+ * puntata: è il contrario di `ipToNumber` (3232235786 diventa 192.168.1.10).
+ *
+ * @param value - il numero, da 0 a 4294967295
+ * @returns l'indirizzo
+ * @throws Error se il numero non è un intero in quell'intervallo
+ */
+export function numberToIp(value: number): Ipv4Address {
+  if (!Number.isInteger(value) || value < 0 || value > 0xffffffff) {
+    throw new Error(`Numero fuori dagli indirizzi IPv4: ${value}`);
+  }
+  // Ogni 8 bit sono una parte, a cominciare dai più significativi.
+  return [24, 16, 8, 0].map((shift) => Math.floor(value / 2 ** shift) % 256).join(".");
+}
+
+/**
  * Dice se un indirizzo è di loopback, cioè uno dei 127.x.x.x: indirizzi
  * con cui un dispositivo parla con se stesso, senza passare dalla rete.
  *
