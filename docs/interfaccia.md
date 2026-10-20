@@ -1,6 +1,6 @@
 # Interfaccia
 
-**Stato:** costruita, da provare in aula. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026 e realizzata nei nove passaggi del piano in fondo al documento, tutti fatti. Dove il codice si è scostato dal progetto iniziale, il documento descrive il codice.
+**Stato:** costruita e provata in aula a ottobre 2026, senza problemi; resta da provare una LIM con il dito. Descrive l'interfaccia decisa nell'intervista del 10 ottobre 2026 e realizzata nei nove passaggi del piano in fondo al documento, tutti fatti. Dove il codice si è scostato dal progetto iniziale, il documento descrive il codice.
 
 Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQG8h765of), che mostra la schermata in cinque situazioni. È privato: lo apre solo chi lo ha creato o chi ha ricevuto l'accesso.
 

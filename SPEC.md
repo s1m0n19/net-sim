@@ -2,8 +2,8 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** in sviluppo. Il rilascio 1 è costruito e pubblicato. Del rilascio 2 sono costruiti il routing (router, rotte statiche, `tracert`, server), la CLI in stile IOS e le tabelle nel file; mancano offline e strumenti dell'editor. Il dettaglio è nella sezione 9.
-- **Ultimo aggiornamento:** 18 ottobre 2026.
+- **Stato:** in sviluppo. Il rilascio 1 è costruito, pubblicato e provato in aula. Del rilascio 2 sono costruiti il routing (router, rotte statiche, `tracert`, server), la CLI in stile IOS e le tabelle nel file; mancano offline e strumenti dell'editor. Il dettaglio è nella sezione 9.
+- **Ultimo aggiornamento:** 20 ottobre 2026.
 - **Nome dell'app:** *Doppino*, scelto l'11 ottobre 2026 con riserva di cambiarlo. Finché non è definitivo l'app, i file e il repository restano *net-sim*, e così questo documento.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
@@ -349,11 +349,12 @@ Punti ancora da decidere:
 - [ ] Nome dell'app: scelto *Doppino*, con riserva (`doppino.it` risultava libero l'11 ottobre 2026; marchi non verificati). Da rendere definitivo, e applicare a schermo, file e repository, prima del funzionamento offline (NF-2). Altre proposte considerate: Instrada, Trama, Salto, PacketLab, Salto a salto, Primo Ping, Simulareti, Banco di rete, Fil di rete.
 - [ ] Condizioni d'uso per i colleghi: una nota breve da scrivere sul sito o nel README (destinatari decisi: D-66).
 - [ ] Rivedere i testi per marchi Cisco: si parla sempre di «stile IOS», e l'output non riporta intestazioni, versioni o diciture di marca (D-90). La CLI è già pubblicata dal 14 ottobre 2026. Un controllo del 16 ottobre ha trovato la parola «Cisco» solo nei commenti del codice, mai nei testi a schermo; resta da decidere se basta.
-- [ ] Verificare che il filtro della scuola non blocchi il sito pubblicato (`net-sim.simon-nucifora.workers.dev`), aprendolo da un PC dell'aula. Dove pubblicare è deciso: D-64.
+- [x] Verificare che il filtro della scuola non blocchi il sito pubblicato (`net-sim.simon-nucifora.workers.dev`): dai PC dell'aula si apre (prova in aula, ottobre 2026). Dove pubblicare è deciso: D-64.
 - [ ] Dominio `.it` per il sito, da comprare quando il nome dell'app sarà scelto, e prima del funzionamento offline (NF-2): chi ha installato l'app da un indirizzo dovrebbe reinstallarla dal nuovo.
-- [ ] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md) vengono dal bozzetto e vanno provati su una LIM.
-- [ ] Da decidere dopo il collaudo: come alleggerire il passo-passo di un ping da quattro richieste (oggi si usa `ping -n 1`); quale icona dare al pulsante che stacca e riattacca un cavo.
-- [ ] LIM usata con il dito: UI-4 esclude i gesti tattili, ma trascinamenti e clic vanno provati; la rotella non c'è, restano i pulsanti − e +.
+- [x] Valori dei colori e delle dimensioni: quelli di [docs/interfaccia.md](docs/interfaccia.md), provati in aula in presentazione, vanno bene così. Su una LIM non sono ancora stati visti: se ne occupa il punto sull'uso con il dito.
+- [x] Come alleggerire il passo-passo di un ping da quattro richieste: in aula, con `ping -n 1` e le tabelle nel file (D-100), è risultato accettabile così.
+- [ ] Da decidere: quale icona dare al pulsante che stacca e riattacca un cavo.
+- [ ] LIM usata con il dito: UI-4 esclude i gesti tattili, ma trascinamenti e clic vanno provati; la rotella non c'è, restano i pulsanti − e +. Non ancora provato: alla prova in aula non c'era una LIM a disposizione. Insieme vanno visti colori e leggibilità su una LIM.
 - [ ] Quanto lasciar durare la tempesta di broadcast prima della sospensione (SIM-15). Oggi: un frame può essere inoltrato fino a 3 volte il numero degli switch, e i frame in viaggio possono arrivare a 200. Da rivedere con il tempo reale, quando guardarla non costerà clic.
 - [ ] In quale tappa collocare lo spanning tree (DEV-11). Proposta: T2, insieme alle VLAN.
 - [x] In quale rilascio collocare il salvataggio facoltativo delle tabelle (FILE-5): R2, costruito il 18 ottobre 2026 (D-100).
@@ -363,7 +364,7 @@ Punti ancora da decidere:
 
 Registro delle scelte tecniche importanti, con il motivo. Ogni nuova scelta si aggiunge in fondo; una scelta superata non si cancella, si marca come sostituita. I dettagli stanno in [docs/](docs/README.md).
 
-Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docente, *adottata* se è già nel codice su proposta di chi sviluppa ma non è ancora stata discussa. Il 9 ottobre 2026 tutte le decisioni adottate fino a quel momento sono state discusse e confermate o sostituite. L'11 ottobre 2026 lo stesso è stato fatto per quelle successive: resta adottata la sola D-61, in attesa della prova in aula.
+Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docente, *adottata* se è già nel codice su proposta di chi sviluppa ma non è ancora stata discussa. Il 9 ottobre 2026 tutte le decisioni adottate fino a quel momento sono state discusse e confermate o sostituite. L'11 ottobre 2026 lo stesso è stato fatto per quelle successive. La sola D-61, rimasta adottata in attesa della prova in aula, è stata confermata il 20 ottobre 2026.
 
 | N. | Data | Decisione | Motivo | Stato |
 | --- | --- | --- | --- | --- |
@@ -427,7 +428,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-58 | 10 ott 2026 | La rete risulta modificata quando il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Con modifiche non salvate, Nuova, Apri e la chiusura della pagina chiedono conferma | Confrontare i file è più semplice e più giusto che contare le modifiche: annullare tutto riporta a "salvata", e il traffico non conta. La conferma evita di perdere con un clic una rete costruita in classe | Confermata |
 | D-59 | 10 ott 2026 | L'inquadratura è automatica (il foglio di base, D-49) finché l'utente non ingrandisce, sposta la vista o preme Adatta; da lì è un rettangolo fisso che cambia solo lui. Nuova torna a quella automatica | Chi costruisce una rete da zero non deve pensare alla vista; chi l'ha scelta non deve vedersela cambiare da un dispositivo posato | Confermata |
 | D-60 | 10 ott 2026 | Un file appena aperto viene inquadrato per intero, come con Adatta. Adatta lascia margine per etichette e barra della simulazione, e non ingrandisce oltre un riquadro minimo | Con il solo foglio di base le reti di esempio apparivano piccole. Senza il riquadro minimo un PC da solo riempirebbe lo schermo | Confermata |
-| D-61 | 10 ott 2026 | In presentazione l'ingrandimento è un solo fattore, regolabile dal 100% al 200% (di partenza 140%). Barre, pannello e fascia si ingrandiscono per intero; nel disegno crescono dispositivi, scritte, buste, tabelle e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete | Un fattore solo è facile da regolare guardando dal fondo dell'aula. Ingrandire gli elementi e non le distanze è ciò che rende leggibile una rete grande, che altrimenti verrebbe solo rimpicciolita dall'inquadratura | Adottata: da decidere dopo la prova in aula |
+| D-61 | 10 ott 2026 | In presentazione l'ingrandimento è un solo fattore, regolabile dal 100% al 200% (di partenza 140%). Barre, pannello e fascia si ingrandiscono per intero; nel disegno crescono dispositivi, scritte, buste, tabelle e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete | Un fattore solo è facile da regolare guardando dal fondo dell'aula. Ingrandire gli elementi e non le distanze è ciò che rende leggibile una rete grande, che altrimenti verrebbe solo rimpicciolita dall'inquadratura | Confermata il 20 ottobre 2026, dopo la prova in aula: leggibile dal fondo dell'aula con il 140% di partenza |
 | D-62 | 10 ott 2026 | In presentazione spariscono i comandi per costruire (colonna, file, annulla, etichette, Collega, Elimina, tasto Canc); restano guasti, ping, terminale, tabelle appuntate, spostamento dei dispositivi, modifica di nome e indirizzi dal pannello, e Ctrl+Z per annullare | Durante una dimostrazione servono i guasti e il cambio di un indirizzo (criterio di accettazione, punto 7); eliminare un dispositivo per sbaglio davanti alla classe no | Confermata |
 | D-63 | 10 ott 2026 | Le scorciatoie Spazio, Freccia destra, E e T valgono solo in presentazione, e mai mentre si scrive in una casella o nel terminale. Esc prima lascia andare un gesto a metà, poi esce | Fuori dalla presentazione quei tasti si premono per altri motivi. Così UI-14 è rispettato senza sorprese | Confermata |
 | D-64 | 11 ott 2026 | Il sito è pubblicato su Cloudflare, nel piano gratuito, e si aggiorna da solo a ogni push sul ramo `main`. Il repository resta privato. Le prove si fanno in locale | È gratuito senza un tetto mensile che possa sospendere il sito, non obbliga a rendere pubblico il codice prima di aver deciso destinatari e licenza, e accetta un dominio `.it` comprato altrove | Confermata; dal 17 ottobre 2026 il ramo pubblicato è `stabile` (D-99) |
@@ -474,25 +475,25 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 
 ## 9. Stato di avanzamento
 
-Aggiornato al 17 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
+Aggiornato al 20 ottobre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
 
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
-| Rilascio 1 intero | circa 98%: costruito, da provare in aula |
-| Rilascio 2 | circa 75%: routing, CLI e tabelle nel file costruiti; mancano offline e strumenti dell'editor |
-| Prima versione (rilasci 1 e 2) | circa 89% |
-| Progetto completo, fino alla tappa T8 | circa 33% |
+| Rilascio 1 intero | circa 99%: costruito e provato in aula; restano la LIM con il dito e una rete grande su un PC dell'aula |
+| Rilascio 2 | circa 80%: routing, CLI e tabelle nel file costruiti; degli strumenti dell'editor fatti 2 passaggi su 7; manca l'offline |
+| Prima versione (rilasci 1 e 2) | circa 90% |
+| Progetto completo, fino alla tappa T8 | circa 30%: le tappe T1–T8 non sono cominciate, e T1, T3 e T5 valgono ciascuna quanto il rilascio 2 o più |
 
-Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e costruita in nove passaggi, tutti fatti. Ciò che resta del rilascio 1 è la prova: in aula, su LIM o proiettore, e con reti grandi. Il sito è pubblicato (D-64).
+Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e costruita in nove passaggi, tutti fatti. Il sito è pubblicato (D-64) e la prova in aula, a ottobre 2026, non ha mostrato problemi: il sito si apre dai PC della scuola, la presentazione si legge dal fondo dell'aula con l'ingrandimento di partenza (D-61, confermata), e il passo-passo del ping è accettabile. Restano da provare l'uso di una LIM con il dito, perché non ce n'era una a disposizione, e una rete grande su un PC dell'aula.
 
 ### Requisiti del rilascio 1
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | ED-1 posare PC e switch dalla colonna · UI-8 selezione e barretta · UI-7 colore più un secondo segno · VIS-7 modalità presentazione · UI-14 scorciatoie e ingrandimento regolabile · FILE-1 aprire e salvare · ED-3 spostare, ingrandire e scorrere · UI-13 rotella, sfondo e pulsanti dell'inquadratura · DEV-1 PC · DEV-2 switch · ED-4 rinominare ed eliminare · ED-5 annulla e ripristina · CFG-1 pannello di configurazione · CFG-7 regole di Windows, per i file e per il pannello · CFG-8 conferma del campo e maschera proposta · ED-2 cavi nuovi e scelta della porta · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · VIS-8 stato delle porte sui collegamenti: segnale, cavo staccato, dispositivo spento, porta spenta · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file |
+| **Fatto** | ED-1 posare PC e switch dalla colonna · UI-8 selezione e barretta · UI-7 colore più un secondo segno · VIS-7 modalità presentazione · UI-14 scorciatoie e ingrandimento regolabile · FILE-1 aprire e salvare · ED-3 spostare, ingrandire e scorrere · UI-13 rotella, sfondo e pulsanti dell'inquadratura · DEV-1 PC · DEV-2 switch · ED-4 rinominare ed eliminare · ED-5 annulla e ripristina · CFG-1 pannello di configurazione · CFG-7 regole di Windows, per i file e per il pannello · CFG-8 conferma del campo e maschera proposta · ED-2 cavi nuovi e scelta della porta · SIM-1 Ethernet, ARP, IPv4, ICMP · SIM-8 comportamento da rete vera · SIM-13 quattro echo request ed esiti · SIM-14 loopback · SIM-15 sospensione della tempesta di broadcast · SIM-6 guasti: cavo staccato e dispositivo spento · UI-3 lingua · UI-4 mouse e tastiera · UI-1 disposizione della schermata · UI-2 stile grafico · UI-6 due temi · UI-10 barra della simulazione · SIM-5 ping col mouse · VIS-2 pacchetto a strati · VIS-3 tabelle aggiornate dal vivo · CFG-2 terminale degli host · SIM-4 traffico dal terminale · UI-11 una scheda per terminale · VIS-4 pacchetto, contenuto e tabelle insieme · VIS-5 filtro del traffico · VIS-9 elenco degli eventi · VIS-10 tabelle appuntate · UI-12 foglio vuoto all'avvio · VIS-1 buste con sigla · VIS-6 etichette sul disegno · VIS-8 stato delle porte sui collegamenti: segnale, cavo staccato, dispositivo spento, porta spenta · SIM-2 tempo reale e passo-passo · SIM-3 velocità · SIM-16 pausa tra gli echo · SIM-17 attese accorciate · NF-1 sito statico · NF-3 browser · NF-5 codice leggibile · NF-6 test del motore · FILE-4 controlli all'apertura di un file · UI-5 leggibilità dal fondo dell'aula, provata in aula in presentazione |
 | **A metà** | FILE-2 il numero di versione c'è, le migrazioni no: serviranno al primo cambio di formato |
-| **Da provare** | UI-5 leggibilità dal fondo dell'aula: l'ingrandimento c'è ed è regolabile, ma non è mai stato visto su una LIM · NF-4 reti fino a 50 dispositivi: misurate il 17 ottobre 2026 in Chrome senza finestra, con la CPU rallentata 4 volte, su una rete di prova (un router, 4 switch, 45 PC): 60 fotogrammi al secondo, senza blocchi, a rete ferma, durante un ping attraverso il router, trascinando il router e durante una tempesta di broadcast su 50 dispositivi; resta da provare su un PC dell'aula, e a quella dimensione le scritte risultano molto piccole prima di ingrandire · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
+| **Da provare** | NF-4 reti fino a 50 dispositivi: misurate il 17 ottobre 2026 in Chrome senza finestra, con la CPU rallentata 4 volte, su una rete di prova (un router, 4 switch, 45 PC): 60 fotogrammi al secondo, senza blocchi, a rete ferma, durante un ping attraverso il router, trascinando il router e durante una tempesta di broadcast su 50 dispositivi; resta da provare su un PC dell'aula, e a quella dimensione le scritte risultano molto piccole prima di ingrandire · UI-9 modificare la rete mentre il traffico viaggia: funziona nei test, mai provato a lungo a mano · NF-7 stile e disposizione sostituibili: colori, caratteri e icone stanno in un solo punto, la disposizione in `App.svelte`; mai messo alla prova con uno stile diverso |
 
 Rilascio 2: progettato l'11 ottobre 2026 (criteri di accettazione e piani nella sezione 5). Tre delle sue parti sono costruite:
 
@@ -539,7 +540,7 @@ I nove punti sono eseguiti da due test in un browser vero (`tests/e2e/cli.spec.t
 | 7. Rotta di andata, poi anche quella di ritorno | Funziona |
 | 8. `tracert` mostra i due router e la destinazione | Funziona |
 
-Come per il rilascio 1, gli otto punti sono eseguiti di fila da test automatici in un browser vero (`tests/e2e/router.spec.ts`); resta la prova in aula.
+Come per il rilascio 1, gli otto punti sono eseguiti di fila da test automatici in un browser vero (`tests/e2e/router.spec.ts`). La prova in aula non ha mostrato problemi.
 
 ### Rispetto al criterio di accettazione del rilascio 1
 
@@ -554,7 +555,7 @@ Come per il rilascio 1, gli otto punti sono eseguiti di fila da test automatici 
 | 7. Staccare un cavo; cambiare un indirizzo | Funzionano entrambi: il cavo con un clic, l'indirizzo dal pannello laterale |
 | 8. Salvare la rete | Funziona; la finestra di salvataggio va provata nei browser dell'aula |
 
-Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico in un browser vero (`tests/e2e/lezione.spec.ts`). Resta la prova in aula: leggibilità, LIM, filtro della scuola.
+Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico in un browser vero (`tests/e2e/lezione.spec.ts`). La prova in aula non ha mostrato problemi: il sito passa il filtro della scuola e la presentazione si legge dal fondo dell'aula. Resta da provare una LIM.
 
 ### Che cosa esiste oltre ai requisiti
 
