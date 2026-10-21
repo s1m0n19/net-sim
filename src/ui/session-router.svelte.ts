@@ -2,7 +2,7 @@
 // interfacce, impostarne gli indirizzi, aggiungere e togliere le rotte
 // statiche.
 //
-// È il quarto strato di `session`. Come gli altri metodi che modificano la
+// È il sesto strato di `session`. Come gli altri metodi che modificano la
 // rete, anche questi passano da `attempt`, che registra la modifica nella
 // cronologia.
 

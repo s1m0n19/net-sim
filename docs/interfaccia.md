@@ -429,12 +429,14 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | File o cartella | Contenuto |
 | --- | --- |
 | `App.svelte` | L'ossatura: la griglia che dispone le aree. I componenti non sanno dove si trovano |
-| `session.svelte.ts` | `session`, l'unico punto che parla con il simulatore. È fatta di cinque strati, uno sopra l'altro; i metodi si chiamano tutti su `session` |
-| `session-core.svelte.ts` | Primo strato: la rete aperta, ciò che di lei va disegnato, il tempo a schermo, il file, la selezione, i gesti a metà, l'inquadratura |
-| `session-demo.svelte.ts` | Secondo strato: guasti, ping col mouse, terminali, tabelle appuntate, filtro |
-| `session-editing.svelte.ts` | Terzo strato: le modifiche alla rete e la cronologia per annullare |
-| `session-router.svelte.ts` | Quarto strato: interfacce e rotte statiche dei router, dal pannello |
-| `session-cli.svelte.ts` | Quinto strato: la CLI di router e switch nei terminali |
+| `session.svelte.ts` | `session`, l'unico punto che parla con il simulatore. È fatta di sette strati, uno sopra l'altro (D-105); i metodi si chiamano tutti su `session` |
+| `session-core.svelte.ts` | Primo strato: la rete aperta, ciò che di lei va disegnato, il tempo a schermo, la selezione, i gesti a metà, l'inquadratura |
+| `session-file.svelte.ts` | Secondo strato: il file. Aprire, foglio nuovo, modifiche non salvate, preparare il salvataggio con o senza tabelle |
+| `session-demo.svelte.ts` | Terzo strato: guasti, ping col mouse, terminali, tabelle appuntate, filtro |
+| `session-history.svelte.ts` | Quarto strato: la cronologia per annullare e ripristinare. Gli strati sopra la usano con `capture`, `remember` e `attempt` |
+| `session-editing.svelte.ts` | Quinto strato: le modifiche alla rete e la griglia magnetica |
+| `session-router.svelte.ts` | Sesto strato: interfacce e rotte statiche dei router, dal pannello |
+| `session-cli.svelte.ts` | Settimo strato: la CLI di router e switch nei terminali |
 | `session-types.ts` | I tipi di selezione, tabelle appuntate, terminali e punti della cronologia |
 | `view.ts` | Trasforma rete e posizioni in ciò che i componenti disegnano: etichette, segnale sui cavi, inquadratura. Non usa il browser, quindi ha i suoi test |
 | `view-types.ts`, `event-text.ts` | I tipi di ciò che si disegna; il testo di ogni riga dell'elenco degli eventi |

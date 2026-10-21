@@ -106,7 +106,8 @@ net-sim/
 │   └── ui/                    l'interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
-│       │                      è fatta di cinque strati (session-core, -demo, -editing, -router, -cli)
+│       │                      è fatta di sette strati (session-core, -file, -demo, -history,
+│       │                      -editing, -router, -cli)
 │       ├── view.ts            prepara ciò che il disegno mostra (tipi in view-types.ts,
 │       │                      testo degli eventi in event-text.ts)
 │       ├── presentation.ts    modalità presentazione e scorciatoie
@@ -127,7 +128,7 @@ Gli interpreti di `src/shell/` stanno fuori dal motore perché traducono testo i
 
 ## Convenzioni del codice
 
-- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`, `simulator.ts` (la consegna è passata in `delivery.ts`), `editing.ts` e `session-editing.svelte.ts` (le parti sui router sono passate in `router-editing.ts` e `session-router.svelte.ts`). Restano poco sopra le 300 righe `session-editing.svelte.ts`, `session-core.svelte.ts` e `session-demo.svelte.ts`.
+- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`, `simulator.ts` (la consegna è passata in `delivery.ts`), `editing.ts` e `session-editing.svelte.ts` (le parti sui router sono passate in `router-editing.ts` e `session-router.svelte.ts`). Il 21 ottobre la sessione è passata da cinque a sette strati (D-105): il file è uscito da `session-core.svelte.ts` in `session-file.svelte.ts`, la cronologia da `session-editing.svelte.ts` in `session-history.svelte.ts`. Restano poco sopra le 300 righe `shell/windows.ts`, `engine/model/network.ts`, `engine/actions.ts`, `panels/SidePanel.svelte` e `session-demo.svelte.ts`.
 - **I nomi seguono la teoria.** Un campo si chiama come sul libro di testo e negli standard: `ttl`, `etherType`, `senderMac`.
 - **Identificatori in inglese, commenti e messaggi in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. È la decisione D-15.
 - **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola. Esempi: `chooseOutputPorts`, `nextHopFor`, `sameNetwork`.

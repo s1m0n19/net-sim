@@ -1,8 +1,9 @@
 // Condurre la dimostrazione: guasti, ping col mouse, terminali degli host,
 // tabelle appuntate, filtro del traffico.
 //
-// È il secondo strato di `session`: aggiunge a SessionCore ciò che serve
-// per osservare la rete e provocarla, senza modificarne la configurazione.
+// È il terzo strato di `session`: aggiunge alla rete aperta e al suo file
+// ciò che serve per osservarla e provocarla, senza modificarne la
+// configurazione.
 
 import { connectLink, disconnectLink, powerOff, powerOn } from "../engine/actions";
 import {
@@ -15,11 +16,11 @@ import {
   PROMPT,
 } from "../shell/windows";
 import { INITIAL_STATE } from "../shell/ios/modes";
-import { SessionCore } from "./session-core.svelte";
+import { SessionFile } from "./session-file.svelte";
 import type { Pin, PinTable, Terminal, TerminalEntry } from "./session-types";
 import type { Protocol } from "./view";
 
-export class SessionDemo extends SessionCore {
+export class SessionDemo extends SessionFile {
   // Le tabelle tenute in vista sul disegno: di quale dispositivo, e a che
   // distanza da lui. Riguardano solo lo schermo e non si salvano nel file.
   pins = $state<Pin[]>([]);

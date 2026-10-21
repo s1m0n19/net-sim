@@ -1,66 +1,26 @@
 // La rete aperta in questo momento: il simulatore, ciò che di lui va
-// disegnato, il tempo a schermo, il file da cui viene, e ciò che l'utente
-// sta facendo sul disegno (selezione, gesti a metà, inquadratura).
+// disegnato, il tempo a schermo, e ciò che l'utente sta facendo sul
+// disegno (selezione, gesti a metà, inquadratura).
 //
-// È il primo di tre strati che insieme formano `session` (vedi
-// session.svelte.ts). Questo è l'unico che crea il simulatore; gli altri
-// due lo comandano attraverso `run`.
+// È il primo degli strati che insieme formano `session` (vedi
+// session.svelte.ts). Gli altri lo comandano attraverso `run`; da dove
+// viene la rete, cioè il file, se ne occupa lo strato sopra di questo,
+// session-file.svelte.ts.
 
 import { ping, tracert, type Action } from "../engine/actions";
 import type { DeviceTemplate } from "../engine/editing";
-import { copyTables, type NetworkTables } from "../engine/model/tables";
 import { Simulator, type Trace } from "../engine/simulator";
-import { loadNetworkFile, type Position } from "../storage/load";
-import { serializeNetwork } from "../storage/save";
+import type { Position } from "../storage/load";
 import type { Selection } from "./session-types";
 import { fitted } from "./topology/camera";
 import { buildView, EMPTY_VIEW, type Bounds, type NetworkView } from "./view";
-
-// L'estensione dei file di rete, e il nome di un file senza di lei.
-export const FILE_EXTENSION = ".netsim.json";
-
-function baseName(fileName: string): string {
-  return fileName.replace(/(\.netsim)?\.json$/i, "");
-}
 
 /** Il testo di un errore, da mostrare all'utente. */
 export function messageOf(problem: unknown): string {
   return problem instanceof Error ? problem.message : String(problem);
 }
 
-/**
- * Ciò che serve per salvare: il testo da scrivere nel file, e ciò che dopo
- * la scrittura dice alla sessione com'era la rete salvata.
- */
-export interface SaveDraft {
-  // Il contenuto del file, tabelle comprese se richieste.
-  text: string;
-  // La sola configurazione, per riconoscere le modifiche non salvate.
-  config: string;
-  // Le tabelle scritte nel file, o null se non sono state scritte.
-  tables: NetworkTables | null;
-}
-
 export class SessionCore {
-  // Il nome del file aperto, senza estensione; null se la rete è nuova.
-  fileName = $state<string | null>(null);
-
-  /** La rete è diversa da quella aperta o salvata l'ultima volta. */
-  dirty = $state(false);
-
-  // Il testo del file com'era all'ultima apertura o all'ultimo salvataggio,
-  // senza tabelle: le tabelle cambiate dal traffico non sono una modifica.
-  protected savedText = "";
-
-  /**
-   * Salvare scrive anche le tabelle ARP e MAC (FILE-5). Si accende da solo
-   * aprendo un file che le contiene, e si spegne con Nuova.
-   */
-  saveTables = $state(false);
-
-  // Un messaggio per l'utente quando un file non si può aprire.
-  error = $state<string | null>(null);
-
   // Ciò che il disegno mostra. Si aggiorna dopo ogni comando.
   view = $state.raw<NetworkView>(EMPTY_VIEW);
 
@@ -123,47 +83,6 @@ export class SessionCore {
   protected simulator: Simulator | null = new Simulator({ devices: [], links: [] });
 
   protected positions = new Map<string, Position>();
-
-  /**
-   * Apre una rete a partire dal contenuto di un file.
-   * Se il file non è valido la rete aperta resta quella di prima, e
-   * `error` dice che cosa non va.
-   *
-   * @param name - il nome del file, mostrato nella barra in alto
-   * @param text - il contenuto del file
-   */
-  open(name: string, text: string): void {
-    try {
-      const loaded = loadNetworkFile(text);
-      this.simulator = new Simulator(loaded.network, loaded.tables ?? new Map());
-      this.positions = loaded.positions;
-      this.saveTables = loaded.tables !== null;
-      this.savedText = this.serialize();
-      this.fileName = baseName(name);
-      this.error = null;
-      this.selection = null;
-      this.networkReplaced();
-      this.rewind();
-      // Una rete appena aperta si vede tutta, grande quanto ci sta.
-      this.fitView();
-    } catch (problem) {
-      this.error = messageOf(problem);
-    }
-  }
-
-  /** Torna al foglio vuoto: una rete nuova, senza dispositivi. */
-  clear(): void {
-    this.simulator = new Simulator({ devices: [], links: [] });
-    this.positions = new Map();
-    this.savedText = this.serialize();
-    this.saveTables = false;
-    this.fileName = null;
-    this.error = null;
-    this.selection = null;
-    this.networkReplaced();
-    this.rewind();
-    this.camera = null;
-  }
 
   /**
    * Inquadra tutta la rete. Su un foglio vuoto torna all'inquadratura di base.
@@ -292,57 +211,10 @@ export class SessionCore {
   // Rilegge lo stato del simulatore e aggiorna ciò che il disegno mostra.
   protected refresh(): void {
     this.view = this.simulator === null ? EMPTY_VIEW : buildView(this.simulator, this.positions);
-    // La rete è "modificata" se il file che ne uscirebbe adesso è diverso
-    // dall'ultimo aperto o salvato: tornare indietro con Annulla la
-    // riporta a "salvata".
-    this.dirty = this.serialize() !== this.savedText;
-  }
-
-  /**
-   * Il contenuto del file che descrive la configurazione della rete com'è
-   * adesso: configurazione, posizioni e guasti, senza tabelle né pacchetti.
-   * È ciò che si confronta per sapere se ci sono modifiche non salvate.
-   */
-  serialize(): string {
-    return serializeNetwork(this.network(), this.positions);
-  }
-
-  /**
-   * Prepara un salvataggio: il testo del file, con le tabelle se
-   * `saveTables` è acceso, preso nello stesso istante di ciò che servirà a
-   * `markSaved`.
-   */
-  draftSave(): SaveDraft {
-    const network = this.network();
-    return {
-      text: serializeNetwork(network, this.positions, this.saveTables),
-      config: this.serialize(),
-      tables: this.saveTables ? copyTables(network) : null,
-    };
-  }
-
-  /**
-   * Da chiamare dopo che il file è stato scritto: la rete prende il nome
-   * del file e torna a risultare salvata. Se il file contiene le tabelle,
-   * da qui Ricomincia torna a quelle.
-   *
-   * @param name - il nome del file scritto, con o senza estensione
-   * @param draft - ciò che `draftSave` aveva preparato per quel file
-   */
-  markSaved(name: string, draft: SaveDraft): void {
-    this.fileName = baseName(name);
-    this.savedText = draft.config;
-    if (draft.tables !== null) this.simulator?.setStartingTables(draft.tables);
-    this.dirty = this.serialize() !== this.savedText;
-  }
-
-  // La rete aperta; un foglio vuoto se non ce n'è nessuna.
-  private network() {
-    return this.simulator?.network ?? { devices: [], links: [] };
   }
 
   // Da ridefinire negli strati superiori: la rete è stata sostituita da
-  // un'altra (file aperto, o foglio nuovo), e ciò che riguardava quella
-  // di prima va buttato.
+  // un'altra (un file aperto, o un foglio nuovo: lo fa lo strato del
+  // file), e ciò che riguardava quella di prima va buttato.
   protected networkReplaced(): void {}
 }
