@@ -13,10 +13,12 @@ import {
   addServer,
   addSwitch,
   configureHost,
+  duplicateDevice,
   moveLinkEnd,
   removeDevice,
   removeLink,
   renameDevice,
+  type Action,
 } from "../engine/actions";
 import { freePortsOf, type DeviceTemplate } from "../engine/editing";
 import { checkIpConfig, defaultMaskFor, type IpConfig } from "../engine/model/ip-config";
@@ -25,6 +27,7 @@ import { messageOf } from "./session-core.svelte";
 import { SessionHistory } from "./session-history.svelte";
 import type { HistoryEntry } from "./session-types";
 import { snapToGrid } from "./topology/grid";
+import { besideFree } from "./topology/placement";
 
 /** Una frase del motore, pronta per essere mostrata: maiuscola e punto. */
 export function sentence(text: string): string {
@@ -59,6 +62,26 @@ export class SessionEditing extends SessionHistory {
           : template.kind === "switch"
           ? addSwitch(template.portCount)
           : addRouter(template.interfaceCount);
+    this.addAt(action, position);
+  }
+
+  /**
+   * Aggiunge una copia di un dispositivo (D-101) e la seleziona. La copia
+   * nasce scollegata, al primo posto libero a destra dell'originale: così,
+   * premendo ancora Duplica, le copie si mettono in fila.
+   *
+   * @param deviceId - il dispositivo da copiare
+   */
+  duplicate(deviceId: string): void {
+    const origin = this.positions.get(deviceId);
+    if (origin === undefined) return;
+    this.addAt(duplicateDevice(deviceId), besideFree(origin, [...this.positions.values()]));
+  }
+
+  // Esegue un'azione che aggiunge un dispositivo, lo mette in un punto del
+  // disegno e lo seleziona: un solo passo da annullare.
+  private addAt(action: Action, position: Position): void {
+    if (this.simulator === null) return;
     const before = this.capture();
     try {
       const traces = this.simulator.dispatch(action);

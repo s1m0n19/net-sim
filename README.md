@@ -139,11 +139,13 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 
 **Selezione.** Un clic su un dispositivo, un cavo o una busta lo seleziona: il pannello di destra ne mostra i dettagli, e accanto compare una barretta con le azioni. Un clic sullo sfondo, o il tasto Esc, toglie la selezione.
 
+**Duplicare.** Duplica, sulla barretta, crea una copia del dispositivo accanto all'originale, scollegata e già selezionata: premendolo ancora si fa una fila. La copia di un PC o di un server prende maschera, gateway e l'indirizzo libero successivo (da 192.168.1.10 nasce 192.168.1.11); quella di uno switch le stesse porte, spente dove lo sono; quella di un router le stesse interfacce, spente e senza indirizzi. Si annulla con un Ctrl+Z.
+
 | Selezionato | Sulla barretta | Nel pannello di destra |
 | --- | --- | --- |
-| Un PC o un server | Spegni o accendi · Ping · Collega · Terminale · Appunta la tabella ARP · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
-| Uno switch | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella MAC · Elimina | Numero di porte, tabella MAC |
-| Un router | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella di routing · Elimina | Interfacce (accesa o spenta, indirizzo, maschera), tabella di routing con le rotte statiche, tabella ARP |
+| Un PC o un server | Spegni o accendi · Ping · Collega · Duplica · Terminale · Appunta la tabella ARP · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
+| Uno switch | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella MAC · Elimina | Numero di porte, tabella MAC |
+| Un router | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella di routing · Elimina | Interfacce (accesa o spenta, indirizzo, maschera), tabella di routing con le rotte statiche, tabella ARP |
 | Un cavo | Stacca o riattacca · Elimina | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 

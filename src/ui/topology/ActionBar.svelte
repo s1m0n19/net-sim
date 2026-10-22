@@ -17,6 +17,8 @@
     ping: "M10 22L22 10M15 10H22V17",
     // Un cavo con un connettore a ogni capo.
     link: "M11 21C16 21 16 11 21 11M9 19H11V23H9ZM21 9H23V13H21Z",
+    // Due fogli sovrapposti: l'originale e la sua copia.
+    duplicate: "M9 13H19V23H9ZM13 13V9H23V19H19",
     terminal: "M9 11L14 16L9 21M16 21H23",
     pin: "M9 10H23V22H9ZM9 16H23M16 10V22",
     unplug: "M7 16H12M20 16H25M12 11V21M20 11V21",

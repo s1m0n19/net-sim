@@ -97,6 +97,11 @@ if (import.meta.env.DEV) {
       input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
       await tick();
     }
+    // &duplica=PC1&duplica=PC2                duplica dispositivi posati, dopo &scrivi (ripetibile)
+    for (const name of params.getAll("duplica")) {
+      const original = named(name);
+      if (original !== undefined) session.duplicate(original.id);
+    }
   });
   // &porta=2b                                 apre l'elenco delle porte: secondo cavo, capo b
   const portOf = /^(\d+)([ab])$/.exec(params.get("porta") ?? "");

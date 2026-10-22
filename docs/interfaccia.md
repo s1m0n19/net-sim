@@ -58,7 +58,7 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
 - l'avviso della tempesta di broadcast;
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
-- la **barretta delle azioni**: spegni o accendi, Ping, Collega, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
+- la **barretta delle azioni**: spegni o accendi, Ping, Collega, Duplica, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
 - il **pannello laterale**: nome e configurazione IP del dispositivo, che si cambiano da lì, le sue tabelle, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
@@ -125,10 +125,12 @@ Accanto a ciò che è selezionato compare una **barretta** con le azioni princip
 
 | Selezionato | Azioni sulla barretta |
 | --- | --- |
-| Host (PC o server) | Spegni o accendi · Ping · Collega · Terminale · Appunta la tabella ARP · Elimina |
-| Switch | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella MAC · Elimina |
-| Router | Spegni o accendi · Collega · Terminale (la CLI) · Appunta la tabella di routing · Elimina |
+| Host (PC o server) | Spegni o accendi · Ping · Collega · Duplica · Terminale · Appunta la tabella ARP · Elimina |
+| Switch | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella MAC · Elimina |
+| Router | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella di routing · Elimina |
 | Cavo | Stacca o riattacca · Elimina |
+
+**Duplica** (ED-6, D-101). Crea una copia del dispositivo e la seleziona, come un dispositivo appena posato; è un solo passo di Annulla. La copia nasce scollegata, al primo posto libero a destra dell'originale, a 140 px (`topology/placement.ts`): abbastanza perché due indirizzi IP non si tocchino, e multiplo del passo della griglia. Premendo ancora Duplica sulla copia si fa una fila. Che cosa la copia prende dall'originale lo decide il motore (`engine/duplicating.ts`, vedi [motore.md](motore.md)). Come Collega, in presentazione il pulsante non c'è. L'icona sono due fogli sovrapposti.
 
 **Ping dalla barretta.** Si preme Ping e poi si fa clic sul dispositivo di destinazione. Manda **un solo** echo request: è lo strumento per le dimostrazioni. Le quattro richieste di Windows si ottengono dal terminale.
 
@@ -445,7 +447,7 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto e colonna dei dispositivi |
 | `presentation.ts` | Modalità presentazione: entrare, uscire, scorciatoie. L'ingrandimento sta in `preferences` |
-| `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts`, `geometry.ts` e `grid.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
+| `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts`, `geometry.ts`, `grid.ts` e `placement.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
 | `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |

@@ -526,3 +526,55 @@ describe("griglia magnetica", () => {
     session.grid = false;
   });
 });
+
+describe("duplicare", () => {
+  function device(name: string) {
+    return session.view.devices.find((d) => d.name === name)!;
+  }
+
+  test("la copia nasce a destra dell'originale, selezionata, con l'indirizzo successivo", () => {
+    session.addDevice(PC, { x: 100, y: 100 });
+    session.configure(device("PC1").id, "ip", "192.168.1.10");
+
+    session.duplicate(device("PC1").id);
+
+    const copy = device("PC2");
+    expect([copy.x, copy.y]).toEqual([240, 100]);
+    expect(copy.ipLabel).toBe("192.168.1.11/24");
+    expect(session.selection).toEqual({ kind: "device", id: copy.id });
+  });
+
+  test("duplicando ancora la copia selezionata, le copie si mettono in fila", () => {
+    session.addDevice(PC, { x: 100, y: 100 });
+    session.configure(device("PC1").id, "ip", "192.168.1.10");
+
+    for (let i = 0; i < 3; i++) {
+      const selected = session.selection as { kind: "device"; id: string };
+      session.duplicate(selected.id);
+    }
+
+    expect(["PC2", "PC3", "PC4"].map((n) => [device(n).x, device(n).ipLabel])).toEqual([
+      [240, "192.168.1.11/24"],
+      [380, "192.168.1.12/24"],
+      [520, "192.168.1.13/24"],
+    ]);
+  });
+
+  test("la copia salta i posti già occupati", () => {
+    session.addDevice(PC, { x: 100, y: 100 });
+    session.addDevice(SWITCH_8, { x: 250, y: 95 });
+
+    session.duplicate(device("PC1").id);
+
+    expect([device("PC2").x, device("PC2").y]).toEqual([380, 100]);
+  });
+
+  test("un solo Annulla toglie la copia", () => {
+    session.addDevice(PC, { x: 100, y: 100 });
+    session.duplicate(device("PC1").id);
+
+    session.undo();
+
+    expect(names()).toEqual(["PC1"]);
+  });
+});

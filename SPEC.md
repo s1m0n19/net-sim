@@ -315,7 +315,7 @@ Deciso nell'intervista del 18 ottobre 2026, dopo la prova in aula. Dal più picc
 | --- | --- | --- |
 | 1 | **Fatto.** Griglia magnetica: interruttore nella barra in alto, scatto a 20 px nel posare e nel trascinare | Un disegno si tiene in ordine da solo |
 | 2 | **Fatto.** Duplicare nel motore: un'azione nuova, con nome, MAC e indirizzo successivo liberi scelti dal motore (D-46) | Nei test, un PC configurato diventa cinque PC pronti |
-| 3 | Duplicare a schermo: pulsante Duplica sulla barretta, la copia nasce accanto e selezionata, con annulla | Una LAN da molti PC si costruisce in pochi clic |
+| 3 | **Fatto.** Duplicare a schermo: pulsante Duplica sulla barretta, la copia nasce accanto e selezionata, con annulla | Una LAN da molti PC si costruisce in pochi clic |
 | 4 | Annotazioni nel modello della pagina e nei file: riquadri e note, con posizione, dimensione, colore e testo; nella cronologia di annulla e ripristina | Un file con annotazioni si apre, si salva e si riapre |
 | 5 | Annotazioni a schermo: strumenti Riquadro e Nota nella colonna, selezione e barretta, testo nel pannello laterale, ridimensionare dagli angoli, presentazione | Il disegno si commenta e si divide in sottoreti |
 | 6 | Esportare come immagine: PNG di tutta la rete, tema chiaro, doppia risoluzione | La rete va nelle slide e nelle verifiche su carta |
@@ -502,15 +502,15 @@ Rilascio 2: progettato l'11 ottobre 2026 (criteri di accettazione e piani nella 
 - **CLI in stile IOS**, i sette passaggi del suo piano, dal 13 al 14 ottobre. Le porte degli switch si spengono. L'interprete (`src/shell/ios/`) ha modalità, abbreviazioni, `?`, Tab, `do` e i messaggi di errore di IOS. I comandi di configurazione passano dalle azioni del pannello (D-95), i `show` leggono la rete (D-96), il router fa ping e traceroute (D-97). La CLI si apre dalla barretta di router e switch, e ogni comando che cambia la rete è un passo della cronologia (D-98). La lezione del criterio di accettazione è eseguita da `tests/e2e/cli.spec.ts`; il codice è descritto in `docs/cli.md`.
 - **Tabelle nel file**, il 18 ottobre (D-100). L'interruttore Tabelle fa salvare le tabelle ARP e MAC; un file che le contiene parte già caldo, e Ricomincia torna a quelle. Il percorso è eseguito da `tests/e2e/file.spec.ts`.
 
-Restano: strumenti dell'editor, progettati il 18 ottobre 2026 dopo la prova in aula (criterio di accettazione e piano nella sezione 5, decisioni D-101…D-104; fatti il passaggio 1, la griglia magnetica, e il 2, il duplicare nel motore), e funzionamento offline, che aspetta nome e dominio. Tappe successive: nulla è iniziato.
+Restano: strumenti dell'editor, progettati il 18 ottobre 2026 dopo la prova in aula (criterio di accettazione e piano nella sezione 5, decisioni D-101…D-104; fatti i passaggi da 1 a 3: la griglia magnetica e il duplicare, nel motore e a schermo), e funzionamento offline, che aspetta nome e dominio. Tappe successive: nulla è iniziato.
 
 ### Requisiti del rilascio 2
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | ED-7 griglia magnetica · FILE-5 tabelle nel file · DEV-3 router · DEV-4 routing statico e tabella di routing · DEV-5 server · CFG-3 `tracert` · CFG-4 CLI in stile IOS · CFG-5 CLI e pannello sincronizzati · SIM-18 messaggi ICMP di errore |
+| **Fatto** | ED-6 duplicare, un dispositivo alla volta (D-101) · ED-7 griglia magnetica · FILE-5 tabelle nel file · DEV-3 router · DEV-4 routing statico e tabella di routing · DEV-5 server · CFG-3 `tracert` · CFG-4 CLI in stile IOS · CFG-5 CLI e pannello sincronizzati · SIM-18 messaggi ICMP di errore |
 | **Fatto in parte** | SIM-7 porta spenta: interfacce dei router e porte degli switch sì, scheda di un host no |
-| **Da fare** | NF-2 offline e installabile · ED-6 copiare e duplicare · ED-8 esportare come immagine · ED-9 annotazioni |
+| **Da fare** | NF-2 offline e installabile · ED-8 esportare come immagine · ED-9 annotazioni |
 
 ### Rispetto al criterio di accettazione della CLI
 

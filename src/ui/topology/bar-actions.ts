@@ -5,7 +5,16 @@
 import { preferences } from "../preferences.svelte";
 import { session } from "../session.svelte";
 
-export type ActionIcon = "power" | "ping" | "link" | "terminal" | "pin" | "unplug" | "replug" | "remove";
+export type ActionIcon =
+  | "power"
+  | "ping"
+  | "link"
+  | "duplicate"
+  | "terminal"
+  | "pin"
+  | "unplug"
+  | "replug"
+  | "remove";
 
 export interface BarAction {
   icon: ActionIcon;
@@ -57,6 +66,11 @@ export function selectionBar(): SelectionBar | null {
         label: `Collega ${device.name}: poi fai clic sull'altro dispositivo`,
         active: session.linkFrom === device.id,
         run: () => session.armLink(device.id),
+      });
+      actions.push({
+        icon: "duplicate",
+        label: `Duplica ${device.name}: la copia nasce accanto, scollegata`,
+        run: () => session.duplicate(device.id),
       });
     }
     {
