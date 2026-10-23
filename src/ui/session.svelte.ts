@@ -4,7 +4,7 @@
 // leggono `session.view` e chiamano i metodi di `session`; nessuno di loro
 // tocca il simulatore direttamente.
 //
-// La sessione è fatta di sette strati, uno sopra l'altro, ciascuno nel suo
+// La sessione è fatta di otto strati, uno sopra l'altro, ciascuno nel suo
 // file; uno strato usa solo quelli sotto di sé. Tutti i metodi si chiamano
 // allo stesso modo, su `session`:
 //
@@ -16,6 +16,7 @@
 //                              appuntate, filtro
 //   session-history.svelte.ts  la cronologia, per annullare e ripristinare
 //   session-editing.svelte.ts  le modifiche alla rete, e la griglia
+//   session-annotations.svelte.ts  riquadri e note sul disegno
 //   session-router.svelte.ts   interfacce e rotte statiche dei router
 //   session-cli.svelte.ts      la CLI dei router e degli switch
 

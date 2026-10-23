@@ -14,7 +14,7 @@ function warmedUp(text: string, from: string, to: string) {
   const sim = new Simulator(network);
   sim.dispatch(ping(from, to, 1));
   while (sim.canStep()) sim.step();
-  return { saved: serializeNetwork(network, positions, true), tables: copyTables(network) };
+  return { saved: serializeNetwork(network, positions, { tables: true }), tables: copyTables(network) };
 }
 
 // Il file della LAN di esempio con un campo in più su un dispositivo.
@@ -49,7 +49,7 @@ describe("tabelle nel file", () => {
   test("con le tabelle ogni dispositivo ha la sua, anche vuota: ARP per gli host, MAC per lo switch", () => {
     const { network, positions } = loadNetworkFile(lanFile);
 
-    const file = JSON.parse(serializeNetwork(network, positions, true));
+    const file = JSON.parse(serializeNetwork(network, positions, { tables: true }));
 
     for (const device of file.network.devices) {
       const field = device.kind === "switch" ? "macTable" : "arpTable";

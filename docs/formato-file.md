@@ -1,6 +1,6 @@
 # Formato dei file
 
-**Stato:** descrive il codice al 18 ottobre 2026. L'app legge e scrive i file (requisito FILE-1), anche con le tabelle (FILE-5); le migrazioni di versione sono *previste*.
+**Stato:** descrive il codice al 22 ottobre 2026. L'app legge e scrive i file (requisito FILE-1), anche con le tabelle (FILE-5) e con le annotazioni del disegno (ED-9; a schermo ancora *previste*); le migrazioni di versione sono *previste*.
 
 Una rete sta in un file di testo in formato JSON: si può leggere, confrontare con un altro e distribuire con qualsiasi mezzo.
 
@@ -84,6 +84,7 @@ Uno switch si scrive così, come in `examples/lan-switch.netsim.json`:
 | `version` | Numero intero della versione del formato. Oggi vale 1 |
 | `network.devices` | I dispositivi, con la loro configurazione |
 | `network.links` | I collegamenti, ciascuno tra due porte |
+| `annotations` | Riquadri e note del disegno. Facoltativo: c'è solo se il disegno ne ha (vedi «Annotazioni») |
 
 Campi di ogni dispositivo:
 
@@ -156,6 +157,29 @@ Controlli all'apertura, oltre a quelli comuni:
 | Nessuna rotta è ripetuta | due rotte con la stessa rete, maschera e prossimo salto |
 
 Non viene controllato che il prossimo salto di una rotta sia raggiungibile: è un errore che lo studente deve saper diagnosticare.
+
+## Annotazioni
+
+Le annotazioni del disegno (requisito ED-9, decisione D-103) sono di due tipi: **riquadri** colorati con un'etichetta, per mostrare una sottorete o un'area, e **note** di testo, per scrivere una consegna. Non fanno parte della rete, come le posizioni dei dispositivi: stanno nel campo `annotations`, accanto a `network`, e il lettore le restituisce a parte (`LoadedFile.annotations`). Il campo si scrive solo se il disegno ne ha almeno una, così un file senza annotazioni resta com'era. Lettura e scrittura stanno in `src/storage/annotations-file.ts`.
+
+```json
+"annotations": [
+  { "kind": "box", "id": "a1", "x": 40, "y": 60, "width": 500, "height": 300, "color": "green", "label": "LAN 192.168.1.0/24" },
+  { "kind": "note", "id": "a2", "x": 600, "y": 80, "color": "yellow", "text": "Consegna: fai ping da PC1 a PC3" }
+]
+```
+
+| Campo | Contenuto |
+| --- | --- |
+| `kind` | `"box"` per un riquadro, `"note"` per una nota |
+| `id` | Identificativo interno: `a1`, `a2`… |
+| `x`, `y` | L'angolo in alto a sinistra, in coordinate del disegno |
+| `width`, `height` | Solo per un riquadro: la grandezza, maggiore di zero |
+| `color` | Uno dei cinque colori: `blue`, `green`, `yellow`, `red`, `purple`. Nel file c'è il nome; la tinta la decide il tema |
+| `label` | Solo per un riquadro: l'etichetta nell'angolo, anche vuota |
+| `text` | Solo per una nota: il testo, anche su più righe, anche vuoto |
+
+All'apertura si rifiutano un tipo o un colore sconosciuto, un campo mancante o del tipo sbagliato, una grandezza non positiva e un identificativo ripetuto (per esempio «Annotazione a1: colore sconosciuto: fucsia.»). È un campo facoltativo: i file scritti prima restano validi, e il numero di versione non cambia.
 
 ## Tabelle
 
@@ -245,5 +269,5 @@ Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere in
 
 - **Versioni.** Il numero di versione crescerà di uno ogni volta che il formato cambia in modo incompatibile (requisito FILE-2). Un file più vecchio verrà aggiornato in memoria con una funzione di migrazione per ogni salto di versione; un file più nuovo dell'app verrà rifiutato con l'invito ad aggiornarla. Aggiungere un campo facoltativo non richiederà una nuova versione.
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
-- **Annotazioni e vista**: note e riquadri sul disegno, inquadratura ed etichette visibili al momento del salvataggio.
+- **Vista**: inquadratura ed etichette visibili al momento del salvataggio.
 - **Esercizi e verifiche**: una sezione con consegna, obiettivi e parte protetta da password (tappa T1), e una con punteggio e registro delle attività (tappa T4).

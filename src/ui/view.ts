@@ -10,6 +10,7 @@ import { maskToPrefix, networkAddress } from "../engine/model/addresses";
 import { linkCarriesSignal, type Network } from "../engine/model/network";
 import { routingTableOf } from "../engine/protocols/routing";
 import type { Simulator } from "../engine/simulator";
+import type { Annotation } from "../storage/annotations-file";
 import type { Position } from "../storage/load";
 import { describeTrace, detailsOf, labelOf, nameOf } from "./event-text";
 import type { Bounds, DeviceView, LinkView, NetworkView, NextEventView, PacketView } from "./view-types";
@@ -27,6 +28,7 @@ export const EMPTY_VIEW: NetworkView = {
   conversations: [],
   pingResults: [],
   traceHops: [],
+  annotations: [],
   bounds: { x: 0, y: 0, width: 800, height: 500 },
   time: 0,
   nextEvent: null,
@@ -38,11 +40,16 @@ export const EMPTY_VIEW: NetworkView = {
  *
  * @param simulator - il simulatore, con la rete e il suo stato attuale
  * @param positions - dove sta ogni dispositivo sul disegno
+ * @param annotations - riquadri e note del disegno, che passano così come sono
  * @returns dispositivi, cavi e pacchetti in viaggio pronti per i
  *   componenti, il rettangolo che contiene la rete e lo stato della
  *   simulazione
  */
-export function buildView(simulator: Simulator, positions: Map<string, Position>): NetworkView {
+export function buildView(
+  simulator: Simulator,
+  positions: Map<string, Position>,
+  annotations: Annotation[] = [],
+): NetworkView {
   const network = simulator.network;
   const at = (deviceId: string): Position => positions.get(deviceId) ?? { x: 0, y: 0 };
 
@@ -176,6 +183,7 @@ export function buildView(simulator: Simulator, positions: Map<string, Position>
           ]
         : [],
     ),
+    annotations,
     bounds: boundsOf(devices),
     time: simulator.time,
     nextEvent: nextEventOf(simulator),

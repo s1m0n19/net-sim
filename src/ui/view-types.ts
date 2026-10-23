@@ -4,6 +4,7 @@
 import type { PingResult, TraceHop } from "../engine/devices/host";
 import type { EthernetFrame } from "../engine/model/frames";
 import type { Device } from "../engine/model/network";
+import type { Annotation } from "../storage/annotations-file";
 import type { Position } from "../storage/load";
 
 export interface DeviceView {
@@ -189,6 +190,8 @@ export interface NetworkView {
   conversations: ConversationView[];
   pingResults: PingResultView[];
   traceHops: TraceHopView[];
+  // Riquadri e note del disegno, come stanno nella sessione.
+  annotations: Annotation[];
   bounds: Bounds;
   // Stato della simulazione.
   time: number;

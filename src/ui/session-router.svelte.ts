@@ -2,7 +2,7 @@
 // interfacce, impostarne gli indirizzi, aggiungere e togliere le rotte
 // statiche.
 //
-// È il sesto strato di `session`. Come gli altri metodi che modificano la
+// È il settimo strato di `session`. Come gli altri metodi che modificano la
 // rete, anche questi passano da `attempt`, che registra la modifica nella
 // cronologia.
 
@@ -16,9 +16,10 @@ import {
 import { networksOverlap, prefixToMask } from "../engine/model/addresses";
 import { defaultMaskFor } from "../engine/model/ip-config";
 import { checkInterfaceAddress, checkRoute, nextHopIsOwnAddress } from "../engine/model/router-config";
-import { sentence, SessionEditing } from "./session-editing.svelte";
+import { SessionAnnotations } from "./session-annotations.svelte";
+import { sentence } from "./session-editing.svelte";
 
-export class SessionRouter extends SessionEditing {
+export class SessionRouter extends SessionAnnotations {
   /**
    * Accende un'interfaccia spenta di un router, o ne spegne una accesa.
    * Vale anche per le porte di uno switch.

@@ -77,6 +77,7 @@ export class SessionHistory extends SessionDemo {
     from.pop();
     to.push(now);
     this.positions = new Map(entry.positions);
+    this.annotations = entry.annotations;
 
     // Ciò che riguardava un dispositivo o un cavo sparito se ne va con lui.
     const devices = new Set(this.simulator.network.devices.map((device) => device.id));
@@ -98,10 +99,12 @@ export class SessionHistory extends SessionDemo {
     this.refresh();
   }
 
-  // Fotografa la rete com'è adesso: configurazione e posizioni.
+  // Fotografa la rete com'è adesso: configurazione, posizioni e
+  // annotazioni. L'elenco delle annotazioni non viene mai modificato sul
+  // posto, quindi basta tenerlo.
   protected capture(): HistoryEntry {
     const network = this.simulator?.network ?? { devices: [], links: [] };
-    return { config: takeSnapshot(network), positions: new Map(this.positions) };
+    return { config: takeSnapshot(network), positions: new Map(this.positions), annotations: this.annotations };
   }
 
   // Registra una modifica appena fatta, dando com'era la rete prima. Una

@@ -10,6 +10,7 @@
 import { ping, tracert, type Action } from "../engine/actions";
 import type { DeviceTemplate } from "../engine/editing";
 import { Simulator, type Trace } from "../engine/simulator";
+import type { Annotation } from "../storage/annotations-file";
 import type { Position } from "../storage/load";
 import type { Selection } from "./session-types";
 import { fitted } from "./topology/camera";
@@ -83,6 +84,11 @@ export class SessionCore {
   protected simulator: Simulator | null = new Simulator({ devices: [], links: [] });
 
   protected positions = new Map<string, Position>();
+
+  // Le annotazioni del disegno (ED-9). Come le posizioni, non fanno parte
+  // della rete. L'elenco non si modifica mai sul posto: ogni cambiamento ne
+  // crea uno nuovo, così una fotografia della cronologia resta com'era.
+  protected annotations: Annotation[] = [];
 
   /**
    * Inquadra tutta la rete. Su un foglio vuoto torna all'inquadratura di base.
@@ -210,7 +216,7 @@ export class SessionCore {
 
   // Rilegge lo stato del simulatore e aggiorna ciò che il disegno mostra.
   protected refresh(): void {
-    this.view = this.simulator === null ? EMPTY_VIEW : buildView(this.simulator, this.positions);
+    this.view = this.simulator === null ? EMPTY_VIEW : buildView(this.simulator, this.positions, this.annotations);
   }
 
   // Da ridefinire negli strati superiori: la rete è stata sostituita da

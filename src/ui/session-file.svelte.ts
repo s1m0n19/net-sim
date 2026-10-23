@@ -64,6 +64,7 @@ export class SessionFile extends SessionCore {
       const loaded = loadNetworkFile(text);
       this.simulator = new Simulator(loaded.network, loaded.tables ?? new Map());
       this.positions = loaded.positions;
+      this.annotations = loaded.annotations;
       this.saveTables = loaded.tables !== null;
       this.savedText = this.serialize();
       this.fileName = baseName(name);
@@ -82,6 +83,7 @@ export class SessionFile extends SessionCore {
   clear(): void {
     this.simulator = new Simulator({ devices: [], links: [] });
     this.positions = new Map();
+    this.annotations = [];
     this.savedText = this.serialize();
     this.saveTables = false;
     this.fileName = null;
@@ -102,11 +104,12 @@ export class SessionFile extends SessionCore {
 
   /**
    * Il contenuto del file che descrive la configurazione della rete com'è
-   * adesso: configurazione, posizioni e guasti, senza tabelle né pacchetti.
-   * È ciò che si confronta per sapere se ci sono modifiche non salvate.
+   * adesso: configurazione, posizioni, guasti e annotazioni, senza tabelle
+   * né pacchetti. È ciò che si confronta per sapere se ci sono modifiche
+   * non salvate.
    */
   serialize(): string {
-    return serializeNetwork(this.network(), this.positions);
+    return serializeNetwork(this.network(), this.positions, { annotations: this.annotations });
   }
 
   /**
@@ -117,7 +120,7 @@ export class SessionFile extends SessionCore {
   draftSave(): SaveDraft {
     const network = this.network();
     return {
-      text: serializeNetwork(network, this.positions, this.saveTables),
+      text: serializeNetwork(network, this.positions, { tables: this.saveTables, annotations: this.annotations }),
       config: this.serialize(),
       tables: this.saveTables ? copyTables(network) : null,
     };

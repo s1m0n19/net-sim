@@ -88,6 +88,7 @@ net-sim/
 │   │   ├── load.ts            lettura dei file di rete
 │   │   ├── save.ts            scrittura dei file di rete
 │   │   ├── tables-file.ts     le tabelle ARP e MAC nel file, da leggere e da scrivere
+│   │   ├── annotations-file.ts riquadri e note del disegno: il tipo, e come stanno nel file
 │   │   ├── fields.ts          i controlli sui singoli campi di un file
 │   │   └── browser-files.ts   scelta, lettura e scrittura di un file nel browser
 │   ├── shell/
@@ -106,8 +107,8 @@ net-sim/
 │   └── ui/                    l'interfaccia, descritta in interfaccia.md
 │       ├── App.svelte         l'ossatura della schermata
 │       ├── session.svelte.ts  la rete aperta: unico punto di contatto con il simulatore;
-│       │                      è fatta di sette strati (session-core, -file, -demo, -history,
-│       │                      -editing, -router, -cli)
+│       │                      è fatta di otto strati (session-core, -file, -demo, -history,
+│       │                      -editing, -annotations, -router, -cli)
 │       ├── view.ts            prepara ciò che il disegno mostra (tipi in view-types.ts,
 │       │                      testo degli eventi in event-text.ts)
 │       ├── presentation.ts    modalità presentazione e scorciatoie
@@ -128,7 +129,7 @@ Gli interpreti di `src/shell/` stanno fuori dal motore perché traducono testo i
 
 ## Convenzioni del codice
 
-- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`, `simulator.ts` (la consegna è passata in `delivery.ts`), `editing.ts` e `session-editing.svelte.ts` (le parti sui router sono passate in `router-editing.ts` e `session-router.svelte.ts`). Il 21 ottobre la sessione è passata da cinque a sette strati (D-105): il file è uscito da `session-core.svelte.ts` in `session-file.svelte.ts`, la cronologia da `session-editing.svelte.ts` in `session-history.svelte.ts`. Restano poco sopra le 300 righe `shell/windows.ts`, `engine/model/network.ts`, `engine/actions.ts`, `panels/SidePanel.svelte` e `session-demo.svelte.ts`.
+- **Un concetto, un file.** `arp.ts` contiene ARP e nient'altro. Se un file supera le 300 righe circa, probabilmente contiene due concetti. L'11 ottobre 2026 i quattro file che le superavano sono stati divisi, e il 13 ottobre anche `devices/host.ts`, `simulator.ts` (la consegna è passata in `delivery.ts`), `editing.ts` e `session-editing.svelte.ts` (le parti sui router sono passate in `router-editing.ts` e `session-router.svelte.ts`). Il 21 ottobre la sessione è passata da cinque a sette strati (D-105): il file è uscito da `session-core.svelte.ts` in `session-file.svelte.ts`, la cronologia da `session-editing.svelte.ts` in `session-history.svelte.ts`. Il 22 ottobre le annotazioni hanno avuto l'ottavo, `session-annotations.svelte.ts`. Restano poco sopra le 300 righe `shell/windows.ts`, `engine/model/network.ts`, `engine/actions.ts`, `panels/SidePanel.svelte` e `session-demo.svelte.ts`.
 - **I nomi seguono la teoria.** Un campo si chiama come sul libro di testo e negli standard: `ttl`, `etherType`, `senderMac`.
 - **Identificatori in inglese, commenti e messaggi in italiano.** I nomi dei protocolli e dei loro campi sono in inglese ovunque, e mescolare le due lingue negli identificatori produce nomi goffi. I commenti spiegano il perché in italiano e rimandano al concetto di teoria. È la decisione D-15.
 - **Funzioni pure dove possibile.** Una funzione che decide ("dato questo frame e questa tabella MAC, su quali porte lo inoltro?") non modifica nulla e restituisce la risposta. Si legge e si prova da sola. Esempi: `chooseOutputPorts`, `nextHopFor`, `sameNetwork`.
@@ -142,7 +143,7 @@ Gli interpreti di `src/shell/` stanno fuori dal motore perché traducono testo i
 | Parte | Esempi | Dove sta oggi | Nel file |
 | --- | --- | --- | --- |
 | Configurazione | dispositivi, porte, collegamenti, indirizzi, rotte statiche | nei dispositivi della rete (`Host`, `Switch`, `Router`) | sì |
-| Posizioni sul disegno | coordinate di ogni dispositivo | fuori dal motore, in `LoadedFile.positions` | sì |
+| Disegno | coordinate di ogni dispositivo; riquadri e note (annotazioni) | fuori dal motore, in `LoadedFile.positions` e `LoadedFile.annotations` | sì |
 | Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator`, che tiene anche le tabelle di partenza (la tabella di routing no: `routingTableOf` la calcola ogni volta da configurazione e segnale) | le sole tabelle MAC e ARP, se chi salva lo chiede (D-25, D-100); il resto mai |
 | Stato della vista | selezione, tabelle appuntate, terminali aperti e modalità della CLI, filtro, inquadratura, cronologia per annullare; tema, etichette, pannelli aperti, presentazione | in `session` e in `preferences` (`src/ui/`) | no |
 

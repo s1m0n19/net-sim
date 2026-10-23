@@ -20,6 +20,7 @@ import {
 import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } from "../engine/model/router-config";
 import type { NetworkTables } from "../engine/model/tables";
 import { checkUnique, isUsableMac, readFlag, readNumber, readText, readTextOrNull } from "./fields";
+import { readAnnotations, type Annotation } from "./annotations-file";
 import { readTables } from "./tables-file";
 
 export const FILE_FORMAT = "net-sim";
@@ -38,6 +39,8 @@ export interface LoadedFile {
   // Le tabelle con cui la rete parte, se il file le contiene (FILE-5);
   // altrimenti null, e la rete parte con le tabelle vuote.
   tables: NetworkTables | null;
+  // Le annotazioni del disegno (ED-9): anche loro fuori dalla rete.
+  annotations: Annotation[];
 }
 
 /**
@@ -48,7 +51,8 @@ export interface LoadedFile {
  * simulatore, che le usa anche per ricominciare.
  *
  * @param text - il contenuto del file, in JSON
- * @returns la rete, le posizioni dei dispositivi sul disegno e le tabelle
+ * @returns la rete, le posizioni dei dispositivi sul disegno, le tabelle e
+ *   le annotazioni
  * @throws Error con un messaggio che dice che cosa non va, se: il testo non
  *   è JSON valido; non è un file di net-sim o è di una versione sconosciuta;
  *   a un dispositivo o a un collegamento manca un campo, o è del tipo
@@ -56,7 +60,8 @@ export interface LoadedFile {
  *   nomi di porta o indirizzi MAC sono duplicati; la configurazione IP di
  *   un host non è accettabile; un collegamento indica una porta che non
  *   esiste, o una porta ha più di un collegamento; una tabella non va
- *   (vedi readTables in tables-file.ts)
+ *   (vedi readTables in tables-file.ts); un'annotazione non va (vedi
+ *   readAnnotations in annotations-file.ts)
  */
 export function loadNetworkFile(text: string): LoadedFile {
   let data: any;
@@ -104,7 +109,9 @@ export function loadNetworkFile(text: string): LoadedFile {
 
   const tables = readTables(data.network.devices, devices);
 
-  return { network, positions, tables };
+  const annotations = readAnnotations(data.annotations);
+
+  return { network, positions, tables, annotations };
 }
 
 // Costruisce un dispositivo a partire dai suoi dati nel file.

@@ -1,6 +1,6 @@
 // La CLI dei router e degli switch, nei terminali della fascia in basso.
 //
-// È il settimo strato di `session`. L'interprete (src/shell/ios/) capisce
+// È l'ottavo strato di `session`. L'interprete (src/shell/ios/) capisce
 // le righe e dice che cosa fare; qui lo si fa: le modifiche passano dalla
 // cronologia, come quelle del pannello, i comandi `show` leggono la rete,
 // e ping e traceroute aprono una conversazione di cui seguire gli esiti.

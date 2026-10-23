@@ -3,14 +3,16 @@
 
 import type { Snapshot } from "../engine/snapshot";
 import type { CliState } from "../shell/ios/modes";
+import type { Annotation } from "../storage/annotations-file";
 import type { Position } from "../storage/load";
 import type { PacketDetails } from "./view";
 
-// Un punto della cronologia: la configurazione della rete e le posizioni
-// dei dispositivi sul disegno.
+// Un punto della cronologia: la configurazione della rete, le posizioni
+// dei dispositivi sul disegno e le annotazioni.
 export interface HistoryEntry {
   config: Snapshot;
   positions: Map<string, Position>;
+  annotations: Annotation[];
 }
 
 // Quale tabella di un dispositivo: ARP (host e router), MAC (switch), di
