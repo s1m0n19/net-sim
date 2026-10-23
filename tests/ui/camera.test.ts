@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import lanFile from "../../examples/lan-switch.netsim.json?raw";
 import { session } from "../../src/ui/session.svelte";
-import { fitted, MAX_WIDTH, MIN_WIDTH, panned, zoomed } from "../../src/ui/topology/camera";
+import { BAR_RESERVE_PX, fitted, MAX_WIDTH, MIN_WIDTH, panned, zoomed } from "../../src/ui/topology/camera";
 
 const SHEET = { x: 0, y: 0, width: 800, height: 500 };
 
@@ -136,5 +136,44 @@ describe("inquadratura della rete aperta", () => {
 
     session.clear();
     expect(session.camera).toBeNull();
+  });
+});
+
+describe("Adatta e la barra della simulazione", () => {
+  // Una rete grande: cinque file di dieci dispositivi, larga 1800 e alta 1200.
+  const big = Array.from({ length: 50 }, (_, i) => ({ x: (i % 10) * 200, y: Math.floor(i / 10) * 300 }));
+  const screen = { width: 990, height: 495 };
+
+  // Dove cade sullo schermo, in pixel dall'alto, un punto del disegno.
+  function pixelsFromTop(box: { y: number; height: number }, y: number) {
+    return ((y - box.y) / box.height) * screen.height;
+  }
+
+  test("conoscendo lo schermo, l'inquadratura ne ha le proporzioni", () => {
+    const box = fitted(big, [], 1, screen)!;
+
+    expect(box.width / box.height).toBeCloseTo(screen.width / screen.height);
+  });
+
+  test("le etichette dei dispositivi più in basso restano sopra la barra, anche in una rete grande", () => {
+    const box = fitted(big, [], 1, screen)!;
+    const lowest = Math.max(...big.map((d) => d.y));
+
+    // Sotto un dispositivo ci sono nome e indirizzo: circa 60 unità.
+    expect(pixelsFromTop(box, lowest + 60)).toBeLessThanOrEqual(screen.height - BAR_RESERVE_PX);
+  });
+
+  test("in presentazione lo spazio della barra cresce con l'ingrandimento", () => {
+    const box = fitted(big, [], 1.4, screen)!;
+    const lowest = Math.max(...big.map((d) => d.y));
+
+    expect(pixelsFromTop(box, lowest + 60 * 1.4)).toBeLessThanOrEqual(screen.height - BAR_RESERVE_PX * 1.4);
+  });
+
+  test("tutta la rete resta dentro anche in larghezza", () => {
+    const box = fitted(big, [], 1, screen)!;
+
+    expect(box.x).toBeLessThanOrEqual(-90);
+    expect(box.x + box.width).toBeGreaterThanOrEqual(1800 + 90);
   });
 });

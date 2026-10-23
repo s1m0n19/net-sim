@@ -13,26 +13,29 @@
   const nothingToDo = $derived(session.view.nextEvent === null);
 </script>
 
-<div class="bar" role="toolbar" aria-label="Comandi della simulazione">
-  <button class="btn" onclick={() => session.restart()}>⟲ Ricomincia</button>
+<!-- Sul foglio vuoto non c'è nulla da far scorrere: la barra non c'è (D-107). -->
+{#if !session.isEmpty()}
+  <div class="bar" role="toolbar" aria-label="Comandi della simulazione">
+    <button class="btn" onclick={() => session.restart()}>⟲ Ricomincia</button>
 
-  {#if session.running}
-    <button class="btn primary" onclick={pause}>❚❚ Pausa</button>
-  {:else}
-    <button class="btn primary" onclick={start} disabled={session.view.suspended}>▶ Avvia</button>
-  {/if}
+    {#if session.running}
+      <button class="btn primary" onclick={pause}>❚❚ Pausa</button>
+    {:else}
+      <button class="btn primary" onclick={start} disabled={session.view.suspended}>▶ Avvia</button>
+    {/if}
 
-  <button class="btn" onclick={stepOnce} disabled={session.running || nothingToDo}>Passo ›</button>
+    <button class="btn" onclick={stepOnce} disabled={session.running || nothingToDo}>Passo ›</button>
 
-  <span class="separator"></span>
+    <span class="separator"></span>
 
-  <button class="btn" onclick={nextSpeed} aria-label="Velocità: {speedLabel}. Cambia velocità">{speedLabel}</button>
-  <span class="time mono">tick {session.view.time}</span>
+    <button class="btn" onclick={nextSpeed} aria-label="Velocità: {speedLabel}. Cambia velocità">{speedLabel}</button>
+    <span class="time mono">tick {session.view.time}</span>
 
-  {#if session.view.suspended}
-    <span class="suspended">sospesa</span>
-  {/if}
-</div>
+    {#if session.view.suspended}
+      <span class="suspended">sospesa</span>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .bar {

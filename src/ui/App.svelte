@@ -2,6 +2,8 @@
   // L'ossatura della schermata: barra in alto, colonna dei dispositivi,
   // disegno, pannello laterale, fascia in basso. Qui si decide solo dove
   // sta ogni area: i componenti non sanno in quale posizione si trovano.
+  import { untrack } from "svelte";
+  import { followContent } from "./layout/auto-open";
   import Palette from "./layout/Palette.svelte";
   import TopBar from "./layout/TopBar.svelte";
   import { preferences } from "./preferences.svelte";
@@ -9,6 +11,33 @@
   import { session } from "./session.svelte";
   import BottomStrip from "./strip/BottomStrip.svelte";
   import Topology from "./topology/Topology.svelte";
+
+  // La fascia in basso segue ciò che ha da mostrare, eventi e terminali:
+  // si apre quando compare il primo, si chiude quando non resta nulla
+  // (D-107). In presentazione non si apre da sola: lì la aprono T ed E.
+  const stripHasContent = $derived(session.terminals.length > 0 || session.view.events.length > 0);
+  let stripHad = false;
+  $effect(() => {
+    const has = stripHasContent;
+    untrack(() => {
+      const next = followContent(preferences.stripOpen, stripHad, has);
+      stripHad = has;
+      if (next && !preferences.stripOpen && preferences.presenting) return;
+      preferences.stripOpen = next;
+    });
+  });
+
+  // In presentazione il pannello laterale segue la selezione: si apre
+  // quando si seleziona qualcosa e si chiude quando la si toglie.
+  let selectedBefore = false;
+  $effect(() => {
+    const has = session.selection !== null;
+    const presenting = preferences.presenting;
+    untrack(() => {
+      if (presenting) preferences.sideOpen = followContent(preferences.sideOpen, selectedBefore, has);
+      selectedBefore = has;
+    });
+  });
 </script>
 
 <div class="shell" class:presenting={preferences.presenting} style="--ui-scale: {preferences.scale}">

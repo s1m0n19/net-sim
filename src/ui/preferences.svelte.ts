@@ -1,6 +1,8 @@
 // Preferenze di chi guarda: tema, etichette visibili, pannelli aperti.
 // Riguardano solo lo schermo: il motore non le conosce e non stanno nel file.
 
+import { STRIP_HEIGHT } from "./layout/auto-open";
+
 export type Theme = "light" | "dark";
 
 const MAGNIFICATION_STEP = 0.2;
@@ -14,7 +16,11 @@ class Preferences {
 
   paletteOpen = $state(true);
   sideOpen = $state(true);
-  stripOpen = $state(true);
+  // La fascia parte chiusa: all'avvio il foglio è vuoto, e si apre da sola
+  // al primo evento o terminale (D-107).
+  stripOpen = $state(false);
+  // L'altezza della fascia, che si cambia trascinandone il bordo.
+  stripHeight = $state(STRIP_HEIGHT.initial);
 
   // Modalità presentazione: l'app proiettata in aula.
   presenting = $state(false);

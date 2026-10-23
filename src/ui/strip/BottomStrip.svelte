@@ -1,6 +1,7 @@
 <script lang="ts">
   // La fascia in basso: una scheda per ogni terminale aperto, più la
   // scheda Eventi, che c'è sempre.
+  import { STRIP_HEIGHT, stripHeightWithin } from "../layout/auto-open";
   import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import Chevron from "../theme/Chevron.svelte";
@@ -13,6 +14,30 @@
     return session.view.devices.find((device) => device.id === deviceId)?.name ?? "?";
   }
 
+  // Il bordo superiore della fascia si trascina per cambiarne l'altezza.
+  // In presentazione la fascia è ingrandita: lo spostamento del puntatore
+  // va diviso per l'ingrandimento.
+  let drag: { y: number; height: number } | null = null;
+
+  function startResize(event: PointerEvent) {
+    drag = { y: event.clientY, height: preferences.stripHeight };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function resize(event: PointerEvent) {
+    if (drag === null) return;
+    const wanted = drag.height + (drag.y - event.clientY) / preferences.scale;
+    preferences.stripHeight = stripHeightWithin(wanted, window.innerHeight / preferences.scale);
+  }
+
+  // Da tastiera: frecce su e giù, a scatti di 20 pixel.
+  function resizeKey(event: KeyboardEvent) {
+    const step = event.key === "ArrowUp" ? 20 : event.key === "ArrowDown" ? -20 : 0;
+    if (step === 0) return;
+    event.preventDefault();
+    preferences.stripHeight = stripHeightWithin(preferences.stripHeight + step, window.innerHeight / preferences.scale);
+  }
+
   // Scegliere una scheda riapre anche la fascia, se era chiusa.
   function show(tab: string) {
     session.activeTab = tab;
@@ -21,6 +46,25 @@
 </script>
 
 <footer>
+  {#if preferences.stripOpen}
+    <!-- Un separatore che si mette a fuoco e si regola è un controllo, per
+         ARIA; Svelte non lo sa e lo segnalerebbe come non interattivo. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+    <div
+      class="resize"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Altezza della fascia: trascina, o usa le frecce"
+      aria-valuenow={preferences.stripHeight}
+      aria-valuemin={STRIP_HEIGHT.min}
+      tabindex="0"
+      onpointerdown={startResize}
+      onpointermove={resize}
+      onpointerup={() => (drag = null)}
+      onpointercancel={() => (drag = null)}
+      onkeydown={resizeKey}
+    ></div>
+  {/if}
   <div class="tabs" role="tablist">
     {#each session.terminals as terminal (terminal.deviceId)}
       <span class="tab" class:selected={session.activeTab === terminal.deviceId}>
@@ -61,7 +105,7 @@
   </div>
 
   {#if preferences.stripOpen}
-    <div class="body">
+    <div class="body" style="height: {preferences.stripHeight}px">
       {#if active !== undefined}
         {#key active.deviceId}
           <TerminalTab terminal={active} />
@@ -75,6 +119,7 @@
 
 <style>
   footer {
+    position: relative;
     background: var(--surface);
     border-top: 1px solid var(--line);
     display: flex;
@@ -144,8 +189,25 @@
     margin-right: -8px;
     align-self: center;
   }
+  /* Una striscia sottile sul bordo superiore, da afferrare: si vede solo
+     passandoci sopra o con il fuoco da tastiera. */
+  .resize {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    cursor: ns-resize;
+    z-index: 2;
+    touch-action: none;
+  }
+  .resize:hover,
+  .resize:focus-visible {
+    background: var(--accent);
+    opacity: 0.35;
+    outline: none;
+  }
   .body {
-    height: 190px;
     display: flex;
     flex-direction: column;
     min-height: 0;

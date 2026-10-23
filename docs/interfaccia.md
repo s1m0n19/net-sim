@@ -40,6 +40,11 @@ Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQ
 
 Colonna, pannello laterale e fascia si aprono e si chiudono con lo stesso pulsante: una piccola freccia, senza parole, che indica da che parte il pannello si ritira. Il suo significato è scritto nel suggerimento che compare passandoci sopra.
 
+**Aree che seguono il loro contenuto** (D-107). Perché il disegno abbia tutto lo spazio quando non c'è altro da leggere, due aree si aprono e si chiudono da sole, con la stessa regola (`layout/auto-open.ts`): si aprono quando il contenuto compare, si chiudono quando sparisce, e in mezzo vale la scelta fatta con la freccia.
+
+- **La fascia in basso** segue eventi e terminali. All'avvio è chiusa; si apre al primo evento o al primo terminale, e si richiude quando non resta nulla (Nuova, Apri, oppure Ricomincia senza terminali aperti). In presentazione non si apre da sola: lì la aprono T ed E.
+- **Il pannello laterale**, in presentazione, segue la selezione: senza nulla di selezionato è chiuso, e lascia il posto al disegno. Fuori dalla presentazione resta come lo si lascia.
+
 La disposizione è una decisione presa con riserva: i pannelli sono componenti indipendenti dalla griglia che li ospita, così cambiarla non richiede di riscriverli (requisito NF-7).
 
 ## Che cosa c'è già
@@ -182,13 +187,13 @@ La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore: ciò che
 
 - **Automatica o scelta** (D-59). Finché non si tocca nulla vale l'inquadratura automatica del foglio. Dal primo ingrandimento, spostamento o Adatta l'inquadratura è quella scelta, e non cambia più da sola: un dispositivo posato fuori vista resta fuori vista finché non si preme Adatta. Nuova torna a quella automatica.
 - **All'apertura di un file** la rete viene inquadrata per intero, come con Adatta (D-60).
-- **Adatta** lascia margine per le etichette e per la barra della simulazione, tiene dentro anche le tabelle appuntate, e non ingrandisce oltre un riquadro minimo: un PC da solo non riempie lo schermo. Sul foglio vuoto torna all'inquadratura automatica.
+- **Adatta** lascia margine per le etichette e per la barra della simulazione, tiene dentro anche le tabelle appuntate. Lo spazio della barra si riserva in pixel dello schermo (D-107): la barra ha sempre la stessa grandezza, comunque sia rimpicciolita la rete, quindi nemmeno una rete grande finisce sotto di lei. Adatta non ingrandisce oltre un riquadro minimo: un PC da solo non riempie lo schermo. Sul foglio vuoto torna all'inquadratura automatica.
 - **Limiti.** Si arriva a quattro volte più vicino e a cinque volte più lontano del foglio di base.
 - Con la vista si ingrandisce tutto il disegno, comprese scritte, barretta delle azioni ed elenco delle porte. L'inquadratura non si salva nel file.
 
 ## Barra della simulazione
 
-Una barra compatta che galleggia in basso al centro del disegno, come i comandi di un lettore video. Resta anche in modalità presentazione.
+Una barra compatta che galleggia in basso al centro del disegno, come i comandi di un lettore video. Resta anche in modalità presentazione. Sul foglio vuoto non c'è, perché non c'è nulla da far scorrere.
 
 | Comando | Effetto |
 | --- | --- |
@@ -278,7 +283,7 @@ Una riga che dice che cosa comparirà qui.
 
 ## Fascia in basso
 
-Corre sotto tutta la schermata. Si chiude lasciando visibile la sola riga delle schede.
+Corre sotto tutta la schermata. Si chiude lasciando visibile la sola riga delle schede, e si apre e si chiude anche da sola, seguendo eventi e terminali (vedi «Ossatura»). Si fa più alta o più bassa trascinandone il bordo superiore, o con le frecce su e giù quando il bordo ha il fuoco: tra 100 px e il 60% della finestra, perché il disegno resti visibile. L'altezza scelta vale finché la pagina resta aperta.
 
 ### Terminali
 
@@ -373,8 +378,9 @@ Si attiva dal pulsante Presenta e si lascia con Esc o con il pulsante Esci, che 
 - **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello. Ctrl+Z annulla ancora: rimette a posto un indirizzo cambiato o un dispositivo spostato per sbaglio, senza uscire.
 - **Ingrandimento** (D-61): un solo fattore, di partenza 140%, regolabile dal 100% al 200% con A− e A+ nella barra in alto. Barre, pannello e fascia si ingrandiscono per intero. Nel disegno crescono dispositivi, scritte, buste, tabelle appuntate e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete. La barretta delle azioni non cresce.
 - **Inquadratura**: entrando, e a ogni cambio di ingrandimento, la rete viene inquadrata per intero. I pulsanti −, + e Adatta salgono nell'angolo in alto a destra del disegno, perché in basso la barra della simulazione è più larga.
-- **La fascia in basso parte chiusa.**
-- **All'uscita** fascia e inquadratura tornano com'erano prima di entrare.
+- **La fascia in basso parte chiusa**, e non si apre da sola: la aprono T ed E.
+- **Il pannello laterale segue la selezione**: chiuso finché non si seleziona qualcosa, si richiude togliendo la selezione (D-107).
+- **All'uscita** fascia, pannello e inquadratura tornano com'erano prima di entrare.
 
 Lo schermo intero resta quello del browser (F11): l'app non lo chiede da sola.
 

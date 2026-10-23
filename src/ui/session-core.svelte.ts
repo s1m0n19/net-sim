@@ -13,7 +13,7 @@ import { Simulator, type Trace } from "../engine/simulator";
 import type { Annotation } from "../storage/annotations-file";
 import type { Position } from "../storage/load";
 import type { Selection } from "./session-types";
-import { fitted } from "./topology/camera";
+import { fitted, type Viewport } from "./topology/camera";
 import { buildView, EMPTY_VIEW, type Bounds, type NetworkView } from "./view";
 
 /** Il testo di un errore, da mostrare all'utente. */
@@ -80,6 +80,11 @@ export class SessionCore {
   // Adatta. Finché vale null l'inquadratura è quella automatica del foglio.
   camera = $state.raw<Bounds | null>(null);
 
+  // La grandezza del disegno sullo schermo, in pixel: la comunica il
+  // disegno. Serve ad Adatta per lasciare libero lo spazio della barra
+  // della simulazione. Null finché il disegno non è sullo schermo.
+  viewport = $state.raw<Viewport | null>(null);
+
   // Una rete c'è sempre: all'avvio è vuota.
   protected simulator: Simulator | null = new Simulator({ devices: [], links: [] });
 
@@ -98,7 +103,7 @@ export class SessionCore {
    * @param scale - di quanto è ingrandito il disegno (in presentazione più di 1)
    */
   fitView(extras: Bounds[] = [], scale = 1): void {
-    this.camera = fitted(this.view.devices, extras, scale);
+    this.camera = fitted(this.view.devices, extras, scale, this.viewport ?? undefined);
   }
 
   /**

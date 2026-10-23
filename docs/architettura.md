@@ -1,6 +1,6 @@
 # Architettura
 
-**Stato:** descrive il codice al 19 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
+**Stato:** descrive il codice al 23 ottobre 2026. Le parti non ancora realizzate sono indicate come *previste*.
 
 L'app è divisa in due parti che non si mescolano: un **motore di simulazione**, che contiene tutta la logica di rete, e un'**interfaccia**, che lo mostra e lo comanda. Il motore non sa di essere disegnato su uno schermo.
 
@@ -160,7 +160,7 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 | `lezione.spec.ts` | La lezione del criterio di accettazione del rilascio 1, dall'apertura del file al salvataggio |
 | `costruire.spec.ts` | Una rete costruita da zero con il mouse; spostare, annullare, eliminare |
 | `file.spec.ts` | Salvare e riaprire, modifiche non salvate, file non valido |
-| `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione |
+| `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione; fascia, pannello e barra che seguono il loro contenuto |
 | `router.spec.ts` | Due LAN e un router costruiti con il mouse; le due metà della lezione del criterio di accettazione del rilascio 2: gateway, MAC e TTL attraverso un router, poi routing statico con tre reti e due router |
 | `cli.spec.ts` | La lezione del criterio di accettazione della CLI: due router configurati da terminale, `show`, `ping` e `traceroute`, uno switch con una porta spenta |
 

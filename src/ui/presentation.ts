@@ -8,29 +8,33 @@ import { pause, start, stepOnce } from "./simulation/playback";
 import type { Bounds } from "./view";
 
 // Com'era la schermata prima di entrare, per rimetterla uguale all'uscita.
-let before: { stripOpen: boolean; camera: Bounds | null } | null = null;
+let before: { stripOpen: boolean; sideOpen: boolean; camera: Bounds | null } | null = null;
 
 /**
- * Entra in modalità presentazione: la fascia in basso si chiude, gli
- * strumenti per costruire si posano, e il disegno si ingrandisce e viene
- * inquadrato per intero (ci pensa il disegno, quando cambia l'ingrandimento).
+ * Entra in modalità presentazione: la fascia in basso si chiude, il
+ * pannello laterale resta aperto solo se c'è qualcosa di selezionato (poi
+ * segue la selezione, D-107), gli strumenti per costruire si posano, e il
+ * disegno si ingrandisce e viene inquadrato per intero (ci pensa il
+ * disegno, quando cambia l'ingrandimento).
  */
 export function enterPresentation(): void {
   if (preferences.presenting) return;
-  before = { stripOpen: preferences.stripOpen, camera: session.camera };
+  before = { stripOpen: preferences.stripOpen, sideOpen: preferences.sideOpen, camera: session.camera };
   preferences.stripOpen = false;
+  preferences.sideOpen = session.selection !== null;
   session.placing = null;
   session.cabling = false;
   session.linkFrom = null;
   preferences.presenting = true;
 }
 
-/** Esce dalla modalità presentazione e rimette fascia e inquadratura com'erano. */
+/** Esce dalla modalità presentazione e rimette fascia, pannello e inquadratura com'erano. */
 export function exitPresentation(): void {
   if (!preferences.presenting) return;
   preferences.presenting = false;
   if (before !== null) {
     preferences.stripOpen = before.stripOpen;
+    preferences.sideOpen = before.sideOpen;
     session.camera = before.camera;
   }
   before = null;

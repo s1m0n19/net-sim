@@ -88,7 +88,7 @@ Selezionato un dispositivo, nel pannello a destra si cambiano il **nome** e, per
 
 **Muoversi sul disegno.** La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore; trascinando lo sfondo si sposta la vista. Nell'angolo in basso a destra del disegno ci sono **−**, **+** e **Adatta**, che inquadra tutta la rete. Un file appena aperto viene inquadrato per intero.
 
-**Presentare.** **Presenta**, in alto a destra, prepara la schermata per il proiettore: spariscono la colonna dei dispositivi e i comandi di file, annulla, etichette ed eliminazione; testo, icone, buste e linee si ingrandiscono; la rete viene inquadrata per intero e la fascia in basso si chiude. Con **A−** e **A+** regoli l'ingrandimento dal 100% al 200%, guardando dal fondo dell'aula. Si esce con **Esci** o con Esc, e fascia e inquadratura tornano com'erano.
+**Presentare.** **Presenta**, in alto a destra, prepara la schermata per il proiettore: spariscono la colonna dei dispositivi e i comandi di file, annulla, etichette ed eliminazione; testo, icone, buste e linee si ingrandiscono; la rete viene inquadrata per intero e la fascia in basso si chiude. Il pannello di destra si apre solo quando selezioni qualcosa, e si richiude quando togli la selezione: senza, la rete ha tutto lo schermo. Con **A−** e **A+** regoli l'ingrandimento dal 100% al 200%, guardando dal fondo dell'aula. Si esce con **Esci** o con Esc, e fascia, pannello e inquadratura tornano com'erano.
 
 In presentazione la simulazione si comanda anche da tastiera:
 
@@ -124,7 +124,7 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 | **Etichette: IP, MAC, Porte** | Accendono e spengono ciò che è scritto sul disegno. All'apertura è acceso solo l'indirizzo IP |
 | **Griglia** | Griglia magnetica invisibile: accesa, i dispositivi posati o trascinati si allineano su punti ogni 20 px |
 | **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |
-| **Le tre frecce** | Chiudono e riaprono i pannelli: in fondo alla colonna dei dispositivi, nell'angolo in alto del pannello di destra, a destra nella riga delle schede in basso |
+| **Le tre frecce** | Chiudono e riaprono i pannelli: in fondo alla colonna dei dispositivi, nell'angolo in alto del pannello di destra, a destra nella riga delle schede in basso. La fascia in basso si apre anche da sola al primo evento o terminale e si richiude quando non ha più nulla da mostrare; trascinandone il bordo superiore la fai più alta o più bassa |
 
 Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento". Un quadratino rosso al posto del pallino segna una porta spenta: un'interfaccia di router, oppure una porta di switch, che si spegne dalla CLI con `shutdown`.
 

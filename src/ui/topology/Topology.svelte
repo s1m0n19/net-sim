@@ -33,6 +33,14 @@
     }),
   );
 
+  // La grandezza del disegno sullo schermo: Adatta la usa per lasciare
+  // libero lo spazio della barra della simulazione (D-107).
+  let canvasWidth = $state(0);
+  let canvasHeight = $state(0);
+  $effect(() => {
+    session.viewport = canvasWidth > 0 && canvasHeight > 0 ? { width: canvasWidth, height: canvasHeight } : null;
+  });
+
   // In presentazione dispositivi e scritte si ingrandiscono: quando
   // l'ingrandimento cambia, la rete viene inquadrata di nuovo per intero.
   // Lo stesso vale entrando in presentazione, anche a ingrandimento 1.
@@ -148,6 +156,8 @@
 
 <div
   class="canvas"
+  bind:clientWidth={canvasWidth}
+  bind:clientHeight={canvasHeight}
   class:aiming={session.pingFrom !== null || session.cabling || session.linkFrom !== null}
   class:placing={session.placing !== null}
   class:presenting={preferences.presenting}

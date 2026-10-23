@@ -1,7 +1,7 @@
-// Muoversi sul disegno e modalità presentazione.
+// Muoversi sul disegno, aree che si aprono da sole e modalità presentazione.
 
 import { expect, test, type Page } from "@playwright/test";
-import { centreOf, device, drag, drawing, exampleFile, openApp, openNetwork, pointOn } from "./helpers";
+import { action, centreOf, device, drag, drawing, exampleFile, openApp, openNetwork, pointOn, sidePanel } from "./helpers";
 
 // Il rettangolo del disegno inquadrato in questo momento.
 async function viewBox(page: Page): Promise<number[]> {
@@ -50,7 +50,9 @@ test("la presentazione nasconde ciò che serve a costruire, e si lascia con Esc"
 
   await page.getByRole("button", { name: "Presenta" }).click();
 
-  // Niente colonna, niente comandi di file; la fascia in basso è chiusa.
+  // Niente colonna, niente comandi di file; la fascia in basso è chiusa, e
+  // senza nulla di selezionato anche il pannello laterale (D-107).
+  await expect(page.getByRole("button", { name: "Apri il pannello laterale" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Apri", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cavo", exact: true })).toHaveCount(0);
   await expect(page.locator(".list")).toHaveCount(0);
@@ -61,8 +63,10 @@ test("la presentazione nasconde ciò che serve a costruire, e si lascia con Esc"
   await page.getByRole("button", { name: "Ingrandisci testo e disegno" }).click();
   await expect(page.getByText("160%")).toBeVisible();
 
-  // Sulla barretta restano i guasti, non Collega né Elimina.
+  // Sulla barretta restano i guasti, non Collega né Elimina. Selezionando,
+  // il pannello si apre da solo.
   await device(page, "PC2").click();
+  await expect(sidePanel(page)).toContainText("PC2");
   await expect(page.locator('g.action[aria-label^="Spegni PC2"]')).toBeVisible();
   await expect(page.locator('g.action[aria-label^="Elimina"]')).toHaveCount(0);
   await expect(page.locator('g.action[aria-label^="Collega"]')).toHaveCount(0);
@@ -71,7 +75,9 @@ test("la presentazione nasconde ciò che serve a costruire, e si lascia con Esc"
   await expect(page.locator("g.device")).toHaveCount(4);
 
   // Spazio avvia e mette in pausa; E apre gli eventi.
+  // Il clic sullo sfondo toglie la selezione, e il pannello si richiude.
   await page.mouse.click((await pointOn(page, 0.5, 0.12)).x, (await pointOn(page, 0.5, 0.12)).y);
+  await expect(page.getByRole("button", { name: "Apri il pannello laterale" })).toBeVisible();
   await page.keyboard.press(" ");
   await expect(page.getByRole("button", { name: /Pausa/ })).toBeVisible();
   await page.keyboard.press(" ");
@@ -84,4 +90,35 @@ test("la presentazione nasconde ciò che serve a costruire, e si lascia con Esc"
   await expect(page.getByRole("button", { name: "Presenta" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Apri", exact: true })).toBeVisible();
   expect(Math.abs((await label.boundingBox())!.height - normal)).toBeLessThan(1);
+});
+
+test("la fascia in basso e la barra della simulazione seguono ciò che c'è da mostrare", async ({ page }) => {
+  // Sul foglio vuoto: fascia chiusa e nessuna barra della simulazione.
+  await openApp(page);
+  await expect(page.locator(".list")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Ricomincia/ })).toHaveCount(0);
+
+  // Aperta una rete compare la barra, ma la fascia resta chiusa: non ci
+  // sono ancora eventi.
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await expect(page.getByRole("button", { name: /Ricomincia/ })).toBeVisible();
+  await expect(page.locator(".list")).toHaveCount(0);
+
+  // Il primo ping la apre da sola, con gli eventi.
+  await device(page, "PC1").click();
+  await action(page, "Ping da PC1").click();
+  await device(page, "PC2").click();
+  await expect(page.locator(".list")).toBeVisible();
+
+  // Il bordo superiore si trascina per farla più alta.
+  const body = page.locator("footer .body");
+  const before = (await body.boundingBox())!.height;
+  const edge = (await page.getByRole("separator", { name: /Altezza della fascia/ }).boundingBox())!;
+  await drag(page, { x: edge.x + 200, y: edge.y + 4 }, { x: edge.x + 200, y: edge.y - 76 });
+  expect((await body.boundingBox())!.height).toBeGreaterThan(before + 60);
+
+  // Con un foglio nuovo non c'è più nulla da mostrare: si richiude.
+  await page.getByRole("button", { name: "Nuova" }).click();
+  await expect(page.locator(".list")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Ricomincia/ })).toHaveCount(0);
 });
