@@ -90,6 +90,7 @@ net-sim/
 │   │   ├── tables-file.ts     le tabelle ARP e MAC nel file, da leggere e da scrivere
 │   │   ├── annotations-file.ts riquadri e note del disegno: il tipo, e come stanno nel file
 │   │   ├── fields.ts          i controlli sui singoli campi di un file
+│   │   ├── migrations.ts      le versioni del formato, e il passaggio dall'una all'altra
 │   │   └── browser-files.ts   scelta, lettura e scrittura di un file nel browser
 │   ├── shell/
 │   │   ├── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
@@ -125,7 +126,6 @@ net-sim/
 
 Gli interpreti di `src/shell/` stanno fuori dal motore perché traducono testo in azioni: sono un secondo modo, accanto al pannello grafico, di comandare lo stesso motore. Non eseguono nulla da sé: propongono l'azione a chi li chiama, cioè a `session`. La CLI è descritta in [cli.md](cli.md).
 
-*Previste* e non ancora esistenti: le migrazioni di versione dei file, in `src/storage/`.
 
 ## Convenzioni del codice
 

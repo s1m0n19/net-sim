@@ -99,3 +99,24 @@ export function checkUnique(values: string[], problem: string): void {
 export function isUsableMac(mac: string): boolean {
   return /^[0-9a-f]{2}(:[0-9a-f]{2}){5}$/i.test(mac) && mac.toLowerCase() !== BROADCAST_MAC;
 }
+
+/**
+ * Controlla che un oggetto del file non abbia campi diversi da quelli
+ * ammessi (D-108). Un campo sconosciuto vuol dire un file scritto da una
+ * versione più recente dell'app, o modificato a mano: leggerlo ignorando
+ * quel campo, e poi salvarlo, lo perderebbe senza dirlo.
+ *
+ * @param source - l'oggetto del file; se non è un oggetto non c'è nulla da
+ *   controllare (ci pensano gli altri controlli)
+ * @param allowed - i nomi dei campi ammessi
+ * @param where - di chi si parla, per il messaggio di errore
+ * @throws Error con il primo campo che non è tra quelli ammessi
+ */
+export function checkFields(source: unknown, allowed: readonly string[], where: string): void {
+  if (typeof source !== "object" || source === null || Array.isArray(source)) return;
+  for (const field of Object.keys(source)) {
+    if (!allowed.includes(field)) {
+      throw new Error(`${where}: campo sconosciuto: "${field}".`);
+    }
+  }
+}

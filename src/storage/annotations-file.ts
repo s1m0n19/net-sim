@@ -5,7 +5,7 @@
 // accanto alla rete, scritto solo se c'è almeno un'annotazione.
 // Il formato è descritto in docs/formato-file.md.
 
-import { checkUnique, readText } from "./fields";
+import { checkFields, checkUnique, readText } from "./fields";
 
 /**
  * I colori di un'annotazione: cinque tinte tenui fisse, leggibili nei due
@@ -71,11 +71,13 @@ function readAnnotation(a: any, where: string): Annotation {
   const color = readColor(a, id);
   switch (a?.kind) {
     case "box": {
+      checkFields(a, ["kind", "id", "x", "y", "width", "height", "color", "label"], `Annotazione ${id}`);
       const width = readSize(a, "width", id);
       const height = readSize(a, "height", id);
       return { kind: "box", id, x, y, width, height, color, label: readString(a, "label", id) };
     }
     case "note":
+      checkFields(a, ["kind", "id", "x", "y", "color", "text"], `Annotazione ${id}`);
       return { kind: "note", id, x, y, color, text: readString(a, "text", id) };
     default:
       throw new Error(`Annotazione ${id}: tipo sconosciuto: ${a?.kind}.`);

@@ -120,7 +120,7 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 | Comando | Effetto |
 | --- | --- |
 | **Nuova** | Torna al foglio vuoto |
-| **Apri** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va |
+| **Apri** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va. Un file salvato da una versione più recente dell'app (per esempio con annotazioni, sul sito non ancora aggiornato) viene rifiutato con l'invito a ricaricare la pagina, invece di essere aperto a metà |
 | **Etichette: IP, MAC, Porte** | Accendono e spengono ciò che è scritto sul disegno. All'apertura è acceso solo l'indirizzo IP |
 | **Griglia** | Griglia magnetica invisibile: accesa, i dispositivi posati o trascinati si allineano su punti ogni 20 px |
 | **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |

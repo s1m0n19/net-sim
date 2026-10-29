@@ -9,7 +9,7 @@
 import { isValidIp } from "../engine/model/ip-config";
 import type { Device } from "../engine/model/network";
 import type { NetworkTables, TableRows } from "../engine/model/tables";
-import { checkUnique, isUsableMac, readText } from "./fields";
+import { checkFields, checkUnique, isUsableMac, readText } from "./fields";
 
 /**
  * Legge le tabelle dai dispositivi del file, dopo averle controllate.
@@ -51,6 +51,7 @@ export function readTables(source: any[], devices: Device[]): NetworkTables | nu
 function readArpRows(rows: any[], deviceName: string): TableRows {
   const read: TableRows = rows.map((row, index) => {
     const where = `${deviceName}, tabella ARP, riga n. ${index + 1}`;
+    checkFields(row, ["ip", "mac"], where);
     const ip = readText(row, "ip", where);
     const mac = readText(row, "mac", where);
     if (!isValidIp(ip)) throw new Error(`${where}: indirizzo IP non valido: ${ip}.`);
@@ -69,6 +70,7 @@ function readArpRows(rows: any[], deviceName: string): TableRows {
 function readMacRows(rows: any[], device: Device): TableRows {
   const read: TableRows = rows.map((row, index) => {
     const where = `${device.name}, tabella MAC, riga n. ${index + 1}`;
+    checkFields(row, ["mac", "port"], where);
     const mac = readText(row, "mac", where);
     const port = readText(row, "port", where);
     if (!isUsableMac(mac)) throw new Error(`${where}: indirizzo MAC non valido: ${mac}.`);

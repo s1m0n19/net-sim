@@ -1,6 +1,6 @@
 # Formato dei file
 
-**Stato:** descrive il codice al 22 ottobre 2026. L'app legge e scrive i file (requisito FILE-1), anche con le tabelle (FILE-5) e con le annotazioni del disegno (ED-9; a schermo ancora *previste*); le migrazioni di versione sono *previste*.
+**Stato:** descrive il codice al 29 ottobre 2026. L'app legge e scrive i file (requisito FILE-1), anche con le tabelle (FILE-5) e con le annotazioni del disegno (ED-9; a schermo ancora *previste*), nelle versioni 1 e 2 del formato (FILE-2, vedi «Versioni»).
 
 Una rete sta in un file di testo in formato JSON: si può leggere, confrontare con un altro e distribuire con qualsiasi mezzo.
 
@@ -81,10 +81,10 @@ Uno switch si scrive così, come in `examples/lan-switch.netsim.json`:
 | Campo | Contenuto |
 | --- | --- |
 | `format` | Sempre `"net-sim"`. Serve a riconoscere il file e a rifiutare un JSON qualsiasi |
-| `version` | Numero intero della versione del formato. Oggi vale 1 |
+| `version` | Numero intero della versione del formato: 1, oppure 2 se il file ha annotazioni (vedi «Versioni») |
+| `annotations` | Solo nella versione 2: riquadri e note del disegno (vedi «Annotazioni») |
 | `network.devices` | I dispositivi, con la loro configurazione |
 | `network.links` | I collegamenti, ciascuno tra due porte |
-| `annotations` | Riquadri e note del disegno. Facoltativo: c'è solo se il disegno ne ha (vedi «Annotazioni») |
 
 Campi di ogni dispositivo:
 
@@ -160,7 +160,7 @@ Non viene controllato che il prossimo salto di una rotta sia raggiungibile: è u
 
 ## Annotazioni
 
-Le annotazioni del disegno (requisito ED-9, decisione D-103) sono di due tipi: **riquadri** colorati con un'etichetta, per mostrare una sottorete o un'area, e **note** di testo, per scrivere una consegna. Non fanno parte della rete, come le posizioni dei dispositivi: stanno nel campo `annotations`, accanto a `network`, e il lettore le restituisce a parte (`LoadedFile.annotations`). Il campo si scrive solo se il disegno ne ha almeno una, così un file senza annotazioni resta com'era. Lettura e scrittura stanno in `src/storage/annotations-file.ts`.
+Le annotazioni del disegno (requisito ED-9, decisione D-103) sono di due tipi: **riquadri** colorati con un'etichetta, per mostrare una sottorete o un'area, e **note** di testo, per scrivere una consegna. Non fanno parte della rete, come le posizioni dei dispositivi: stanno nel campo `annotations`, accanto a `network`, e il lettore le restituisce a parte (`LoadedFile.annotations`). Il campo si scrive solo se il disegno ne ha almeno una, e allora il file è di versione 2: le versioni dell'app che non conoscono le annotazioni lo rifiutano, invece di aprirlo senza e perderle al salvataggio. Un file senza annotazioni resta di versione 1, com'era. Lettura e scrittura stanno in `src/storage/annotations-file.ts`.
 
 ```json
 "annotations": [
@@ -179,7 +179,7 @@ Le annotazioni del disegno (requisito ED-9, decisione D-103) sono di due tipi: *
 | `label` | Solo per un riquadro: l'etichetta nell'angolo, anche vuota |
 | `text` | Solo per una nota: il testo, anche su più righe, anche vuoto |
 
-All'apertura si rifiutano un tipo o un colore sconosciuto, un campo mancante o del tipo sbagliato, una grandezza non positiva e un identificativo ripetuto (per esempio «Annotazione a1: colore sconosciuto: fucsia.»). È un campo facoltativo: i file scritti prima restano validi, e il numero di versione non cambia.
+All'apertura si rifiutano un tipo o un colore sconosciuto, un campo mancante, sconosciuto o del tipo sbagliato, una grandezza non positiva e un identificativo ripetuto (per esempio «Annotazione a1: colore sconosciuto: fucsia.»). Un file di versione 1 che contiene annotazioni non viene dall'app, e si rifiuta: «Le annotazioni richiedono la versione 2 del formato.»
 
 ## Tabelle
 
@@ -221,7 +221,9 @@ Un file può arrivare modificato a mano o danneggiato. Se un controllo fallisce,
 | --- | --- |
 | Il testo è JSON valido | «Il file non è JSON valido.» |
 | `format` vale `"net-sim"` | «Il file non è una rete di net-sim.» |
-| `version` è quella conosciuta | «Versione del file non supportata: 99.» |
+| `version` è un intero positivo | «Versione del file non valida: 0.» |
+| `version` non è più recente dell'app | «Il file è stato salvato con una versione più recente di net-sim (formato 3). Ricarica la pagina per aggiornare l'app.» |
+| Nessun oggetto ha campi sconosciuti: file, rete, dispositivi, posizioni, porte, rotte, cavi e loro capi, righe delle tabelle, annotazioni | «PC1: campo sconosciuto: "vlan".» |
 | Ci sono l'elenco dei dispositivi e quello dei collegamenti | «Il file non contiene l'elenco dei dispositivi e dei collegamenti.» |
 | Ogni dispositivo ha tutti i campi richiesti, del tipo giusto | «PC1: il campo "gateway" manca o non è un testo.» |
 | Ogni dispositivo ha un `kind` conosciuto | «Tipo di dispositivo non supportato: tostapane.» |
@@ -265,9 +267,27 @@ Ciò che **non** viene controllato, di proposito: la coerenza della configurazio
 
 Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere in un file scelto dall'utente (File System Access API): la prima volta Salva chiede dove, poi aggiorna lo stesso file, e lo stesso vale per un file aperto con Apri. Salva con nome chiede sempre dove. Dove questa funzione manca, il file viene scaricato ogni volta (D-57).
 
+## Versioni
+
+Il formato ha un numero di versione (requisito FILE-2, decisione D-108). Le versioni e il passaggio dall'una all'altra stanno in `src/storage/migrations.ts`.
+
+| Versione | Che cosa aggiunge |
+| --- | --- |
+| 1 | La rete, le posizioni, i guasti e, se chieste, le tabelle |
+| 2 | Le annotazioni del disegno |
+
+Tre regole tengono al sicuro i file passati da una versione dell'app all'altra:
+
+- **Il numero sale quando una versione precedente perderebbe dati.** Ogni versione dell'app, dalla prima, rifiuta un numero di versione che non conosce: un file più recente non può essere aperto a metà e poi risalvato senza ciò che non capisce. Per questo, quando il formato acquista qualcosa che una versione precedente scarterebbe, il numero sale.
+- **L'app scrive la versione più bassa che basta.** Un file senza annotazioni resta di versione 1, e lo aprono anche le versioni precedenti dell'app; solo un file con annotazioni è di versione 2.
+- **I campi sconosciuti fanno rifiutare il file.** Se un giorno la prima regola venisse dimenticata, il file verrebbe rifiutato invece di perdere in silenzio il campo nuovo. Lo stesso vale per un file modificato a mano con un campo in più.
+
+Aprendo un file di una versione precedente, l'app lo porta all'ultima un passo alla volta (`migrateToLatest`), prima dei controlli. Il passo da 1 a 2 non cambia il contenuto. Un file più recente dell'app viene rifiutato con l'invito a ricaricare la pagina.
+
+I test lo verificano anche con file salvati dalla versione dell'app pubblicata il 18 ottobre 2026, generati con il suo stesso codice (`tests/storage/fixtures/stabile/`): si aprono, e risalvati restano identici, riga per riga.
+
 ## Previsto
 
-- **Versioni.** Il numero di versione crescerà di uno ogni volta che il formato cambia in modo incompatibile (requisito FILE-2). Un file più vecchio verrà aggiornato in memoria con una funzione di migrazione per ogni salto di versione; un file più nuovo dell'app verrà rifiutato con l'invito ad aggiornarla. Aggiungere un campo facoltativo non richiederà una nuova versione.
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
 - **Vista**: inquadratura ed etichette visibili al momento del salvataggio.
 - **Esercizi e verifiche**: una sezione con consegna, obiettivi e parte protetta da password (tappa T1), e una con punteggio e registro delle attività (tappa T4).

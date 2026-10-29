@@ -7,9 +7,10 @@ import { serializeNetwork } from "../../src/storage/save";
 const BOX: Annotation = { kind: "box", id: "a1", x: 40, y: 60, width: 500, height: 300, color: "green", label: "LAN 192.168.1.0/24" };
 const NOTE: Annotation = { kind: "note", id: "a2", x: 600, y: 80, color: "yellow", text: "Consegna:\nfai ping da PC1 a PC3" };
 
-// Il file della LAN di esempio con un campo "annotations" scritto a mano.
+// Il file della LAN di esempio con un campo "annotations" scritto a mano:
+// le annotazioni richiedono la versione 2 del formato.
 function lanWith(annotations: unknown): string {
-  return JSON.stringify({ ...JSON.parse(lanFile), annotations });
+  return JSON.stringify({ ...JSON.parse(lanFile), version: 2, annotations });
 }
 
 describe("annotazioni nel file", () => {

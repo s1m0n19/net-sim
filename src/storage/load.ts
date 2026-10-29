@@ -19,12 +19,37 @@ import {
 } from "../engine/model/network";
 import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } from "../engine/model/router-config";
 import type { NetworkTables } from "../engine/model/tables";
-import { checkUnique, isUsableMac, readFlag, readNumber, readText, readTextOrNull } from "./fields";
+import { checkFields, checkUnique, isUsableMac, readFlag, readNumber, readText, readTextOrNull } from "./fields";
+import { LATEST_VERSION, migrateToLatest } from "./migrations";
 import { readAnnotations, type Annotation } from "./annotations-file";
 import { readTables } from "./tables-file";
 
 export const FILE_FORMAT = "net-sim";
-export const FILE_VERSION = 1;
+/** La versione più recente del formato, che l'app sa leggere (vedi migrations.ts). */
+export const FILE_VERSION = LATEST_VERSION;
+
+// I campi che ogni oggetto del file può avere (D-108): un campo diverso fa
+// rifiutare il file, invece di perderlo in silenzio al salvataggio.
+const FIELDS = {
+  file: ["format", "version", "network", "annotations"],
+  network: ["devices", "links"],
+  // Le tabelle sono ammesse su tutti: è tables-file.ts a dire, con un
+  // messaggio preciso, quale tabella spetta a quale dispositivo.
+  device: {
+    host: ["id", "kind", "name", "position", "ports", "powered", "ip", "mask", "gateway", "arpTable", "macTable"],
+    switch: ["id", "kind", "name", "position", "ports", "powered", "arpTable", "macTable"],
+    router: ["id", "kind", "name", "position", "ports", "powered", "routes", "arpTable", "macTable"],
+  },
+  port: {
+    host: ["name", "mac"],
+    switch: ["name", "mac", "enabled"],
+    router: ["name", "mac", "ip", "mask", "enabled"],
+  },
+  position: ["x", "y"],
+  route: ["network", "mask", "nextHop"],
+  link: ["id", "a", "b", "connected"],
+  linkEnd: ["deviceId", "portName"],
+} as const;
 
 export interface Position {
   x: number;
@@ -54,7 +79,8 @@ export interface LoadedFile {
  * @returns la rete, le posizioni dei dispositivi sul disegno, le tabelle e
  *   le annotazioni
  * @throws Error con un messaggio che dice che cosa non va, se: il testo non
- *   è JSON valido; non è un file di net-sim o è di una versione sconosciuta;
+ *   è JSON valido; non è un file di net-sim; è di una versione più recente
+ *   dell'app o non valida; un oggetto ha un campo sconosciuto;
  *   a un dispositivo o a un collegamento manca un campo, o è del tipo
  *   sbagliato; un tipo di dispositivo è sconosciuto; identificativi,
  *   nomi di porta o indirizzi MAC sono duplicati; la configurazione IP di
@@ -74,9 +100,9 @@ export function loadNetworkFile(text: string): LoadedFile {
   if (data?.format !== FILE_FORMAT) {
     throw new Error("Il file non è una rete di net-sim.");
   }
-  if (data.version !== FILE_VERSION) {
-    throw new Error(`Versione del file non supportata: ${data.version}.`);
-  }
+  data = checkedVersion(data);
+  checkFields(data, FIELDS.file, "Il file");
+  checkFields(data.network, FIELDS.network, "La rete");
   if (!Array.isArray(data.network?.devices) || !Array.isArray(data.network?.links)) {
     throw new Error("Il file non contiene l'elenco dei dispositivi e dei collegamenti.");
   }
@@ -114,6 +140,27 @@ export function loadNetworkFile(text: string): LoadedFile {
   return { network, positions, tables, annotations };
 }
 
+// Controlla il numero di versione e porta il file all'ultima versione del
+// formato. Un file più recente dell'app non si apre: l'app non saprebbe
+// che cosa contiene, e salvandolo lo perderebbe.
+function checkedVersion(data: any): any {
+  const version = data.version;
+  if (!Number.isInteger(version) || version < 1) {
+    throw new Error(`Versione del file non valida: ${version}.`);
+  }
+  if (version > FILE_VERSION) {
+    throw new Error(
+      `Il file è stato salvato con una versione più recente di net-sim (formato ${version}). Ricarica la pagina per aggiornare l'app.`,
+    );
+  }
+  // Nella versione 1 le annotazioni non esistono: un file che le contiene
+  // non può venire dall'app.
+  if (version === 1 && data.annotations !== undefined) {
+    throw new Error("Le annotazioni richiedono la versione 2 del formato.");
+  }
+  return migrateToLatest(data);
+}
+
 // Costruisce un dispositivo a partire dai suoi dati nel file.
 // Il dispositivo nasce appena acceso, con le tabelle vuote: quelle del
 // file, se ci sono, le aggiunge il simulatore.
@@ -122,8 +169,15 @@ function readDevice(d: any, where: string): { device: Device; position: Position
   const name = readText(d, "name", where);
   // Da qui in poi i messaggi possono chiamare il dispositivo per nome.
   const kind = readText(d, "kind", name);
+  // Un server, per i campi, è un host.
+  const family = kind === "server" ? "host" : kind;
+  if (family !== "host" && family !== "switch" && family !== "router") {
+    throw new Error(`Tipo di dispositivo non supportato: ${kind}.`);
+  }
+  checkFields(d, FIELDS.device[family], name);
+  checkFields(d.position, FIELDS.position, `${name}, posizione`);
   const position = { x: readNumber(d.position, "x", name), y: readNumber(d.position, "y", name) };
-  const ports = readPorts(d, name);
+  const ports = readPorts(d, name, family);
   const powered = readFlag(d, "powered", name);
 
   switch (kind) {
@@ -155,12 +209,13 @@ function readDevice(d: any, where: string): { device: Device; position: Position
   }
 }
 
-function readPorts(d: any, deviceName: string): Port[] {
+function readPorts(d: any, deviceName: string, family: "host" | "switch" | "router"): Port[] {
   if (!Array.isArray(d.ports) || d.ports.length === 0) {
     throw new Error(`${deviceName}: deve avere almeno una porta.`);
   }
   const ports: Port[] = d.ports.map((p: any) => {
     const name = readText(p, "name", `${deviceName}, porta`);
+    checkFields(p, FIELDS.port[family], `${deviceName} ${name}`);
     const mac = readText(p, "mac", `${deviceName} ${name}`);
     if (!isUsableMac(mac)) {
       throw new Error(`${deviceName} ${name}: indirizzo MAC non valido: ${mac}.`);
@@ -219,6 +274,7 @@ function readRoutes(d: any, routerName: string): StaticRoute[] {
   const routes: StaticRoute[] = [];
   d.routes.forEach((r: any, index: number) => {
     const where = `${routerName}, rotta n. ${index + 1}`;
+    checkFields(r, FIELDS.route, where);
     const route = {
       network: readText(r, "network", where),
       mask: readText(r, "mask", where),
@@ -238,6 +294,9 @@ function readRoutes(d: any, routerName: string): StaticRoute[] {
 
 function readLink(l: any, where: string, network: Network): Link {
   const id = readText(l, "id", where);
+  checkFields(l, FIELDS.link, `Collegamento ${id}`);
+  checkFields(l.a, FIELDS.linkEnd, `Collegamento ${id}, capo a`);
+  checkFields(l.b, FIELDS.linkEnd, `Collegamento ${id}, capo b`);
   const a = readPortRef(l.a, `Collegamento ${id}`, network);
   const b = readPortRef(l.b, `Collegamento ${id}`, network);
   if (a.deviceId === b.deviceId && a.portName === b.portName) {

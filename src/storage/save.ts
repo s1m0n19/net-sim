@@ -4,7 +4,8 @@
 // rilegge uguale.
 
 import type { Device, Network } from "../engine/model/network";
-import { FILE_FORMAT, FILE_VERSION, type Position } from "./load";
+import { FILE_FORMAT, type Position } from "./load";
+import { versionToWrite } from "./migrations";
 import { annotationsToWrite, type Annotation } from "./annotations-file";
 import { tableToWrite } from "./tables-file";
 
@@ -68,7 +69,9 @@ export function serializeNetwork(
 
   const file = {
     format: FILE_FORMAT,
-    version: FILE_VERSION,
+    // La versione più bassa che basta: senza annotazioni il file resta di
+    // versione 1, e lo aprono anche le versioni precedenti dell'app (D-108).
+    version: versionToWrite(annotations.length > 0),
     network: { devices, links },
     // Un file senza annotazioni resta com'era prima che esistessero.
     ...(annotations.length > 0 ? { annotations: annotationsToWrite(annotations) } : {}),

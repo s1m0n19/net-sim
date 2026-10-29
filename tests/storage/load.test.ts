@@ -67,8 +67,15 @@ describe("file che non sono reti di net-sim", () => {
     expect(() => loadNetworkFile('{"format":"altro"}')).toThrow("non è una rete di net-sim");
   });
 
-  test("rifiuta una versione che non conosce", () => {
-    expect(() => loadNetworkFile('{"format":"net-sim","version":99}')).toThrow("non supportata");
+  test("rifiuta un file di una versione più recente dell'app, e dice di aggiornarla", () => {
+    expect(() => loadNetworkFile('{"format":"net-sim","version":99}')).toThrow(
+      "Il file è stato salvato con una versione più recente di net-sim (formato 99). Ricarica la pagina per aggiornare l'app.",
+    );
+  });
+
+  test("rifiuta una versione che non è un numero intero positivo", () => {
+    expect(() => loadNetworkFile('{"format":"net-sim","version":0}')).toThrow("Versione del file non valida: 0.");
+    expect(() => loadNetworkFile('{"format":"net-sim","version":"1"}')).toThrow("Versione del file non valida: 1.");
   });
 
   test("rifiuta un file senza l'elenco dei dispositivi o dei collegamenti", () => {
