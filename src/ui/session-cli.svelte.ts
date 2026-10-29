@@ -42,6 +42,9 @@ export class SessionCli extends SessionRouter {
       super.execute(deviceId, line);
       return;
     }
+    // Un router o uno switch spento non ha una CLI: nessun comando, nessun
+    // cambio di configurazione.
+    if (this.isOff(deviceId)) return;
 
     const prompt = promptOf(device.name, terminal.cli.mode);
     if (line.trim() !== "") terminal.history.push(line.trim());
@@ -66,7 +69,7 @@ export class SessionCli extends SessionRouter {
   help(deviceId: string, line: string): void {
     const terminal = this.terminals.find((t) => t.deviceId === deviceId);
     const device = this.cliDevice(deviceId);
-    if (terminal?.cli == null || device === null) return;
+    if (terminal?.cli == null || device === null || this.isOff(deviceId)) return;
     const prompt = promptOf(device.name, terminal.cli.mode);
     const lines = helpFor(describeDevice(device), terminal.cli.mode, line);
     terminal.entries.push({ kind: "text", prompt, command: `${line}?`, lines });
@@ -82,7 +85,7 @@ export class SessionCli extends SessionRouter {
   complete(deviceId: string, line: string): string {
     const terminal = this.terminals.find((t) => t.deviceId === deviceId);
     const device = this.cliDevice(deviceId);
-    if (terminal?.cli == null || device === null) return line;
+    if (terminal?.cli == null || device === null || this.isOff(deviceId)) return line;
     return complete(describeDevice(device), terminal.cli.mode, line);
   }
 
@@ -95,7 +98,7 @@ export class SessionCli extends SessionRouter {
   endConfiguration(deviceId: string): void {
     const terminal = this.terminals.find((t) => t.deviceId === deviceId);
     const device = this.cliDevice(deviceId);
-    if (terminal?.cli == null || device === null) return;
+    if (terminal?.cli == null || device === null || this.isOff(deviceId)) return;
     if (terminal.cli.mode !== "config" && terminal.cli.mode !== "config-if") return;
     const prompt = promptOf(device.name, terminal.cli.mode);
     terminal.entries.push({ kind: "text", prompt, command: "^Z", lines: [] });

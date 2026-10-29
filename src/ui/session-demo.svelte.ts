@@ -80,7 +80,21 @@ export class SessionDemo extends SessionFile {
   }
 
   /**
-   * Esegue una riga scritta al prompt di un host.
+   * Dice se un dispositivo è spento. Un dispositivo spento non ha un
+   * prompt: il suo terminale resta visibile ma non accetta comandi, e la
+   * sua configurazione non si cambia da lì (I3). Il pannello laterale
+   * invece resta modificabile: è l'editor della rete.
+   *
+   * @param deviceId - il dispositivo
+   * @returns true se esiste ed è spento
+   */
+  isOff(deviceId: string): boolean {
+    return this.view.devices.find((d) => d.id === deviceId)?.powered === false;
+  }
+
+  /**
+   * Esegue una riga scritta al prompt di un host. Su un host spento non fa
+   * nulla.
    *
    * @param deviceId - l'host su cui gira il terminale
    * @param line - ciò che l'utente ha scritto
@@ -89,6 +103,7 @@ export class SessionDemo extends SessionFile {
     const terminal = this.terminals.find((t) => t.deviceId === deviceId);
     const host = this.view.devices.find((d) => d.id === deviceId);
     if (terminal === undefined || host === undefined || this.simulator === null) return;
+    if (this.isOff(deviceId)) return;
 
     const command = parseCommand(line);
     if (line.trim() !== "") terminal.history.push(line.trim());

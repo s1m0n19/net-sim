@@ -182,4 +182,15 @@ test("la CLI di uno switch: tabella MAC e una porta spenta", async ({ page }) =>
   await expect(terminal(page)).toContainText("FastEthernet0/1, changed state to administratively down");
   //    La porta spenta si vede sul disegno, sul cavo di PC1.
   await expect(page.locator("rect.shut")).toHaveCount(1);
+
+  // Spento lo switch, il terminale resta ma non ha più la riga di comando:
+  // un avviso lo dice, e la scheda lo segna. Riacceso, si scrive di nuovo.
+  await device(page, "SW1").click();
+  await action(page, "Spegni SW1").click();
+  await expect(page.getByRole("status")).toContainText("SW1 è spento.");
+  await expect(page.getByRole("tab", { name: /Terminale · SW1 · spento/ })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: /Riga di comando di SW1/ })).toHaveCount(0);
+  await action(page, "Accendi SW1").click();
+  await expect(page.getByRole("textbox", { name: /Riga di comando di SW1/ })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
 });

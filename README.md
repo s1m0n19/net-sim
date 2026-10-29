@@ -153,7 +153,7 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 
 **Tabelle appuntate.** Il pulsante con la griglia, sulla barretta di un dispositivo, appunta la sua tabella sul disegno: resta visibile qualunque cosa sia selezionata, così si guarda la tabella MAC riempirsi mentre il pacchetto viaggia. Si trascina dove dà meno fastidio e si toglie con la crocetta. Una riga appena imparata si accende per un momento; una appena persa resta un attimo, barrata.
 
-**Terminale.** Il pulsante `>_` sulla barretta di un PC apre il suo prompt dei comandi in una scheda della fascia in basso. Ogni PC ha la sua scheda, con la crocetta per chiuderla.
+**Terminale.** Il pulsante `>_` sulla barretta di un PC apre il suo prompt dei comandi in una scheda della fascia in basso. Ogni PC ha la sua scheda, con la crocetta per chiuderla. Il terminale di un dispositivo spento resta aperto ma non accetta comandi, finché non lo riaccendi: un avviso lo dice, e la scheda lo segna con «spento».
 
 | Comando | Che cosa fa |
 | --- | --- |

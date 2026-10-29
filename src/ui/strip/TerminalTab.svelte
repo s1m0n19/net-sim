@@ -95,7 +95,7 @@
 <svelte:window onpointerdown={onPointerDown} />
 
 <!-- Un clic in qualsiasi punto dello schermo porta il cursore sulla riga di comando. -->
-<div class="screen mono" bind:this={screen} onclick={() => input?.focus()} role="presentation">
+<div class="screen mono" class:off={host !== undefined && !host.powered} bind:this={screen} onclick={() => input?.focus()} role="presentation">
   {#each terminal.entries as entry}
     <div class="command">{entry.prompt}{entry.command}</div>
     {#each session.outputOf(terminal.deviceId, entry) as output}
@@ -106,7 +106,12 @@
   {/each}
 
   {#if host !== undefined && !host.powered}
-    <div class="notice">{host.name} è spento.</div>
+    <!-- Un dispositivo spento non ha un prompt: al posto della riga di
+         comando, un avviso dell'interfaccia, non un output del terminale. -->
+    <div class="off-notice" role="status">
+      <svg viewBox="0 0 32 32" width="18" height="18" aria-hidden="true"><path d="M16 9V16M11 12a7 7 0 1 0 10 0" /></svg>
+      <span><strong>{host.name} è spento.</strong> Il terminale torna disponibile quando lo riaccendi.</span>
+    </div>
   {:else if !busy}
     <form onsubmit={submit}>
       <label for="terminal-{terminal.deviceId}">{prompt}</label>
@@ -139,10 +144,28 @@
     white-space: pre;
     min-height: 1.4em;
   }
-  .notice {
-    color: var(--muted);
+  /* Spento, l'output di prima resta leggibile ma passa in secondo piano. */
+  .screen.off .command,
+  .screen.off .output {
+    opacity: 0.5;
+  }
+  .off-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    color: var(--ink);
     font-family: var(--font-ui);
-    font-style: italic;
+  }
+  .off-notice path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
   }
   form {
     display: flex;

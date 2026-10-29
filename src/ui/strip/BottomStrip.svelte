@@ -74,7 +74,7 @@
           aria-selected={session.activeTab === terminal.deviceId}
           onclick={() => show(terminal.deviceId)}
         >
-          Terminale · {nameOf(terminal.deviceId)}
+          Terminale · {nameOf(terminal.deviceId)}{#if session.isOff(terminal.deviceId)}<span class="off">{" · spento"}</span>{/if}
         </button>
         <button
           class="close"
@@ -157,6 +157,10 @@
   .name {
     padding: 5px 12px;
     white-space: nowrap;
+  }
+  .name .off {
+    color: var(--muted);
+    font-weight: 400;
   }
   /* La crocetta sta dentro la scheda, subito dopo il nome. */
   .close {

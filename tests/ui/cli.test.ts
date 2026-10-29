@@ -233,3 +233,46 @@ describe("aiuto, completamento e Ctrl+Z", () => {
     expect(cable).toMatchObject({ toOff: true, signal: false });
   });
 });
+
+describe("un dispositivo spento non ha un prompt", () => {
+  test("la CLI di un router spento non accetta comandi né cambia la configurazione", () => {
+    session.open("due-lan-router.netsim.json", routerFile);
+    session.openTerminal("r1");
+    type("r1", ["enable", "configure terminal", "interface gi0/0"]);
+    const before = terminalOf("r1").entries.length;
+    session.togglePower("r1");
+
+    type("r1", ["ip address 172.16.0.1 255.255.0.0", "end", "show ip interface brief"]);
+    session.help("r1", "sh");
+    session.endConfiguration("r1");
+
+    expect(terminalOf("r1").entries).toHaveLength(before);
+    expect(session.complete("r1", "sh")).toBe("sh");
+    // Nel file l'interfaccia ha ancora l'indirizzo di prima.
+    const r1 = JSON.parse(session.serialize()).network.devices.find((d: any) => d.id === "r1");
+    expect(r1.ports[0].ip).toBe("192.168.1.1");
+  });
+
+  test("il prompt di un PC spento non accetta comandi", () => {
+    session.open("lan-switch.netsim.json", lanFile);
+    session.openTerminal("d1");
+    session.togglePower("d1");
+
+    type("d1", ["ipconfig", "ping 192.168.1.11"]);
+
+    expect(terminalOf("d1").entries).toHaveLength(0);
+    expect(session.view.nextEvent).toBeNull();
+  });
+
+  test("riacceso, il terminale torna a funzionare, dalla modalità utente", () => {
+    session.open("due-lan-router.netsim.json", routerFile);
+    session.openTerminal("r1");
+    type("r1", ["enable"]);
+    session.togglePower("r1");
+    session.togglePower("r1");
+
+    type("r1", ["show ip interface brief"]);
+
+    expect(screenOf("r1")).toContain("R1>show ip interface brief");
+  });
+});

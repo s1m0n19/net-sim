@@ -44,7 +44,7 @@ A collegarlo allo schermo e al motore è il quinto strato della sessione, `src/u
 | `R1(config)#` | configurazione globale | `configure terminal` | `hostname`, `interface`, `ip route` |
 | `R1(config-if)#` | configurazione di un'interfaccia | `interface gi0/0` | `ip address`, `shutdown` e, come su IOS, anche i comandi globali |
 
-`exit` torna indietro di un passo, `end` (o Ctrl+Z) torna a `R1#`. Non c'è password. La modalità è di ciascun terminale e torna a `R1>` chiudendo la scheda, con Ricomincia, o spegnendo il dispositivo.
+`exit` torna indietro di un passo, `end` (o Ctrl+Z) torna a `R1#`. Non c'è password. La modalità è di ciascun terminale e torna a `R1>` chiudendo la scheda, con Ricomincia, o spegnendo il dispositivo. Un router o uno switch spento non ha CLI: finché resta spento la scheda non accetta comandi, né `?`, Tab e Ctrl+Z, e la configurazione non si cambia da lì (D-109).
 
 Router e switch non hanno gli stessi comandi: un nodo dell'albero può essere riservato a un tipo di dispositivo (campo `only`). Sullo switch non esistono `ip address`, `ip route`, `ping`, `traceroute` e `show ip route`; c'è in più `show mac address-table`.
 

@@ -349,7 +349,7 @@ Altre cose da sapere:
 - freccia su e freccia giù richiamano i comandi già scritti;
 - un ping lanciato dal terminale compare tra le conversazioni del filtro, come quelli lanciati dalla barretta;
 - ricominciando la simulazione i terminali restano aperti ma si svuotano: i PC sono come appena accesi;
-- il terminale di un PC spento non accetta comandi;
+- il terminale di un dispositivo spento, PC, router o switch, non accetta comandi (D-109): resta aperto, con l'output di prima attenuato, e al posto della riga di comando un avviso dell'interfaccia dice «R1 è spento. Il terminale torna disponibile quando lo riaccendi.»; anche la scheda lo segna, «Terminale · R1 · spento». Da spento, nemmeno `?`, Tab e Ctrl+Z hanno effetto, quindi la configurazione non si cambia dal terminale. Il pannello laterale invece resta modificabile: è l'editor della rete;
 - un nome al posto di un indirizzo non viene trovato: non esiste ancora un DNS.
 
 ### Eventi
