@@ -127,6 +127,21 @@ button {
   font-family: var(--font-mono);
 }
 
+/* Un testo per il lettore di schermo, che a schermo non si vede: completa
+   ciò che a schermo si capisce dalla posizione (per esempio la colonna di
+   una tabella disposta su due righe). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Il pulsante che apre o chiude un pannello: una freccia, senza parole,
    uguale per la colonna, il pannello laterale e la fascia in basso. */
 .fold {

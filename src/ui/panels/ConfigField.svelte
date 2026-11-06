@@ -86,7 +86,7 @@
   label {
     color: var(--muted);
     align-self: start;
-    padding-top: 4px;
+    padding-top: 5px;
   }
   .field {
     min-width: 0;
@@ -94,7 +94,7 @@
   input {
     width: 100%;
     box-sizing: border-box;
-    padding: 3px 6px;
+    padding: 4px 7px;
     font: inherit;
     color: var(--ink);
     background: var(--canvas);
@@ -104,6 +104,17 @@
   input.mono {
     font-family: var(--font-mono);
   }
+  /* Il segnaposto dice che il valore manca: in corsivo e attenuato, perché
+     non sembri un valore scritto. */
+  input::placeholder {
+    color: var(--muted);
+    font-style: italic;
+    font-family: var(--font-ui);
+    opacity: 0.8;
+  }
+  input:hover:not(:focus) {
+    border-color: var(--muted);
+  }
   input:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -1px;
@@ -111,12 +122,16 @@
   input.invalid {
     border-color: var(--down);
     border-width: 2px;
-    padding: 2px 5px;
+    padding: 3px 6px;
   }
+  /* Il motivo del rifiuto, sotto il campo: la crocetta e il testo, con il
+     rientro allineato al testo del campo. */
   .problem {
-    margin: 3px 0 0;
+    margin: 4px 0 0;
+    padding-left: 7px;
     color: var(--down);
     font-size: 0.92em;
+    line-height: 1.35;
   }
   /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni
      etichetta va sopra il suo campo: gli indirizzi restano interi (D-112). */

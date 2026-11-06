@@ -273,11 +273,25 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 
 Mostra l'ultima cosa selezionata. Si chiude con la freccia nell'angolo in alto a destra, e si riduce a una striscia sottile sul bordo, da cui si riapre. Chiuso, resta chiuso anche quando si seleziona qualcosa: lo riapre solo l'utente.
 
-Largo 290 px; in presentazione, ingrandito, al massimo due quinti della finestra. Quando il suo contenuto è più stretto di 250 px ogni etichetta va sopra il suo campo, anche nell'editor delle rotte, perché un indirizzo non si tagli (D-112). Il contenuto che non ci sta scorre in verticale.
+Largo 290 px; in presentazione, ingrandito, al massimo due quinti della finestra. Quando il suo contenuto è più stretto di 250 px ogni etichetta va sopra il suo campo, anche nell'editor delle rotte, perché un indirizzo non si tagli (D-112). Il contenuto che non ci sta scorre in verticale, mai di lato.
+
+**Come è organizzato** (D-114). In testa l'**intestazione**: il nome grande, e sotto il tipo seguito dagli stati già noti, separati da un punto a mezza altezza («PC · acceso · segnale presente»). Ogni stato ha un cerchietto pieno se acceso, collegato, presente o in viaggio, vuoto se no: la parola dice lo stesso, e il colore non è il solo segno. Gli stati dicono com'è il dispositivo, non perché: «senza segnale» non diventa una diagnosi.
+
+Sotto, **sezioni** separate da una riga sottile, ciascuna con un titolo breve in maiuscoletto (`panels/PanelSection.svelte`). Niente schede, niente riquadri decorativi: lo spazio va ai dati. Le etichette dei campi stanno in una colonna larga uguale in tutte le sezioni, così i campi cominciano tutti nello stesso punto; i valori che non si cambiano, come il MAC, sono allineati al testo dei campi ma senza bordo.
+
+Una tabella che si appunta sul disegno ha il suo pulsante accanto al titolo della sezione: «appunta», oppure «✓ appuntata» nel colore d'accento quando è già sul disegno. Il pulsante è descritto dal titolo della sezione, così il lettore di schermo dice di quale tabella è. Le tabelle a due colonne (ARP e MAC, `panels/PairTable.svelte`) hanno le intestazioni attenuate sopra una riga più scura, i valori in carattere a larghezza fissa, e «Vuota.» in corsivo quando non c'è nulla. Nessun colore dice se una riga è giusta.
+
+| Selezionato | Sezioni |
+| --- | --- |
+| PC o server | Identità (nome, MAC) · Configurazione IPv4 (indirizzo IP, subnet mask, gateway) · Tabella ARP · In attesa del MAC, se c'è qualcosa in attesa |
+| Switch | Identità (nome, numero di porte) · Tabella MAC |
+| Router | Identità (nome) · Interfacce · Tabella di routing, con il modulo per aggiungere una rotta · Tabella ARP · In attesa del MAC |
+| Cavo | Capi del cavo |
+| Pacchetto | Contenuto del frame |
 
 ### Dispositivo
 
-Nome, tipo, stato (acceso o spento, segnale presente o assente), e per un host i campi della configurazione IP: indirizzo, subnet mask, gateway. Sotto, le sue tabelle, ciascuna con il pulsante per appuntarla. Il nome si cambia dal suo campo, con le stesse regole di conferma della configurazione; un nome vuoto o già usato viene rifiutato.
+Nome, tipo, stato (acceso o spento, segnale presente o assente), e per un host due gruppi: l'identità (nome e MAC, che non si cambia) e la configurazione IPv4 (indirizzo, subnet mask, gateway). Sotto, le sue tabelle, ciascuna con il pulsante per appuntarla. Il nome si cambia dal suo campo, con le stesse regole di conferma della configurazione; un nome vuoto o già usato viene rifiutato.
 
 **Modificare la configurazione.** Un campo ha effetto quando lo si conferma, con Invio o uscendo dal campo. Il valore viene controllato con le regole di `checkIpConfig`:
 
@@ -292,10 +306,13 @@ Esc, dentro un campo, rimette il valore della rete senza togliere la selezione. 
 
 ### Router
 
-Nome, stato, e poi le sue **interfacce**, una sotto l'altra. Ciascuna ha:
+Nome, stato, e poi le sue **interfacce**, una sotto l'altra, ciascuna in un gruppo leggero con il fondo appena più scuro (D-114). Ciascuna ha:
 
+- il nome completo, in grassetto;
 - un **interruttore** che dice «accesa» o «spenta» e la cambia con un clic. Un router nasce con tutte le interfacce spente (D-70);
 - i campi **Indirizzo IP** e **Subnet mask**, con le stesse regole di conferma dei PC: Invio o uscita dal campo, bordo rosso e motivo se il valore viene rifiutato.
+
+Accesa o spenta si legge in tre modi: la parola sull'interruttore, un cerchietto pieno o vuoto accanto, e la barra sul bordo sinistro del gruppo, piena e verde o tratteggiata e grigia. Il rosso resta sull'interruttore, come il quadratino sul capo del cavo: con otto interfacce spente il pannello non si riempie di rosso. Un campo vuoto mostra in corsivo «nessun indirizzo» (o «nessuna» per la maschera): così un'interfaccia senza indirizzo non si confonde con una spenta. Le interfacce restano tutte aperte: un router a 8 interfacce si scorre, ma nulla della configurazione resta nascosto.
 
 Tre aiuti nello scrivere l'indirizzo di un'interfaccia:
 
@@ -303,10 +320,12 @@ Tre aiuti nello scrivere l'indirizzo di un'interfaccia:
 - se quella maschera farebbe sovrapporre la rete a quella di un'altra interfaccia dello stesso router, viene proposta la maschera di quell'altra: dopo `10.0.0.1/30` su un'interfaccia, `10.0.0.5` sull'altra diventa `/30` anche lei, invece di essere rifiutata come `/8`;
 - nel campo dell'indirizzo si può scrivere anche il prefisso, `10.0.0.5/30`, e indirizzo e maschera si impostano insieme.
 
-Sotto le interfacce, la **tabella di routing**: una riga per rete, con la sigla C per una rete collegata e S per una rotta statica, il prossimo salto e l'interfaccia da cui si esce. Una rotta statica il cui prossimo salto non sta su una rete collegata non ha un'interfaccia: la riga è attenuata e dice «non usata».
+Sotto le interfacce, la **tabella di routing**: una rotta per rete, con la sigla C per una rete collegata e S per una rotta statica (spiegate da una riga di legenda), il prossimo salto e l'interfaccia di uscita. Una rotta statica il cui prossimo salto non sta su una rete collegata non ha un'interfaccia: la rotta è attenuata, in corsivo, e dice «non usata».
 
-- **Togliere una rotta statica**: la crocetta in fondo alla sua riga.
-- **Aggiungerne una**: i tre campi sotto la tabella (rete, maschera, prossimo salto) e il pulsante Aggiungi rotta, o Invio. La maschera si scrive per esteso oppure come prefisso (`/24`); il prefisso può stare anche in coda alla rete (`192.168.2.0/24`). Una rotta rifiutata lascia i campi come sono, con il motivo sotto.
+Ogni rotta sta su due righe, con le colonne allineate tra una rotta e l'altra (D-114, una griglia CSS con `subgrid`): sopra la sigla, la rete di destinazione in grassetto e la crocetta; sotto il prossimo salto e l'uscita. Le intestazioni hanno la stessa forma. In cinque colonne affiancate, con indirizzi lunghi ma comuni (`172.16.128.0/17` via `192.168.200.254`), la tabella era più larga del pannello; su due righe ci sta sempre, e destinazioni, prossimi salti e uscite restano in colonna, facili da confrontare. Il lettore di schermo legge ogni rotta di seguito, con le parole «rete collegata» o «rotta statica», «prossimo salto» e «uscita».
+
+- **Togliere una rotta statica**: la crocetta a destra della rotta.
+- **Aggiungerne una**: il riquadro **Aggiungi rotta statica**, sotto la tabella e separato da lei, con i tre campi (rete, maschera, prossimo salto) e il pulsante Aggiungi rotta, o Invio. La maschera si scrive per esteso oppure come prefisso (`/24`); il prefisso può stare anche in coda alla rete (`192.168.2.0/24`). Una rotta rifiutata lascia i campi come sono, con il motivo sotto.
 
 In fondo, la **tabella ARP** del router.
 
@@ -322,11 +341,11 @@ Limite noto: la posizione di ogni scritta è calcolata guardando solo il suo cav
 
 ### Cavo
 
-I due capi, ciascuno con dispositivo e porta, e lo stato: collegato o staccato.
+Nel titolo i due dispositivi («Cavo tra PC2 e SW1»), sotto lo stato: collegato, con il segnale presente o assente, oppure staccato. Poi i due capi, ciascuno con dispositivo e porta.
 
 ### Pacchetto
 
-Il contenuto a **strati annidati**: un riquadro per livello, ciascuno dentro quello che lo trasporta, con i campi principali. Lo strato più interno ha il colore del suo protocollo.
+In testa la descrizione, lo stato (in viaggio o arrivato) e da dove a dove. Sotto, il contenuto a **strati annidati**: un riquadro per livello, ciascuno dentro quello che lo trasporta, con i campi principali. Lo strato più interno ha il colore del suo protocollo; il nome di ogni strato ha accanto un segno di quel colore, e i campi stanno su righe separate da una linea punteggiata, che porta l'occhio dall'etichetta a sinistra al valore a destra (D-114).
 
 | Strato | Campi |
 | --- | --- |
@@ -517,7 +536,7 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | `layout/` | Barra in alto (`TopBar.svelte`, con i menu di `Menu.svelte`) e colonna dei dispositivi |
 | `presentation.ts` | Modalità presentazione: entrare, uscire, scorciatoie. L'ingrandimento sta in `preferences` |
 | `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts`, `geometry.ts`, `grid.ts`, `placement.ts` e `bar-placement.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta, quali azioni sono sempre in vista), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
-| `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
+| `panels/` | Il pannello laterale: le sue sezioni (`PanelSection.svelte`), il campo della configurazione (`ConfigField.svelte`), le tabelle a due colonne (`PairTable.svelte`), le interfacce e le rotte del router, gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |
 | `simulation/playback.ts` | L'orologio: fa scorrere il tempo a schermo e chiede al motore di avanzare. Ha i suoi test, con un orologio finto |

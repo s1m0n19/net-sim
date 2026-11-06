@@ -9,7 +9,7 @@
   const icmp = $derived(frame.etherType === "IPv4" ? frame.payload.payload : null);
 </script>
 
-<div class="layer">
+<div class="layer ethernet">
   <strong>Ethernet</strong>
   <dl>
     <dt>MAC destinazione</dt>
@@ -37,7 +37,7 @@
       </dl>
     </div>
   {:else}
-    <div class="layer">
+    <div class="layer ipv4">
       <strong>IPv4</strong>
       <dl>
         <dt>IP sorgente</dt>
@@ -81,32 +81,62 @@
 </div>
 
 <style>
+  /* Ogni strato sta dentro quello che lo trasporta (D-114): un bordo
+     sottile, il nome in testa con un segno nel colore del protocollo, e i
+     campi su righe separate da una linea punteggiata, che porta l'occhio
+     dall'etichetta al valore. */
   .layer {
-    border: 1.5px solid var(--muted);
+    border: 1px solid var(--muted);
     border-radius: var(--radius);
     padding: 6px 8px 8px;
     display: flex;
     flex-direction: column;
     gap: 6px;
     min-width: 0;
+    background: var(--surface);
+  }
+  .ipv4 {
+    background: var(--surface-2);
   }
   /* Lo strato più interno ha il colore del suo protocollo. */
   .arp {
     border-color: var(--arp);
-    background: color-mix(in srgb, var(--arp) 9%, transparent);
+    background: color-mix(in srgb, var(--arp) 9%, var(--surface));
   }
   .icmp {
     border-color: var(--icmp);
-    background: color-mix(in srgb, var(--icmp) 9%, transparent);
+    background: color-mix(in srgb, var(--icmp) 9%, var(--surface));
   }
   strong {
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+  strong::before {
+    content: "";
+    width: 4px;
+    height: 0.95em;
+    border-radius: 2px;
+    background: var(--muted);
+  }
+  .arp > strong::before {
+    background: var(--arp);
+  }
+  .icmp > strong::before {
+    background: var(--icmp);
   }
   dl {
     margin: 0;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 1px 10px;
+    column-gap: 10px;
+  }
+  dt,
+  dd {
+    padding: 2px 0;
+    border-bottom: 1px dotted color-mix(in srgb, var(--muted) 45%, transparent);
   }
   dt {
     color: var(--muted);

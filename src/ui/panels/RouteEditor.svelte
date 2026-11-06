@@ -25,39 +25,50 @@
 
 <!-- C = rete collegata, S = rotta statica, come su un Cisco. Una rotta
      statica senza interfaccia di uscita non viene mai usata: il suo
-     prossimo salto non sta su una rete collegata. -->
+     prossimo salto non sta su una rete collegata.
+
+     Ogni rotta sta su due righe, con le colonne allineate tra una rotta e
+     l'altra: sopra la sigla e la rete di destinazione, sotto il prossimo
+     salto e l'interfaccia di uscita. Così ci sta anche nel pannello da 290
+     px, con gli indirizzi più lunghi (D-114). -->
 {#if device.routingRows.length === 0}
-  <p>Vuota.</p>
+  <p class="empty">Vuota.</p>
 {:else}
-  <table>
-    <thead><tr><th></th><th>Rete</th><th>Via</th><th>Esce da</th><th></th></tr></thead>
-    <tbody>
-      {#each device.routingRows as row (`${row.code} ${row.destination} ${row.nextHop}`)}
-        <tr class:unused={row.portName === null}>
-          <td>{row.code}</td>
-          <td>{row.destination}</td>
-          <td>{row.nextHop ?? "—"}</td>
-          <td>{row.portName ?? "non usata"}</td>
-          <td class="end">
-            {#if row.code === "S" && row.nextHop !== null}
-              {@const route = { network: row.network, mask: row.mask, nextHop: row.nextHop }}
-              <button
-                class="remove"
-                title="Togli questa rotta"
-                aria-label="Togli la rotta verso {row.destination} via {row.nextHop}"
-                onclick={() => session.removeRoute(device.id, route)}
-              >
-                <svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M3 3L11 11M11 3L3 11" /></svg>
-              </button>
-            {/if}
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+  <p class="legend"><abbr title="rete collegata">C</abbr> rete collegata · <abbr title="rotta statica">S</abbr> rotta statica</p>
+  <ul class="routes" aria-label="Rotte">
+    <li class="heading" aria-hidden="true">
+      <span class="destination">Rete di destinazione</span>
+      <span class="hop">Prossimo salto</span>
+      <span class="exit">Uscita</span>
+    </li>
+    {#each device.routingRows as row (`${row.code} ${row.destination} ${row.nextHop}`)}
+      <li class:unused={row.portName === null}>
+        <span class="code" title={row.code === "C" ? "rete collegata" : "rotta statica"}>{row.code}<span class="sr-only">{row.code === "C" ? ", rete collegata" : ", rotta statica"},</span></span>
+        <span class="destination">{row.destination}</span>
+        <span class="hop"><span class="sr-only">prossimo salto </span>{row.nextHop ?? "—"}</span>
+        <span class="exit"><span class="sr-only">uscita </span>{row.portName ?? "non usata"}</span>
+        <span class="end">
+          {#if row.code === "S" && row.nextHop !== null}
+            {@const route = { network: row.network, mask: row.mask, nextHop: row.nextHop }}
+            <button
+              class="remove"
+              title="Togli questa rotta"
+              aria-label="Togli la rotta verso {row.destination} via {row.nextHop}"
+              onclick={() => session.removeRoute(device.id, route)}
+            >
+              <svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M3 3L11 11M11 3L3 11" /></svg>
+            </button>
+          {/if}
+        </span>
+      </li>
+    {/each}
+  </ul>
 {/if}
 
-<form onsubmit={add} aria-label="Nuova rotta statica">
+<!-- Consultare la tabella e aggiungere una rotta sono due cose diverse:
+     il modulo sta in un riquadro a sé, con il suo titolo. -->
+<form onsubmit={add} aria-labelledby="route-form-title">
+  <h4 id="route-form-title">Aggiungi rotta statica</h4>
   <label for="route-network">Rete</label>
   <input id="route-network" data-field="route-network" bind:value={network} placeholder="192.168.2.0" autocomplete="off" spellcheck="false" />
   <label for="route-mask">Maschera</label>
@@ -75,38 +86,94 @@
     margin: 0;
     color: var(--muted);
   }
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    font-family: var(--font-mono);
-    font-size: 0.9em;
-    font-variant-numeric: tabular-nums;
-  }
-  th {
-    text-align: left;
-    font-weight: 500;
-    color: var(--muted);
-    font-family: var(--font-ui);
-  }
-  th,
-  td {
-    padding: 3px 5px 3px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  /* Una rotta che non viene usata: attenuata, e lo dice a parole. */
-  .unused td {
-    color: var(--muted);
+  .empty {
     font-style: italic;
   }
+  .legend {
+    font-size: 0.88em;
+  }
+  abbr {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  /* Un'unica griglia per tutte le rotte: ogni rotta la usa con subgrid,
+     così le colonne restano allineate da una rotta all'altra. */
+  .routes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1.4em minmax(0, 1fr) auto 22px;
+    column-gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    font-variant-numeric: tabular-nums;
+  }
+  .routes li {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-template-areas:
+      "code destination destination end"
+      ".    hop         exit        end";
+    row-gap: 0;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .code {
+    grid-area: code;
+    align-self: start;
+    font-weight: 600;
+    text-align: center;
+  }
+  .destination {
+    grid-area: destination;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .hop {
+    grid-area: hop;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .exit {
+    grid-area: exit;
+    color: var(--muted);
+    white-space: nowrap;
+  }
   .end {
-    padding-right: 0;
-    text-align: right;
+    grid-area: end;
+    align-self: center;
+    justify-self: end;
+  }
+  /* Le intestazioni hanno la stessa forma delle rotte: due righe. */
+  .routes .heading {
+    padding: 0 0 4px;
+    border-bottom: 1px solid var(--muted);
+    font-family: var(--font-ui);
+    font-size: 0.88em;
+    color: var(--muted);
+  }
+  .routes .heading .destination {
+    font-weight: 500;
+  }
+  /* Una rotta che non viene usata: attenuata e in corsivo, e lo dice a
+     parole al posto dell'interfaccia. */
+  .unused .code,
+  .unused .destination,
+  .unused .hop,
+  .unused .exit {
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 400;
   }
   .remove {
     display: inline-grid;
     place-items: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     padding: 0;
     border: 1px solid transparent;
     border-radius: 4px;
@@ -125,11 +192,24 @@
     stroke-width: 1.8;
     stroke-linecap: round;
   }
+  /* Il modulo per aggiungere una rotta: un riquadro leggero, separato
+     dalla tabella che si consulta. */
   form {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 6px 12px;
+    grid-template-columns: var(--label-width, 7em) minmax(0, 1fr);
+    gap: 6px 10px;
     align-items: center;
+    margin-top: 4px;
+    padding: 8px 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+  h4 {
+    grid-column: 1 / -1;
+    margin: 0 0 2px;
+    font-size: 0.92em;
+    font-weight: 600;
   }
   label {
     color: var(--muted);
@@ -137,13 +217,21 @@
   input {
     width: 100%;
     box-sizing: border-box;
-    padding: 3px 6px;
+    padding: 4px 7px;
     font: inherit;
     font-family: var(--font-mono);
     color: var(--ink);
     background: var(--canvas);
     border: 1px solid var(--line);
     border-radius: 4px;
+  }
+  input::placeholder {
+    color: var(--muted);
+    font-family: var(--font-ui);
+    opacity: 0.8;
+  }
+  input:hover:not(:focus) {
+    border-color: var(--muted);
   }
   input:focus-visible {
     outline: 2px solid var(--accent);
@@ -157,6 +245,7 @@
     grid-column: 1 / -1;
     color: var(--down);
     font-size: 0.92em;
+    line-height: 1.35;
   }
   /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni
      etichetta va sopra il suo campo: gli indirizzi restano interi (D-112). */
@@ -168,6 +257,16 @@
     .add {
       grid-column: 1;
       margin-top: 6px;
+    }
+    .routes {
+      grid-template-columns: 1em minmax(0, 1fr) 0 22px;
+      column-gap: 4px;
+    }
+    .routes li {
+      grid-template-areas:
+        "code destination destination end"
+        ".    hop         hop         end"
+        ".    exit        exit        end";
     }
   }
 </style>
