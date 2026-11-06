@@ -16,7 +16,7 @@ Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQ
 
 ```
 +------------------------------------------------------------+
-| barra in alto: file, annulla, etichette, tema, Presenta    |
+| barra in alto: progetto, Salva, annulla, Visualizza, Presenta |
 +--------+-----------------------------------+---------------+
 | colon- |                                   | pannello      |
 | na dei |            DISEGNO                | laterale:     |
@@ -32,7 +32,7 @@ Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQ
 
 | Area | Contenuto | Si può chiudere |
 | --- | --- | --- |
-| Barra in alto | Nuova, Apri, Salva, annulla e ripristina, nome della rete, interruttori delle etichette, tema, Presenta | no |
+| Barra in alto | Marchio e nome della rete con le modifiche non salvate; menu Progetto e Salva; annulla e ripristina; menu Visualizza, con il tema; Presenta (vedi «Barra in alto») | no |
 | Colonna a sinistra | Dispositivi da posare e strumento Cavo | sì |
 | Disegno | La topologia, con sopra la barra della simulazione | no |
 | Pannello laterale | Ciò che è selezionato: un dispositivo, un cavo o un pacchetto | sì |
@@ -45,6 +45,21 @@ Colonna, pannello laterale e fascia si aprono e si chiudono con lo stesso pulsan
 - **La fascia in basso** segue eventi e terminali. All'avvio è chiusa; si apre al primo evento o al primo terminale, e si richiude quando non resta nulla (Nuova, Apri, oppure Ricomincia senza terminali aperti). In presentazione non si apre da sola: lì la aprono T ed E.
 - **Il pannello laterale**, in presentazione, segue la selezione: senza nulla di selezionato è chiuso, e lascia il posto al disegno. Fuori dalla presentazione resta come lo si lascia.
 
+### Barra in alto
+
+Alta 52 px, divisa in quattro gruppi (D-110):
+
+| Gruppo | Che cosa contiene |
+| --- | --- |
+| Identità e progetto | Il marchio e il nome dell'app; il nome del file, o «Senza nome», con la pastiglia **Da salvare** quando ci sono modifiche non salvate (un punto e una scritta, non il solo colore); il menu **Progetto**, che in testa ripete il nome intero del file e lo stato («Modifiche non salvate», «Tutto salvato»), poi Nuova rete, Apri rete…, Salva con nome… e la casella «Salva anche le tabelle ARP e MAC», con una riga che ne spiega l'effetto; il pulsante **Salva**, fuori dal menu e sempre in vista, l'unico pieno nel colore d'accento, con l'etichetta «con tabelle» accanto quando la casella è spuntata |
+| Modifica | Annulla e Ripristina, due icone con il suggerimento e la scorciatoia; spente quando non c'è nulla da annullare o ripristinare |
+| Visualizzazione | Il menu **Visualizza**: caselle per indirizzi IP, indirizzi MAC, nomi delle porte, griglia magnetica e tema scuro. Una casella cambia subito il disegno, e il menu resta aperto per cambiarne altre |
+| Presentazione | **Presenta**, con il contorno e il testo nel colore d'accento: si trova subito, ma non domina la barra di chi lavora |
+
+I menu (`layout/Menu.svelte`) seguono lo schema «menu button» di WAI-ARIA: un clic, Invio, Spazio o freccia giù aprono l'elenco e portano il fuoco sulla prima voce; le frecce scorrono le voci saltando quelle spente; Home e Fine vanno agli estremi; Esc chiude e riporta il fuoco sul pulsante; Tab o un clic fuori chiudono. Un comando chiude il menu, una casella no. Le icone della barra stanno tutte in `theme/Icon.svelte`; altezza dei controlli, arrotondamento e ombra dei menu sono token di `theme/tokens.css`.
+
+Sugli schermi stretti il nome del file si accorcia con i puntini (per intero resta nel suggerimento e in testa al menu Progetto), e sotto i 1060 px resta il solo marchio senza la scritta «net-sim»: a 1024×768 tutti i comandi restano nello schermo, senza scorrimento orizzontale. In presentazione la barra mostra marchio, nome del file, ingrandimento, il tema come pulsante a sé (il menu Visualizza lì non c'è) ed Esci.
+
 La disposizione è una decisione presa con riserva: i pannelli sono componenti indipendenti dalla griglia che li ospita, così cambiarla non richiede di riscriverli (requisito NF-7).
 
 ## Che cosa c'è già
@@ -54,9 +69,9 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 - l'ossatura completa, con la colonna, il pannello laterale e la fascia che si aprono e si chiudono;
 - i due temi, con il pulsante Tema;
 - il foglio vuoto all'avvio;
-- **Apri**, che legge un file di rete e segnala in una riga rossa se non è valido, **Nuova**, che torna al foglio vuoto, **Salva** e **Salva con nome**, che scrivono la rete in un file, con le tabelle se l'interruttore **Tabelle** è acceso;
+- **Apri rete**, che legge un file di rete e segnala in una riga rossa se non è valido, **Nuova rete**, che torna al foglio vuoto, e **Salva con nome**, nel menu Progetto, e **Salva**, che scrivono la rete in un file, con le tabelle se la casella è spuntata;
 - il disegno della rete: dispositivi con nome e indirizzo con prefisso, cavi con il pallino del segnale, cavo staccato, dispositivo spento, host non configurato;
-- gli interruttori delle etichette IP, MAC e Porte, e quello della griglia magnetica;
+- il menu Visualizza, con le caselle delle etichette IP, MAC e Porte e quella della griglia magnetica;
 - l'inquadratura: un foglio di base che si allarga solo se serve, la rotella per ingrandire, lo sfondo da trascinare per spostare la vista, i pulsanti −, + e Adatta;
 - la **barra della simulazione**: Ricomincia, Avvia e Pausa, Passo, velocità, tick;
 - le **buste** in viaggio, con colore e sigla del protocollo;
@@ -79,9 +94,9 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 
 - **Salva** (Ctrl+S, Cmd+S su Mac) scrive la rete nel file da cui viene, quello aperto o quello dell'ultimo salvataggio; se non ce n'è uno chiede dove, proponendo il nome della rete. Dove il browser non lo permette, scarica il file (D-57). È spento sul foglio vuoto.
 - **Salva con nome** (Ctrl+Maiusc+S) chiede sempre dove, e da lì in poi il file della rete è quello nuovo: serve a non sovrascrivere il file di partenza. Dove il browser può solo scaricare, chiede il nome.
-- L'interruttore **Tabelle**, subito dopo, fa salvare anche le tabelle ARP e MAC di ogni dispositivo, così come sono in quel momento (FILE-5, D-100): serve a preparare una rete che riparte già calda, o con una riga sbagliata ottenuta con la rete stessa (un ping, poi un indirizzo cambiato). Si accende da solo aprendo un file che contiene le tabelle e si spegne con Nuova; acceso, Salva e Salva con nome lo seguono. Le tabelle salvate diventano quelle a cui torna Ricomincia.
-- Accanto al nome della rete, **«● modificata»** dice che ci sono modifiche non salvate: il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Contano le modifiche alla rete, gli spostamenti e i guasti; non il traffico, nemmeno quando le tabelle si salvano, e non l'interruttore Tabelle. Annullare tutto riporta a "salvata".
-- Con modifiche non salvate, **Nuova**, **Apri** e la chiusura della pagina chiedono conferma (D-58). Per ora la conferma, come la richiesta del nome, è una finestrella del browser; prima del rilascio completo diventeranno riquadri nello stile dell'app.
+- La casella **Salva anche le tabelle ARP e MAC**, nel menu Progetto, fa salvare anche le tabelle ARP e MAC di ogni dispositivo, così come sono in quel momento (FILE-5, D-100): serve a preparare una rete che riparte già calda, o con una riga sbagliata ottenuta con la rete stessa (un ping, poi un indirizzo cambiato). Si spunta da sola aprendo un file che contiene le tabelle e si toglie con Nuova rete; spuntata, Salva e Salva con nome la seguono, e accanto a Salva compare l'etichetta «con tabelle». Le tabelle salvate diventano quelle a cui torna Ricomincia.
+- Accanto al nome della rete, la pastiglia **Da salvare** dice che ci sono modifiche non salvate: il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Contano le modifiche alla rete, gli spostamenti e i guasti; non il traffico, nemmeno quando le tabelle si salvano, e non la casella delle tabelle. Annullare tutto riporta a "salvata".
+- Con modifiche non salvate, **Nuova rete**, **Apri rete** e la chiusura della pagina chiedono conferma (D-58). Per ora la conferma, come la richiesta del nome, è una finestrella del browser; prima del rilascio completo diventeranno riquadri nello stile dell'app.
 - Salvare non tocca la simulazione, la selezione né la cronologia.
 
 ## All'avvio
@@ -103,7 +118,7 @@ Un dispositivo appena posato riceve un nome progressivo (PC1, PC2, SW1) e i suoi
 
 Sagome essenziali a tratto, in tinta neutra, su un riquadro arrotondato. Sotto ogni dispositivo restano sempre scritti il **nome** e, per gli host, l'**indirizzo con il prefisso** (`192.168.1.10/24`); un host senza indirizzo mostra "non configurato".
 
-Indirizzi MAC e nomi delle porte sono spenti all'apertura e si accendono dalla barra in alto, ciascuno con il suo interruttore. Anche l'indirizzo IP ha il suo, acceso all'apertura.
+Indirizzi MAC e nomi delle porte sono spenti all'apertura e si accendono dal menu Visualizza, ciascuno con la sua casella. Anche l'indirizzo IP ha la sua, spuntata all'apertura.
 
 ### Cavi
 
@@ -164,7 +179,7 @@ Ogni tabella (MAC di uno switch, ARP di un host) si può **appuntare** sul diseg
 
 Un dispositivo si sposta trascinandolo: cavi, buste in viaggio e tabella appuntata lo seguono. Un clic senza movimento resta un clic, e seleziona. Mentre si trascina l'inquadratura resta ferma, e si riadatta al rilascio.
 
-**Griglia magnetica** (ED-7, D-102). L'interruttore **Griglia**, nella barra in alto dopo le etichette, la accende e la spegne. Non si disegna: accesa, il centro di un dispositivo posato o trascinato scatta al punto più vicino di una griglia di 20 px (`topology/grid.ts`), e il trascinamento procede a scatti. Accenderla non sposta i dispositivi già posati. È una scelta di chi disegna, come le etichette: aprire un file o un foglio nuovo non la cambia, e in presentazione l'interruttore non c'è.
+**Griglia magnetica** (ED-7, D-102). La casella **Griglia magnetica**, nel menu Visualizza, la accende e la spegne. Non si disegna: accesa, il centro di un dispositivo posato o trascinato scatta al punto più vicino di una griglia di 20 px (`topology/grid.ts`), e il trascinamento procede a scatti. Accenderla non sposta i dispositivi già posati. È una scelta di chi disegna, come le etichette: aprire un file o un foglio nuovo non la cambia, e in presentazione l'interruttore non c'è.
 
 Si elimina ciò che è selezionato con il cestino sulla barretta, oppure con il tasto Canc o Backspace. Eliminando un dispositivo spariscono anche i suoi cavi, la sua tabella appuntata e il suo terminale. Scrivendo in una casella di testo o nel terminale, Canc e Backspace cancellano solo il testo.
 
@@ -374,7 +389,7 @@ Ogni riga dice che cosa è successo, non perché: "PC3 scarta ARP request", senz
 
 Si attiva dal pulsante Presenta e si lascia con Esc o con il pulsante Esci, che ne prende il posto.
 
-- **Che cosa sparisce** (D-62): la colonna dei dispositivi; nella barra in alto Nuova, Apri, Salva, annulla e le etichette; sulla barretta Collega ed Elimina. Il tasto Canc e Ctrl+S non fanno nulla.
+- **Che cosa sparisce** (D-62): la colonna dei dispositivi; nella barra in alto i menu Progetto e Visualizza, Salva, annulla e ripristina; sulla barretta Collega ed Elimina. Il tasto Canc e Ctrl+S non fanno nulla.
 - **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello. Ctrl+Z annulla ancora: rimette a posto un indirizzo cambiato o un dispositivo spostato per sbaglio, senza uscire.
 - **Ingrandimento** (D-61): un solo fattore, di partenza 140%, regolabile dal 100% al 200% con A− e A+ nella barra in alto. Barre, pannello e fascia si ingrandiscono per intero. Nel disegno crescono dispositivi, scritte, buste, tabelle appuntate e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete. La barretta delle azioni non cresce.
 - **Inquadratura**: entrando, e a ogni cambio di ingrandimento, la rete viene inquadrata per intero. I pulsanti −, + e Adatta salgono nell'angolo in alto a destra del disegno, perché in basso la barra della simulazione è più larga.
@@ -452,7 +467,7 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | `preferences.svelte.ts` | Ciò che riguarda solo chi guarda: tema, etichette accese, pannelli aperti |
 | `theme/tokens.css` | I colori dei due temi, i caratteri, le misure: in un solo punto |
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
-| `layout/` | Barra in alto e colonna dei dispositivi |
+| `layout/` | Barra in alto (`TopBar.svelte`, con i menu di `Menu.svelte`) e colonna dei dispositivi |
 | `presentation.ts` | Modalità presentazione: entrare, uscire, scorciatoie. L'ingrandimento sta in `preferences` |
 | `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts`, `geometry.ts`, `grid.ts` e `placement.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
 | `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |

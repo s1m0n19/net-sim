@@ -1,7 +1,7 @@
 // Muoversi sul disegno, aree che si aprono da sole e modalità presentazione.
 
 import { expect, test, type Page } from "@playwright/test";
-import { action, centreOf, device, drag, drawing, exampleFile, openApp, openNetwork, pointOn, sidePanel } from "./helpers";
+import { action, centreOf, device, drag, drawing, exampleFile, openApp, openNetwork, pointOn, projectCommand, sidePanel } from "./helpers";
 
 // Il rettangolo del disegno inquadrato in questo momento.
 async function viewBox(page: Page): Promise<number[]> {
@@ -53,7 +53,8 @@ test("la presentazione nasconde ciò che serve a costruire, e si lascia con Esc"
   // Niente colonna, niente comandi di file; la fascia in basso è chiusa, e
   // senza nulla di selezionato anche il pannello laterale (D-107).
   await expect(page.getByRole("button", { name: "Apri il pannello laterale" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Apri", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Progetto" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Visualizza" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cavo", exact: true })).toHaveCount(0);
   await expect(page.locator(".list")).toHaveCount(0);
   // Le scritte sul disegno sono più grandi di prima.
@@ -88,7 +89,7 @@ test("la presentazione nasconde ciò che serve a costruire, e si lascia con Esc"
   // Esc esce, e tutto torna com'era.
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Presenta" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Apri", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Progetto" })).toBeVisible();
   expect(Math.abs((await label.boundingBox())!.height - normal)).toBeLessThan(1);
 });
 
@@ -118,7 +119,7 @@ test("la fascia in basso e la barra della simulazione seguono ciò che c'è da m
   expect((await body.boundingBox())!.height).toBeGreaterThan(before + 60);
 
   // Con un foglio nuovo non c'è più nulla da mostrare: si richiude.
-  await page.getByRole("button", { name: "Nuova" }).click();
+  await projectCommand(page, "Nuova rete");
   await expect(page.locator(".list")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Ricomincia/ })).toHaveCount(0);
 });

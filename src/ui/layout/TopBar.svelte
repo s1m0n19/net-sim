@@ -8,6 +8,8 @@
   import { preferences } from "../preferences.svelte";
   import { enterPresentation, exitPresentation } from "../presentation";
   import { FILE_EXTENSION, session } from "../session.svelte";
+  import Icon from "../theme/Icon.svelte";
+  import Menu, { type MenuItem } from "./Menu.svelte";
 
   // Il file su disco da cui viene la rete, quando il browser lo lascia
   // tenere: Salva ci scrive senza richiedere dove.
@@ -55,6 +57,67 @@
     }
   }
 
+  // Il menu Progetto: i comandi di file meno frequenti di Salva, che resta
+  // fuori, sempre a portata di mano.
+  const projectItems: MenuItem[] = $derived([
+    // In testa, il nome intero del file e lo stato: nella barra un nome
+    // lungo si accorcia, qui si legge per intero, anche senza mouse.
+    {
+      kind: "heading",
+      label: session.fileName === null ? "Senza nome" : `${session.fileName}${FILE_EXTENSION}`,
+      detail: session.dirty ? "Modifiche non salvate" : session.fileName === null ? "Mai salvata" : "Tutto salvato",
+    },
+    { kind: "separator" },
+    { kind: "action", label: "Nuova rete", icon: "new", run: startNew },
+    { kind: "action", label: "Apri rete…", icon: "open", run: open },
+    {
+      kind: "action",
+      label: "Salva con nome…",
+      icon: "saveAs",
+      shortcut: "Ctrl+Maiusc+S",
+      disabled: session.isEmpty(),
+      run: () => save(true),
+    },
+    { kind: "separator" },
+    {
+      kind: "check",
+      label: "Salva anche le tabelle ARP e MAC",
+      description: "Il file conserva ciò che i dispositivi hanno imparato: riaperta, la rete riparte già calda, e Ricomincia torna a quelle tabelle.",
+      checked: session.saveTables,
+      toggle: () => (session.saveTables = !session.saveTables),
+    },
+  ]);
+
+  const dark = $derived(preferences.currentTheme() === "dark");
+
+  // Il menu Visualizza: che cosa è scritto sul disegno, la griglia e il tema.
+  const viewItems: MenuItem[] = $derived([
+    { kind: "check", label: "Indirizzi IP", checked: preferences.labels.ip, toggle: () => (preferences.labels.ip = !preferences.labels.ip) },
+    { kind: "check", label: "Indirizzi MAC", checked: preferences.labels.mac, toggle: () => (preferences.labels.mac = !preferences.labels.mac) },
+    {
+      kind: "check",
+      label: "Nomi delle porte",
+      checked: preferences.labels.ports,
+      toggle: () => (preferences.labels.ports = !preferences.labels.ports),
+    },
+    { kind: "separator" },
+    {
+      kind: "check",
+      label: "Griglia magnetica",
+      description: "Posando e trascinando, i dispositivi si allineano.",
+      checked: session.grid,
+      toggle: () => (session.grid = !session.grid),
+    },
+    { kind: "separator" },
+    {
+      kind: "check",
+      label: "Tema scuro",
+      description: "All'apertura il tema segue l'impostazione del computer.",
+      checked: dark,
+      toggle: () => preferences.toggleTheme(),
+    },
+  ]);
+
   function onKey(event: KeyboardEvent) {
     // In presentazione i comandi di file non ci sono, nemmeno da tastiera.
     if (preferences.presenting) return;
@@ -76,50 +139,83 @@
 <svelte:window onkeydown={onKey} onbeforeunload={onLeave} />
 
 <header>
-  <span class="name">net-sim</span>
+  <!-- A. Identità e progetto. -->
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path d="M7.2 8.4l3.6 7.2M16.8 8.4l-3.6 7.2M8 6h8" />
+      <circle cx="6" cy="6" r="2.6" />
+      <circle cx="18" cy="6" r="2.6" />
+      <circle cx="12" cy="18" r="2.6" />
+    </svg>
+    <span class="wordmark">net-sim</span>
+  </div>
+
+  <div class="project">
+    {#if session.fileName !== null}
+      <span class="file mono" title={session.fileName}>{session.fileName}</span>
+    {:else}
+      <span class="file untitled">Senza nome</span>
+    {/if}
+    {#if session.dirty}
+      <span class="dirty" title="Ci sono modifiche non salvate"><span class="dot" aria-hidden="true"></span>Da salvare</span>
+    {/if}
+  </div>
 
   {#if !preferences.presenting}
-    <button class="btn" onclick={startNew}>Nuova</button>
-    <button class="btn" onclick={open}>Apri</button>
-    <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un file (Ctrl+S)" onclick={() => save()}>Salva</button>
-    <button class="btn" disabled={session.isEmpty()} title="Salva la rete in un altro file (Ctrl+Maiusc+S)" onclick={() => save(true)}>Salva con nome</button>
-    <!-- Salvare anche le tabelle ARP e MAC, per una rete che riparte "già calda" (FILE-5). -->
-    <button class="btn" class:on={session.saveTables} aria-pressed={session.saveTables} title="Salva anche le tabelle ARP e MAC; Ricomincia torna a quelle salvate" onclick={() => (session.saveTables = !session.saveTables)}>Tabelle</button>
-    <button class="btn" disabled={!session.canUndo} title="Annulla l'ultima modifica (Ctrl+Z)" aria-label="Annulla" onclick={() => session.undo()}>↶</button>
-    <button class="btn" disabled={!session.canRedo} title="Ripristina la modifica annullata (Ctrl+Maiusc+Z)" aria-label="Ripristina" onclick={() => session.redo()}>↷</button>
-  {/if}
+    <div class="group">
+      <Menu label="Progetto" items={projectItems} />
+      <!-- Salva è l'azione principale di chi lavora: l'unico pulsante pieno. -->
+      <button class="tb primary" disabled={session.isEmpty()} title="Salva la rete in un file (Ctrl+S)" onclick={() => save()}>
+        <Icon name="save" /><span>Salva</span>
+      </button>
+      {#if session.saveTables}
+        <span class="tag" title="Salvando, nel file vanno anche le tabelle ARP e MAC (menu Progetto)">con tabelle</span>
+      {/if}
+    </div>
 
-  {#if session.fileName !== null}
-    <span class="file mono">{session.fileName}</span>
-  {:else}
-    <span class="file">senza nome</span>
-  {/if}
-  {#if session.dirty}
-    <span class="dirty" title="Ci sono modifiche non salvate">● modificata</span>
+    <!-- B. Modifica. -->
+    <span class="divider" aria-hidden="true"></span>
+    <div class="group">
+      <button class="tb icon-only" disabled={!session.canUndo} title="Annulla l'ultima modifica (Ctrl+Z)" aria-label="Annulla" onclick={() => session.undo()}>
+        <Icon name="undo" />
+      </button>
+      <button class="tb icon-only" disabled={!session.canRedo} title="Ripristina la modifica annullata (Ctrl+Maiusc+Z)" aria-label="Ripristina" onclick={() => session.redo()}>
+        <Icon name="redo" />
+      </button>
+    </div>
   {/if}
 
   <span class="spacer"></span>
 
   {#if preferences.presenting}
     <!-- Quanto ingrandire tutto, da regolare guardando dal fondo dell'aula. -->
-    <span class="label">Ingrandimento</span>
-    <button class="btn" title="Rimpicciolisci testo e disegno" aria-label="Rimpicciolisci testo e disegno" disabled={preferences.magnification <= 1} onclick={() => preferences.magnify(-1)}>A−</button>
-    <span class="mono">{Math.round(preferences.magnification * 100)}%</span>
-    <button class="btn" title="Ingrandisci testo e disegno" aria-label="Ingrandisci testo e disegno" disabled={preferences.magnification >= 2} onclick={() => preferences.magnify(1)}>A+</button>
+    <div class="group">
+      <span class="label">Ingrandimento</span>
+      <button class="tb" title="Rimpicciolisci testo e disegno" aria-label="Rimpicciolisci testo e disegno" disabled={preferences.magnification <= 1} onclick={() => preferences.magnify(-1)}>A−</button>
+      <span class="mono">{Math.round(preferences.magnification * 100)}%</span>
+      <button class="tb" title="Ingrandisci testo e disegno" aria-label="Ingrandisci testo e disegno" disabled={preferences.magnification >= 2} onclick={() => preferences.magnify(1)}>A+</button>
+    </div>
   {:else}
-    <span class="label">Etichette</span>
-    <button class="btn" class:on={preferences.labels.ip} aria-pressed={preferences.labels.ip} onclick={() => (preferences.labels.ip = !preferences.labels.ip)}>IP</button>
-    <button class="btn" class:on={preferences.labels.mac} aria-pressed={preferences.labels.mac} onclick={() => (preferences.labels.mac = !preferences.labels.mac)}>MAC</button>
-    <button class="btn" class:on={preferences.labels.ports} aria-pressed={preferences.labels.ports} onclick={() => (preferences.labels.ports = !preferences.labels.ports)}>Porte</button>
-    <!-- Griglia magnetica invisibile: i dispositivi si allineano posandoli e trascinandoli (D-102). -->
-    <button class="btn" class:on={session.grid} aria-pressed={session.grid} title="Griglia magnetica: posando e trascinando, i dispositivi si allineano" onclick={() => (session.grid = !session.grid)}>Griglia</button>
+    <!-- C. Visualizzazione. -->
+    <Menu label="Visualizza" icon="view" items={viewItems} align="end" />
   {/if}
 
-  <button class="btn" onclick={() => preferences.toggleTheme()}>Tema</button>
+  <!-- D. Presentazione. Il tema sta nel menu Visualizza; in presentazione,
+       dove quel menu non c'è, resta un pulsante a sé. -->
+  <span class="divider" aria-hidden="true"></span>
   {#if preferences.presenting}
-    <button class="btn primary" title="Esci dalla presentazione (Esc)" onclick={exitPresentation}>Esci</button>
+    <button
+      class="tb icon-only"
+      title={dark ? "Passa al tema chiaro" : "Passa al tema scuro"}
+      aria-label={dark ? "Passa al tema chiaro" : "Passa al tema scuro"}
+      onclick={() => preferences.toggleTheme()}
+    >
+      <Icon name={dark ? "sun" : "moon"} />
+    </button>
+    <button class="tb primary" title="Esci dalla presentazione (Esc)" onclick={exitPresentation}><Icon name="exit" /><span>Esci</span></button>
   {:else}
-    <button class="btn primary" title="Modalità presentazione: per proiettare in aula" onclick={enterPresentation}>Presenta</button>
+    <!-- Secondario: serve al docente, e non deve dominare la barra di chi lavora. -->
+    <button class="tb present" title="Modalità presentazione: per proiettare in aula" onclick={enterPresentation}><Icon name="present" /><span>Presenta</span></button>
   {/if}
 </header>
 
@@ -127,30 +223,179 @@
   header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding-inline: 12px;
+    gap: 6px;
+    padding-inline: 14px;
     background: var(--surface);
     border-bottom: 1px solid var(--line);
     min-width: 0;
   }
-  .name {
-    font-weight: 600;
-    font-size: 1.15em;
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
     margin-right: 6px;
   }
-  .file {
-    color: var(--muted);
-    margin-inline: 8px;
+  .logo {
+    color: var(--accent);
+    fill: var(--surface);
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
   }
-  .dirty {
-    color: var(--muted);
-    font-size: 0.92em;
+  .wordmark {
+    font-weight: 650;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+  }
+  .project {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 0 1 auto;
+    padding-left: 12px;
+    margin-right: 6px;
+    border-left: 1px solid var(--line);
+  }
+  .file {
+    min-width: 0;
+    max-width: 28ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .untitled {
+    color: var(--muted);
+    font-style: italic;
+  }
+  /* Le modifiche non salvate: una pastiglia con il punto e la scritta, non
+     il solo colore. */
+  .dirty {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    padding: 2px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+  }
+  .divider {
+    flex: none;
+    width: 1px;
+    height: 22px;
+    margin-inline: 6px;
+    background: var(--line);
   }
   .spacer {
     flex: 1;
+    min-width: 8px;
   }
   .label {
     color: var(--muted);
+    margin-right: 4px;
+  }
+  .tag {
+    flex: none;
+    padding: 2px 8px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* I pulsanti della barra: più alti di quelli dei pannelli, con l'icona
+     accanto alla scritta. */
+  .tb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--bar-control);
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    background: var(--surface);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
+  .tb:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: var(--muted);
+  }
+  .tb:active:not(:disabled) {
+    background: var(--line);
+  }
+  .tb:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .tb:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .tb.icon-only {
+    width: var(--bar-control);
+    padding: 0;
+    border-color: transparent;
+    background: none;
+  }
+  .tb.icon-only:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: var(--line);
+  }
+  .tb.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+  }
+  .tb.primary:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+    filter: brightness(1.08);
+  }
+  /* Presenta: contorno e testo nel colore d'accento, fondo neutro. */
+  .tb.present {
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tb {
+      transition: none;
+    }
+  }
+
+  /* Su uno schermo stretto il nome del file si accorcia per primo. */
+  @media (max-width: 1180px) {
+    .file {
+      max-width: 18ch;
+    }
+  }
+  @media (max-width: 1060px) {
+    .wordmark {
+      display: none;
+    }
+    .file {
+      max-width: 14ch;
+    }
   }
 </style>

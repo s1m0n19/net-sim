@@ -10,12 +10,14 @@ import {
   fillField,
   openApp,
   openNetwork,
+  projectCommand,
   sidePanel,
   terminal,
   typeCommand,
 } from "./helpers";
 
-const unsaved = "● modificata";
+// La pastiglia delle modifiche non salvate, accanto al nome del file.
+const unsaved = "Da salvare";
 
 test("una rete salvata si riapre uguale", async ({ page }) => {
   await openApp(page);
@@ -37,7 +39,7 @@ test("una rete salvata si riapre uguale", async ({ page }) => {
   const text = readFileSync(await saved.path(), "utf-8");
 
   // Nuova torna al foglio vuoto senza chiedere: non c'è nulla da perdere.
-  await page.getByRole("button", { name: "Nuova" }).click();
+  await projectCommand(page, "Nuova rete");
   await expect(page.getByText("La rete è vuota")).toBeVisible();
 
   // Il file salvato si riapre con il nome nuovo e le tabelle vuote.
@@ -56,12 +58,12 @@ test("con modifiche non salvate, Nuova chiede conferma", async ({ page }) => {
 
   // Rispondendo di no, la rete resta.
   page.once("dialog", (dialog) => dialog.dismiss());
-  await page.getByRole("button", { name: "Nuova" }).click();
+  await projectCommand(page, "Nuova rete");
   await expect(device(page, "PC1")).toBeVisible();
 
   // Rispondendo di sì, si torna al foglio vuoto.
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Nuova" }).click();
+  await projectCommand(page, "Nuova rete");
   await expect(page.getByText("La rete è vuota")).toBeVisible();
 });
 
@@ -79,8 +81,14 @@ test("un file non valido viene rifiutato, e la rete aperta resta", async ({ page
 test("una rete salvata con le tabelle riparte già calda, anche dopo Ricomincia", async ({ page }) => {
   await openApp(page);
   await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
-  const tables = page.getByRole("button", { name: "Tabelle" });
-  await expect(tables).toHaveAttribute("aria-pressed", "false");
+  // L'opzione delle tabelle sta nel menu Progetto: si legge e si cambia da lì.
+  const tablesChecked = async () => {
+    await page.getByRole("button", { name: "Progetto" }).click();
+    const value = await page.getByRole("menuitemcheckbox", { name: /tabelle ARP e MAC/ }).getAttribute("aria-checked");
+    await page.keyboard.press("Escape");
+    return value;
+  };
+  expect(await tablesChecked()).toBe("false");
 
   // Un ping da PC1 a PC2, in tempo reale, riempie le tabelle.
   await device(page, "PC1").click();
@@ -90,8 +98,12 @@ test("una rete salvata con le tabelle riparte già calda, anche dopo Ricomincia"
   await expect(terminal(page)).toContainText("Reply from 192.168.1.11", { timeout: 40_000 });
 
   // Salva con le tabelle: il file le contiene, e la rete non risulta modificata.
-  await tables.click();
-  await expect(tables).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Progetto" }).click();
+  await page.getByRole("menuitemcheckbox", { name: /tabelle ARP e MAC/ }).click();
+  await page.keyboard.press("Escape");
+  expect(await tablesChecked()).toBe("true");
+  // A menu chiuso, accanto a Salva, un'etichetta dice che le tabelle si salvano.
+  await expect(page.getByText("con tabelle")).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Salva", exact: true }).click();
   const text = readFileSync(await (await download).path(), "utf-8");
@@ -106,10 +118,10 @@ test("una rete salvata con le tabelle riparte già calda, anche dopo Ricomincia"
   await expect(sidePanel(page)).toContainText("02:00:00:00:00:02");
 
   // Riaperto dopo Nuova, il file accende l'interruttore e parte già caldo.
-  await page.getByRole("button", { name: "Nuova" }).click();
-  await expect(tables).toHaveAttribute("aria-pressed", "false");
+  await projectCommand(page, "Nuova rete");
+  expect(await tablesChecked()).toBe("false");
   await openNetwork(page, "calda.netsim.json", text);
-  await expect(tables).toHaveAttribute("aria-pressed", "true");
+  expect(await tablesChecked()).toBe("true");
   await device(page, "PC1").click();
   await expect(sidePanel(page)).toContainText("02:00:00:00:00:02");
 });

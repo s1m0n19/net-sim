@@ -12,6 +12,7 @@ import {
   fillField,
   openApp,
   openNetwork,
+  projectCommand,
   sidePanel,
   terminal,
   typeCommand,
@@ -96,7 +97,7 @@ test("la lezione su ARP e ping si svolge senza uscire dall'app", async ({ page }
   await expect(page.getByRole("button", { name: "Presenta" })).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept("lezione-modificata"));
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Salva con nome" }).click();
+  await projectCommand(page, "Salva con nome…");
   const saved = await download;
   expect(saved.suggestedFilename()).toBe("lezione-modificata.netsim.json");
 
@@ -104,5 +105,5 @@ test("la lezione su ARP e ping si svolge senza uscire dall'app", async ({ page }
   expect(file.network.devices.find((d: { name: string }) => d.name === "PC3").ip).toBe("10.0.0.3");
   expect(file.network.links.find((l: { id: string }) => l.id === "l2").connected).toBe(false);
   await expect(page.getByText("lezione-modificata")).toBeVisible();
-  await expect(page.getByText("modificata", { exact: false }).filter({ hasText: "●" })).toHaveCount(0);
+  await expect(page.getByText("Da salvare")).toHaveCount(0);
 });

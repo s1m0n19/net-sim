@@ -107,8 +107,8 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 - In Chrome ed Edge la prima volta scegli dove salvare; da lì in poi Salva aggiorna lo stesso file. Vale anche per un file aperto con Apri: il browser chiede una volta il permesso di scriverci.
 - **Salva con nome**, o Ctrl+Maiusc+S, chiede sempre dove salvare e lascia intatto il file di partenza: da lì in poi Salva aggiorna il file nuovo.
 - In Firefox e Safari ogni Salva scarica il file nella cartella dei download; Salva con nome chiede prima il nome.
-- L'interruttore **Tabelle**, accanto a Salva con nome, fa salvare anche le tabelle ARP e MAC di ogni dispositivo, così come sono in quel momento. Serve a preparare una rete che riparte già calda (il ping a passi non comincia con l'ARP), oppure con una riga sbagliata da scoprire: fai un ping, cambia l'indirizzo di un PC, e gli altri restano con la riga vecchia. Si accende da solo aprendo un file con le tabelle; Ricomincia torna a quelle salvate.
-- Accanto al nome compare «● modificata» finché ci sono modifiche non salvate: contano le modifiche alla rete, gli spostamenti e i guasti, non il traffico. In quel caso **Nuova**, **Apri** e la chiusura della pagina chiedono conferma.
+- La casella **Salva anche le tabelle ARP e MAC**, nel menu **Progetto**, fa salvare anche le tabelle ARP e MAC di ogni dispositivo, così come sono in quel momento. Serve a preparare una rete che riparte già calda (il ping a passi non comincia con l'ARP), oppure con una riga sbagliata da scoprire: fai un ping, cambia l'indirizzo di un PC, e gli altri restano con la riga vecchia. Si accende da solo aprendo un file con le tabelle; Ricomincia torna a quelle salvate.
+- Accanto al nome compare la pastiglia «Da salvare» finché ci sono modifiche non salvate: contano le modifiche alla rete, gli spostamenti e i guasti, non il traffico. In quel caso **Nuova**, **Apri** e la chiusura della pagina chiedono conferma.
 
 **Annulla e ripristina.** Le due frecce nella barra in alto, oppure Ctrl+Z e Ctrl+Maiusc+Z (anche Ctrl+Y; Cmd su Mac), annullano e rifanno le modifiche alla rete, una alla volta, fino a cento:
 
@@ -119,11 +119,11 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 
 | Comando | Effetto |
 | --- | --- |
-| **Nuova** | Torna al foglio vuoto |
-| **Apri** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va. Un file salvato da una versione più recente dell'app (per esempio con annotazioni, sul sito non ancora aggiornato) viene rifiutato con l'invito a ricaricare la pagina, invece di essere aperto a metà |
-| **Etichette: IP, MAC, Porte** | Accendono e spengono ciò che è scritto sul disegno. All'apertura è acceso solo l'indirizzo IP |
-| **Griglia** | Griglia magnetica invisibile: accesa, i dispositivi posati o trascinati si allineano su punti ogni 20 px |
-| **Tema** | Passa dal tema chiaro a quello scuro. All'apertura segue l'impostazione del computer |
+| **Progetto ▾** | Il menu dei file. In testa ripete il nome intero del file e dice se ci sono modifiche da salvare; poi **Nuova rete** torna al foglio vuoto; **Apri rete…** apre un file di rete; **Salva con nome…**; la casella **Salva anche le tabelle ARP e MAC** |
+| **Salva** | Salva nel file della rete, o chiede dove la prima volta. Accanto, l'etichetta «con tabelle» dice che salverà anche le tabelle |
+| **Apri rete…** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va. Un file salvato da una versione più recente dell'app (per esempio con annotazioni, sul sito non ancora aggiornato) viene rifiutato con l'invito a ricaricare la pagina, invece di essere aperto a metà |
+| **Annulla, Ripristina** | Le due frecce curve: annullano e rifanno le modifiche alla rete |
+| **Visualizza ▾** | Il menu di ciò che si vede: caselle per **Indirizzi IP**, **Indirizzi MAC** e **Nomi delle porte** (all'apertura è spuntato solo l'indirizzo IP), per la **Griglia magnetica**, invisibile: accesa, i dispositivi posati o trascinati si allineano su punti ogni 20 px, e per il **Tema scuro** (all'apertura il tema segue l'impostazione del computer). I menu si usano anche da tastiera: frecce per scorrere, Invio per scegliere, Esc per chiudere |
 | **Le tre frecce** | Chiudono e riaprono i pannelli: in fondo alla colonna dei dispositivi, nell'angolo in alto del pannello di destra, a destra nella riga delle schede in basso. La fascia in basso si apre anche da sola al primo evento o terminale e si richiude quando non ha più nulla da mostrare; trascinandone il bordo superiore la fai più alta o più bassa |
 
 Sul disegno: un pallino verde a ogni capo di un cavo su cui passa il segnale; un cavo staccato è rosso, tratteggiato e con una croce; un dispositivo spento è grigio, con la scritta "spento". Un quadratino rosso al posto del pallino segna una porta spenta: un'interfaccia di router, oppure una porta di switch, che si spegne dalla CLI con `shutdown`.

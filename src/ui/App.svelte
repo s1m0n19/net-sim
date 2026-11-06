@@ -64,7 +64,7 @@
     height: 100%;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-rows: 46px auto minmax(0, 1fr) auto;
+    grid-template-rows: var(--bar-height) auto minmax(0, 1fr) auto;
   }
   .top,
   .error,
@@ -95,7 +95,7 @@
   /* In presentazione barre, pannello e fascia si ingrandiscono. Il disegno
      no: lì crescono i singoli elementi, e lo decide Topology. */
   .presenting {
-    grid-template-rows: calc(46px * var(--ui-scale)) auto minmax(0, 1fr) auto;
+    grid-template-rows: calc(var(--bar-height) * var(--ui-scale)) auto minmax(0, 1fr) auto;
   }
   .presenting > span {
     grid-row: 3;

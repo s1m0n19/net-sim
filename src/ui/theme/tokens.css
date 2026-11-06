@@ -22,6 +22,13 @@
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   --radius: 4px;
 
+  /* La barra in alto: la sua altezza, quella dei suoi controlli, il loro
+     arrotondamento, e l'ombra dei menu che vi si aprono. */
+  --bar-height: 52px;
+  --bar-control: 34px;
+  --radius-control: 6px;
+  --shadow-menu: 0 8px 24px rgba(20, 30, 45, 0.14), 0 1px 3px rgba(20, 30, 45, 0.08);
+
   color-scheme: light;
 }
 
@@ -41,6 +48,7 @@
     --icmp: #c09bff;
     --up: #4dc57f;
     --down: #f0716c;
+    --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
     color-scheme: dark;
   }
 }
@@ -60,6 +68,7 @@
   --icmp: #c09bff;
   --up: #4dc57f;
   --down: #f0716c;
+  --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
 }
 

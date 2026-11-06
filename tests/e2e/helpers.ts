@@ -26,10 +26,16 @@ export async function openApp(page: Page): Promise<void> {
   await expect(page.getByText("La rete è vuota")).toBeVisible();
 }
 
-/** Apre un file di rete con il pulsante Apri. */
+/** Sceglie un comando del menu Progetto, nella barra in alto. */
+export async function projectCommand(page: Page, label: string): Promise<void> {
+  await page.getByRole("button", { name: "Progetto" }).click();
+  await page.getByRole("menuitem", { name: label }).click();
+}
+
+/** Apre un file di rete con Apri rete, nel menu Progetto. */
 export async function openNetwork(page: Page, fileName: string, text: string): Promise<void> {
   const chooser = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "Apri", exact: true }).click();
+  await projectCommand(page, "Apri rete…");
   await (await chooser).setFiles({ name: fileName, mimeType: "application/json", buffer: Buffer.from(text) });
 }
 
