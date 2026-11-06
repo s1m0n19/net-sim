@@ -224,6 +224,21 @@ La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore: ciò che
 - **Limiti.** Si arriva a quattro volte più vicino e a cinque volte più lontano del foglio di base.
 - Con la vista si ingrandisce tutto il disegno, comprese scritte ed elenco delle porte; la barretta delle azioni no, perché sta sopra il disegno e resta sempre grande uguale. L'inquadratura non si salva nel file.
 
+### Righe in alto sul disegno
+
+In alto al centro del disegno compaiono righe brevi, su tre livelli distinti, sempre in quest'ordine dall'alto (D-113, `topology/Messages.svelte`):
+
+| Livello | Quando | Come si riconosce | Per il lettore di schermo |
+| --- | --- | --- | --- |
+| Condizione critica | La tempesta di broadcast ha sospeso la simulazione (SIM-15) | Tutto il bordo rosso, titolo rosso in grassetto | `role="alert"` |
+| Operazione rifiutata | L'interfaccia non ha potuto fare ciò che si è chiesto: un cavo senza porte libere, un ping verso chi non ha un indirizzo, un dato che il motore non accetta, un salvataggio non riuscito | Bordo sinistro rosso e una crocetta ✕, come gli errori dei campi del pannello | `role="alert"` |
+| Istruzione | Un'operazione aspetta un clic: posare, tirare un cavo, scegliere la destinazione di un ping | Bordo sinistro nel colore d'accento; il tasto per rinunciare è scritto come un tasto, <kbd>Esc</kbd> | Una sola regione `role="status"` che c'è sempre, così ogni istruzione nuova si annuncia una volta |
+
+- Un rifiuto dice che cosa non è stato fatto, mai come sistemare la rete (SIM-8): «SW1 non ha un indirizzo IP a cui fare ping», non perché un ping fallirebbe. L'unica spiegazione di una causa è quella della tempesta, prevista da SIM-15; il suo testo non cambia.
+- Nessuna riga sparisce a tempo. Un'istruzione resta finché l'operazione è in corso (Esc la chiude); un rifiuto resta finché non si fa qualcos'altro: una nuova selezione o un nuovo comando.
+- Non c'è un centro notifiche né una cronologia dei messaggi: ciò che è successo nella rete sta nella scheda Eventi.
+- Le righe non ricevono i clic, e la barretta delle azioni le evita come evita lo zoom e la barra della simulazione. In presentazione partono sotto i pulsanti dello zoom, che lì stanno in alto a destra.
+
 ## Barra della simulazione
 
 Una barra compatta che galleggia in basso al centro del disegno, come i comandi di un lettore video. Resta anche in modalità presentazione. Sul foglio vuoto non c'è, perché non c'è nulla da far scorrere. Su un disegno più stretto della barra (in presentazione, su uno schermo piccolo) i comandi vanno a capo su due righe, e la barra resta nel disegno; su un disegno più stretto di 800 px i pulsanti dello zoom salgono sopra di lei (D-112).
@@ -235,6 +250,14 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 | Passo | Avanza di un istante. Disponibile a simulazione ferma |
 | Velocità | 0,5×, 1×, 2× |
 | Tempo | Il tick corrente |
+| Stato | **Ferma**, **In esecuzione** o **Sospesa** (D-113) |
+
+**Lo stato.** In fondo alla barra una scritta in una pastiglia dice in che stato è la simulazione, con un segno che cambia anche di forma: un cerchio vuoto (Ferma), pieno nel colore d'accento (In esecuzione), rosso con un punto esclamativo (Sospesa). Passandoci sopra, una riga spiega che cosa vuol dire. Lo stato si ricava solo da due fatti sicuri, il tempo reale avviato e la sospensione del motore (`simulation/simulation-state.ts`):
+
+- **In esecuzione** vale anche quando non c'è nulla in programma: il tempo reale resta in ascolto, e un ping lanciato dopo parte da solo.
+- Un **Passo** non è uno stato: dura un istante, poi la simulazione è di nuovo ferma.
+- Non esistono «Completata» né altri stati che dicano come è andato il traffico: che non ci sia altro in programma non dice nulla sull'esito.
+- Non è un annuncio per il lettore di schermo: cambia solo perché lo si è chiesto con un pulsante, che cambia nome (Avvia, Pausa), oppure insieme all'avviso della tempesta, che si annuncia da sé. Nessun annuncio a ogni tick.
 
 **Tempo a schermo e tempo simulato.** Il motore avanza a scatti, da un istante al successivo. A schermo invece le buste scivolano: l'orologio dell'interfaccia tiene un tempo che sta tra un istante e l'altro, e la posizione di una busta sul cavo dipende da quello. Quando il tempo a schermo raggiunge il prossimo istante, l'orologio chiede al motore di elaborarlo. Avvia non si spegne quando la rete resta ferma: resta in ascolto, e un ping lanciato dopo parte da solo.
 
@@ -244,7 +267,7 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 
 **Pausa tra gli echo.** In tempo reale una breve pausa a schermo separa un echo request dal successivo, così i quattro giri di un ping si distinguono. In passo-passo non c'è. La pausa è dell'interfaccia: il motore non ne sa nulla.
 
-**Tempesta di broadcast.** Quando il motore si sospende, la barra lo dice e un avviso ne spiega la causa. Si riparte con Ricomincia.
+**Tempesta di broadcast.** Quando il motore si sospende, lo stato diventa «Sospesa» e un avviso in alto sul disegno ne spiega la causa. Si riparte con Ricomincia.
 
 ## Pannello laterale
 
@@ -389,10 +412,12 @@ Altre cose da sapere:
 
 ### Eventi
 
-Una riga per ogni fatto: tempo, dispositivo, che cosa è successo. Sono in italiano, come il resto dell'interfaccia.
+Una riga per ogni fatto: tempo, dispositivo, che cosa è successo. Sono in italiano, come il resto dell'interfaccia. Le colonne (Tick, Dispositivo, Protocollo, Evento) hanno un'intestazione che resta in cima mentre l'elenco scorre, e una riga sottile le separa (D-113).
 
 - Passando su una riga, sul disegno si evidenziano il dispositivo e il pacchetto coinvolti.
-- Un clic sulla riga apre il pacchetto nel pannello laterale.
+- Un clic sulla riga apre nel pannello laterale il pacchetto, o il dispositivo se la riga non parla di un pacchetto. Il puntatore a mano compare solo sulle righe che aprono qualcosa.
+- Le righe del pacchetto mostrato nel pannello hanno una barra a sinistra e il testo in grassetto.
+- Da tastiera l'elenco è una sola fermata di Tab: si entra sull'ultima riga scelta (o sull'ultima), le frecce su e giù, Home e Fine si muovono tra le righe, Invio o Spazio aprono quella col fuoco, che ha un contorno oltre al fondo.
 
 In cima c'è il **filtro**: un selettore della conversazione (tutte, oppure una, per esempio "ping PC1 → 192.168.1.11") e un interruttore per protocollo. Ciò che il filtro nasconde sparisce sia dall'elenco sia dal disegno. A destra, quante righe si vedono sul totale.
 
@@ -403,7 +428,9 @@ Alcune regole del filtro:
 - l'esito di un ping conta come ICMP;
 - ricominciando si torna a "tutte", perché le conversazioni di prima non esistono più.
 
-Ogni riga dice che cosa è successo, non perché: "PC3 scarta ARP request", senza il motivo. L'elenco scorre da solo fino all'ultima riga.
+Ogni riga dice che cosa è successo, non perché: "PC3 scarta ARP request", senza il motivo. Le righe non vengono classificate in riuscite o sbagliate.
+
+**Scorrimento** (D-113). Chi guarda il fondo dell'elenco segue gli eventi nuovi: l'elenco scorre da solo fino all'ultima riga. Chi è risalito a leggere quelli di prima resta dov'è anche mentre la simulazione va avanti (`strip/follow-list.ts`), e un pulsante **↓ Ultimi eventi**, in basso a destra, lo riporta in fondo, da dove si segue di nuovo. Nessun evento si perde e l'ordine non cambia.
 
 ## Modalità presentazione
 

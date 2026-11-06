@@ -42,16 +42,30 @@
     session.viewport = canvasWidth > 0 && canvasHeight > 0 ? { width: canvasWidth, height: canvasHeight } : null;
   });
 
-  // Dove stanno sul disegno lo zoom e la barra della simulazione: la
-  // barretta delle azioni evita di coprirli (D-112). Si rimisurano quando
-  // può cambiare la loro grandezza o la loro posizione.
+  // Dove stanno sul disegno lo zoom, la barra della simulazione e le righe
+  // dei messaggi in alto: la barretta delle azioni evita di coprirli
+  // (D-112, D-113). Si rimisurano quando può cambiare la loro grandezza o
+  // la loro posizione, o quando compare o sparisce un messaggio.
   let canvas: HTMLDivElement | undefined = $state();
   let controls: Rect[] = $state([]);
   $effect(() => {
-    const dependsOn = [canvasWidth, canvasHeight, preferences.scale, preferences.presenting, session.running, session.view.suspended, session.isEmpty()];
+    const dependsOn = [
+      canvasWidth,
+      canvasHeight,
+      preferences.scale,
+      preferences.presenting,
+      session.running,
+      session.view.suspended,
+      session.isEmpty(),
+      session.notice,
+      session.placing,
+      session.cabling,
+      session.linkFrom,
+      session.pingFrom,
+    ];
     if (canvas === undefined || dependsOn.length === 0) return;
     const origin = canvas.getBoundingClientRect();
-    controls = [...canvas.querySelectorAll(":scope > .zoom, :scope > .bar")].map((element) => {
+    controls = [...canvas.querySelectorAll(":scope > .zoom, :scope > .bar, :scope > .messages .message")].map((element) => {
       const box = element.getBoundingClientRect();
       return { left: box.left - origin.left, top: box.top - origin.top, right: box.right - origin.left, bottom: box.bottom - origin.top };
     });
@@ -329,6 +343,13 @@
     .canvas:not(.presenting) .zoom {
       bottom: 66px;
     }
+  }
+  /* In presentazione lo zoom sta in alto a destra: le righe dei messaggi
+     partono sotto di lui, così una riga lunga, come l'avviso della tempesta,
+     non lo copre. Messaggi e zoom crescono con lo stesso ingrandimento, e
+     la misura vale a ogni ingrandimento (D-113). */
+  .presenting :global(.messages) {
+    top: 52px;
   }
   .zoom .btn {
     min-width: 30px;

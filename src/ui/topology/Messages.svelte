@@ -1,7 +1,19 @@
 <script lang="ts">
-  // Le righe in alto sul disegno: che cosa sta aspettando l'app (un clic
-  // per posare, la destinazione di un ping, l'altro capo di un cavo), i
-  // comandi rifiutati, e l'avviso della tempesta di broadcast.
+  // Le righe in alto sul disegno. Tre livelli, sempre in quest'ordine
+  // (D-113):
+  //
+  //   1. la condizione critica: la tempesta di broadcast, che sospende la
+  //      simulazione e di cui si spiega la causa (SIM-15);
+  //   2. l'operazione rifiutata: ciò che l'utente ha chiesto all'interfaccia
+  //      e non si è potuto fare (un cavo senza porte libere, un ping verso
+  //      chi non ha un indirizzo, un dato che il motore non accetta). Dice
+  //      che cosa non è stato fatto, mai come sistemare la rete (SIM-8);
+  //   3. le istruzioni dell'operazione in corso: che cosa sta aspettando
+  //      l'app (un clic per posare, la destinazione di un ping, l'altro capo
+  //      di un cavo) e come rinunciare.
+  //
+  // Nessuna sparisce da sola: un'istruzione resta finché l'operazione è in
+  // corso, un rifiuto finché non si fa qualcos'altro.
   import { session } from "../session.svelte";
 
   // Che cosa si sta per posare, a parole.
@@ -27,32 +39,43 @@
       esaurisce mai. Premi "Ricomincia" per ripartire.
     </div>
   {/if}
-  {#if session.placing !== null}
-    <div class="message" role="status">
-      <strong>{placingName}.</strong>
-      Fai clic sul disegno per posarne uno; puoi posarne altri. Esc per finire.
-    </div>
-  {/if}
-  {#if linkSource !== undefined}
-    <div class="message" role="status">
-      <strong>Cavo da {linkSource.name}.</strong> Fai clic sul dispositivo da collegare. Esc per
-      annullare.
-    </div>
-  {:else if session.cabling}
-    <div class="message" role="status">
-      <strong>Cavo.</strong> Trascina da un dispositivo a un altro, oppure fai clic sul primo e poi
-      sul secondo. Esc per finire.
-    </div>
-  {/if}
-  {#if pingSource !== undefined}
-    <div class="message" role="status">
-      <strong>Ping da {pingSource.name}.</strong> Fai clic sul dispositivo di destinazione. Esc per
-      annullare.
-    </div>
-  {/if}
+
   {#if session.notice !== null}
-    <div class="message" role="alert">{session.notice}</div>
+    <!-- Il colore non basta: c'è anche la crocetta, come nei campi del
+         pannello. -->
+    <div class="message refused" role="alert">
+      <span class="sign" aria-hidden="true">✕</span>
+      <span>{session.notice}</span>
+    </div>
   {/if}
+
+  <!-- Una sola regione che c'è sempre, anche vuota: così il lettore di
+       schermo annuncia ogni istruzione nuova, una volta. -->
+  <div class="instructions" role="status">
+    {#if session.placing !== null}
+      <div class="message">
+        <strong>{placingName}.</strong>
+        Fai clic sul disegno per posarne uno; puoi posarne altri. <kbd>Esc</kbd> per finire.
+      </div>
+    {/if}
+    {#if linkSource !== undefined}
+      <div class="message">
+        <strong>Cavo da {linkSource.name}.</strong> Fai clic sul dispositivo da collegare.
+        <kbd>Esc</kbd> per annullare.
+      </div>
+    {:else if session.cabling}
+      <div class="message">
+        <strong>Cavo.</strong> Trascina da un dispositivo a un altro, oppure fai clic sul primo e poi
+        sul secondo. <kbd>Esc</kbd> per finire.
+      </div>
+    {/if}
+    {#if pingSource !== undefined}
+      <div class="message">
+        <strong>Ping da {pingSource.name}.</strong> Fai clic sul dispositivo di destinazione.
+        <kbd>Esc</kbd> per annullare.
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -67,17 +90,44 @@
     gap: 8px;
     pointer-events: none;
   }
+  .instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
   .message {
     padding: 8px 14px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-left: 4px solid var(--accent);
     border-radius: var(--radius);
     box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
   }
-  .message[role="alert"] {
-    border-left-color: var(--down);
+  /* Istruzione: il bordo sinistro nel colore d'accento, come ciò che è
+     selezionato o premuto. */
+  .instructions .message {
+    border-left: 4px solid var(--accent);
   }
+  kbd {
+    padding: 0 5px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+  /* Operazione rifiutata: il bordo sinistro rosso e la crocetta. */
+  .refused {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    border-left: 4px solid var(--down);
+  }
+  .sign {
+    color: var(--down);
+    font-weight: 700;
+  }
+  /* Condizione critica: tutto il bordo rosso, e il titolo in evidenza. */
   .storm {
     border: 2px solid var(--down);
   }

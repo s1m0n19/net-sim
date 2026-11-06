@@ -137,6 +137,8 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 | **Passo** | Fa arrivare a destinazione i pacchetti in viaggio e si ferma. Disponibile a tempo fermo |
 | **1×** | Cambia la velocità: 0,5×, 1×, 2×. A 1× un pacchetto impiega circa un secondo e mezzo a percorrere un cavo |
 
+In fondo alla barra lo stato: **Ferma**, **In esecuzione** (anche quando non c'è nulla in programma: il tempo è in ascolto) o **Sospesa**, quando una tempesta di broadcast ha fermato la simulazione. In alto sul disegno, una riga dice che cosa sta aspettando l'app (dove posare, la destinazione di un ping, l'altro capo di un cavo; Esc per rinunciare) e, con una crocetta rossa, quando un comando non si è potuto eseguire.
+
 **Selezione.** Un clic su un dispositivo, un cavo o una busta lo seleziona: il pannello di destra ne mostra i dettagli, e accanto compare una barretta con le azioni, le principali con icona e scritta e le altre nel menu Altro (⋯). La barretta resta sempre grande uguale e dentro il disegno, a qualsiasi zoom; si usa anche da tastiera, con Tab, le frecce e Invio. Un clic sullo sfondo, o il tasto Esc, toglie la selezione.
 
 **Duplicare.** Duplica, sulla barretta, crea una copia del dispositivo accanto all'originale, scollegata e già selezionata: premendolo ancora si fa una fila. La copia di un PC o di un server prende maschera, gateway e l'indirizzo libero successivo (da 192.168.1.10 nasce 192.168.1.11); quella di uno switch le stesse porte, spente dove lo sono; quella di un router le stesse interfacce, spente e senza indirizzi. Si annulla con un Ctrl+Z.
@@ -182,7 +184,7 @@ I messaggi sono in inglese. L'output di `ping` cresce mentre la simulazione avan
 
 Ciò che si configura dalla CLI compare subito nel pannello e sul disegno, e viceversa.
 
-**Eventi.** La fascia in basso elenca ciò che succede, una riga per fatto: tempo, dispositivo, sigla del protocollo, descrizione. L'ultima riga di un ping è il suo esito.
+**Eventi.** La fascia in basso elenca ciò che succede, una riga per fatto: tempo, dispositivo, sigla del protocollo, descrizione. L'ultima riga di un ping è il suo esito. L'elenco segue gli eventi nuovi finché lo guardi in fondo; se risali a leggere quelli di prima resta fermo, e **↓ Ultimi eventi** ti riporta in fondo. Da tastiera ci si muove tra le righe con le frecce.
 
 - Passando con il mouse su una riga, sul disegno si evidenziano con un contorno tratteggiato il dispositivo e la busta di cui parla.
 - Un clic su una riga apre nel pannello di destra il pacchetto, o il dispositivo se la riga non riguarda un pacchetto.

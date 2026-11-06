@@ -188,10 +188,11 @@ test("la CLI di uno switch: tabella MAC e una porta spenta", async ({ page }) =>
   // un avviso lo dice, e la scheda lo segna. Riacceso, si scrive di nuovo.
   await device(page, "SW1").click();
   await (await moreAction(page, "Spegni")).click();
-  await expect(page.getByRole("status")).toContainText("SW1 è spento.");
+  const offNotice = page.getByRole("status").filter({ hasText: "SW1 è spento." });
+  await expect(offNotice).toBeVisible();
   await expect(page.getByRole("tab", { name: /Terminale · SW1 · spento/ })).toBeVisible();
   await expect(page.getByRole("textbox", { name: /Riga di comando di SW1/ })).toHaveCount(0);
   await (await moreAction(page, "Accendi")).click();
   await expect(page.getByRole("textbox", { name: /Riga di comando di SW1/ })).toBeVisible();
-  await expect(page.getByRole("status")).toHaveCount(0);
+  await expect(offNotice).toHaveCount(0);
 });
