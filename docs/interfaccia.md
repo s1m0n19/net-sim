@@ -45,6 +45,14 @@ Colonna, pannello laterale e fascia si aprono e si chiudono con lo stesso pulsan
 - **La fascia in basso** segue eventi e terminali. All'avvio è chiusa; si apre al primo evento o al primo terminale, e si richiude quando non resta nulla (Nuova, Apri, oppure Ricomincia senza terminali aperti). In presentazione non si apre da sola: lì la aprono T ed E.
 - **Il pannello laterale**, in presentazione, segue la selezione: senza nulla di selezionato è chiuso, e lascia il posto al disegno. Fuori dalla presentazione resta come lo si lascia.
 
+**Finestre piccole e ingrandimento** (D-112). La schermata è provata a 1920×1080, 1366×768, 1280×800, 1024×768 e 900×700, e in presentazione a ogni ingrandimento dal 100% al 200% (`tests/e2e/responsive.spec.ts`). In nessun caso la pagina scorre di lato, e ogni comando resta intero nella finestra. Non ci sono soglie sulla larghezza della finestra: ogni area si adatta allo spazio che ha davvero, con le container query di CSS. In presentazione le barre e il pannello sono ingranditi con `zoom`, e così la regola guarda lo spazio già diviso per l'ingrandimento. Le regole, area per area:
+
+- **Barra in alto**: il nome del file si accorcia, poi sparisce la scritta «net-sim»; in presentazione, molto ingrandita, va via la scritta «Ingrandimento» e poi il nome del file. I comandi restano tutti.
+- **Colonna dei dispositivi**: se la fascia in basso la fa troppo bassa, le voci perdono icone e didascalie e si stringono, così Cavo e la freccia restano raggiungibili.
+- **Disegno**: se è più stretto di 800 px, i pulsanti −, + e Adatta salgono sopra la barra della simulazione invece di finirle sotto. La barra della simulazione, se non ci sta, va a capo su due righe. La barretta delle azioni evita lo zoom e la barra della simulazione, e se con le scritte non ci sta resta con le sole icone (vedi «Selezione e barretta delle azioni»).
+- **Pannello laterale**: in presentazione non supera i due quinti della finestra. Quando è stretto, ogni etichetta va sopra il suo campo, e gli indirizzi si leggono per intero.
+- **Fascia in basso**: con molti terminali le loro schede scorrono di lato, e la scheda aperta si porta in vista; Eventi e la freccia restano fermi a destra.
+
 ### Barra in alto
 
 Alta 52 px, divisa in quattro gruppi (D-110):
@@ -58,7 +66,7 @@ Alta 52 px, divisa in quattro gruppi (D-110):
 
 I menu (`layout/Menu.svelte`) seguono lo schema «menu button» di WAI-ARIA: un clic, Invio, Spazio o freccia giù aprono l'elenco e portano il fuoco sulla prima voce; le frecce scorrono le voci saltando quelle spente; Home e Fine vanno agli estremi; Esc chiude e riporta il fuoco sul pulsante; Tab o un clic fuori chiudono. Un comando chiude il menu, una casella no. Le icone della barra stanno tutte in `theme/Icon.svelte`; altezza dei controlli, arrotondamento e ombra dei menu sono token di `theme/tokens.css`.
 
-Sugli schermi stretti il nome del file si accorcia con i puntini (per intero resta nel suggerimento e in testa al menu Progetto), e sotto i 1060 px resta il solo marchio senza la scritta «net-sim»: a 1024×768 tutti i comandi restano nello schermo, senza scorrimento orizzontale. In presentazione la barra mostra marchio, nome del file, ingrandimento, il tema come pulsante a sé (il menu Visualizza lì non c'è) ed Esci.
+Quando la barra è stretta il nome del file si accorcia con i puntini, ma non sotto le sei lettere: per intero resta nel suggerimento e in testa al menu Progetto. Sotto i 1060 px di barra resta il solo marchio, senza la scritta «net-sim». Le soglie riguardano la larghezza della barra, non quella della finestra (D-112): fino a 900 px di finestra tutti i comandi restano nello schermo, senza scorrimento orizzontale. In presentazione la barra mostra marchio, nome del file, ingrandimento, il tema come pulsante a sé (il menu Visualizza lì non c'è) ed Esci. Quando l'ingrandimento la rende stretta, prima sparisce la scritta «Ingrandimento», sotto i 760 px di barra, poi il nome del file con la pastiglia, sotto i 470.
 
 La disposizione è una decisione presa con riserva: i pannelli sono componenti indipendenti dalla griglia che li ospita, così cambiarla non richiede di riscriverli (requisito NF-7).
 
@@ -105,7 +113,8 @@ L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: tr
 
 ## Colonna dei dispositivi e degli strumenti
 
-- **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte; router a 2, 4 o 8 interfacce) si scelgono prima di posare: passando sulla voce si apre il loro elenco.
+- **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte; router a 2, 4 o 8 interfacce) si scelgono prima di posare: passando sulla voce si apre il loro elenco, e un clic sulla voce lo lascia aperto. Da tastiera Invio lo apre e lo chiude, Tab entra nelle varianti, Esc lo chiude e ridà il fuoco alla voce; l'elenco si chiude anche quando il fuoco va altrove.
+- **Colonna bassa.** Se la fascia in basso è stata alzata tanto da lasciare alla colonna meno di 420 px, le voci restano senza icone né didascalie, una sotto l'altra, e tutte raggiungibili (D-112).
 - **Posare.** In due modi: trascinando la voce sul disegno, per posarne uno; oppure con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare, finché non si preme Esc. Nel secondo modo la voce resta evidenziata, il puntatore cambia e una riga in alto sul disegno dice che cosa fare. Il dispositivo appena posato viene selezionato.
 - **Strumento Cavo.** Finché è attivo, trascinare da un dispositivo a un altro tira un cavo invece di spostare; lo stesso si ottiene con un clic sul primo dispositivo e uno sul secondo (D-51). Mentre si trascina, una linea tratteggiata segue il mouse. Si disattiva con Esc o con un secondo clic sulla voce.
 - **Server.** Si posa come un PC. Per la rete è un host identico a un PC, con indirizzo, gateway e terminale; cambiano l'icona e il nome (`SRV1`). I servizi che ospiterà arrivano più avanti.
@@ -153,6 +162,8 @@ Accanto a ciò che è selezionato compare una **barretta** con le azioni (D-111)
 - **Premuto.** Ping e Collega restano premuti (colore d'accento) finché l'app aspetta il secondo clic, e la riga in alto sul disegno dice che cosa fare; anche il pulsante di una tabella appuntata resta premuto.
 - **Elimina** è in rosso, sul cavo e nel menu Altro: si distingue da Stacca, che lascia il cavo al suo posto senza segnale.
 - **Dove sta.** La barretta è un elemento della pagina sopra il disegno, non del disegno: ha sempre la stessa grandezza sullo schermo, a qualsiasi zoom, e in presentazione cresce con l'ingrandimento. Sta sopra l'oggetto selezionato, centrata; se sopra non c'è posto va sotto le sue scritte, e di lato non esce mai dal disegno (`topology/bar-placement.ts`). Il menu Altro si apre dalla parte dove c'è più spazio.
+- **I comandi del disegno** (D-112). La barretta evita lo zoom e la barra della simulazione: se sopra l'oggetto coprirebbe uno dei due, scivola di lato quanto basta, purché resti sopra l'oggetto; se non basta, va sotto. Se coprirebbe qualcosa sia sopra sia sotto, vale la regola di sempre, e copre lo zoom finché resta la selezione. Succede solo al 200% in una finestra larga fino a 1024 px.
+- **Compatta** (D-112). Se con le scritte la barretta è più larga del disegno, i pulsanti restano con le sole icone, in presentazione su uno schermo stretto. Descrizione e suggerimento non cambiano. La larghezza con le scritte si misura una volta per ogni insieme di azioni e ingrandimento: così la barretta non salta da una forma all'altra.
 - **Tastiera.** I pulsanti si raggiungono con Tab, le frecce sinistra e destra si muovono tra loro, Invio e Spazio li premono; il menu Altro si apre con Invio e si chiude con Esc, che ridà il fuoco al pulsante senza togliere la selezione.
 - I clic sulla barretta non arrivano al disegno sotto: non selezionano altro e non spostano la vista.
 - I suggerimenti dicono che cosa fa un'azione, mai come risolvere un problema della rete.
@@ -215,7 +226,7 @@ La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore: ciò che
 
 ## Barra della simulazione
 
-Una barra compatta che galleggia in basso al centro del disegno, come i comandi di un lettore video. Resta anche in modalità presentazione. Sul foglio vuoto non c'è, perché non c'è nulla da far scorrere.
+Una barra compatta che galleggia in basso al centro del disegno, come i comandi di un lettore video. Resta anche in modalità presentazione. Sul foglio vuoto non c'è, perché non c'è nulla da far scorrere. Su un disegno più stretto della barra (in presentazione, su uno schermo piccolo) i comandi vanno a capo su due righe, e la barra resta nel disegno; su un disegno più stretto di 800 px i pulsanti dello zoom salgono sopra di lei (D-112).
 
 | Comando | Effetto |
 | --- | --- |
@@ -238,6 +249,8 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 ## Pannello laterale
 
 Mostra l'ultima cosa selezionata. Si chiude con la freccia nell'angolo in alto a destra, e si riduce a una striscia sottile sul bordo, da cui si riapre. Chiuso, resta chiuso anche quando si seleziona qualcosa: lo riapre solo l'utente.
+
+Largo 290 px; in presentazione, ingrandito, al massimo due quinti della finestra. Quando il suo contenuto è più stretto di 250 px ogni etichetta va sopra il suo campo, anche nell'editor delle rotte, perché un indirizzo non si tagli (D-112). Il contenuto che non ci sta scorre in verticale.
 
 ### Dispositivo
 
@@ -305,7 +318,7 @@ Una riga che dice che cosa comparirà qui.
 
 ## Fascia in basso
 
-Corre sotto tutta la schermata. Si chiude lasciando visibile la sola riga delle schede, e si apre e si chiude anche da sola, seguendo eventi e terminali (vedi «Ossatura»). Si fa più alta o più bassa trascinandone il bordo superiore, o con le frecce su e giù quando il bordo ha il fuoco: tra 100 px e il 60% della finestra, perché il disegno resti visibile. L'altezza scelta vale finché la pagina resta aperta.
+Corre sotto tutta la schermata. Con molti terminali aperti, le loro schede scorrono di lato in una riga sottile, e quella aperta si porta sempre in vista; la scheda Eventi e la freccia restano ferme a destra, e la pagina non si allarga (D-112). Si chiude lasciando visibile la sola riga delle schede, e si apre e si chiude anche da sola, seguendo eventi e terminali (vedi «Ossatura»). Si fa più alta o più bassa trascinandone il bordo superiore, o con le frecce su e giù quando il bordo ha il fuoco: tra 100 px e il 60% della finestra, perché il disegno resti visibile. L'altezza scelta vale finché la pagina resta aperta.
 
 ### Terminali
 
@@ -398,8 +411,8 @@ Si attiva dal pulsante Presenta e si lascia con Esc o con il pulsante Esci, che 
 
 - **Che cosa sparisce** (D-62): la colonna dei dispositivi; nella barra in alto i menu Progetto e Visualizza, Salva, annulla e ripristina; sulla barretta Collega ed Elimina. Il tasto Canc e Ctrl+S non fanno nulla.
 - **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello. Ctrl+Z annulla ancora: rimette a posto un indirizzo cambiato o un dispositivo spostato per sbaglio, senza uscire.
-- **Ingrandimento** (D-61): un solo fattore, di partenza 140%, regolabile dal 100% al 200% con A− e A+ nella barra in alto. Barre, pannello e fascia si ingrandiscono per intero. Nel disegno crescono dispositivi, scritte, buste, tabelle appuntate e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete. La barretta delle azioni non cresce.
-- **Inquadratura**: entrando, e a ogni cambio di ingrandimento, la rete viene inquadrata per intero. I pulsanti −, + e Adatta salgono nell'angolo in alto a destra del disegno, perché in basso la barra della simulazione è più larga.
+- **Ingrandimento** (D-61): un solo fattore, di partenza 140%, regolabile dal 100% al 200% con A− e A+ nella barra in alto. Barre, pannello e fascia si ingrandiscono per intero. Nel disegno crescono dispositivi, scritte, buste, tabelle appuntate e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete. Anche la barretta delle azioni cresce con l'ingrandimento (D-111). Il pannello laterale non supera i due quinti della finestra (D-112).
+- **Inquadratura**: entrando, e a ogni cambio di ingrandimento, la rete viene inquadrata per intero. I pulsanti −, + e Adatta salgono nell'angolo in alto a destra del disegno, perché in basso la barra della simulazione è più larga. Agli ingrandimenti più alti la barra della simulazione va a capo, e la barretta delle azioni scivola di lato per non coprire lo zoom (D-112).
 - **La fascia in basso parte chiusa**, e non si apre da sola: la aprono T ed E.
 - **Il pannello laterale segue la selezione**: chiuso finché non si seleziona qualcosa, si richiude togliendo la selezione (D-107).
 - **All'uscita** fascia, pannello e inquadratura tornano com'erano prima di entrare.

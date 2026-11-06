@@ -38,6 +38,16 @@
     preferences.stripHeight = stripHeightWithin(preferences.stripHeight + step, window.innerHeight / preferences.scale);
   }
 
+  // Con molti terminali le loro schede scorrono di lato (D-112): quella
+  // aperta si porta sempre in vista, anche quando l'ha aperta la barretta.
+  let terminalTabs: HTMLDivElement | undefined = $state();
+  $effect(() => {
+    const tab = session.activeTab;
+    const count = session.terminals.length;
+    if (terminalTabs === undefined || tab === "events" || count === 0) return;
+    terminalTabs.querySelector(".tab.selected")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+
   // Scegliere una scheda riapre anche la fascia, se era chiusa.
   function show(tab: string) {
     session.activeTab = tab;
@@ -66,26 +76,28 @@
     ></div>
   {/if}
   <div class="tabs" role="tablist">
-    {#each session.terminals as terminal (terminal.deviceId)}
-      <span class="tab" class:selected={session.activeTab === terminal.deviceId}>
-        <button
-          class="name"
-          role="tab"
-          aria-selected={session.activeTab === terminal.deviceId}
-          onclick={() => show(terminal.deviceId)}
-        >
-          Terminale · {nameOf(terminal.deviceId)}{#if session.isOff(terminal.deviceId)}<span class="off">{" · spento"}</span>{/if}
-        </button>
-        <button
-          class="close"
-          title="Chiudi il terminale"
-          aria-label="Chiudi il terminale di {nameOf(terminal.deviceId)}"
-          onclick={() => session.closeTerminal(terminal.deviceId)}
-        >
-          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M4 4L10 10M10 4L4 10" /></svg>
-        </button>
-      </span>
-    {/each}
+    <div class="terminals" bind:this={terminalTabs}>
+      {#each session.terminals as terminal (terminal.deviceId)}
+        <span class="tab" class:selected={session.activeTab === terminal.deviceId}>
+          <button
+            class="name"
+            role="tab"
+            aria-selected={session.activeTab === terminal.deviceId}
+            onclick={() => show(terminal.deviceId)}
+          >
+            Terminale · {nameOf(terminal.deviceId)}{#if session.isOff(terminal.deviceId)}<span class="off">{" · spento"}</span>{/if}
+          </button>
+          <button
+            class="close"
+            title="Chiudi il terminale"
+            aria-label="Chiudi il terminale di {nameOf(terminal.deviceId)}"
+            onclick={() => session.closeTerminal(terminal.deviceId)}
+          >
+            <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M4 4L10 10M10 4L4 10" /></svg>
+          </button>
+        </span>
+      {/each}
+    </div>
 
     <span class="tab" class:selected={session.activeTab === "events"}>
       <button class="name" role="tab" aria-selected={session.activeTab === "events"} onclick={() => show("events")}>
@@ -132,6 +144,19 @@
     gap: 2px;
     padding: 6px 10px 0;
     border-bottom: 1px solid var(--line);
+  }
+  /* Le schede dei terminali: se sono troppe per la larghezza scorrono di
+     lato, e la scheda Eventi e la freccia restano sempre in vista (D-112). */
+  .terminals {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab {
+    flex: none;
   }
   .tab {
     display: flex;

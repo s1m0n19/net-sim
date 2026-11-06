@@ -211,6 +211,8 @@
     position: relative;
     width: 290px;
     box-sizing: border-box;
+    /* I campi dentro guardano quanto è largo il pannello (D-112). */
+    container: panel / inline-size;
     background: var(--surface);
     border-left: 1px solid var(--line);
     padding: 12px;
@@ -308,5 +310,18 @@
   }
   header {
     padding-right: 20px;
+  }
+  /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni
+     etichetta va sopra il suo campo: gli indirizzi restano interi (D-112). */
+  @container panel (max-width: 250px) {
+    .fields,
+    div.fields {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+    dd,
+    .value {
+      margin-bottom: 6px;
+    }
   }
 </style>

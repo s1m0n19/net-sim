@@ -71,4 +71,12 @@
     grid-template-columns: auto minmax(0, 1fr);
     gap: 6px 12px;
   }
+  /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni
+     etichetta va sopra il suo campo: gli indirizzi restano interi (D-112). */
+  @container panel (max-width: 250px) {
+    .fields {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+  }
 </style>

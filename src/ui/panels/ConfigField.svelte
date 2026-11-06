@@ -118,4 +118,11 @@
     color: var(--down);
     font-size: 0.92em;
   }
+  /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni
+     etichetta va sopra il suo campo: gli indirizzi restano interi (D-112). */
+  @container panel (max-width: 250px) {
+    .field {
+      margin-bottom: 6px;
+    }
+  }
 </style>

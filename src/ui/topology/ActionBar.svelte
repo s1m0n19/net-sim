@@ -9,12 +9,13 @@
   import Menu, { type MenuItem } from "../layout/Menu.svelte";
   import Icon from "../theme/Icon.svelte";
   import type { BarAction } from "./bar-actions";
-  import { placeBar, type ScreenAnchor, type Size } from "./bar-placement";
+  import { barFits, placeBar, type Rect, type ScreenAnchor, type Size } from "./bar-placement";
 
   let {
     actions,
     anchor,
     area,
+    obstacles = [],
     scale = 1,
     subject,
   }: {
@@ -23,6 +24,8 @@
     anchor: ScreenAnchor;
     // La grandezza del disegno sullo schermo.
     area: Size;
+    // I comandi sul disegno da non coprire: zoom e barra della simulazione.
+    obstacles?: Rect[];
     // L'ingrandimento della presentazione.
     scale?: number;
     // Di che cosa sono le azioni, per il lettore di schermo: "PC1", "il cavo".
@@ -45,7 +48,23 @@
       run: action.run,
     })),
   );
-  const placement = $derived(placeBar(anchor, { width, height }, area));
+  // Se con le scritte non sta nel disegno (in presentazione, su uno schermo
+  // stretto) la barretta resta con le sole icone; descrizione e suggerimento
+  // non cambiano (D-112). La larghezza con le scritte si misura una volta
+  // per ogni insieme di azioni e ingrandimento, e si ricorda: così la
+  // barretta non oscilla tra le due forme.
+  let fullWidth = $state(0);
+  let measuredFor = $state("");
+  const look = $derived(`${actions.map((action) => action.text).join("|")} ${scale}`);
+  const compact = $derived(measuredFor === look && !barFits(fullWidth, area.width));
+  $effect(() => {
+    if (!compact && width > 0) {
+      fullWidth = width;
+      measuredFor = look;
+    }
+  });
+
+  const placement = $derived(placeBar(anchor, { width, height }, area, obstacles));
   // Il menu "Altro" si apre dalla parte dove c'è più spazio.
   const opensUp = $derived(placement.top > area.height - placement.top - height);
 
@@ -67,6 +86,7 @@
 <div
   class="actions"
   class:measuring={width === 0}
+  class:compact
   bind:this={bar}
   bind:clientWidth={width}
   bind:clientHeight={height}
@@ -144,6 +164,14 @@
   .action :global(svg) {
     width: calc(20px * var(--k));
     height: calc(20px * var(--k));
+  }
+  /* Compatta: le sole icone, in pulsanti quadrati. */
+  .compact .action {
+    min-width: calc(44px * var(--k));
+    padding: 0 calc(6px * var(--k));
+  }
+  .compact .text {
+    display: none;
   }
   .action:hover {
     background: var(--surface-2);

@@ -228,6 +228,10 @@
     background: var(--surface);
     border-bottom: 1px solid var(--line);
     min-width: 0;
+    /* Le regole per gli schermi stretti guardano la larghezza della barra,
+       non della finestra: in presentazione la barra è ingrandita, e conta
+       quanto spazio ha davvero (D-112). */
+    container: topbar / inline-size;
   }
   .brand {
     display: flex;
@@ -259,7 +263,9 @@
     border-left: 1px solid var(--line);
   }
   .file {
-    min-width: 0;
+    /* Si accorcia, ma resta riconoscibile: il nome intero è nel menu
+       Progetto e nel suggerimento. */
+    min-width: 6ch;
     max-width: 28ch;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -385,17 +391,30 @@
   }
 
   /* Su uno schermo stretto il nome del file si accorcia per primo. */
-  @media (max-width: 1180px) {
+  @container topbar (max-width: 1180px) {
     .file {
       max-width: 18ch;
     }
   }
-  @media (max-width: 1060px) {
+  @container topbar (max-width: 1060px) {
     .wordmark {
       display: none;
     }
     .file {
       max-width: 14ch;
+    }
+  }
+  /* Solo in presentazione, molto ingrandita: prima va via la scritta
+     "Ingrandimento" (A− e A+ hanno la loro descrizione), poi il nome del
+     file; i comandi restano tutti. */
+  @container topbar (max-width: 760px) {
+    .label {
+      display: none;
+    }
+  }
+  @container topbar (max-width: 470px) {
+    .project {
+      display: none;
     }
   }
 </style>

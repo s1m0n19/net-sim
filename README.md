@@ -38,7 +38,7 @@ Come Cloudflare costruisce e pubblica è scritto in `wrangler.jsonc`: il sito è
 ## Requisiti
 
 - [Node.js](https://nodejs.org/) 22.12 o successivo (anche 24 o 26), con npm.
-- Un browser aggiornato (Chrome o Edge).
+- Un browser aggiornato (Chrome o Edge). La schermata è provata dal monitor grande (1920×1080) fino a una finestra di 900×700: nelle finestre piccole ogni area si stringe, e nessun comando esce dallo schermo.
 
 ## Avvio
 
@@ -70,7 +70,7 @@ Per provare: apri `examples/tre-reti-due-router.netsim.json`. Senza rotte un pin
 - trascinando la voce **PC** sul disegno;
 - con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare. Esc per finire.
 
-Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte. Il **Server** si posa e si usa come un PC: stesso pannello, stesso terminale; prende il nome SRV1. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con il cestino sulla sua barretta o con il tasto Canc.
+Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte; da tastiera si apre con Invio e si chiude con Esc. Il **Server** si posa e si usa come un PC: stesso pannello, stesso terminale; prende il nome SRV1. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con Elimina, nel menu Altro della sua barretta, o con il tasto Canc.
 
 Per collegare due dispositivi ci sono due modi:
 
@@ -88,7 +88,7 @@ Selezionato un dispositivo, nel pannello a destra si cambiano il **nome** e, per
 
 **Muoversi sul disegno.** La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore; trascinando lo sfondo si sposta la vista. Nell'angolo in basso a destra del disegno ci sono **−**, **+** e **Adatta**, che inquadra tutta la rete. Un file appena aperto viene inquadrato per intero.
 
-**Presentare.** **Presenta**, in alto a destra, prepara la schermata per il proiettore: spariscono la colonna dei dispositivi e i comandi di file, annulla, etichette ed eliminazione; testo, icone, buste e linee si ingrandiscono; la rete viene inquadrata per intero e la fascia in basso si chiude. Il pannello di destra si apre solo quando selezioni qualcosa, e si richiude quando togli la selezione: senza, la rete ha tutto lo schermo. Con **A−** e **A+** regoli l'ingrandimento dal 100% al 200%, guardando dal fondo dell'aula. Si esce con **Esci** o con Esc, e fascia, pannello e inquadratura tornano com'erano.
+**Presentare.** **Presenta**, in alto a destra, prepara la schermata per il proiettore: spariscono la colonna dei dispositivi e i comandi di file, annulla, etichette ed eliminazione; testo, icone, buste e linee si ingrandiscono; la rete viene inquadrata per intero e la fascia in basso si chiude. Il pannello di destra si apre solo quando selezioni qualcosa, e si richiude quando togli la selezione: senza, la rete ha tutto lo schermo. Con **A−** e **A+** regoli l'ingrandimento dal 100% al 200%, guardando dal fondo dell'aula: agli ingrandimenti alti, su uno schermo piccolo, il pannello di destra non supera i due quinti dello schermo e la barretta delle azioni resta con le sole icone se le scritte non ci stanno. Si esce con **Esci** o con Esc, e fascia, pannello e inquadratura tornano com'erano.
 
 In presentazione la simulazione si comanda anche da tastiera:
 

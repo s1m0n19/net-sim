@@ -158,4 +158,16 @@
     color: var(--down);
     font-size: 0.92em;
   }
+  /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni
+     etichetta va sopra il suo campo: gli indirizzi restano interi (D-112). */
+  @container panel (max-width: 250px) {
+    form {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+    .add {
+      grid-column: 1;
+      margin-top: 6px;
+    }
+  }
 </style>

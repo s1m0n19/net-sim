@@ -43,7 +43,15 @@
     left: 50%;
     bottom: 14px;
     transform: translateX(-50%);
+    /* Su un disegno più stretto della barra (in presentazione, su uno
+       schermo piccolo) i comandi vanno a capo invece di uscire dai bordi
+       (D-112). */
+    width: max-content;
+    max-width: calc(100% - 28px);
+    box-sizing: border-box;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
     gap: 6px;
     padding: 6px 10px;

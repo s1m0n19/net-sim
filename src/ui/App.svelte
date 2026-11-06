@@ -66,10 +66,14 @@
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-rows: var(--bar-height) auto minmax(0, 1fr) auto;
   }
+  /* min-width: 0 perché una riga troppo lunga (molte schede, un nome di
+     file lungo) non allarghi la pagina: si accorcia o scorre al suo
+     interno (D-112). */
   .top,
   .error,
   .bottom {
     grid-column: 1 / -1;
+    min-width: 0;
   }
   .top {
     display: grid;
@@ -94,8 +98,14 @@
   }
   /* In presentazione barre, pannello e fascia si ingrandiscono. Il disegno
      no: lì crescono i singoli elementi, e lo decide Topology. */
+  /* In presentazione il pannello laterale, ingrandito, non prende più di
+     due quinti della larghezza: il disegno resta la parte più grande anche
+     su uno schermo stretto (D-112). */
   .presenting {
     grid-template-rows: calc(var(--bar-height) * var(--ui-scale)) auto minmax(0, 1fr) auto;
+  }
+  .presenting > :global(aside:not(.closed)) {
+    width: min(290px, calc(40vw / var(--ui-scale)));
   }
   .presenting > span {
     grid-row: 3;

@@ -41,6 +41,28 @@
     routerMenuOpen = false;
   }
 
+  // Con il mouse l'elenco si è già aperto passandoci sopra: il clic sulla
+  // voce lo lascia aperto, invece di richiuderlo. Da tastiera (un clic con
+  // detail 0) Invio lo apre e lo chiude.
+  function toggled(event: MouseEvent, open: boolean): boolean {
+    return event.detail === 0 ? !open : true;
+  }
+
+  // Da tastiera l'elenco delle varianti si apre con Invio sulla voce, e
+  // Tab ci entra. Esc lo chiude e ridà il fuoco alla voce; si chiude anche
+  // quando il fuoco va altrove, come quando il puntatore se ne va.
+  function menuKey(event: KeyboardEvent, close: () => void) {
+    if (event.key !== "Escape") return;
+    event.stopPropagation();
+    close();
+    (event.currentTarget as HTMLElement).querySelector<HTMLButtonElement>(".tile")?.focus();
+  }
+
+  function menuFocusOut(event: FocusEvent, close: () => void) {
+    const next = event.relatedTarget as Node | null;
+    if (next === null || !(event.currentTarget as HTMLElement).contains(next)) close();
+  }
+
   // Lo strumento Cavo resta attivo finché non lo si spegne, con un altro
   // clic o con Esc.
   function toggleCable() {
@@ -58,109 +80,123 @@
 </script>
 
 {#if preferences.paletteOpen}
-  <aside>
-    <div class="caption">Dispositivi</div>
+  <aside class="open">
+    <div class="column">
+      <div class="caption">Dispositivi</div>
 
-    <button
-      class="tile"
-      class:active={placingHost}
-      aria-pressed={placingHost}
-      title="PC: trascinalo sul disegno, oppure fai clic qui e poi sul disegno"
-      draggable="true"
-      ondragstart={(event) => startDrag(event, PC)}
-      onclick={() => choose(PC)}
-    >
-      <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="host" /></svg>
-      PC
-    </button>
-
-    <div class="with-menu" onmouseleave={() => (switchMenuOpen = false)} role="presentation">
       <button
         class="tile"
-        class:active={placingSwitch}
-        aria-pressed={placingSwitch}
-        aria-haspopup="menu"
-        aria-expanded={switchMenuOpen}
-        title="Switch: scegli quante porte"
-        onmouseenter={() => (switchMenuOpen = true)}
-        onclick={() => (switchMenuOpen = !switchMenuOpen)}
+        class:active={placingHost}
+        aria-pressed={placingHost}
+        title="PC: trascinalo sul disegno, oppure fai clic qui e poi sul disegno"
+        draggable="true"
+        ondragstart={(event) => startDrag(event, PC)}
+        onclick={() => choose(PC)}
       >
-        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="switch" /></svg>
-        Switch ›
+        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="host" /></svg>
+        PC
       </button>
-      {#if switchMenuOpen}
-        <div class="menu" role="menu">
-          {#each SWITCHES as variant}
-            <button
-              role="menuitem"
-              draggable="true"
-              ondragstart={(event) => startDrag(event, variant.template)}
-              onclick={() => choose(variant.template)}
-            >
-              {variant.label}
-            </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
 
-    <div class="with-menu" onmouseleave={() => (routerMenuOpen = false)} role="presentation">
+      <div
+        class="with-menu"
+        role="presentation"
+        onmouseleave={() => (switchMenuOpen = false)}
+        onkeydown={(event) => menuKey(event, () => (switchMenuOpen = false))}
+        onfocusout={(event) => menuFocusOut(event, () => (switchMenuOpen = false))}
+      >
+        <button
+          class="tile"
+          class:active={placingSwitch}
+          aria-pressed={placingSwitch}
+          aria-haspopup="menu"
+          aria-expanded={switchMenuOpen}
+          title="Switch: scegli quante porte"
+          onmouseenter={() => (switchMenuOpen = true)}
+          onclick={(event) => (switchMenuOpen = toggled(event, switchMenuOpen))}
+        >
+          <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="switch" /></svg>
+          Switch ›
+        </button>
+        {#if switchMenuOpen}
+          <div class="menu" role="menu">
+            {#each SWITCHES as variant}
+              <button
+                role="menuitem"
+                draggable="true"
+                ondragstart={(event) => startDrag(event, variant.template)}
+                onclick={() => choose(variant.template)}
+              >
+                {variant.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <div
+        class="with-menu"
+        role="presentation"
+        onmouseleave={() => (routerMenuOpen = false)}
+        onkeydown={(event) => menuKey(event, () => (routerMenuOpen = false))}
+        onfocusout={(event) => menuFocusOut(event, () => (routerMenuOpen = false))}
+      >
+        <button
+          class="tile"
+          class:active={placingRouter}
+          aria-pressed={placingRouter}
+          aria-haspopup="menu"
+          aria-expanded={routerMenuOpen}
+          title="Router: scegli quante interfacce"
+          onmouseenter={() => (routerMenuOpen = true)}
+          onclick={(event) => (routerMenuOpen = toggled(event, routerMenuOpen))}
+        >
+          <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="router" /></svg>
+          Router ›
+        </button>
+        {#if routerMenuOpen}
+          <div class="menu" role="menu">
+            {#each ROUTERS as variant}
+              <button
+                role="menuitem"
+                draggable="true"
+                ondragstart={(event) => startDrag(event, variant.template)}
+                onclick={() => choose(variant.template)}
+              >
+                {variant.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
       <button
         class="tile"
-        class:active={placingRouter}
-        aria-pressed={placingRouter}
-        aria-haspopup="menu"
-        aria-expanded={routerMenuOpen}
-        title="Router: scegli quante interfacce"
-        onmouseenter={() => (routerMenuOpen = true)}
-        onclick={() => (routerMenuOpen = !routerMenuOpen)}
+        class:active={placingServer}
+        aria-pressed={placingServer}
+        title="Server: trascinalo sul disegno, oppure fai clic qui e poi sul disegno"
+        draggable="true"
+        ondragstart={(event) => startDrag(event, SERVER)}
+        onclick={() => choose(SERVER)}
       >
-        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="router" /></svg>
-        Router ›
+        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="server" /></svg>
+        Server
       </button>
-      {#if routerMenuOpen}
-        <div class="menu" role="menu">
-          {#each ROUTERS as variant}
-            <button
-              role="menuitem"
-              draggable="true"
-              ondragstart={(event) => startDrag(event, variant.template)}
-              onclick={() => choose(variant.template)}
-            >
-              {variant.label}
-            </button>
-          {/each}
-        </div>
-      {/if}
+
+      <div class="caption">Strumenti</div>
+      <button
+        class="tile tool"
+        class:active={session.cabling}
+        aria-pressed={session.cabling}
+        title="Cavo: trascina da un dispositivo a un altro"
+        onclick={toggleCable}
+      >
+        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="cable" /></svg>
+        Cavo
+      </button>
+
+      <button class="fold" title="Chiudi la colonna" aria-label="Chiudi la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = false)}>
+        <Chevron direction="left" />
+      </button>
     </div>
-    <button
-      class="tile"
-      class:active={placingServer}
-      aria-pressed={placingServer}
-      title="Server: trascinalo sul disegno, oppure fai clic qui e poi sul disegno"
-      draggable="true"
-      ondragstart={(event) => startDrag(event, SERVER)}
-      onclick={() => choose(SERVER)}
-    >
-      <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="server" /></svg>
-      Server
-    </button>
-
-    <div class="caption">Strumenti</div>
-    <button
-      class="tile tool"
-      class:active={session.cabling}
-      aria-pressed={session.cabling}
-      title="Cavo: trascina da un dispositivo a un altro"
-      onclick={toggleCable}
-    >
-      <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="cable" /></svg>
-      Cavo
-    </button>
-
-    <button class="fold" title="Chiudi la colonna" aria-label="Chiudi la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = false)}>
-      <Chevron direction="left" />
-    </button>
   </aside>
 {:else}
   <aside class="closed">
@@ -184,6 +220,34 @@
   aside.closed {
     width: 26px;
     padding: 10px 2px;
+  }
+  /* Aperta, la colonna guarda quanto è alta: se la fascia in basso le
+     lascia poco spazio, le voci si stringono invece di uscire dallo
+     schermo (D-112). */
+  aside.open {
+    padding: 0;
+    container: palette / size;
+  }
+  .column {
+    height: 100%;
+    box-sizing: border-box;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  @container palette (max-height: 420px) {
+    .column {
+      gap: 4px;
+      padding-block: 6px;
+    }
+    .caption,
+    .tile svg {
+      display: none;
+    }
+    .tile {
+      padding: 6px 2px;
+    }
   }
   /* La freccia sta in fondo, nello stesso punto da aperta e da chiusa. */
   .fold {

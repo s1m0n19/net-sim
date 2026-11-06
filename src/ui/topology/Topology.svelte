@@ -5,6 +5,7 @@
   import ActionBar from "./ActionBar.svelte";
   import { untrack } from "svelte";
   import { selectionBar } from "./bar-actions";
+  import type { Rect } from "./bar-placement";
   import { zoomed, ZOOM_STEP } from "./camera";
   import { drawingKey } from "./keyboard";
   import Messages from "./Messages.svelte";
@@ -39,6 +40,21 @@
   let canvasHeight = $state(0);
   $effect(() => {
     session.viewport = canvasWidth > 0 && canvasHeight > 0 ? { width: canvasWidth, height: canvasHeight } : null;
+  });
+
+  // Dove stanno sul disegno lo zoom e la barra della simulazione: la
+  // barretta delle azioni evita di coprirli (D-112). Si rimisurano quando
+  // può cambiare la loro grandezza o la loro posizione.
+  let canvas: HTMLDivElement | undefined = $state();
+  let controls: Rect[] = $state([]);
+  $effect(() => {
+    const dependsOn = [canvasWidth, canvasHeight, preferences.scale, preferences.presenting, session.running, session.view.suspended, session.isEmpty()];
+    if (canvas === undefined || dependsOn.length === 0) return;
+    const origin = canvas.getBoundingClientRect();
+    controls = [...canvas.querySelectorAll(":scope > .zoom, :scope > .bar")].map((element) => {
+      const box = element.getBoundingClientRect();
+      return { left: box.left - origin.left, top: box.top - origin.top, right: box.right - origin.left, bottom: box.bottom - origin.top };
+    });
   });
 
   // In presentazione dispositivi e scritte si ingrandiscono: quando
@@ -179,6 +195,7 @@
 
 <div
   class="canvas"
+  bind:this={canvas}
   bind:clientWidth={canvasWidth}
   bind:clientHeight={canvasHeight}
   class:aiming={session.pingFrom !== null || session.cabling || session.linkFrom !== null}
@@ -229,6 +246,7 @@
       actions={bar.actions}
       anchor={barAnchor}
       area={{ width: canvasWidth, height: canvasHeight }}
+      obstacles={controls}
       scale={preferences.scale}
       subject={barSubject}
     />
@@ -259,6 +277,8 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    /* Ciò che sta sopra il disegno si dispone secondo la sua larghezza. */
+    container: drawing / inline-size;
   }
   svg {
     display: block;
@@ -302,6 +322,13 @@
   .presenting .zoom {
     bottom: auto;
     top: 14px;
+  }
+  /* Su un disegno stretto la barra della simulazione, centrata, arriverebbe
+     sotto questi pulsanti: allora salgono sopra di lei (D-112). */
+  @container drawing (max-width: 800px) {
+    .canvas:not(.presenting) .zoom {
+      bottom: 66px;
+    }
   }
   .zoom .btn {
     min-width: 30px;
