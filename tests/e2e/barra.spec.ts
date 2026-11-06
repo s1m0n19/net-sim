@@ -3,7 +3,7 @@
 // gli schermi stretti.
 
 import { expect, test } from "@playwright/test";
-import { action, device, drawing, exampleFile, openApp, openNetwork } from "./helpers";
+import { device, drawing, exampleFile, moreAction, openApp, openNetwork } from "./helpers";
 
 test("il menu Progetto si usa con la tastiera, e si chiude con Esc o con un clic fuori", async ({ page }) => {
   await openApp(page);
@@ -72,7 +72,7 @@ test("Salva, Annulla e Ripristina sono attivi solo quando servono, e le scorciat
   await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
   await expect(save).toBeEnabled();
   await device(page, "PC1").click();
-  await action(page, "Duplica PC1").click();
+  await (await moreAction(page, "Duplica")).click();
   await expect(page.locator("g.device")).toHaveCount(5);
   await expect(page.getByText("Da salvare")).toBeVisible();
   await expect(undo).toBeEnabled();
@@ -145,7 +145,7 @@ test("a 1024×768 tutti i comandi della barra stanno nello schermo, senza scorri
   await openApp(page);
   await openNetwork(page, "una-rete-dal-nome-molto-lungo.netsim.json", exampleFile("tre-reti-due-router"));
   await device(page, "PC1").click();
-  await action(page, "Duplica PC1").click();
+  await (await moreAction(page, "Duplica")).click();
 
   for (const control of [
     page.getByRole("button", { name: "Progetto" }),

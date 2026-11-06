@@ -86,6 +86,29 @@
   // La barretta delle azioni di ciò che è selezionato: dove sta e che cosa offre.
   const bar = $derived(selectionBar());
 
+  // Da coordinate del disegno a pixel del disegno sullo schermo: lo stesso
+  // calcolo che fa l'SVG con viewBox e preserveAspectRatio (centrato, senza
+  // deformare). Serve alla barretta, che sta sopra il disegno.
+  const screen = $derived.by(() => {
+    const k = Math.min(canvasWidth / bounds.width, canvasHeight / bounds.height);
+    return { k, x: (canvasWidth - bounds.width * k) / 2, y: (canvasHeight - bounds.height * k) / 2 };
+  });
+  const barAnchor = $derived(
+    bar === null
+      ? null
+      : {
+          x: (bar.anchor.x - bounds.x) * screen.k + screen.x,
+          top: (bar.anchor.top - bounds.y) * screen.k + screen.y,
+          bottom: (bar.anchor.bottom - bounds.y) * screen.k + screen.y,
+        },
+  );
+  // Di che cosa sono le azioni della barretta, a parole.
+  const barSubject = $derived.by(() => {
+    const selection = session.selection;
+    if (selection?.kind === "device") return session.view.devices.find((d) => d.id === selection.id)?.name ?? "";
+    return "il cavo";
+  });
+
   // Le buste che il filtro lascia vedere.
   const packets = $derived(
     session.view.packets.filter((packet) => session.shows(packet.conversationId, packet.protocol)),
@@ -196,13 +219,20 @@
       {#if rubber !== null}
         <line class="rubber" x1={rubber.from.x} y1={rubber.from.y} x2={rubber.to.x} y2={rubber.to.y} />
       {/if}
-      {#if bar !== null && session.portMenu === null}
-        <ActionBar x={bar.x} y={bar.y} actions={bar.actions} />
-      {/if}
       {#if portMenuLink !== undefined && session.portMenu !== null}
         <PortMenu link={portMenuLink} end={session.portMenu.end} />
       {/if}
   </svg>
+
+  {#if bar !== null && barAnchor !== null && session.portMenu === null && canvasWidth > 0}
+    <ActionBar
+      actions={bar.actions}
+      anchor={barAnchor}
+      area={{ width: canvasWidth, height: canvasHeight }}
+      scale={preferences.scale}
+      subject={barSubject}
+    />
+  {/if}
 
   {#if session.isEmpty()}
     <div class="hint">

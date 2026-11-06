@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
   action,
+  moreAction,
   clickDrawing,
   device,
   exampleFile,
@@ -186,11 +187,11 @@ test("la CLI di uno switch: tabella MAC e una porta spenta", async ({ page }) =>
   // Spento lo switch, il terminale resta ma non ha più la riga di comando:
   // un avviso lo dice, e la scheda lo segna. Riacceso, si scrive di nuovo.
   await device(page, "SW1").click();
-  await action(page, "Spegni SW1").click();
+  await (await moreAction(page, "Spegni")).click();
   await expect(page.getByRole("status")).toContainText("SW1 è spento.");
   await expect(page.getByRole("tab", { name: /Terminale · SW1 · spento/ })).toBeVisible();
   await expect(page.getByRole("textbox", { name: /Riga di comando di SW1/ })).toHaveCount(0);
-  await action(page, "Accendi SW1").click();
+  await (await moreAction(page, "Accendi")).click();
   await expect(page.getByRole("textbox", { name: /Riga di comando di SW1/ })).toBeVisible();
   await expect(page.getByRole("status")).toHaveCount(0);
 });

@@ -1,95 +1,187 @@
-<svelte:options namespace="svg" />
-
 <script lang="ts">
   // La barretta delle azioni: compare accanto a ciò che è selezionato e
-  // mostra, come icone, quello che ci si può fare. Tutto è visibile: non
-  // esiste un menu nascosto.
-  import type { ActionIcon, BarAction } from "./bar-actions";
+  // mostra ciò che ci si può fare. Le azioni più usate si vedono sempre,
+  // con l'icona e la scritta; le altre stanno nel menu "Altro" (D-111).
+  //
+  // Sta sopra il disegno, non dentro: ha sempre la stessa grandezza sullo
+  // schermo, qualunque sia lo zoom (in presentazione cresce con
+  // l'ingrandimento), e non esce mai dal disegno (bar-placement.ts).
+  import Menu, { type MenuItem } from "../layout/Menu.svelte";
+  import Icon from "../theme/Icon.svelte";
+  import type { BarAction } from "./bar-actions";
+  import { placeBar, type ScreenAnchor, type Size } from "./bar-placement";
 
-  // `x` è il centro della barretta, `y` il suo bordo inferiore.
-  let { x, y, actions }: { x: number; y: number; actions: BarAction[] } = $props();
+  let {
+    actions,
+    anchor,
+    area,
+    scale = 1,
+    subject,
+  }: {
+    actions: BarAction[];
+    // Ciò che è selezionato, in pixel del disegno sullo schermo.
+    anchor: ScreenAnchor;
+    // La grandezza del disegno sullo schermo.
+    area: Size;
+    // L'ingrandimento della presentazione.
+    scale?: number;
+    // Di che cosa sono le azioni, per il lettore di schermo: "PC1", "il cavo".
+    subject: string;
+  } = $props();
 
-  const SIZE = 32;
-  const width = $derived(actions.length * SIZE);
+  let width = $state(0);
+  let height = $state(0);
+  let bar: HTMLDivElement | undefined = $state();
 
-  const paths: Record<ActionIcon, string> = {
-    power: "M16 9V16M11 12a7 7 0 1 0 10 0",
-    ping: "M10 22L22 10M15 10H22V17",
-    // Un cavo con un connettore a ogni capo.
-    link: "M11 21C16 21 16 11 21 11M9 19H11V23H9ZM21 9H23V13H21Z",
-    // Due fogli sovrapposti: l'originale e la sua copia.
-    duplicate: "M9 13H19V23H9ZM13 13V9H23V19H19",
-    terminal: "M9 11L14 16L9 21M16 21H23",
-    pin: "M9 10H23V22H9ZM9 16H23M16 10V22",
-    unplug: "M7 16H12M20 16H25M12 11V21M20 11V21",
-    replug: "M7 16H25M14 11V21M18 11V21",
-    // Un cestino.
-    remove: "M10 12H22M14 12V10H18V12M11.5 12L12.5 23H19.5L20.5 12M14.5 15V20M17.5 15V20",
-  };
+  const primary = $derived(actions.filter((action) => action.primary));
+  const more = $derived(actions.filter((action) => !action.primary));
+  const moreItems: MenuItem[] = $derived(
+    more.map((action) => ({
+      kind: "action",
+      label: action.text,
+      icon: action.icon,
+      danger: action.danger,
+      description: action.label,
+      run: action.run,
+    })),
+  );
+  const placement = $derived(placeBar(anchor, { width, height }, area));
+  // Il menu "Altro" si apre dalla parte dove c'è più spazio.
+  const opensUp = $derived(placement.top > area.height - placement.top - height);
 
-  function onKey(event: KeyboardEvent, action: BarAction) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      event.stopPropagation();
-      action.run();
-    }
+  // Le frecce sinistra e destra si muovono tra i pulsanti, come in ogni
+  // barra di strumenti; Invio e Spazio li premono.
+  function onKey(event: KeyboardEvent) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const buttons = [...(bar?.querySelectorAll<HTMLButtonElement>(":scope > button, :scope .trigger") ?? [])];
+    const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (at === -1) return;
+    event.preventDefault();
+    const step = event.key === "ArrowRight" ? 1 : -1;
+    buttons[(at + step + buttons.length) % buttons.length].focus();
   }
 </script>
 
-<g transform="translate({x - width / 2} {y - SIZE})">
-  <rect class="frame" x="0" y="0" {width} height={SIZE} rx="6" />
-  {#each actions as action, index (action.icon)}
-    <g
+<!-- I clic sulla barretta non arrivano al disegno: niente selezione né
+     spostamento della vista per sbaglio. -->
+<div
+  class="actions"
+  class:measuring={width === 0}
+  bind:this={bar}
+  bind:clientWidth={width}
+  bind:clientHeight={height}
+  role="toolbar"
+  tabindex="-1"
+  aria-label="Azioni su {subject}"
+  style="left: {placement.left}px; top: {placement.top}px; --k: {scale}"
+  onkeydown={onKey}
+  onpointerdown={(event) => event.stopPropagation()}
+>
+  {#each primary as action (action.text)}
+    <button
       class="action"
       class:active={action.active}
-      transform="translate({index * SIZE} 0)"
-      role="button"
-      tabindex="0"
+      class:danger={action.danger}
       aria-label={action.label}
-      aria-pressed={action.active ?? false}
+      aria-pressed={action.active === undefined ? undefined : action.active}
+      title={action.label}
       onclick={(event) => {
         event.stopPropagation();
         action.run();
       }}
-      onkeydown={(event) => onKey(event, action)}
     >
-      <title>{action.label}</title>
-      <rect class="hit" x="2" y="2" width={SIZE - 4} height={SIZE - 4} rx="4" />
-      <path d={paths[action.icon]} />
-    </g>
+      <Icon name={action.icon} size={20} />
+      <span class="text">{action.text}</span>
+    </button>
   {/each}
-</g>
+  {#if more.length > 0}
+    <span class="divider" aria-hidden="true"></span>
+    <Menu label="Altre azioni su {subject}" icon="more" iconOnly items={moreItems} up={opensUp} align="end" />
+  {/if}
+</div>
 
 <style>
-  .frame {
-    fill: var(--surface);
-    stroke: var(--line);
-    stroke-width: 1.2;
+  /* Non si chiama "bar": in presentazione App.svelte ingrandisce con zoom
+     la barra della simulazione, che ha quel nome; qui l'ingrandimento lo fa
+     --k, perché zoom sposterebbe anche la posizione. */
+  .actions {
+    position: absolute;
+    z-index: 6;
+    display: flex;
+    align-items: stretch;
+    gap: calc(2px * var(--k));
+    padding: calc(4px * var(--k));
+    border: 1px solid var(--line);
+    border-radius: calc(10px * var(--k));
+    background: var(--surface);
+    box-shadow: var(--shadow-menu);
+    font-size: calc(12px * var(--k));
   }
-  .action {
-    cursor: pointer;
+  /* Finché non si conosce la sua grandezza, la barretta non si vede: così
+     non compare per un istante nel punto sbagliato. */
+  .actions.measuring {
+    visibility: hidden;
+  }
+  .actions:focus {
     outline: none;
   }
-  .hit {
-    fill: transparent;
+  .action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(3px * var(--k));
+    min-width: calc(56px * var(--k));
+    height: calc(50px * var(--k));
+    padding: 0 calc(8px * var(--k));
+    border: 1px solid transparent;
+    border-radius: calc(7px * var(--k));
+    background: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
   }
-  .action:hover .hit,
-  .action:focus-visible .hit {
-    fill: var(--surface-2);
-    stroke: var(--muted);
-    stroke-width: 1;
+  .action :global(svg) {
+    width: calc(20px * var(--k));
+    height: calc(20px * var(--k));
   }
-  .action.active .hit {
-    fill: var(--accent);
+  .action:hover {
+    background: var(--surface-2);
+    border-color: var(--line);
   }
-  path {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+  .action:active {
+    background: var(--line);
   }
-  .action.active path {
-    stroke: var(--on-accent);
+  .action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  /* Premuto: l'app aspetta il secondo clic, o la tabella è appuntata. */
+  .action.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+  .action.danger {
+    color: var(--down);
+  }
+  .action.danger:hover {
+    border-color: var(--down);
+  }
+  .divider {
+    width: 1px;
+    margin: calc(6px * var(--k)) calc(2px * var(--k));
+    background: var(--line);
+  }
+  /* Il pulsante "Altro": alto come gli altri. */
+  .actions :global(.trigger) {
+    height: calc(50px * var(--k));
+    width: calc(40px * var(--k));
+    border-radius: calc(7px * var(--k));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .action {
+      transition: none;
+    }
   }
 </style>

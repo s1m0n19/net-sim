@@ -78,7 +78,7 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 - in tempo reale: 1,4 secondi per tratto di cavo a 1×, le attese accorciate con l'indicatore sul dispositivo, la pausa tra un echo e il successivo;
 - l'avviso della tempesta di broadcast;
 - la **selezione** di dispositivi, cavi e buste, con un clic o da tastiera; un clic sullo sfondo o Esc la toglie;
-- la **barretta delle azioni**: spegni o accendi, Ping, Collega, Duplica, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
+- la **barretta delle azioni**, con le azioni principali in vista e le altre nel menu Altro: spegni o accendi, Ping, Collega, Duplica, Terminale, Appunta ed Elimina sui dispositivi, stacca o riattacca ed Elimina sui cavi;
 - il **ping col mouse**: Ping sulla barretta, poi clic sulla destinazione;
 - il **pannello laterale**: nome e configurazione IP del dispositivo, che si cambiano da lì, le sue tabelle, capi e stato del cavo, strati annidati del pacchetto;
 - la **scheda Eventi**: una riga per fatto, collegata al disegno, con il filtro per conversazione e per protocollo;
@@ -141,16 +141,23 @@ A velocità normale una busta impiega 1,4 secondi a percorrere un cavo. Il valor
 
 Un clic su un dispositivo, un cavo o una busta lo **seleziona**: compare un contorno nel colore d'accento e il pannello laterale ne mostra il contenuto. Un clic sullo sfondo toglie la selezione.
 
-Accanto a ciò che è selezionato compare una **barretta** con le azioni principali, come icone. Non c'è un menu del tasto destro: tutto ciò che si può fare è visibile, e funziona anche alla LIM.
+Accanto a ciò che è selezionato compare una **barretta** con le azioni (D-111). Non c'è un menu del tasto destro: tutto ciò che si può fare è sulla barretta, e funziona anche alla LIM. Le azioni più usate per quel tipo di dispositivo si vedono sempre, con l'icona e sotto la scritta; le altre stanno nel menu **Altro** (i tre punti), in fondo alla barretta.
 
-| Selezionato | Azioni sulla barretta |
-| --- | --- |
-| Host (PC o server) | Spegni o accendi · Ping · Collega · Duplica · Terminale · Appunta la tabella ARP · Elimina |
-| Switch | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella MAC · Elimina |
-| Router | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella di routing · Elimina |
-| Cavo | Stacca o riattacca · Elimina |
+| Selezionato | Sempre in vista | Nel menu Altro |
+| --- | --- | --- |
+| Host (PC o server) | Terminale · Ping (se acceso) · Collega | Tabella ARP · Spegni o Accendi · Duplica · Elimina |
+| Switch | Terminale (la CLI) · Collega · Tabella MAC | Spegni o Accendi · Duplica · Elimina |
+| Router | Terminale (la CLI) · Collega · Tabella routing | Spegni o Accendi · Duplica · Elimina |
+| Cavo | Stacca o Riattacca · Elimina | — |
 
-**Duplica** (ED-6, D-101). Crea una copia del dispositivo e la seleziona, come un dispositivo appena posato; è un solo passo di Annulla. La copia nasce scollegata, al primo posto libero a destra dell'originale, a 140 px (`topology/placement.ts`): abbastanza perché due indirizzi IP non si tocchino, e multiplo del passo della griglia. Premendo ancora Duplica sulla copia si fa una fila. Che cosa la copia prende dall'originale lo decide il motore (`engine/duplicating.ts`, vedi [motore.md](motore.md)). Come Collega, in presentazione il pulsante non c'è. L'icona sono due fogli sovrapposti.
+- **Premuto.** Ping e Collega restano premuti (colore d'accento) finché l'app aspetta il secondo clic, e la riga in alto sul disegno dice che cosa fare; anche il pulsante di una tabella appuntata resta premuto.
+- **Elimina** è in rosso, sul cavo e nel menu Altro: si distingue da Stacca, che lascia il cavo al suo posto senza segnale.
+- **Dove sta.** La barretta è un elemento della pagina sopra il disegno, non del disegno: ha sempre la stessa grandezza sullo schermo, a qualsiasi zoom, e in presentazione cresce con l'ingrandimento. Sta sopra l'oggetto selezionato, centrata; se sopra non c'è posto va sotto le sue scritte, e di lato non esce mai dal disegno (`topology/bar-placement.ts`). Il menu Altro si apre dalla parte dove c'è più spazio.
+- **Tastiera.** I pulsanti si raggiungono con Tab, le frecce sinistra e destra si muovono tra loro, Invio e Spazio li premono; il menu Altro si apre con Invio e si chiude con Esc, che ridà il fuoco al pulsante senza togliere la selezione.
+- I clic sulla barretta non arrivano al disegno sotto: non selezionano altro e non spostano la vista.
+- I suggerimenti dicono che cosa fa un'azione, mai come risolvere un problema della rete.
+
+**Duplica** (ED-6, D-101). Crea una copia del dispositivo e la seleziona, come un dispositivo appena posato; è un solo passo di Annulla. La copia nasce scollegata, al primo posto libero a destra dell'originale, a 140 px (`topology/placement.ts`): abbastanza perché due indirizzi IP non si tocchino, e multiplo del passo della griglia. Premendo ancora Duplica sulla copia si fa una fila. Che cosa la copia prende dall'originale lo decide il motore (`engine/duplicating.ts`, vedi [motore.md](motore.md)). Sta nel menu Altro; come Collega, in presentazione non c'è. L'icona sono due fogli sovrapposti.
 
 **Ping dalla barretta.** Si preme Ping e poi si fa clic sul dispositivo di destinazione. Manda **un solo** echo request: è lo strumento per le dimostrazioni. Le quattro richieste di Windows si ottengono dal terminale.
 
@@ -204,7 +211,7 @@ La rotella del mouse ingrandisce e rimpicciolisce attorno al puntatore: ciò che
 - **All'apertura di un file** la rete viene inquadrata per intero, come con Adatta (D-60).
 - **Adatta** lascia margine per le etichette e per la barra della simulazione, tiene dentro anche le tabelle appuntate. Lo spazio della barra si riserva in pixel dello schermo (D-107): la barra ha sempre la stessa grandezza, comunque sia rimpicciolita la rete, quindi nemmeno una rete grande finisce sotto di lei. Adatta non ingrandisce oltre un riquadro minimo: un PC da solo non riempie lo schermo. Sul foglio vuoto torna all'inquadratura automatica.
 - **Limiti.** Si arriva a quattro volte più vicino e a cinque volte più lontano del foglio di base.
-- Con la vista si ingrandisce tutto il disegno, comprese scritte, barretta delle azioni ed elenco delle porte. L'inquadratura non si salva nel file.
+- Con la vista si ingrandisce tutto il disegno, comprese scritte ed elenco delle porte; la barretta delle azioni no, perché sta sopra il disegno e resta sempre grande uguale. L'inquadratura non si salva nel file.
 
 ## Barra della simulazione
 
@@ -469,7 +476,7 @@ L'interfaccia sta in `src/ui/`, divisa per area.
 | `theme/DeviceIcon.svelte` | Le sagome dei dispositivi |
 | `layout/` | Barra in alto (`TopBar.svelte`, con i menu di `Menu.svelte`) e colonna dei dispositivi |
 | `presentation.ts` | Modalità presentazione: entrare, uscire, scorciatoie. L'ingrandimento sta in `preferences` |
-| `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts`, `geometry.ts`, `grid.ts` e `placement.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
+| `topology/` | Il disegno (`Topology.svelte`) e i suoi componenti: dispositivi, cavi, buste, indicatore di attesa, barretta delle azioni, elenco delle porte, tabelle appuntate, messaggi. Senza schermo: `camera.ts`, `geometry.ts`, `grid.ts`, `placement.ts` e `bar-placement.ts` (calcoli), `bar-actions.ts` (che cosa offre la barretta, quali azioni sono sempre in vista), `keyboard.ts` (i tasti), `view-gestures.ts` (rotella e trascinamento dello sfondo) |
 | `panels/` | Il pannello laterale, il campo della configurazione (`ConfigField.svelte`) e gli strati annidati del pacchetto |
 | `strip/` | La fascia in basso: le schede, i terminali, l'elenco degli eventi con il suo filtro |
 | `simulation/SimulationBar.svelte` | La barra della simulazione |

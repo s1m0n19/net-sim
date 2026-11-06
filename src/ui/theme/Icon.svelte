@@ -24,6 +24,22 @@
     present: "M3 4h18M4.5 4v10.5a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1V4M12 15.5V19M8.5 21l3.5-2 3.5 2",
     // Una porta con una freccia: uscire.
     exit: "M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h10",
+    // Le azioni della barretta accanto a ciò che è selezionato.
+    power: "M12 3v8M7 6.5a7 7 0 1 0 10 0",
+    // Una freccia che parte verso la destinazione.
+    ping: "M5 19L19 5M10 5h9v9",
+    // Un cavo con un connettore a ogni capo.
+    link: "M7.5 16.5c6 0 3-9 9-9M4 15h3.5v4H4zM16.5 5H20v4h-3.5z",
+    duplicate: "M8 8h11v11H8zM5 16V5h11",
+    terminal: "M5 7l5 5-5 5M12 17h7",
+    // Una tabella: righe e colonne.
+    table: "M4 5h16v14H4zM4 10h16M4 14.5h16M10 10v9",
+    // Il cavo interrotto e il cavo intero.
+    unplug: "M3 12h5M16 12h5M8 7v10M16 7v10",
+    replug: "M3 12h18M10 7v10M14 7v10",
+    trash: "M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13M10 11v6M14 11v6",
+    // Tre punti: altre azioni.
+    more: "M5 12h.01M12 12h.01M19 12h.01",
   } as const;
 
   export type IconName = keyof typeof PATHS;
@@ -33,7 +49,7 @@
   let { name, size = 18 }: { name: IconName; size?: number } = $props();
 </script>
 
-<svg class="icon" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
+<svg class="icon" class:dots={name === "more"} viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
   <path d={PATHS[name]} />
 </svg>
 
@@ -45,5 +61,8 @@
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+  }
+  .icon.dots {
+    stroke-width: 3.2;
   }
 </style>

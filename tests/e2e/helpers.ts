@@ -44,9 +44,21 @@ export function device(page: Page, name: string): Locator {
   return page.locator(`g.device[aria-label="${name}"], g.device[aria-label="${name}, selezionato"]`);
 }
 
-/** Un pulsante della barretta delle azioni, dall'inizio della sua etichetta. */
+/**
+ * Un pulsante della barretta delle azioni sempre in vista, dall'inizio
+ * della sua descrizione (per esempio "Apri il terminale di PC1").
+ */
 export function action(page: Page, label: string): Locator {
-  return page.locator(`g.action[aria-label^="${label}"]`);
+  return page.locator(`.actions button[aria-label^="${label}"]`);
+}
+
+/**
+ * Un'azione del menu "Altro" della barretta (Spegni, Duplica, Elimina…):
+ * apre il menu e restituisce la voce, dalla sua scritta.
+ */
+export async function moreAction(page: Page, text: string): Promise<Locator> {
+  await page.getByRole("button", { name: /^Altre azioni su/ }).click();
+  return page.getByRole("menuitem", { name: text, exact: true });
 }
 
 /** Un cavo del disegno, dai nomi dei due dispositivi che unisce. */

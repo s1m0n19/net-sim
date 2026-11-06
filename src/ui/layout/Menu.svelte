@@ -7,7 +7,18 @@
    * possono cambiare diverse di seguito; un comando chiude il menu.
    */
   export type MenuItem =
-    | { kind: "action"; label: string; icon?: IconName; shortcut?: string; disabled?: boolean; run: () => void }
+    | {
+        kind: "action";
+        label: string;
+        icon?: IconName;
+        shortcut?: string;
+        disabled?: boolean;
+        // Un'azione che toglie qualcosa: si distingue dalle altre.
+        danger?: boolean;
+        // La descrizione completa, se la scritta da sola non basta.
+        description?: string;
+        run: () => void;
+      }
     | { kind: "check"; label: string; description?: string; checked: boolean; toggle: () => void }
     | { kind: "separator" }
     | { kind: "heading"; label: string; detail?: string };
@@ -21,8 +32,24 @@
   // un clic fuori chiudono.
   import Icon from "../theme/Icon.svelte";
 
-  let { label, icon, items, align = "start" }: { label: string; icon?: IconName; items: MenuItem[]; align?: "start" | "end" } =
-    $props();
+  let {
+    label,
+    icon,
+    items,
+    align = "start",
+    iconOnly = false,
+    up = false,
+  }: {
+    label: string;
+    icon?: IconName;
+    items: MenuItem[];
+    align?: "start" | "end";
+    // Il pulsante mostra solo l'icona; l'etichetta resta per chi legge con
+    // il lettore di schermo e nel suggerimento.
+    iconOnly?: boolean;
+    // L'elenco si apre sopra il pulsante, quando sotto non c'è posto.
+    up?: boolean;
+  } = $props();
 
   // Un identificativo stabile, ricavato dall'etichetta, che lega pulsante ed elenco.
   const id = $derived(`menu-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
@@ -99,6 +126,9 @@
     bind:this={trigger}
     class="trigger"
     class:open
+    class:icon-only={iconOnly}
+    aria-label={iconOnly ? label : undefined}
+    title={iconOnly ? label : undefined}
     id="{id}-button"
     aria-haspopup="menu"
     aria-expanded={open}
@@ -107,13 +137,15 @@
     onkeydown={onTriggerKey}
   >
     {#if icon}<Icon name={icon} />{/if}
-    <span>{label}</span>
-    <span class="caret"><Icon name="chevron" size={14} /></span>
+    {#if !iconOnly}
+      <span>{label}</span>
+      <span class="caret"><Icon name="chevron" size={14} /></span>
+    {/if}
   </button>
 
   {#if open}
     <!-- svelte-ignore a11y_interactive_supports_focus -->
-    <div class="list" class:end={align === "end"} id="{id}-list" role="menu" aria-labelledby="{id}-button" bind:this={list} onkeydown={onListKey}>
+    <div class="list" class:end={align === "end"} class:up id="{id}-list" role="menu" aria-labelledby="{id}-button" bind:this={list} onkeydown={onListKey}>
       {#each items as item, index (index)}
         {#if item.kind === "separator"}
           <div class="separator" role="separator"></div>
@@ -124,7 +156,15 @@
             {#if item.detail}<span class="heading-detail">{item.detail}</span>{/if}
           </div>
         {:else if item.kind === "action"}
-          <button class="item" role="menuitem" tabindex="-1" disabled={item.disabled} onclick={() => choose(item)}>
+          <button
+            class="item"
+            class:danger={item.danger}
+            role="menuitem"
+            tabindex="-1"
+            disabled={item.disabled}
+            title={item.description}
+            onclick={() => choose(item)}
+          >
             <span class="lead">{#if item.icon}<Icon name={item.icon} />{/if}</span>
             <span class="text">{item.label}</span>
             {#if item.shortcut}<span class="shortcut">{item.shortcut}</span>{/if}
@@ -193,6 +233,19 @@
   .list.end {
     left: auto;
     right: 0;
+  }
+  .list.up {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
+  .trigger.icon-only {
+    padding: 0;
+    width: var(--bar-control);
+    justify-content: center;
+  }
+  .item.danger,
+  .item.danger .lead {
+    color: var(--down);
   }
   @keyframes appear {
     from {

@@ -1,7 +1,20 @@
 // Muoversi sul disegno, aree che si aprono da sole e modalità presentazione.
 
 import { expect, test, type Page } from "@playwright/test";
-import { action, centreOf, device, drag, drawing, exampleFile, openApp, openNetwork, pointOn, projectCommand, sidePanel } from "./helpers";
+import {
+  action,
+  centreOf,
+  device,
+  drag,
+  drawing,
+  exampleFile,
+  moreAction,
+  openApp,
+  openNetwork,
+  pointOn,
+  projectCommand,
+  sidePanel,
+} from "./helpers";
 
 // Il rettangolo del disegno inquadrato in questo momento.
 async function viewBox(page: Page): Promise<number[]> {
@@ -68,9 +81,12 @@ test("la presentazione nasconde ciò che serve a costruire, e si lascia con Esc"
   // il pannello si apre da solo.
   await device(page, "PC2").click();
   await expect(sidePanel(page)).toContainText("PC2");
-  await expect(page.locator('g.action[aria-label^="Spegni PC2"]')).toBeVisible();
-  await expect(page.locator('g.action[aria-label^="Elimina"]')).toHaveCount(0);
-  await expect(page.locator('g.action[aria-label^="Collega"]')).toHaveCount(0);
+  await expect(action(page, "Collega")).toHaveCount(0);
+  const off = await moreAction(page, "Spegni");
+  await expect(off).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Elimina" })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: "Duplica" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   // E Canc non elimina.
   await page.keyboard.press("Delete");
   await expect(page.locator("g.device")).toHaveCount(4);

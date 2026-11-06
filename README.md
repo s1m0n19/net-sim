@@ -137,23 +137,23 @@ Aperta una rete, in basso al centro del disegno compare la **barra della simulaz
 | **Passo** | Fa arrivare a destinazione i pacchetti in viaggio e si ferma. Disponibile a tempo fermo |
 | **1×** | Cambia la velocità: 0,5×, 1×, 2×. A 1× un pacchetto impiega circa un secondo e mezzo a percorrere un cavo |
 
-**Selezione.** Un clic su un dispositivo, un cavo o una busta lo seleziona: il pannello di destra ne mostra i dettagli, e accanto compare una barretta con le azioni. Un clic sullo sfondo, o il tasto Esc, toglie la selezione.
+**Selezione.** Un clic su un dispositivo, un cavo o una busta lo seleziona: il pannello di destra ne mostra i dettagli, e accanto compare una barretta con le azioni, le principali con icona e scritta e le altre nel menu Altro (⋯). La barretta resta sempre grande uguale e dentro il disegno, a qualsiasi zoom; si usa anche da tastiera, con Tab, le frecce e Invio. Un clic sullo sfondo, o il tasto Esc, toglie la selezione.
 
 **Duplicare.** Duplica, sulla barretta, crea una copia del dispositivo accanto all'originale, scollegata e già selezionata: premendolo ancora si fa una fila. La copia di un PC o di un server prende maschera, gateway e l'indirizzo libero successivo (da 192.168.1.10 nasce 192.168.1.11); quella di uno switch le stesse porte, spente dove lo sono; quella di un router le stesse interfacce, spente e senza indirizzi. Si annulla con un Ctrl+Z.
 
 | Selezionato | Sulla barretta | Nel pannello di destra |
 | --- | --- | --- |
-| Un PC o un server | Spegni o accendi · Ping · Collega · Duplica · Terminale · Appunta la tabella ARP · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
-| Uno switch | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella MAC · Elimina | Numero di porte, tabella MAC |
-| Un router | Spegni o accendi · Collega · Duplica · Terminale (la CLI) · Appunta la tabella di routing · Elimina | Interfacce (accesa o spenta, indirizzo, maschera), tabella di routing con le rotte statiche, tabella ARP |
-| Un cavo | Stacca o riattacca · Elimina | I due capi e lo stato |
+| Un PC o un server | **Terminale · Ping · Collega**; nel menu Altro (⋯): Tabella ARP · Spegni o Accendi · Duplica · Elimina | Configurazione IP, MAC, tabella ARP, pacchetti in attesa |
+| Uno switch | **Terminale (la CLI) · Collega · Tabella MAC**; nel menu Altro: Spegni o Accendi · Duplica · Elimina | Numero di porte, tabella MAC |
+| Un router | **Terminale (la CLI) · Collega · Tabella routing**; nel menu Altro: Spegni o Accendi · Duplica · Elimina | Interfacce (accesa o spenta, indirizzo, maschera), tabella di routing con le rotte statiche, tabella ARP |
+| Un cavo | **Stacca** o **Riattacca** · **Elimina** (in rosso) | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 
-**Ping.** Seleziona il PC di partenza, premi Ping sulla barretta (la freccia), poi fai clic sul dispositivo di destinazione. Parte un solo echo request. Esc rinuncia.
+**Ping.** Seleziona il PC di partenza, premi Ping sulla barretta: il pulsante resta premuto. Poi fai clic sul dispositivo di destinazione. Parte un solo echo request. Esc rinuncia.
 
-**Tabelle appuntate.** Il pulsante con la griglia, sulla barretta di un dispositivo, appunta la sua tabella sul disegno: resta visibile qualunque cosa sia selezionata, così si guarda la tabella MAC riempirsi mentre il pacchetto viaggia. Si trascina dove dà meno fastidio e si toglie con la crocetta. Una riga appena imparata si accende per un momento; una appena persa resta un attimo, barrata.
+**Tabelle appuntate.** Il pulsante della tabella, sulla barretta di uno switch o di un router (per un PC sta nel menu Altro), appunta la sua tabella sul disegno, e resta premuto finché è appuntata: resta visibile qualunque cosa sia selezionata, così si guarda la tabella MAC riempirsi mentre il pacchetto viaggia. Si trascina dove dà meno fastidio e si toglie con la crocetta. Una riga appena imparata si accende per un momento; una appena persa resta un attimo, barrata.
 
-**Terminale.** Il pulsante `>_` sulla barretta di un PC apre il suo prompt dei comandi in una scheda della fascia in basso. Ogni PC ha la sua scheda, con la crocetta per chiuderla. Il terminale di un dispositivo spento resta aperto ma non accetta comandi, finché non lo riaccendi: un avviso lo dice, e la scheda lo segna con «spento».
+**Terminale.** Il pulsante **Terminale** sulla barretta di un PC apre il suo prompt dei comandi in una scheda della fascia in basso. Ogni PC ha la sua scheda, con la crocetta per chiuderla. Il terminale di un dispositivo spento resta aperto ma non accetta comandi, finché non lo riaccendi: un avviso lo dice, e la scheda lo segna con «spento».
 
 | Comando | Che cosa fa |
 | --- | --- |

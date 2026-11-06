@@ -162,6 +162,7 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 | `file.spec.ts` | Salvare e riaprire, modifiche non salvate, file non valido |
 | `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione; fascia, pannello e barra che seguono il loro contenuto |
 | `barra.spec.ts` | La barra in alto: i menu Progetto e Visualizza con il mouse e con la tastiera, Salva e annulla, il tema, la presentazione, uno schermo da 1024×768 |
+| `barretta.spec.ts` | La barretta delle azioni: le azioni di ogni dispositivo e del cavo, Ping, Collega, Terminale, Duplica, accendere e spegnere, tabelle, cavo staccato, eliminare e annullare, la tastiera, la presentazione, il bordo alto e lo zoom |
 | `router.spec.ts` | Due LAN e un router costruiti con il mouse; le due metà della lezione del criterio di accettazione del rilascio 2: gateway, MAC e TTL attraverso un router, poi routing statico con tre reti e due router |
 | `cli.spec.ts` | La lezione del criterio di accettazione della CLI: due router configurati da terminale, `show`, `ping` e `traceroute`, uno switch con una porta spenta |
 
