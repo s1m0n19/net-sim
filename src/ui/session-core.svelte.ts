@@ -14,7 +14,7 @@ import type { Annotation } from "../storage/annotations-file";
 import type { Position } from "../storage/load";
 import type { Selection } from "./session-types";
 import { annotationRect } from "./topology/annotation-geometry";
-import { fitted, type Viewport } from "./topology/camera";
+import { AUTO_MAX_SCALE, fitted, type Viewport } from "./topology/camera";
 import { buildView, EMPTY_VIEW, type Bounds, type NetworkView } from "./view";
 
 /** Il testo di un errore, da mostrare all'utente. */
@@ -77,6 +77,11 @@ export class SessionCore {
   // il disegno si muoverebbe sotto il mouse.
   frozenBounds = $state.raw<Bounds | null>(null);
 
+  // L'inquadratura che il disegno mostra in questo momento, scritta dal
+  // disegno stesso: un trascinamento tiene ferma questa (D-118). Non è
+  // uno stato da osservare, per non far ricalcolare il disegno.
+  shownBounds: Bounds | null = null;
+
   // L'inquadratura scelta dall'utente ingrandendo, spostando o premendo
   // Adatta. Finché vale null l'inquadratura è quella automatica del foglio.
   camera = $state.raw<Bounds | null>(null);
@@ -104,10 +109,13 @@ export class SessionCore {
    * @param extras - altri rettangoli del disegno da tenere dentro, come le
    *   tabelle appuntate
    * @param scale - di quanto è ingrandito il disegno (in presentazione più di 1)
+   * @param limited - non ingrandire oltre AUTO_MAX_SCALE: vale nell'editor,
+   *   non in presentazione, dove la rete deve venire grande (D-118)
    */
-  fitView(extras: Bounds[] = [], scale = 1): void {
+  fitView(extras: Bounds[] = [], scale = 1, limited = true): void {
     const annotations = this.annotations.map((annotation) => annotationRect(annotation, scale));
-    this.camera = fitted(this.view.devices, [...extras, ...annotations], scale, this.viewport ?? undefined);
+    const maxScale = limited ? AUTO_MAX_SCALE : Number.POSITIVE_INFINITY;
+    this.camera = fitted(this.view.devices, [...extras, ...annotations], scale, this.viewport ?? undefined, maxScale);
   }
 
   /**

@@ -353,6 +353,7 @@ test("Ping e Collega non scelgono un'annotazione, e un ping attraversa un riquad
   await action(page, "Ping da PC1").click();
   await device(page, "PC2").click();
   await page.getByRole("button", { name: /Avvia/ }).click();
+  await page.getByRole("tab", { name: "Eventi" }).click();
   await expect(page.locator("footer .list")).toContainText("echo reply", { timeout: 30_000 });
   await page.getByRole("button", { name: /Pausa/ }).click();
 });
@@ -467,9 +468,8 @@ for (const size of [
     await openApp(page);
     await openNetwork(page, "due-lan-router.netsim.json", exampleFile("due-lan-router"));
     // Anche con la fascia in basso aperta, tutte le voci della colonna sono nella finestra.
-    await page.getByRole("button", { name: "Avvia" }).click();
-    await page.getByRole("button", { name: /Pausa/ }).click();
-    await page.keyboard.press("e");
+    await page.getByRole("tab", { name: "Eventi" }).click();
+    await expect(page.locator("footer .body")).toBeVisible();
     const column = await boxOf(page.locator(".shell > aside").first());
     for (const name of ["PC", "Cavo", "Riquadro", "Nota"]) {
       expect(inside(await boxOf(page.getByRole("button", { name, exact: true })), column)).toBe(true);

@@ -222,6 +222,7 @@ for (const size of [SIZES[1], SIZES[3]]) {
       await action(page, "Ping da PC1").click();
       await device(page, "PC2").click();
       await page.getByRole("button", { name: /Avvia/ }).click();
+      await page.getByRole("tab", { name: "Eventi" }).click();
       await expect(page.locator(".list")).toContainText("echo reply", { timeout: 30_000 });
       await page.getByRole("button", { name: /Pausa/ }).click();
       await expectNoSideScroll(page);

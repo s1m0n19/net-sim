@@ -50,7 +50,10 @@ const MARGIN = 8;
  */
 export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles: Rect[] = []): BarPlacement {
   const within = (left: number) => clamp(left, MARGIN, area.width - bar.width - MARGIN);
-  const centred = within(anchor.x - bar.width / 2);
+  // Il punto dell'oggetto a cui la barretta resta vicina: il suo centro, o
+  // il punto più vicino che si vede, se il centro è fuori dal disegno.
+  const x = clamp(anchor.x, MARGIN, area.width - MARGIN);
+  const centred = within(x - bar.width / 2);
   const above = anchor.top - GAP - bar.height;
   const below = clamp(anchor.bottom + GAP, MARGIN, area.height - bar.height - MARGIN);
   const aboveFits = above >= MARGIN;
@@ -62,7 +65,7 @@ export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles:
     const hits = (left: number) =>
       obstacles.filter((o) => left < o.right && o.left < left + bar.width && top < o.bottom && o.top < top + bar.height);
     const choices = [centred, ...hits(centred).flatMap((o) => [within(o.left - GAP - bar.width), within(o.right + GAP)])];
-    return choices.find((left) => hits(left).length === 0 && left <= anchor.x && anchor.x <= left + bar.width) ?? null;
+    return choices.find((left) => hits(left).length === 0 && left <= x && x <= left + bar.width) ?? null;
   };
 
   // Sopra, se c'è posto e non copre nulla; altrimenti sotto, se lì non
@@ -72,6 +75,13 @@ export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles:
   if (leftAbove !== null) return { left: leftAbove, top: above, side: "above" };
   const leftBelow = freeLeft(below);
   if (leftBelow !== null) return { left: leftBelow, top: below, side: "below" };
+  // L'oggetto è più alto di ciò che si vede (un grande riquadro, D-118):
+  // né sopra né sotto c'è posto, e la barretta sta in cima al disegno,
+  // sopra l'oggetto stesso, se lì non copre nulla.
+  if (!aboveFits && anchor.bottom + GAP > area.height - bar.height - MARGIN) {
+    const leftTop = freeLeft(MARGIN);
+    if (leftTop !== null) return { left: leftTop, top: MARGIN, side: "below" };
+  }
   return aboveFits ? { left: centred, top: above, side: "above" } : { left: centred, top: below, side: "below" };
 }
 

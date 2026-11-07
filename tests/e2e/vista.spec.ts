@@ -121,11 +121,15 @@ test("la fascia in basso e la barra della simulazione seguono ciò che c'è da m
   await expect(page.getByRole("button", { name: /Ricomincia/ })).toBeVisible();
   await expect(page.locator(".list")).toHaveCount(0);
 
-  // Il primo ping la apre da sola, con gli eventi.
+  // Il primo ping scrive eventi, ma la fascia resta chiusa (D-118): gli
+  // eventi ci sono, e si vedono aprendo la scheda Eventi.
   await device(page, "PC1").click();
   await action(page, "Ping da PC1").click();
   await device(page, "PC2").click();
-  await expect(page.locator(".list")).toBeVisible();
+  await expect(page.locator(".list")).toHaveCount(0);
+  await page.getByRole("tab", { name: "Eventi" }).click();
+  // Il ping comincia con la richiesta ARP.
+  await expect(page.locator(".list")).toContainText("ARP request");
 
   // Il bordo superiore si trascina per farla più alta.
   const body = page.locator("footer .body");

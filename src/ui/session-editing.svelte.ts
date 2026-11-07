@@ -121,7 +121,10 @@ export class SessionEditing extends SessionHistory {
    * registra lo spostamento come una sola modifica da annullare.
    */
   holdBounds(hold: boolean): void {
-    this.frozenBounds = hold ? this.view.bounds : null;
+    // Si tiene ferma l'inquadratura che si vede, che può essere più larga
+    // del foglio dei soli dispositivi (tabelle, annotazioni, limite di
+    // scala: D-118).
+    this.frozenBounds = hold ? (this.shownBounds ?? this.view.bounds) : null;
     if (hold) {
       this.beforeDrag = this.capture();
     } else if (this.beforeDrag !== null) {

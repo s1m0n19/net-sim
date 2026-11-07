@@ -60,3 +60,15 @@ describe("la barretta si sposta di lato per non coprire un comando", () => {
     expect(placeBar({ x: 650, top: 120, bottom: 220 }, BAR, AREA, [zoom, below])).toEqual({ left: 430, top: 50, side: "above" });
   });
 });
+
+describe("la barretta di un oggetto più alto di ciò che si vede (D-118)", () => {
+  test("non copre i comandi in basso: sta in cima al disegno", () => {
+    // Un riquadro che va oltre il bordo alto e quello basso; in basso lo zoom e la barra della simulazione.
+    const controls = [{ left: 0, top: 520, right: 1000, bottom: 600 }];
+    expect(placeBar({ x: 500, top: -200, bottom: 900 }, BAR, AREA, controls)).toEqual({ left: 370, top: 8, side: "below" });
+  });
+
+  test("senza comandi in basso resta la regola di sempre", () => {
+    expect(placeBar({ x: 500, top: -200, bottom: 900 }, BAR, AREA, []).top).toBe(600 - 60 - 8);
+  });
+});

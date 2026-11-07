@@ -3,7 +3,7 @@
   // disegno, pannello laterale, fascia in basso. Qui si decide solo dove
   // sta ogni area: i componenti non sanno in quale posizione si trovano.
   import { untrack } from "svelte";
-  import { followContent } from "./layout/auto-open";
+  import { followContent, stripFollows, type StripContent } from "./layout/auto-open";
   import Palette from "./layout/Palette.svelte";
   import TopBar from "./layout/TopBar.svelte";
   import { preferences } from "./preferences.svelte";
@@ -12,16 +12,21 @@
   import BottomStrip from "./strip/BottomStrip.svelte";
   import Topology from "./topology/Topology.svelte";
 
-  // La fascia in basso segue ciò che ha da mostrare, eventi e terminali:
-  // si apre quando compare il primo, si chiude quando non resta nulla
-  // (D-107). In presentazione non si apre da sola: lì la aprono T ed E.
-  const stripHasContent = $derived(session.terminals.length > 0 || session.view.events.length > 0);
-  let stripHad = false;
+  // La fascia in basso si apre da sola solo per il primo terminale, che si
+  // apre sempre con un gesto esplicito; gli eventi non la aprono, perché
+  // il motore ne scrive anche per ogni modifica della rete (D-118). Si
+  // chiude da sola quando non resta nulla (D-107). In presentazione non si
+  // apre da sola: lì la aprono T ed E.
+  const stripContent = $derived<StripContent>({
+    terminals: session.terminals.length,
+    events: session.view.events.length,
+  });
+  let stripBefore: StripContent = { terminals: 0, events: 0 };
   $effect(() => {
-    const has = stripHasContent;
+    const now = stripContent;
     untrack(() => {
-      const next = followContent(preferences.stripOpen, stripHad, has);
-      stripHad = has;
+      const next = stripFollows(preferences.stripOpen, stripBefore, now);
+      stripBefore = now;
       if (next && !preferences.stripOpen && preferences.presenting) return;
       preferences.stripOpen = next;
     });

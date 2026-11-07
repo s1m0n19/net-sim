@@ -1,7 +1,17 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import lanFile from "../../examples/lan-switch.netsim.json?raw";
 import { session } from "../../src/ui/session.svelte";
-import { BAR_RESERVE_PX, fitted, MAX_WIDTH, MIN_WIDTH, panned, zoomed } from "../../src/ui/topology/camera";
+import {
+  atMostScale,
+  AUTO_MAX_SCALE,
+  BAR_RESERVE_PX,
+  enclosing,
+  fitted,
+  MAX_WIDTH,
+  MIN_WIDTH,
+  panned,
+  zoomed,
+} from "../../src/ui/topology/camera";
 
 const SHEET = { x: 0, y: 0, width: 800, height: 500 };
 
@@ -175,5 +185,44 @@ describe("Adatta e la barra della simulazione", () => {
 
     expect(box.x).toBeLessThanOrEqual(-90);
     expect(box.x + box.width).toBeGreaterThanOrEqual(1800 + 90);
+  });
+});
+
+describe("il limite dell'ingrandimento automatico (D-118)", () => {
+  const screen = { width: 1546, height: 991 };
+  const scaleOf = (box: { width: number; height: number }) => Math.min(screen.width / box.width, screen.height / box.height);
+
+  test("Adatta su una rete piccola, in uno schermo grande, non supera 1,25 pixel per unità", () => {
+    const box = fitted([{ x: 300, y: 250 }, { x: 500, y: 250 }], [], 1, screen, AUTO_MAX_SCALE)!;
+    expect(scaleOf(box)).toBeCloseTo(AUTO_MAX_SCALE, 5);
+    // Senza limite (in presentazione) la stessa rete verrebbe molto più grande.
+    expect(scaleOf(fitted([{ x: 300, y: 250 }, { x: 500, y: 250 }], [], 1, screen)!)).toBeGreaterThan(2);
+  });
+
+  test("una rete grande non è toccata dal limite: si inquadra tutta come prima", () => {
+    const big = Array.from({ length: 50 }, (_, i) => ({ x: (i % 10) * 220, y: Math.floor(i / 10) * 200 }));
+    expect(fitted(big, [], 1, screen, AUTO_MAX_SCALE)).toEqual(fitted(big, [], 1, screen));
+  });
+
+  test("con il limite la rete resta al centro della parte sopra la barra", () => {
+    const box = fitted([{ x: 400, y: 250 }], [], 1, screen, AUTO_MAX_SCALE)!;
+    const usable = (screen.height - BAR_RESERVE_PX) / AUTO_MAX_SCALE;
+    expect(box.x + box.width / 2).toBeCloseTo(400, 5);
+    // Il PC con i margini (80 sopra, 90 sotto per le scritte) va da 170 a
+    // 340: il suo centro, 255, sta al centro della parte sopra la barra.
+    expect(box.y + usable / 2).toBeCloseTo(255, 5);
+  });
+
+  test("il foglio di base si allarga attorno al suo centro, solo se serve", () => {
+    const sheet = { x: 0, y: 0, width: 800, height: 500 };
+    const wide = atMostScale(sheet, screen, AUTO_MAX_SCALE);
+    expect(scaleOf(wide)).toBeCloseTo(AUTO_MAX_SCALE, 5);
+    expect(wide.x + wide.width / 2).toBe(400);
+    expect(wide.y + wide.height / 2).toBe(250);
+    expect(atMostScale(sheet, { width: 650, height: 489 }, AUTO_MAX_SCALE)).toBe(sheet);
+  });
+
+  test("il rettangolo che contiene gli altri ha il margine attorno a ciascuno", () => {
+    expect(enclosing({ x: 0, y: 0, width: 100, height: 100 }, [{ x: 150, y: -50, width: 20, height: 20 }], 10)).toEqual({ x: 0, y: -60, width: 180, height: 160 });
   });
 });

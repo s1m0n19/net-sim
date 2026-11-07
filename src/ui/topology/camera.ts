@@ -38,6 +38,16 @@ export interface Viewport {
 const FIT_MIN = { width: 560, height: 350 };
 
 /**
+ * Quanto può ingrandire l'inquadratura automatica, in pixel dello schermo
+ * per unità del disegno (D-118): a 1,25 un router, largo 60, occupa 75
+ * pixel, un PC 65. Vale solo per l'inquadratura che sceglie l'app, nel
+ * foglio di base e con Adatta, e solo fuori dalla presentazione: lì
+ * dispositivi e scritte devono essere grandi. Con + e con la rotella si
+ * ingrandisce quanto si vuole.
+ */
+export const AUTO_MAX_SCALE = 1.25;
+
+/**
  * Ingrandisce o rimpicciolisce l'inquadratura tenendo fermo un punto: ciò
  * che sta sotto il puntatore resta sotto il puntatore.
  *
@@ -80,9 +90,18 @@ export function panned(box: Bounds, dx: number, dy: number): Bounds {
  * @param viewport - la grandezza del disegno sullo schermo, se si conosce:
  *   allora sotto la rete si lasciano liberi i pixel della barra della
  *   simulazione, e l'inquadratura ha le proporzioni dello schermo
+ * @param maxScale - quanti pixel per unità del disegno al massimo, se si
+ *   conosce lo schermo (AUTO_MAX_SCALE fuori dalla presentazione): una
+ *   rete piccola resta piccola, al centro
  * @returns l'inquadratura, oppure null se non c'è nulla da inquadrare
  */
-export function fitted(devices: Point[], extras: Bounds[] = [], scale = 1, viewport?: Viewport): Bounds | null {
+export function fitted(
+  devices: Point[],
+  extras: Bounds[] = [],
+  scale = 1,
+  viewport?: Viewport,
+  maxScale = Number.POSITIVE_INFINITY,
+): Bounds | null {
   // Senza dispositivi si inquadrano le annotazioni; senza niente, nulla.
   if (devices.length === 0 && extras.length === 0) return null;
   const base = viewport === undefined ? FIT_MARGIN : FIT_MARGIN_WITH_SCREEN;
@@ -102,17 +121,18 @@ export function fitted(devices: Point[], extras: Bounds[] = [], scale = 1, viewp
   top -= missingHeight / 2;
   bottom += missingHeight / 2;
   const box = { x: left, y: top, width: right - left, height: bottom - top };
-  return viewport === undefined ? box : onScreenAbove(box, viewport, BAR_RESERVE_PX * scale);
+  return viewport === undefined ? box : onScreenAbove(box, viewport, BAR_RESERVE_PX * scale, maxScale);
 }
 
 // Trasforma il rettangolo da mostrare nell'inquadratura dello schermo
 // intero, in modo che il rettangolo stia tutto nella parte sopra la barra
 // e sia centrato lì. L'inquadratura ha le proporzioni dello schermo, così
 // il disegno non aggiunge altro spazio per conto suo.
-function onScreenAbove(box: Bounds, viewport: Viewport, reservedPx: number): Bounds {
+function onScreenAbove(box: Bounds, viewport: Viewport, reservedPx: number, maxScale: number): Bounds {
   const usableHeight = Math.max(1, viewport.height - reservedPx);
-  // Pixel per unità del disegno: quanto si può ingrandire perché ci stia.
-  const pixels = Math.min(viewport.width / box.width, usableHeight / box.height);
+  // Pixel per unità del disegno: quanto si può ingrandire perché ci stia,
+  // ma non oltre il limite.
+  const pixels = Math.min(viewport.width / box.width, usableHeight / box.height, maxScale);
   const width = viewport.width / pixels;
   const height = viewport.height / pixels;
   return {
@@ -121,4 +141,43 @@ function onScreenAbove(box: Bounds, viewport: Viewport, reservedPx: number): Bou
     width,
     height,
   };
+}
+
+/**
+ * Allarga un'inquadratura attorno al suo centro quanto basta perché sullo
+ * schermo non superi una scala data (D-118). Serve al foglio di base: su
+ * uno schermo grande, una rete piccola non diventa enorme.
+ *
+ * @param box - l'inquadratura
+ * @param viewport - la grandezza del disegno sullo schermo
+ * @param maxScale - quanti pixel per unità del disegno al massimo
+ * @returns l'inquadratura, uguale se già non supera la scala
+ */
+export function atMostScale(box: Bounds, viewport: Viewport, maxScale: number): Bounds {
+  const width = Math.max(box.width, viewport.width / maxScale);
+  const height = Math.max(box.height, viewport.height / maxScale);
+  if (width === box.width && height === box.height) return box;
+  return { x: box.x - (width - box.width) / 2, y: box.y - (height - box.height) / 2, width, height };
+}
+
+/**
+ * Il rettangolo più piccolo che contiene un rettangolo dato e altri, questi
+ * con un margine attorno: tabelle appuntate, riquadri e note.
+ *
+ * @param box - il rettangolo di partenza
+ * @param extras - gli altri rettangoli da tenere dentro
+ * @param margin - lo spazio da lasciare attorno a ciascuno di loro
+ */
+export function enclosing(box: Bounds, extras: Bounds[], margin: number): Bounds {
+  let left = box.x;
+  let top = box.y;
+  let right = box.x + box.width;
+  let bottom = box.y + box.height;
+  for (const extra of extras) {
+    left = Math.min(left, extra.x - margin);
+    top = Math.min(top, extra.y - margin);
+    right = Math.max(right, extra.x + extra.width + margin);
+    bottom = Math.max(bottom, extra.y + extra.height + margin);
+  }
+  return { x: left, y: top, width: right - left, height: bottom - top };
 }

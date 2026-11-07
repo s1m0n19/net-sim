@@ -10,7 +10,8 @@
   import { untrack } from "svelte";
   import { selectionBar } from "./bar-actions";
   import type { Rect } from "./bar-placement";
-  import { zoomed, ZOOM_STEP } from "./camera";
+  import { EMPTY_VIEW } from "../view";
+  import { atMostScale, AUTO_MAX_SCALE, enclosing, zoomed, ZOOM_STEP } from "./camera";
   import { drawingKey } from "./keyboard";
   import Messages from "./Messages.svelte";
   import { viewGestures } from "./view-gestures";
@@ -85,37 +86,38 @@
     if (look === lastLook) return;
     const first = lastLook === "";
     lastLook = look;
-    if (!first && preferences.presenting) untrack(() => session.fitView(pinnedBoxes, scale));
+    // In presentazione l'inquadratura non ha il limite di scala dell'editor.
+    if (!first && preferences.presenting) untrack(() => session.fitView(pinnedBoxes, scale, false));
   });
 
   // L'inquadratura. Se l'utente l'ha scelta, è quella. Altrimenti è
   // automatica: il foglio di base, allargato quanto serve per far stare
   // tutta la rete e le tabelle appuntate.
+  //
+  // Fuori dalla presentazione l'inquadratura automatica non ingrandisce
+  // oltre AUTO_MAX_SCALE pixel per unità: su uno schermo grande una rete
+  // piccola resta proporzionata, al centro (D-118). È il foglio di base a
+  // essere allargato quanto serve, prima di aggiungere la rete: così,
+  // finché la rete sta in ciò che si vede, posare o spostare un
+  // dispositivo non fa saltare il disegno.
   const bounds = $derived.by(() => {
     if (session.camera !== null) return session.camera;
     // Mentre si trascina un dispositivo l'inquadratura non si muove.
     if (session.frozenBounds !== null) return session.frozenBounds;
-    let { x, y, width, height } = session.view.bounds;
-    let right = x + width;
-    let bottom = y + height;
-    for (const { pin, device } of pinned) {
-      const size = pinnedSize(device, pin.table);
-      const left = device.x + pin.dx;
-      const top = device.y + pin.dy;
-      x = Math.min(x, left - 16);
-      y = Math.min(y, top - 16);
-      right = Math.max(right, left + size.width + 16);
-      bottom = Math.max(bottom, top + size.height + 16);
+    // Tabelle appuntate, riquadri e note restano dentro (D-117).
+    const annotations = session.view.annotations.map((annotation) => annotationRect(annotation, preferences.scale));
+    const extras = [...pinnedBoxes, ...annotations];
+    if (preferences.presenting || canvasWidth === 0 || canvasHeight === 0) {
+      return enclosing(session.view.bounds, extras, 16);
     }
-    // Anche riquadri e note restano dentro (D-117).
-    for (const annotation of session.view.annotations) {
-      const area = annotationRect(annotation, preferences.scale);
-      x = Math.min(x, area.x - 16);
-      y = Math.min(y, area.y - 16);
-      right = Math.max(right, area.x + area.width + 16);
-      bottom = Math.max(bottom, area.y + area.height + 16);
-    }
-    return { x, y, width: right - x, height: bottom - y };
+    const sheet = atMostScale(EMPTY_VIEW.bounds, { width: canvasWidth, height: canvasHeight }, AUTO_MAX_SCALE);
+    return enclosing(enclosing(sheet, [session.view.bounds], 0), extras, 16);
+  });
+
+  // Ciò che si vede davvero: un trascinamento tiene ferma proprio questa
+  // inquadratura, e il disegno non salta quando comincia (D-118).
+  $effect(() => {
+    session.shownBounds = bounds;
   });
 
   // I dispositivi che stanno aspettando una risposta, quando non viaggia nulla.
@@ -194,7 +196,7 @@
   }
 
   function fit() {
-    session.fitView(pinnedBoxes, preferences.scale);
+    session.fitView(pinnedBoxes, preferences.scale, !preferences.presenting);
   }
 
   // Un clic sullo sfondo: posa il dispositivo scelto nella colonna, se ce

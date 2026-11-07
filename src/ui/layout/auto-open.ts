@@ -21,6 +21,34 @@ export function followContent(open: boolean, had: boolean, has: boolean): boolea
   return open;
 }
 
+/** Che cosa c'è nella fascia in basso: quanti terminali aperti, quanti eventi. */
+export interface StripContent {
+  terminals: number;
+  events: number;
+}
+
+/**
+ * Dice se la fascia in basso va aperta, dopo che il suo contenuto è
+ * cambiato (D-118). Si apre da sola solo quando compare il primo terminale,
+ * che si apre sempre con un gesto esplicito; gli eventi, che il motore
+ * scrive anche per ogni modifica della rete (posare, collegare,
+ * rinominare), non la aprono mai. Si chiude da sola quando non resta più
+ * nulla da mostrare: una rete nuova o riaperta, oppure Ricomincia senza
+ * terminali. In mezzo vale la scelta di chi la usa.
+ *
+ * @param open - se la fascia è aperta adesso
+ * @param before - che cosa conteneva prima
+ * @param now - che cosa contiene adesso
+ * @returns se deve essere aperta
+ */
+export function stripFollows(open: boolean, before: StripContent, now: StripContent): boolean {
+  if (now.terminals > 0 && before.terminals === 0) return true;
+  const had = before.terminals + before.events > 0;
+  const has = now.terminals + now.events > 0;
+  if (had && !has) return false;
+  return open;
+}
+
 /** L'altezza della fascia in basso, sotto le schede, in pixel. */
 export const STRIP_HEIGHT = { initial: 190, min: 100 };
 

@@ -55,6 +55,7 @@ test("una rete costruita da zero risponde al ping", async ({ page }) => {
   await page.getByRole("button", { name: /Avvia/ }).click();
   await device(page, "PC1").click();
   await expect(sidePanel(page)).toContainText("192.168.1.11", { timeout: 30_000 }); // tabella ARP
+  await page.getByRole("tab", { name: "Eventi" }).click();
   await expect(page.locator(".list")).toContainText("echo reply", { timeout: 30_000 });
   await page.getByRole("button", { name: /Pausa/ }).click();
 });

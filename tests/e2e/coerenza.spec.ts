@@ -29,6 +29,7 @@ for (const scheme of ["light", "dark"] as const) {
       await action(page, "Ping da PC1").click();
       await device(page, "PC2").click();
       await page.getByRole("button", { name: /Passo/ }).click();
+      await page.getByRole("tab", { name: "Eventi" }).click();
       await expect(page.locator("footer tbody tr")).not.toHaveCount(0);
       await device(page, "SW1").click();
 
