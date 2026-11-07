@@ -22,6 +22,18 @@
      separazione restano più leggere, con --line. */
   --field-border: #8e9398;
 
+  /* I cinque colori delle annotazioni (D-103, D-117): il bordo del riquadro
+     e il segno della nota, che sul disegno arrivano ad almeno 3:1. Il fondo
+     ne è una tinta leggerissima, e le scritte sono nel colore del testo:
+     la rete sotto resta leggibile. Non hanno un significato: un riquadro
+     rosso non dice che qualcosa non va. */
+  --annotation-blue: #3a6fc4;
+  --annotation-green: #2f855a;
+  --annotation-yellow: #9a7400;
+  --annotation-red: #c24545;
+  --annotation-purple: #7b4cc4;
+  --annotation-fill: 9%;
+
   --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   --radius: 4px;
@@ -75,6 +87,12 @@
     --up: #4dc57f;
     --down: #f0716c;
     --field-border: #626b75;
+    --annotation-blue: #79a6f2;
+    --annotation-green: #5fbf8a;
+    --annotation-yellow: #d9b13d;
+    --annotation-red: #ef7d78;
+    --annotation-purple: #b08cf5;
+    --annotation-fill: 14%;
     --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-float: 0 2px 10px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
@@ -97,6 +115,12 @@
   --up: #4dc57f;
   --down: #f0716c;
   --field-border: #626b75;
+  --annotation-blue: #79a6f2;
+  --annotation-green: #5fbf8a;
+  --annotation-yellow: #d9b13d;
+  --annotation-red: #ef7d78;
+  --annotation-purple: #b08cf5;
+  --annotation-fill: 14%;
   --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-float: 0 2px 10px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
@@ -162,6 +186,14 @@ button {
 .btn.on:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent) 18%, var(--surface));
   border-color: var(--accent);
+}
+/* Un'azione che toglie qualcosa: il testo rosso, e al passaggio anche il
+   bordo. Nessuna conferma in più. */
+.btn.danger {
+  color: var(--down);
+}
+.btn.danger:hover:not(:disabled) {
+  border-color: var(--down);
 }
 /* L'azione principale del contesto: una sola per gruppo. */
 .btn.primary {

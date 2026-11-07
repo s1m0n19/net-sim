@@ -27,7 +27,70 @@ const FIRST_COLOR: AnnotationColor = "blue";
 // deve restare qualcosa da afferrare.
 export const MIN_BOX_SIZE = 40;
 
+/** Lo strumento di annotazione scelto nella colonna: riquadro o nota. */
+export type AnnotationTool = "box" | "note";
+
 export class SessionAnnotations extends SessionEditing {
+  /**
+   * Lo strumento di annotazione scelto nella colonna (D-117): con Riquadro
+   * si disegna trascinando sul disegno, con Nota un clic posa una nota.
+   * Resta scelto finché non lo si lascia, come il Cavo. Non è un
+   * dispositivo: per questo non sta in `placing`.
+   */
+  annotating = $state<AnnotationTool | null>(null);
+
+  /**
+   * Il riquadro che si sta disegnando trascinando, in coordinate del
+   * disegno: si vede come anteprima e diventa un'annotazione solo quando
+   * si lascia il pulsante. Non va nel file né nella cronologia.
+   */
+  sketch = $state.raw<Rect | null>(null);
+
+  /**
+   * La nota appena posata il cui testo va scritto subito: il pannello
+   * laterale ci porta il cursore, e poi lo azzera.
+   */
+  focusAnnotationText = $state<string | null>(null);
+
+  /**
+   * Sceglie uno strumento di annotazione, o lo lascia se era già scelto.
+   * Lascia gli altri strumenti della colonna e i gesti a metà: ne resta
+   * attivo uno solo.
+   */
+  chooseAnnotationTool(tool: AnnotationTool): void {
+    this.annotating = this.annotating === tool ? null : tool;
+    this.placing = null;
+    this.cabling = false;
+    this.linkFrom = null;
+    this.pingFrom = null;
+    this.sketch = null;
+  }
+
+  /** L'annotazione con un dato identificativo, se c'è. */
+  annotation(id: string): Annotation | undefined {
+    return this.annotations.find((a) => a.id === id);
+  }
+
+  /**
+   * Elimina ciò che è selezionato. Un'annotazione si toglie dal disegno,
+   * come un passo da annullare; un dispositivo o un cavo come sempre.
+   */
+  override removeSelection(): void {
+    const selection = this.selection;
+    if (selection?.kind !== "annotation") {
+      super.removeSelection();
+      return;
+    }
+    this.removeAnnotation(selection.id);
+    this.selection = null;
+  }
+
+  // Aprendo un altro file o un foglio nuovo, nessuno strumento resta scelto.
+  protected override networkReplaced(): void {
+    this.annotating = null;
+    this.sketch = null;
+    super.networkReplaced();
+  }
   /**
    * Aggiunge un riquadro senza etichetta.
    *

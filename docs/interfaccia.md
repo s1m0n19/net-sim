@@ -114,9 +114,10 @@ L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: tr
 ## Colonna dei dispositivi e degli strumenti
 
 - **Dispositivi.** Una voce per tipo. Le varianti pronte (switch a 8 o a 24 porte; router a 2, 4 o 8 interfacce) si scelgono prima di posare: passando sulla voce si apre il loro elenco, e un clic sulla voce lo lascia aperto. Da tastiera Invio lo apre e lo chiude, Tab entra nelle varianti, Esc lo chiude e ridà il fuoco alla voce; l'elenco si chiude anche quando il fuoco va altrove.
-- **Colonna bassa.** Se la fascia in basso è stata alzata tanto da lasciare alla colonna meno di 420 px, le voci restano senza icone né didascalie, una sotto l'altra, e tutte raggiungibili (D-112).
+- **Colonna bassa.** Le voci sono sette. Se la fascia in basso lascia alla colonna meno di 560 px, restano senza icone né didascalie, una sotto l'altra (D-112); sotto i 300 px, con la fascia alzata al massimo su uno schermo piccolo, restano le sole icone su due colonne, con la freccia accanto a Nota, e il nome per il lettore di schermo e nel suggerimento (D-117). Tutte sempre raggiungibili.
 - **Posare.** In due modi: trascinando la voce sul disegno, per posarne uno; oppure con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare, finché non si preme Esc. Nel secondo modo la voce resta evidenziata, il puntatore cambia e una riga in alto sul disegno dice che cosa fare. Il dispositivo appena posato viene selezionato.
 - **Strumento Cavo.** Finché è attivo, trascinare da un dispositivo a un altro tira un cavo invece di spostare; lo stesso si ottiene con un clic sul primo dispositivo e uno sul secondo (D-51). Mentre si trascina, una linea tratteggiata segue il mouse. Si disattiva con Esc o con un secondo clic sulla voce.
+- **Strumenti Riquadro e Nota** (ED-9, D-117). Sotto Cavo. Con Riquadro si disegna un riquadro trascinando sullo sfondo; con Nota un clic posa una nota. Restano scelti finché non si lasciano, con un secondo clic sulla voce o con Esc, come il Cavo; scegliere un dispositivo, il Cavo o l'altro strumento li lascia: ne resta scelto uno solo. Vedi «Annotazioni».
 - **Server.** Si posa come un PC. Per la rete è un host identico a un PC, con indirizzo, gateway e terminale; cambiano l'icona e il nome (`SRV1`). I servizi che ospiterà arrivano più avanti.
 
 Un dispositivo appena posato riceve un nome progressivo (PC1, PC2, SW1) e i suoi indirizzi MAC. Un PC nasce senza configurazione IP.
@@ -158,6 +159,7 @@ Accanto a ciò che è selezionato compare una **barretta** con le azioni (D-111)
 | Switch | Terminale (la CLI) · Collega · Tabella MAC | Spegni o Accendi · Duplica · Elimina |
 | Router | Terminale (la CLI) · Collega · Tabella routing | Spegni o Accendi · Duplica · Elimina |
 | Cavo | Stacca o Riattacca · Elimina | — |
+| Riquadro o nota | Elimina (fuori dalla presentazione) | — |
 
 - **Premuto.** Ping e Collega restano premuti (colore d'accento) finché l'app aspetta il secondo clic, e la riga in alto sul disegno dice che cosa fare; anche il pulsante di una tabella appuntata resta premuto.
 - **Elimina** è in rosso, sul cavo e nel menu Altro: si distingue da Stacca, che lascia il cavo al suo posto senza segnale.
@@ -193,6 +195,22 @@ Ogni tabella (MAC di uno switch, ARP di un host) si può **appuntare** sul diseg
 - Gli indirizzi sono scritti per intero.
 - L'inquadratura si allarga quanto serve per far stare anche le tabelle.
 - Ricominciando la simulazione restano dove sono. Aprendo un'altra rete spariscono: quali tabelle sono appuntate non si salva nel file.
+
+### Annotazioni
+
+Riquadri colorati con un'etichetta, per mostrare una sottorete o un'area, e note di testo, per scrivere una consegna (ED-9, D-103, D-117). Non fanno parte della rete: il simulatore non le conosce, e un ping le attraversa come se non ci fossero. Stanno nel file (formato 2, D-106) e nella cronologia.
+
+- **Disegnare un riquadro.** Con lo strumento Riquadro, si preme su un punto libero del disegno e si trascina, in qualsiasi direzione; un'anteprima tratteggiata segue il puntatore. Lasciando il pulsante il riquadro nasce, blu e senza etichetta, e resta selezionato. Un clic senza trascinare non crea nulla, ed Esc a metà rinuncia. Il riquadro più piccolo è 40×40. Con lo strumento scelto, trascinare lo sfondo disegna invece di spostare la vista. La griglia magnetica non vale per le annotazioni.
+- **Posare una nota.** Con lo strumento Nota, un clic posa una nota vuota e porta il cursore nel suo testo, nel pannello laterale. Una nota vuota mostra «Nota vuota», attenuato, per poterla ritrovare; nel file il testo resta vuoto.
+- **Come si vedono.** Un riquadro ha un bordo sottile del suo colore e un fondo appena tinto, e sta dietro cavi e dispositivi; l'etichetta è in alto a sinistra, nel colore del testo, con un alone che la fa leggere anche sopra un cavo. Una nota ha un fondo appena tinto, un segno del suo colore a sinistra e il testo con i suoi ritorni a capo; una riga più lunga di 40 caratteri va a capo da sola, tra le parole, così la nota non si allarga oltre. Le righe le calcola `topology/annotation-geometry.ts`, senza misurare lo schermo: la stessa nota si potrà disegnare nell'immagine esportata.
+- **Colori.** Cinque, fissi: blu, verde, giallo, rosso, viola (`--annotation-*` in `theme/tokens.css`, per i due temi). Il bordo arriva ad almeno 3:1 sul disegno, il fondo è leggerissimo e le scritte sono nel colore del testo, così la rete sotto resta leggibile. Non hanno un significato: un riquadro rosso non dice che qualcosa non va.
+- **Selezionare.** Un clic sul bordo o sull'etichetta di un riquadro, o su una nota, la seleziona: un contorno tratteggiato nel colore d'accento, e il pannello laterale ne mostra i dettagli. L'interno di un riquadro non riceve i clic: arrivano al disegno, e i dispositivi e i cavi che contiene restano tutti da cliccare (stanno anche sopra di lui). Da tastiera, un'annotazione si raggiunge con Tab e si seleziona con Invio; il suo nome dice che cos'è e che cosa c'è scritto («Riquadro: LAN 1», «Nota: Configura le rotte…»).
+- **Mentre si sceglie un dispositivo** per un ping o un cavo, o si posa qualcosa, le annotazioni lasciano passare il clic: non sono una destinazione, e non sono un capo di un cavo.
+- **Spostare.** Trascinando un'annotazione la si sposta, e la si seleziona; un clic senza movimento seleziona soltanto. L'inquadratura resta ferma per tutto il trascinamento. Un trascinamento intero è un solo passo da annullare.
+- **Ridimensionare.** Un riquadro selezionato ha quattro maniglie agli angoli: trascinandone una, l'angolo opposto resta fermo, e il riquadro non scende sotto 40×40 né si ribalta. Anche questo è un solo passo da annullare. Le maniglie si usano con il puntatore; da tastiera non sono previste.
+- **Eliminare.** Dalla barretta (Elimina), dal pannello laterale o con Canc fuori dai campi di testo; Annulla la fa tornare.
+- **In presentazione** si vedono, con il testo ingrandito, e si selezionano per leggerle nel pannello; non si spostano, non si ridimensionano, non si modificano e non si eliminano, nemmeno da tastiera. Gli strumenti per crearle non ci sono.
+- **Inquadratura.** Adatta e l'inquadratura automatica tengono dentro riquadri e note, anche su un foglio senza dispositivi; lì la scritta «La rete è vuota» non compare, ma la barra della simulazione resta nascosta, perché non c'è rete da far scorrere.
 
 ### Spostare ed eliminare
 
@@ -355,6 +373,16 @@ In testa la descrizione, lo stato (in viaggio o arrivato) e da dove a dove. Sott
 | IPv4 | IP sorgente, IP destinazione, TTL, protocollo |
 | ICMP | tipo, identificativo, numero di sequenza |
 
+### Riquadro e nota
+
+Il titolo è «Riquadro» o «Nota», e sotto il colore (con il campione e il nome) e, per un riquadro, la grandezza. Poi tre sezioni (D-117):
+
+- **Etichetta** (riquadro) o **Testo** (nota). L'etichetta si conferma con Invio o uscendo dal campo. Nel testo di una nota Invio va a capo: si conferma uscendo dal campo o con Ctrl+Invio. In tutti e due Esc rimette il testo di prima, senza togliere la selezione; una riga sotto il campo lo ricorda. Il testo che si sta scrivendo resta, anche se intanto la simulazione va avanti. Ogni conferma che cambia qualcosa è un passo da annullare.
+- **Colore**: cinque scelte, ciascuna con il campione e il nome, in un gruppo di pulsanti di scelta (si cambia anche con le frecce). Quella scelta ha il bordo d'accento e il nome in grassetto.
+- **Elimina**: il pulsante, rosso.
+
+In presentazione il pannello si legge soltanto: il testo, il colore, e nessun campo né pulsante.
+
 ### Nessuna selezione
 
 Una riga che dice che cosa comparirà qui.
@@ -457,7 +485,7 @@ Ogni riga dice che cosa è successo, non perché: "PC3 scarta ARP request", senz
 Si attiva dal pulsante Presenta e si lascia con Esc o con il pulsante Esci, che ne prende il posto.
 
 - **Che cosa sparisce** (D-62): la colonna dei dispositivi; nella barra in alto i menu Progetto e Visualizza, Salva, annulla e ripristina; sulla barretta Collega ed Elimina. Il tasto Canc e Ctrl+S non fanno nulla.
-- **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale e le tabelle appuntate; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello. Ctrl+Z annulla ancora: rimette a posto un indirizzo cambiato o un dispositivo spostato per sbaglio, senza uscire.
+- **Che cosa resta**: il disegno, la barra della simulazione, il pannello laterale, le tabelle appuntate e le annotazioni, che però non si modificano; guasti, ping, terminale; i dispositivi si possono ancora spostare, e nome e indirizzi cambiare dal pannello. Ctrl+Z annulla ancora: rimette a posto un indirizzo cambiato o un dispositivo spostato per sbaglio, senza uscire.
 - **Ingrandimento** (D-61): un solo fattore, di partenza 140%, regolabile dal 100% al 200% con A− e A+ nella barra in alto. Barre, pannello e fascia si ingrandiscono per intero. Nel disegno crescono dispositivi, scritte, buste, tabelle appuntate e spessore delle linee, mentre le distanze tra i dispositivi restano quelle della rete. Anche la barretta delle azioni cresce con l'ingrandimento (D-111). Il pannello laterale non supera i due quinti della finestra (D-112).
 - **Inquadratura**: entrando, e a ogni cambio di ingrandimento, la rete viene inquadrata per intero. I pulsanti −, + e Adatta salgono nell'angolo in alto a destra del disegno, perché in basso la barra della simulazione è più larga. Agli ingrandimenti più alti la barra della simulazione va a capo, e la barretta delle azioni scivola di lato per non coprire lo zoom (D-112).
 - **La fascia in basso parte chiusa**, e non si apre da sola: la aprono T ed E.

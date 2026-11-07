@@ -152,3 +152,52 @@ describe("annotazioni e file", () => {
     expect(session.canUndo).toBe(false);
   });
 });
+
+describe("annotazioni a schermo: strumenti, selezione, inquadratura", () => {
+  test("lo strumento Riquadro o Nota lascia gli altri strumenti, e un secondo clic lo lascia", () => {
+    session.placing = { kind: "host" };
+    session.cabling = true;
+    session.chooseAnnotationTool("box");
+    expect([session.annotating, session.placing, session.cabling]).toEqual(["box", null, false]);
+    session.chooseAnnotationTool("note");
+    expect(session.annotating).toBe("note");
+    session.chooseAnnotationTool("note");
+    expect(session.annotating).toBeNull();
+  });
+
+  test("un'annotazione selezionata si elimina come un passo da annullare, e la selezione se ne va", () => {
+    const id = session.addBox(RECT);
+    session.select({ kind: "annotation", id });
+    session.removeSelection();
+    expect(annotations()).toEqual([]);
+    expect(session.selection).toBeNull();
+    session.undo();
+    expect(annotations().map((a) => a.id)).toEqual([id]);
+  });
+
+  test("annullando la nascita di un'annotazione selezionata, la selezione si toglie", () => {
+    const id = session.addNote({ x: 10, y: 10 });
+    session.select({ kind: "annotation", id });
+    session.undo();
+    expect(annotations()).toEqual([]);
+    expect(session.selection).toBeNull();
+  });
+
+  test("Adatta inquadra anche le annotazioni, pure su un foglio senza dispositivi", () => {
+    session.addBox({ x: 2000, y: 1500, width: 300, height: 200 });
+    session.fitView();
+    const camera = session.camera!;
+    expect(camera).not.toBeNull();
+    expect(camera.x).toBeLessThanOrEqual(2000);
+    expect(camera.x + camera.width).toBeGreaterThanOrEqual(2300);
+    expect(camera.y + camera.height).toBeGreaterThanOrEqual(1700);
+  });
+
+  test("aprire un'altra rete lascia lo strumento e l'anteprima del riquadro", () => {
+    session.chooseAnnotationTool("box");
+    session.sketch = { x: 0, y: 0, width: 50, height: 50 };
+    session.open("lan-switch.netsim.json", lanFile);
+    expect(session.annotating).toBeNull();
+    expect(session.sketch).toBeNull();
+  });
+});

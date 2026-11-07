@@ -1,6 +1,6 @@
 # Formato dei file
 
-**Stato:** descrive il codice al 29 ottobre 2026. L'app legge e scrive i file (requisito FILE-1), anche con le tabelle (FILE-5) e con le annotazioni del disegno (ED-9; a schermo ancora *previste*), nelle versioni 1 e 2 del formato (FILE-2, vedi «Versioni»).
+**Stato:** descrive il codice al 29 ottobre 2026. L'app legge e scrive i file (requisito FILE-1), anche con le tabelle (FILE-5) e con le annotazioni del disegno (ED-9, a schermo dal 7 novembre 2026), nelle versioni 1 e 2 del formato (FILE-2, vedi «Versioni»).
 
 Una rete sta in un file di testo in formato JSON: si può leggere, confrontare con un altro e distribuire con qualsiasi mezzo.
 

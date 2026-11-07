@@ -30,13 +30,18 @@ export function drawingKey(event: KeyboardEvent): void {
     return;
   }
   if (event.key === "Escape") {
-    // Esc lascia andare, nell'ordine: l'elenco delle porte, la voce
-    // scelta nella colonna, il cavo cominciato, lo strumento Cavo, il
-    // ping in attesa della destinazione, la selezione.
+    // Esc lascia andare, nell'ordine: l'elenco delle porte, il riquadro
+    // che si sta disegnando, la voce scelta nella colonna, lo strumento
+    // Riquadro o Nota, il cavo cominciato, lo strumento Cavo, il ping in
+    // attesa della destinazione, la selezione.
     if (session.portMenu !== null) {
       session.portMenu = null;
+    } else if (session.sketch !== null) {
+      session.sketch = null;
     } else if (session.placing !== null) {
       session.placing = null;
+    } else if (session.annotating !== null) {
+      session.annotating = null;
     } else if (session.linkFrom !== null) {
       session.linkFrom = null;
     } else if (session.cabling) {

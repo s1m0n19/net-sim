@@ -10,6 +10,7 @@
 import { preferences } from "../preferences.svelte";
 import { session } from "../session.svelte";
 import type { IconName } from "../theme/Icon.svelte";
+import { annotationRect } from "./annotation-geometry";
 
 export interface BarAction {
   icon: IconName;
@@ -169,6 +170,26 @@ export function selectionBar(): SelectionBar | null {
       });
     }
     return { anchor: { x, top: y - 10, bottom: y + 10 }, actions };
+  }
+
+  // Un riquadro o una nota (D-117): sulla barretta solo Elimina. Testo e
+  // colore si cambiano nel pannello laterale. In presentazione non si
+  // modificano: niente barretta.
+  if (selection.kind === "annotation") {
+    const annotation = session.annotation(selection.id);
+    if (annotation === undefined || presenting) return null;
+    const area = annotationRect(annotation, preferences.scale);
+    const actions: BarAction[] = [
+      {
+        icon: "trash",
+        text: "Elimina",
+        label: annotation.kind === "box" ? "Elimina il riquadro dal disegno" : "Elimina la nota dal disegno",
+        primary: true,
+        danger: true,
+        run: () => session.removeSelection(),
+      },
+    ];
+    return { anchor: { x: area.x + area.width / 2, top: area.y, bottom: area.y + area.height }, actions };
   }
   return null;
 }

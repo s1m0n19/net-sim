@@ -3,6 +3,10 @@
   import { session } from "../session.svelte";
   import SimulationBar from "../simulation/SimulationBar.svelte";
   import ActionBar from "./ActionBar.svelte";
+  import AnnotationBox from "./AnnotationBox.svelte";
+  import AnnotationNote from "./AnnotationNote.svelte";
+  import { annotationRect } from "./annotation-geometry";
+  import { boxDrawing } from "./box-drawing";
   import { untrack } from "svelte";
   import { selectionBar } from "./bar-actions";
   import type { Rect } from "./bar-placement";
@@ -103,6 +107,14 @@
       right = Math.max(right, left + size.width + 16);
       bottom = Math.max(bottom, top + size.height + 16);
     }
+    // Anche riquadri e note restano dentro (D-117).
+    for (const annotation of session.view.annotations) {
+      const area = annotationRect(annotation, preferences.scale);
+      x = Math.min(x, area.x - 16);
+      y = Math.min(y, area.y - 16);
+      right = Math.max(right, area.x + area.width + 16);
+      bottom = Math.max(bottom, area.y + area.height + 16);
+    }
     return { x, y, width: right - x, height: bottom - y };
   });
 
@@ -136,8 +148,16 @@
   const barSubject = $derived.by(() => {
     const selection = session.selection;
     if (selection?.kind === "device") return session.view.devices.find((d) => d.id === selection.id)?.name ?? "";
+    if (selection?.kind === "annotation") {
+      return session.view.annotations.find((a) => a.id === selection.id)?.kind === "note" ? "la nota" : "il riquadro";
+    }
     return "il cavo";
   });
+
+  // Le annotazioni: i riquadri si disegnano sotto cavi e dispositivi, le
+  // note sopra (D-117).
+  const boxes = $derived(session.view.annotations.flatMap((a) => (a.kind === "box" ? [a] : [])));
+  const notes = $derived(session.view.annotations.flatMap((a) => (a.kind === "note" ? [a] : [])));
 
   // Le buste che il filtro lascia vedere.
   const packets = $derived(
@@ -178,10 +198,15 @@
   }
 
   // Un clic sullo sfondo: posa il dispositivo scelto nella colonna, se ce
-  // n'è uno; altrimenti toglie la selezione.
+  // n'è uno, o una nota con lo strumento Nota; altrimenti toglie la
+  // selezione.
   function onBackgroundClick(event: MouseEvent) {
     if (session.placing !== null) {
       session.addDevice(session.placing, toDrawing(event.clientX, event.clientY));
+    } else if (session.annotating === "note" && !preferences.presenting) {
+      const id = session.addNote(toDrawing(event.clientX, event.clientY));
+      session.select({ kind: "annotation", id });
+      session.focusAnnotationText = id;
     } else {
       session.select(null);
     }
@@ -213,7 +238,8 @@
   bind:clientWidth={canvasWidth}
   bind:clientHeight={canvasHeight}
   class:aiming={session.pingFrom !== null || session.cabling || session.linkFrom !== null}
-  class:placing={session.placing !== null}
+  class:placing={session.placing !== null || (session.annotating === "note" && !preferences.presenting)}
+  class:sketching={session.annotating === "box" && !preferences.presenting}
   class:presenting={preferences.presenting}
   ondragover={onDragOver}
   ondrop={onDrop}
@@ -231,12 +257,19 @@
     aria-label="Topologia della rete"
     onclick={onBackgroundClick}
     use:viewGestures={() => bounds}
+    use:boxDrawing
   >
+      {#each boxes as box (box.id)}
+        <AnnotationBox {box} />
+      {/each}
       {#each session.view.links as link (link.id)}
         <LinkLine {link} />
       {/each}
       {#each session.view.devices as device (device.id)}
         <DeviceNode {device} />
+      {/each}
+      {#each notes as note (note.id)}
+        <AnnotationNote {note} />
       {/each}
       {#each pinned as { pin, device } (`${device.id} ${pin.table}`)}
         <PinnedTable {pin} {device} />
@@ -247,6 +280,9 @@
       {#each waiting as device (device.id)}
         <WaitIndicator {device} progress={session.waitProgress ?? 0} />
       {/each}
+      {#if session.sketch !== null}
+        <rect class="sketch" x={session.sketch.x} y={session.sketch.y} width={session.sketch.width} height={session.sketch.height} rx="6" />
+      {/if}
       {#if rubber !== null}
         <line class="rubber" x1={rubber.from.x} y1={rubber.from.y} x2={rubber.to.x} y2={rubber.to.y} />
       {/if}
@@ -266,7 +302,7 @@
     />
   {/if}
 
-  {#if session.isEmpty()}
+  {#if session.isEmpty() && session.view.annotations.length === 0}
     <div class="hint">
       <strong>La rete è vuota</strong>
       <span>Trascina un dispositivo dalla colonna a sinistra, oppure apri un file.</span>
@@ -317,6 +353,26 @@
   /* Con un dispositivo scelto nella colonna, il puntatore dice "posa qui". */
   .placing :global(svg) {
     cursor: copy;
+  }
+  /* Con lo strumento Riquadro si disegna: una croce. */
+  .sketching :global(svg) {
+    cursor: crosshair;
+  }
+  /* Mentre si sceglie un dispositivo (ping, cavo) o si posa qualcosa, le
+     annotazioni lasciano passare il clic: non sono una destinazione, e un
+     clic dentro una nota o sul bordo di un riquadro arriva al disegno. */
+  .aiming :global(.annotation),
+  .placing :global(.annotation),
+  .sketching :global(.annotation) {
+    pointer-events: none;
+  }
+  /* L'anteprima del riquadro che si sta disegnando: tratteggiata. */
+  .sketch {
+    fill: color-mix(in srgb, var(--accent) 8%, transparent);
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 4;
+    pointer-events: none;
   }
   /* Mentre si sposta la vista il puntatore è una mano chiusa: la classe
      la mette view-gestures.ts. */

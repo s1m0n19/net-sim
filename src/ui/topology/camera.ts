@@ -83,7 +83,8 @@ export function panned(box: Bounds, dx: number, dy: number): Bounds {
  * @returns l'inquadratura, oppure null se non c'è nulla da inquadrare
  */
 export function fitted(devices: Point[], extras: Bounds[] = [], scale = 1, viewport?: Viewport): Bounds | null {
-  if (devices.length === 0) return null;
+  // Senza dispositivi si inquadrano le annotazioni; senza niente, nulla.
+  if (devices.length === 0 && extras.length === 0) return null;
   const base = viewport === undefined ? FIT_MARGIN : FIT_MARGIN_WITH_SCREEN;
   const margin = { side: base.side * scale, top: base.top * scale, bottom: base.bottom * scale };
   let left = Math.min(...devices.map((d) => d.x - margin.side), ...extras.map((e) => e.x - 20));

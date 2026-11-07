@@ -36,6 +36,7 @@
     const same = JSON.stringify(session.placing) === JSON.stringify(template);
     session.placing = same ? null : template;
     session.cabling = false;
+    session.annotating = null;
     session.linkFrom = null;
     switchMenuOpen = false;
     routerMenuOpen = false;
@@ -68,6 +69,7 @@
   function toggleCable() {
     session.cabling = !session.cabling;
     session.placing = null;
+    session.annotating = null;
     session.linkFrom = null;
   }
 
@@ -94,7 +96,7 @@
         onclick={() => choose(PC)}
       >
         <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="host" /></svg>
-        PC
+        <span class="name">PC</span>
       </button>
 
       <div
@@ -115,7 +117,7 @@
           onclick={(event) => (switchMenuOpen = toggled(event, switchMenuOpen))}
         >
           <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="switch" /></svg>
-          Switch ›
+          <span class="name">Switch ›</span>
         </button>
         {#if switchMenuOpen}
           <div class="menu" role="menu">
@@ -151,7 +153,7 @@
           onclick={(event) => (routerMenuOpen = toggled(event, routerMenuOpen))}
         >
           <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="router" /></svg>
-          Router ›
+          <span class="name">Router ›</span>
         </button>
         {#if routerMenuOpen}
           <div class="menu" role="menu">
@@ -178,7 +180,7 @@
         onclick={() => choose(SERVER)}
       >
         <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="server" /></svg>
-        Server
+        <span class="name">Server</span>
       </button>
 
       <div class="caption">Strumenti</div>
@@ -190,7 +192,30 @@
         onclick={toggleCable}
       >
         <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="cable" /></svg>
-        Cavo
+        <span class="name">Cavo</span>
+      </button>
+
+      <!-- Le annotazioni (ED-9, D-117): non sono dispositivi, ma si scelgono
+           e si lasciano come il Cavo. -->
+      <button
+        class="tile tool"
+        class:active={session.annotating === "box"}
+        aria-pressed={session.annotating === "box"}
+        title="Riquadro: trascina sul disegno per evidenziare un'area"
+        onclick={() => session.chooseAnnotationTool("box")}
+      >
+        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="box" /></svg>
+        <span class="name">Riquadro</span>
+      </button>
+      <button
+        class="tile tool"
+        class:active={session.annotating === "note"}
+        aria-pressed={session.annotating === "note"}
+        title="Nota: fai clic sul disegno per scrivere una nota"
+        onclick={() => session.chooseAnnotationTool("note")}
+      >
+        <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="note" /></svg>
+        <span class="name">Nota</span>
       </button>
 
       <button class="fold" title="Chiudi la colonna" aria-label="Chiudi la colonna dei dispositivi" onclick={() => (preferences.paletteOpen = false)}>
@@ -223,7 +248,7 @@
   }
   /* Aperta, la colonna guarda quanto è alta: se la fascia in basso le
      lascia poco spazio, le voci si stringono invece di uscire dallo
-     schermo (D-112). */
+     schermo (D-112); con Riquadro e Nota le voci sono sette (D-117). */
   aside.open {
     padding: 0;
     container: palette / size;
@@ -236,7 +261,7 @@
     flex-direction: column;
     gap: 8px;
   }
-  @container palette (max-height: 420px) {
+  @container palette (max-height: 560px) {
     .column {
       gap: 4px;
       padding-block: 6px;
@@ -247,6 +272,40 @@
     }
     .tile {
       padding: 6px 2px;
+    }
+  }
+  /* Bassissima (la fascia alzata al massimo su uno schermo piccolo): le
+     sole icone, su due colonne. Il nome resta per il lettore di schermo e
+     nel suggerimento (D-117). */
+  @container palette (max-height: 300px) {
+    .column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: start;
+      gap: 3px;
+      padding: 3px 4px;
+    }
+    .tile {
+      padding: 1px 0;
+    }
+    .tile svg {
+      display: block;
+      width: 26px;
+      height: 22px;
+    }
+    .tile .name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    /* Le voci sono sette: la freccia prende il posto libero accanto a Nota. */
+    .fold {
+      margin-top: 0;
+      align-self: center;
+      justify-self: center;
     }
   }
   /* La freccia sta in fondo, nello stesso punto da aperta e da chiusa. */

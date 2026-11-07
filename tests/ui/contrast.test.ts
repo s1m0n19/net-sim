@@ -51,6 +51,9 @@ const PAIRS: [string, string, string, number][] = [
   ["field-border", "surface", "il bordo di un campo", 3],
   ["field-border", "canvas", "il bordo di un campo, sul suo fondo", 3],
   ["accent", "surface", "il contorno del fuoco da tastiera", 3],
+  ...(["blue", "green", "yellow", "red", "purple"] as const).map(
+    (color): [string, string, string, number] => [`annotation-${color}`, "canvas", `il bordo di un'annotazione ${color}`, 3],
+  ),
 ];
 
 describe("i contrasti dei colori", () => {

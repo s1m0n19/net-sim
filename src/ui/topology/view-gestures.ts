@@ -2,6 +2,7 @@
 // puntatore, trascinando lo sfondo si sposta la vista. I calcoli stanno in
 // camera.ts; qui ci sono solo i gesti.
 
+import { preferences } from "../preferences.svelte";
 import { session } from "../session.svelte";
 import type { Bounds } from "../view";
 import { panned, zoomed } from "./camera";
@@ -46,6 +47,8 @@ export function viewGestures(svg: SVGSVGElement, currentBounds: () => Bounds) {
   function onDown(event: PointerEvent) {
     // Solo sullo sfondo: su un dispositivo o su un cavo il gesto è un altro.
     if (event.button !== 0 || event.target !== svg) return;
+    // Con lo strumento Riquadro, trascinare lo sfondo disegna (box-drawing.ts).
+    if (session.annotating === "box" && !preferences.presenting) return;
     const scale = svg.getScreenCTM()?.a ?? 1;
     grab = { clientX: event.clientX, clientY: event.clientY, box: currentBounds(), scale };
   }

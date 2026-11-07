@@ -136,7 +136,8 @@ export class SessionEditing extends SessionHistory {
    */
   removeSelection(): void {
     const selection = this.selection;
-    if (selection === null || selection.kind === "packet") return;
+    // Le annotazioni le toglie lo strato sopra (session-annotations).
+    if (selection === null || selection.kind === "packet" || selection.kind === "annotation") return;
 
     const before = this.capture();
     this.run(selection.kind === "device" ? removeDevice(selection.id) : removeLink(selection.id));

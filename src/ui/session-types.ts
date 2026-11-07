@@ -74,4 +74,6 @@ export interface Terminal {
 export type Selection =
   | { kind: "device"; id: string }
   | { kind: "link"; id: string }
-  | { kind: "packet"; id: number; packet: PacketDetails };
+  | { kind: "packet"; id: number; packet: PacketDetails }
+  // Un riquadro o una nota del disegno (ED-9): non tocca il simulatore.
+  | { kind: "annotation"; id: string };

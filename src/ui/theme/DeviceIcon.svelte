@@ -3,7 +3,9 @@
 <script lang="ts">
   // Le sagome dei dispositivi: essenziali, a tratto, centrate sull'origine.
   // Stanno tutte qui, così cambiarne lo stile è una modifica sola.
-  let { kind }: { kind: "host" | "switch" | "router" | "server" | "cable" } = $props();
+  // Riquadro e nota non sono dispositivi, ma sono strumenti della stessa
+  // colonna: hanno qui la loro sagoma, nello stesso stile.
+  let { kind }: { kind: "host" | "switch" | "router" | "server" | "cable" | "box" | "note" } = $props();
 </script>
 
 {#if kind === "host"}
@@ -22,6 +24,14 @@
 {:else if kind === "server"}
   <rect x="-10" y="-13" width="20" height="11" rx="2.5" />
   <rect x="-10" y="2" width="20" height="11" rx="2.5" />
+{:else if kind === "box"}
+  <!-- Un rettangolo tratteggiato, con l'etichetta nell'angolo. -->
+  <rect x="-14" y="-10" width="28" height="20" rx="3" stroke-dasharray="3.5 3" />
+  <path d="M-9.5 -4.5H-1.5" />
+{:else if kind === "note"}
+  <!-- Un foglietto con tre righe di testo. -->
+  <path d="M-11 -12H7L11 -8V12H-11Z" />
+  <path d="M-6 -5H5M-6 0H5M-6 5H1" />
 {:else}
   <path d="M-13 9C-4 9 4 -9 13 -9" />
   <circle cx="-13" cy="9" r="2.5" />

@@ -11,6 +11,7 @@
   import PanelSection from "./PanelSection.svelte";
   import RouteEditor from "./RouteEditor.svelte";
   import PacketLayers from "./PacketLayers.svelte";
+  import AnnotationPanel from "./AnnotationPanel.svelte";
 
   const selection = $derived(session.selection);
 
@@ -23,6 +24,11 @@
   // Del pacchetto si mostra la copia presa al momento della selezione:
   // resta leggibile anche dopo che è arrivato.
   const packet = $derived(selection?.kind === "packet" ? selection.packet : undefined);
+  // Un riquadro o una nota: si legge dalla vista, così dopo Annulla o
+  // un'eliminazione il pannello non mostra un'annotazione che non c'è più.
+  const annotation = $derived(
+    selection?.kind === "annotation" ? session.view.annotations.find((a) => a.id === selection.id) : undefined,
+  );
   const stillTravelling = $derived(
     packet !== undefined && session.view.packets.some((p) => p.id === packet.id),
   );
@@ -165,6 +171,11 @@
         <dd>{link.toName} · {link.toPort}</dd>
       </dl>
     </PanelSection>
+  {:else if annotation !== undefined}
+    <!-- Ricreato per ogni annotazione: la bozza di una non passa all'altra. -->
+    {#key annotation.id}
+      <AnnotationPanel {annotation} />
+    {/key}
   {:else if packet !== undefined}
     <header>
       <h2>{packet.description}</h2>

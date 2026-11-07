@@ -89,7 +89,8 @@ export class SessionHistory extends SessionDemo {
     const selection = this.selection;
     const gone =
       (selection?.kind === "device" && !devices.has(selection.id)) ||
-      (selection?.kind === "link" && !links.has(selection.id));
+      (selection?.kind === "link" && !links.has(selection.id)) ||
+      (selection?.kind === "annotation" && !this.annotations.some((a) => a.id === selection.id));
     if (gone) this.selection = null;
     this.pingFrom = null;
     this.linkFrom = null;

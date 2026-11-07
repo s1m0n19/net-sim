@@ -12,7 +12,7 @@ Il progetto è in sviluppo. Simula PC, server, switch e router, con ARP, IPv4, p
 
 Oggi l'app apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi, terminale dei PC e CLI in stile IOS di router e switch. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Con Presenta si proietta in aula.
 
-Mancano, per completare la prima versione: il funzionamento offline e alcuni strumenti dell'editor (duplicare, griglia, esportare come immagine, annotazioni). Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
+Mancano, per completare la prima versione: il funzionamento offline e l'esportazione del disegno come immagine. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
 
 ## Pubblicazione
 
@@ -141,6 +141,8 @@ In fondo alla barra lo stato: **Ferma**, **In esecuzione** (anche quando non c'�
 
 **Selezione.** Un clic su un dispositivo, un cavo o una busta lo seleziona: il pannello di destra ne mostra i dettagli, e accanto compare una barretta con le azioni, le principali con icona e scritta e le altre nel menu Altro (⋯). La barretta resta sempre grande uguale e dentro il disegno, a qualsiasi zoom; si usa anche da tastiera, con Tab, le frecce e Invio. Un clic sullo sfondo, o il tasto Esc, toglie la selezione.
 
+**Annotazioni.** Con **Riquadro**, nella colonna sotto Cavo, si disegna un riquadro trascinando sul disegno: serve a mostrare una sottorete. Con **Nota** un clic posa una nota, e il testo si scrive nel pannello di destra (Invio va a capo; si conferma uscendo dal campo o con Ctrl+Invio, Esc rimette il testo di prima). Etichetta e colore (cinque, fissi) si cambiano nel pannello. Un'annotazione si sposta trascinandola; un riquadro selezionato si ridimensiona dalle maniglie agli angoli, mai sotto 40×40. Dispositivi e cavi dentro un riquadro restano da cliccare. Si eliminano con Elimina o con Canc, e ogni modifica si annulla. Stanno nel file; in presentazione si vedono ma non si modificano.
+
 **Duplicare.** Duplica, sulla barretta, crea una copia del dispositivo accanto all'originale, scollegata e già selezionata: premendolo ancora si fa una fila. La copia di un PC o di un server prende maschera, gateway e l'indirizzo libero successivo (da 192.168.1.10 nasce 192.168.1.11); quella di uno switch le stesse porte, spente dove lo sono; quella di un router le stesse interfacce, spente e senza indirizzi. Si annulla con un Ctrl+Z.
 
 | Selezionato | Sulla barretta | Nel pannello di destra |
@@ -150,6 +152,7 @@ In fondo alla barra lo stato: **Ferma**, **In esecuzione** (anche quando non c'�
 | Un router | **Terminale (la CLI) · Collega · Tabella routing**; nel menu Altro: Spegni o Accendi · Duplica · Elimina | Interfacce (accesa o spenta, indirizzo, maschera; un campo vuoto dice «nessun indirizzo»), tabella di routing con ogni rotta su due righe (destinazione sopra, prossimo salto e uscita sotto), il riquadro Aggiungi rotta statica, tabella ARP |
 | Un cavo | **Stacca** o **Riattacca** · **Elimina** (in rosso) | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
+| Un riquadro o una nota | **Elimina** | Etichetta o testo, colore, Elimina |
 
 **Ping.** Seleziona il PC di partenza, premi Ping sulla barretta: il pulsante resta premuto. Poi fai clic sul dispositivo di destinazione. Parte un solo echo request. Esc rinuncia.
 
