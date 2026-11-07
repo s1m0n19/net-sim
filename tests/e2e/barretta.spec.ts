@@ -198,3 +198,114 @@ test("con lo zoom la barretta resta grande uguale e dentro il disegno", async ({
   // Il disegno sotto è sempre lì: la barretta non ha mosso la vista.
   await expect(drawing(page)).toBeVisible();
 });
+
+// Il menu Altro sta tutto dentro il disegno, anche vicino ai bordi (D-116).
+
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+const within = (inner: Box, outer: Box) =>
+  inner.x >= outer.x - 0.5 &&
+  inner.y >= outer.y - 0.5 &&
+  inner.x + inner.width <= outer.x + outer.width + 0.5 &&
+  inner.y + inner.height <= outer.y + outer.height + 0.5;
+const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+// Sposta la vista finché il dispositivo non tocca quasi il bordo sinistro o destro del disegno.
+async function toEdge(page: Page, name: string, side: "left" | "right"): Promise<void> {
+  const box = (await device(page, name).locator("rect.box").boundingBox())!;
+  const area = (await page.locator(".canvas").boundingBox())!;
+  const shift = side === "left" ? area.x + 12 - box.x : area.x + area.width - 12 - (box.x + box.width);
+  const from = await pointOn(page, 0.5, 0.12);
+  await drag(page, from, { x: from.x + shift, y: from.y });
+}
+
+// Apre il menu Altro del dispositivo e controlla che stia tutto nel disegno,
+// voci comprese, e che non vada sopra la colonna dei dispositivi.
+async function expectMoreMenuInside(page: Page, name: string): Promise<void> {
+  await device(page, name).click();
+  await page.getByRole("button", { name: `Altre azioni su ${name}` }).click();
+  const menu = page.getByRole("menu");
+  await expect(menu).toHaveCSS("opacity", "1");
+  const area = (await page.locator(".canvas").boundingBox())!;
+  const box = (await menu.boundingBox())!;
+  expect(within(box, area)).toBe(true);
+  for (const item of await menu.getByRole("menuitem").all()) {
+    expect(within((await item.boundingBox())!, area)).toBe(true);
+  }
+  const palette = page.locator(".shell > aside").first();
+  if ((await palette.count()) > 0 && (await palette.isVisible())) {
+    expect(overlaps(box, (await palette.boundingBox())!)).toBe(false);
+  }
+}
+
+test("il menu Altro vicino al bordo sinistro e a quello destro resta tutto nel disegno", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await openApp(page);
+  await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+
+  await toEdge(page, "PC1", "left");
+  await expectMoreMenuInside(page, "PC1");
+  await page.keyboard.press("Escape");
+
+  await toEdge(page, "PC2", "right");
+  await expectMoreMenuInside(page, "PC2");
+  await page.keyboard.press("Escape");
+
+  // Con la colonna dei dispositivi chiusa il disegno è più largo: vale lo stesso.
+  await page.getByRole("button", { name: "Chiudi la colonna dei dispositivi" }).click();
+  await toEdge(page, "PC1", "left");
+  await expectMoreMenuInside(page, "PC1");
+});
+
+test("il menu Altro si apre dentro il disegno anche in presentazione al 200%", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 700 });
+  await openApp(page);
+  await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+  await page.getByRole("button", { name: "Presenta" }).click();
+  const larger = page.getByRole("button", { name: "Ingrandisci testo e disegno" });
+  while (await larger.isEnabled()) await larger.click();
+
+  for (const [name, side] of [["PC1", "left"], ["PC2", "right"]] as const) {
+    await toEdge(page, name, side);
+    await expectMoreMenuInside(page, name);
+    await page.keyboard.press("Escape");
+  }
+});
+
+test("in un disegno più stretto del menu, il menu si stringe e resta tutto leggibile", async ({ page }) => {
+  // Una finestra più stretta di quelle previste, perché il disegno sia più
+  // stretto del menu (250 px più i margini).
+  await page.setViewportSize({ width: 620, height: 700 });
+  await openApp(page);
+  await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+  const area = (await page.locator(".canvas").boundingBox())!;
+  expect(area.width).toBeLessThan(266);
+
+  await expectMoreMenuInside(page, "R1");
+  const box = (await page.getByRole("menu").boundingBox())!;
+  expect(box.width).toBeLessThan(250);
+  // Nessuna voce taglia la sua scritta.
+  for (const item of await page.getByRole("menuitem").all()) {
+    expect(await item.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  }
+});
+
+test("il menu Altro vicino al bordo si usa ancora con la tastiera, ed Esc ridà il fuoco", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+  await toEdge(page, "PC1", "left");
+  await device(page, "PC1").click();
+  const more = page.getByRole("button", { name: "Altre azioni su PC1" });
+  await more.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("menuitem").first()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem").nth(1)).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await expect(more).toBeFocused();
+});

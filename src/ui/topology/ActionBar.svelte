@@ -116,7 +116,17 @@
   {/each}
   {#if more.length > 0}
     <span class="divider" aria-hidden="true"></span>
-    <Menu label="Altre azioni su {subject}" icon="more" iconOnly items={moreItems} up={opensUp} align="end" />
+    <!-- Il menu resta dentro il disegno, che è il contenitore della
+         barretta: sceglie da sé il lato dove ci sta (D-116). -->
+    <Menu
+      label="Altre azioni su {subject}"
+      icon="more"
+      iconOnly
+      items={moreItems}
+      up={opensUp}
+      align="end"
+      boundary={() => (bar?.offsetParent as HTMLElement | null)?.getBoundingClientRect() ?? null}
+    />
   {/if}
 </div>
 

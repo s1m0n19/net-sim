@@ -31,6 +31,7 @@
   // vanno agli estremi, Esc chiude e riporta il fuoco sul pulsante, Tab o
   // un clic fuori chiudono.
   import Icon from "../theme/Icon.svelte";
+  import { placeMenu, type MenuPlacement } from "./menu-placement";
 
   let {
     label,
@@ -39,6 +40,7 @@
     align = "start",
     iconOnly = false,
     up = false,
+    boundary,
   }: {
     label: string;
     icon?: IconName;
@@ -49,6 +51,11 @@
     iconOnly?: boolean;
     // L'elenco si apre sopra il pulsante, quando sotto non c'è posto.
     up?: boolean;
+    // Lo spazio da cui l'elenco non deve uscire (per il menu Altro della
+    // barretta, il disegno). Con questo, align e up sono solo preferenze:
+    // l'elenco sceglie da sé il lato dove ci sta (D-116). Senza, si apre
+    // come sempre.
+    boundary?: () => DOMRect | null;
   } = $props();
 
   // Un identificativo stabile, ricavato dall'etichetta, che lega pulsante ed elenco.
@@ -57,6 +64,31 @@
   let root: HTMLDivElement | undefined = $state();
   let trigger: HTMLButtonElement | undefined = $state();
   let list: HTMLDivElement | undefined = $state();
+
+  // Dove sta l'elenco, quando deve restare dentro `boundary`: si misura
+  // appena è disegnato, ancora invisibile, e solo dopo si mostra.
+  type Placed = MenuPlacement & { offsetLeft: number; offsetTop: number };
+  let placed = $state<Placed | null>(null);
+  $effect(() => {
+    if (!open || boundary === undefined || list === undefined || root === undefined || trigger === undefined || placed !== null) return;
+    const bounds = boundary();
+    if (bounds === null) return;
+    // offsetWidth e offsetHeight non risentono dell'animazione di comparsa.
+    const natural = { width: list.offsetWidth, height: list.offsetHeight };
+    const button = trigger.getBoundingClientRect();
+    const origin = root.getBoundingClientRect();
+    const where = placeMenu(button, natural, bounds, { align, up });
+    placed = { ...where, offsetLeft: where.left - origin.left, offsetTop: where.top - origin.top };
+  });
+  const listStyle = $derived.by(() => {
+    const where = placed;
+    if (where === null) return undefined;
+    // Larghezza e altezza calcolate comprendono margini interni e bordo.
+    const parts = [`left: ${where.offsetLeft}px`, `top: ${where.offsetTop}px`, "right: auto", "bottom: auto", "box-sizing: border-box"];
+    if (where.width !== null) parts.push(`width: ${where.width}px`, "min-width: 0");
+    if (where.maxHeight !== null) parts.push(`max-height: ${where.maxHeight}px`, "overflow-y: auto");
+    return parts.join("; ");
+  });
 
   // Le voci che possono avere il fuoco, nell'ordine in cui compaiono.
   function focusable(): HTMLButtonElement[] {
@@ -74,6 +106,7 @@
 
   function hide(returnFocus: boolean) {
     open = false;
+    placed = null;
     if (returnFocus) trigger?.focus();
   }
 
@@ -145,7 +178,19 @@
 
   {#if open}
     <!-- svelte-ignore a11y_interactive_supports_focus -->
-    <div class="list" class:end={align === "end"} class:up id="{id}-list" role="menu" aria-labelledby="{id}-button" bind:this={list} onkeydown={onListKey}>
+    <div
+      class="list"
+      class:end={align === "end"}
+      class:up
+      class:measuring={boundary !== undefined && placed === null}
+      class:fitted={placed !== null && placed.width !== null}
+      style={listStyle}
+      id="{id}-list"
+      role="menu"
+      aria-labelledby="{id}-button"
+      bind:this={list}
+      onkeydown={onListKey}
+    >
       {#each items as item, index (index)}
         {#if item.kind === "separator"}
           <div class="separator" role="separator"></div>
@@ -237,6 +282,19 @@
   .list.up {
     top: auto;
     bottom: calc(100% + 6px);
+  }
+  /* Mentre si misura, l'elenco c'è ma non si vede: così non compare per un
+     istante nel punto sbagliato. Trasparente e non nascosto, perché la
+     prima voce possa già ricevere il fuoco da tastiera. */
+  .list.measuring {
+    opacity: 0;
+    pointer-events: none;
+    animation: none;
+  }
+  /* Più stretto del naturale: le scritte vanno a capo invece di uscire. */
+  .list.fitted .text,
+  .list.fitted .heading-label {
+    overflow-wrap: anywhere;
   }
   .trigger.icon-only {
     padding: 0;
