@@ -51,7 +51,7 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    padding: 6px 8px 7px 10px;
+    padding: 6px 6px 7px 8px;
     border-left: 3px dashed var(--muted);
     border-radius: 0 var(--radius) var(--radius) 0;
     background: var(--surface-2);
@@ -94,14 +94,20 @@
   .state.on .mark {
     background: currentColor;
   }
+  /* Le etichette qui sono solo "Indirizzo IP" e "Subnet mask": una colonna
+     un po' più stretta lascia ai campi lo spazio per l'indirizzo più lungo,
+     255.255.255.255, anche dentro il riquadro dell'interfaccia. */
   .fields {
     display: grid;
-    grid-template-columns: var(--label-width, 7em) minmax(0, 1fr);
-    gap: 5px 10px;
+    grid-template-columns: 6.2em minmax(0, 1fr);
+    gap: 5px 8px;
   }
   /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni
      etichetta va sopra il suo campo: gli indirizzi restano interi (D-112). */
   @container panel (max-width: 250px) {
+    .interface {
+      padding-inline: 6px 4px;
+    }
     .fields {
       grid-template-columns: minmax(0, 1fr);
       gap: 2px;

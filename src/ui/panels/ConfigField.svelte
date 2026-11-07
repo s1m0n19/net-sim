@@ -139,5 +139,12 @@
     .field {
       margin-bottom: 6px;
     }
+    /* Ogni pixel serve all'indirizzo: meno spazio ai lati del testo. */
+    input {
+      padding-inline: 5px;
+    }
+    input.invalid {
+      padding-inline: 4px;
+    }
   }
 </style>
