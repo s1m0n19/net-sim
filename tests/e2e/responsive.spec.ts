@@ -162,11 +162,21 @@ for (const size of SIZES) {
         // in una finestra larga fino a 1024 non c'è un posto libero accanto
         // al router, e la barretta copre in parte lo zoom finché resta la
         // selezione.
-        const bar = await boxOf(actionBar(page));
-        expect(inside(bar, await boxOf(drawingArea(page)))).toBe(true);
-        expect(overlap(bar, await boxOf(simulationBar(page)))).toBe(false);
+        //
+        // Dopo un cambio di ingrandimento la barretta rimisura zoom e barra
+        // della simulazione e si risistema: si aspetta che lo abbia fatto,
+        // come lo vede chi guarda, e non l'istante del clic.
         const crowded = size.width <= 1024 && !(await larger.isEnabled());
-        if (!crowded) expect(overlap(bar, await boxOf(zoomButtons(page)))).toBe(false);
+        await expect
+          .poll(async () => {
+            const bar = await boxOf(actionBar(page));
+            return (
+              inside(bar, await boxOf(drawingArea(page))) &&
+              !overlap(bar, await boxOf(simulationBar(page))) &&
+              (crowded || !overlap(bar, await boxOf(zoomButtons(page))))
+            );
+          })
+          .toBe(true);
         // Il pannello non prende più di due quinti della finestra.
         expect((await boxOf(sidePanel(page))).width).toBeLessThanOrEqual(Math.max(290, size.width * 0.4) + 1);
         // Gli indirizzi nel pannello si leggono per intero.
