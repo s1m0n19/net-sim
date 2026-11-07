@@ -1,5 +1,5 @@
 <script module lang="ts">
-  // Le icone della barra in alto, tutte nello stesso stile: tratto di 1,8,
+  // Le icone dell'interfaccia, tutte nello stesso stile: tratto di 1,8,
   // angoli arrotondati, disegnate su un riquadro di 24. Stanno qui, in un
   // solo punto, come colori e caratteri (NF-7).
   const PATHS = {
@@ -40,6 +40,15 @@
     trash: "M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13M10 11v6M14 11v6",
     // Tre punti: altre azioni.
     more: "M5 12h.01M12 12h.01M19 12h.01",
+    // I comandi della simulazione, come quelli di un lettore video (D-115).
+    // Una freccia che torna indietro in cerchio: ricominciare.
+    restart: "M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9M4.5 4.5V9H9",
+    // Il triangolo: far scorrere il tempo.
+    play: "M8 5.5v13l10-6.5z",
+    // Due barre: fermarlo.
+    pause: "M9 6v12M15 6v12",
+    // Il triangolo con una barra: un passo solo.
+    step: "M6.5 6v12l8-6zM17.5 6v12",
   } as const;
 
   export type IconName = keyof typeof PATHS;

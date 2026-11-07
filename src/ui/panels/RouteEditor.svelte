@@ -90,7 +90,7 @@
     font-style: italic;
   }
   .legend {
-    font-size: 0.88em;
+    font-size: var(--text-small);
   }
   abbr {
     font-family: var(--font-mono);
@@ -108,7 +108,7 @@
     grid-template-columns: 1.4em minmax(0, 1fr) auto 22px;
     column-gap: 8px;
     font-family: var(--font-mono);
-    font-size: 0.92em;
+    font-size: var(--text-base);
     font-variant-numeric: tabular-nums;
   }
   .routes li {
@@ -153,7 +153,7 @@
     padding: 0 0 4px;
     border-bottom: 1px solid var(--muted);
     font-family: var(--font-ui);
-    font-size: 0.88em;
+    font-size: var(--text-small);
     color: var(--muted);
   }
   .routes .heading .destination {
@@ -208,7 +208,7 @@
   h4 {
     grid-column: 1 / -1;
     margin: 0 0 2px;
-    font-size: 0.92em;
+    font-size: var(--text-base);
     font-weight: 600;
   }
   label {
@@ -222,13 +222,12 @@
     font-family: var(--font-mono);
     color: var(--ink);
     background: var(--canvas);
-    border: 1px solid var(--line);
-    border-radius: 4px;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius);
   }
   input::placeholder {
     color: var(--muted);
     font-family: var(--font-ui);
-    opacity: 0.8;
   }
   input:hover:not(:focus) {
     border-color: var(--muted);
@@ -244,7 +243,7 @@
   .problem {
     grid-column: 1 / -1;
     color: var(--down);
-    font-size: 0.92em;
+    font-size: var(--text-small);
     line-height: 1.35;
   }
   /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni

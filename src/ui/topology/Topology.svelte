@@ -353,7 +353,7 @@
   }
   .zoom .btn {
     min-width: 30px;
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+    box-shadow: var(--shadow-float);
   }
   .hint {
     position: absolute;
@@ -370,7 +370,7 @@
   }
   .hint strong {
     color: var(--ink);
-    font-size: 1.25em;
+    font-size: var(--text-title);
     font-weight: 600;
   }
 </style>

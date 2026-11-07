@@ -99,8 +99,8 @@
     padding: 8px 14px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+    border-radius: var(--radius-float);
+    box-shadow: var(--shadow-float);
   }
   /* Istruzione: il bordo sinistro nel colore d'accento, come ciò che è
      selezionato o premuto. */
@@ -114,7 +114,7 @@
     border-radius: 3px;
     background: var(--surface-2);
     font-family: var(--font-mono);
-    font-size: 0.9em;
+    font-size: var(--text-small);
   }
   /* Operazione rifiutata: il bordo sinistro rosso e la crocetta. */
   .refused {

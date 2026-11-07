@@ -490,14 +490,50 @@ Due temi, chiaro e scuro. All'apertura l'app segue l'impostazione del sistema; i
 | Sfondo del disegno | `#fbfcfd` | `#151a21` |
 | Testo | `#1b2430` | `#e6eaef` |
 | Testo secondario | `#5b6675` | `#98a3b1` |
-| Bordi | `#cdd3db` | `#36414e` |
+| Bordi e righe di separazione | `#cdd3db` | `#36414e` |
+| Bordo dei campi in cui si scrive | `#8e9398` | `#626b75` |
 | Accento | `#0b6e8a` | `#5cc4e0` |
-| ARP | `#b86a00` | `#f0b04a` |
+| ARP | `#a65f00` | `#f0b04a` |
 | ICMP | `#7a3fd0` | `#c09bff` |
-| Segnale presente | `#1c9650` | `#4dc57f` |
+| Segnale presente, acceso | `#188044` | `#4dc57f` |
 | Guasto | `#cf3a3a` | `#f0716c` |
 
-Sono i valori del bozzetto: un punto di partenza, da ritoccare quando l'interfaccia si vedrà funzionare su una LIM.
+Sono i valori del bozzetto, ritoccati il 7 novembre 2026 per il contrasto (D-115): nel tema chiaro l'ambra di ARP (da `#b86a00`, 4,0:1) e il verde (da `#1c9650`, 3,5:1 sul fondo delle interfacce) sono scuriti quanto basta per arrivare a 4,5:1, nella stessa tinta; il bordo dei campi ha un colore suo, che arriva a 3:1, perché è il solo segno che lì si può scrivere. Le righe di separazione restano leggere. Tutte le coppie usate davvero sono controllate da `tests/ui/contrast.test.ts`, nei due temi. Da ritoccare ancora, se serve, quando l'interfaccia si vedrà su una LIM.
+
+### Caratteri e misure
+
+Tre misure di carattere, in `theme/tokens.css` (D-115), e nessun testo dell'interfaccia sotto i 12 px:
+
+| Token | Misura | Per che cosa |
+| --- | --- | --- |
+| `--text-base` | 13 px | il testo, i campi, i dati tecnici (indirizzi, tabelle, terminale) |
+| `--text-small` | 12 px | etichette e metadati: titoli delle sezioni in maiuscoletto, intestazioni delle tabelle, sigle dei protocolli, pastiglie, scritte della colonna e della barretta, stato della simulazione |
+| `--text-title` | 16 px | il titolo del pannello laterale |
+
+La base resta a 13 px: a 14 lo spazio per `255.255.255.252` nel campo di un'interfaccia scende da 26 a 11 px, e in presentazione al 200% su una finestra di 900×700 a 4 px. È troppo poco: il carattere è lo stesso ovunque, ma ogni sistema lo disegna un po' diverso, e su Linux un pixel di differenza ha già tagliato quell'indirizzo. I testi del disegno (nomi, indirizzi, tabelle appuntate) crescono con lo zoom e restano a parte, come il marchio. La presentazione ingrandisce tutto con il suo fattore.
+
+Le altre misure condivise: le spaziature `--space-1` (4 px), `--space-2` (8 px) e `--space-3` (12 px); l'arrotondamento `--radius` (4 px) dei controlli, `--radius-control` (6 px) della barra in alto, `--radius-float` (8 px) di tutto ciò che galleggia (menu, barretta, barra della simulazione, righe dei messaggi, varianti della colonna); due ombre, `--shadow-menu` per i menu, che si aprono per un momento sopra tutto, e `--shadow-float`, più leggera, per i comandi che restano (barra della simulazione, zoom, messaggi, il pulsante Ultimi eventi); `--disabled-opacity` (0,45) per ogni controllo spento.
+
+### Pulsanti
+
+Ogni famiglia ha le sue misure: i pulsanti della barra in alto (`.tb`, 34 px), quelli della barretta (50 px per l'ingrandimento) e quelli dei pannelli e della barra della simulazione (`.btn`) non hanno la stessa grandezza, perché stanno in posti diversi. Dentro una famiglia, gli stati sono gli stessi (D-115):
+
+| Stato | Come si vede |
+| --- | --- |
+| Normale | bordo sottile, fondo della superficie |
+| Al passaggio | il fondo si scurisce appena, il bordo si fa più netto |
+| Premuto per un momento | il fondo si scurisce ancora |
+| Fuoco da tastiera | contorno di 2 px nel colore d'accento |
+| Spento | attenuato allo stesso modo ovunque, e non reagisce |
+| Acceso e che resta acceso (`aria-pressed`) | bordo e testo nel colore d'accento su un fondo appena tinto, e un segno che non è il colore: la spunta dei filtri ARP e ICMP e di «appuntata»; i pulsanti della barretta si riempiono del colore d'accento |
+| Principale | pieno nel colore d'accento: uno solo per gruppo, Salva in alto, Avvia o Pausa nella simulazione |
+| Distruttivo | testo rosso: Elimina nella barretta e nel menu Altro; la crocetta di una rotta diventa rossa solo al passaggio e con il fuoco, perché una colonna di crocette rosse sarebbe troppo vistosa |
+
+L'interruttore di un'interfaccia del router non è un «acceso» nel colore d'accento: ha il verde e il rosso del quadratino sul cavo.
+
+### Icone
+
+Tutte in `theme/Icon.svelte`, nello stesso stile: riquadro di 24, tratto di 1,8, angoli arrotondati. Accanto a una scritta l'icona è nascosta al lettore di schermo, e il nome resta la scritta; un pulsante con la sola icona ha il suo `aria-label`. I quattro comandi della simulazione hanno le loro (D-115): una freccia che torna in cerchio (Ricomincia), il triangolo (Avvia), due barre (Pausa), il triangolo con una barra (Passo). Restano testo le sigle dei protocolli, gli indirizzi, la velocità «1×», i tasti come <kbd>Esc</kbd> e i simboli della CLI. Le icone dei dispositivi non cambiano.
 
 ### Colore più un secondo segno
 
@@ -508,7 +544,9 @@ Sono i valori del bozzetto: un punto di partenza, da ritoccare quando l'interfac
 | Interfaccia di router o porta di switch spenta | rosso | un quadratino vuoto al posto del pallino, sul capo del cavo vicino al dispositivo; nel pannello del router la parola «spenta» |
 | Segnale su una porta | verde | il pallino c'è o non c'è |
 | Dispositivo spento | grigio | la scritta "spento" |
-| Campo rifiutato | bordo rosso | il motivo scritto sotto |
+| Campo rifiutato | bordo rosso | il motivo scritto sotto, con la crocetta |
+| Filtro di un protocollo acceso | accento | la spunta |
+| Stato della simulazione | accento, rosso | il cerchietto vuoto o pieno, il punto esclamativo, la parola |
 | Selezione | accento | contorno più spesso e barretta |
 
 ## Come è organizzato il codice

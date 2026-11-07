@@ -20,7 +20,7 @@
     <strong>{port.name}</strong>
     <button
       class="btn state"
-      class:on={port.enabled}
+      class:enabled={port.enabled}
       aria-pressed={port.enabled}
       aria-label="Interfaccia {port.name}: {port.enabled ? 'accesa, premi per spegnerla' : 'spenta, premi per accenderla'}"
       onclick={() => session.toggleInterface(deviceId, port.name)}
@@ -80,7 +80,13 @@
     color: var(--down);
     border-color: var(--down);
   }
-  .state.on {
+  /* Non è il "premuto" dei pulsanti (.btn.on, nel colore d'accento):
+     accesa e spenta hanno il verde e il rosso del quadratino sul cavo. */
+  .state:not(.enabled):hover {
+    border-color: var(--down);
+  }
+  .state.enabled,
+  .state.enabled:hover {
     color: var(--up);
     border-color: var(--up);
   }
@@ -91,7 +97,7 @@
     border: 1.5px solid currentColor;
     border-radius: 50%;
   }
-  .state.on .mark {
+  .state.enabled .mark {
     background: currentColor;
   }
   /* Le etichette qui sono solo "Indirizzo IP" e "Subnet mask": una colonna

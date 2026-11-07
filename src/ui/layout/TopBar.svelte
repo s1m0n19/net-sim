@@ -286,7 +286,7 @@
     border: 1px solid var(--line);
     border-radius: 999px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--text-small);
     white-space: nowrap;
   }
   .dot {
@@ -322,7 +322,7 @@
     border: 1px solid var(--accent);
     border-radius: 999px;
     color: var(--accent);
-    font-size: 12px;
+    font-size: var(--text-small);
     white-space: nowrap;
   }
 
@@ -354,7 +354,7 @@
     outline-offset: 1px;
   }
   .tb:disabled {
-    opacity: 0.4;
+    opacity: var(--disabled-opacity);
     cursor: default;
   }
   .tb.icon-only {

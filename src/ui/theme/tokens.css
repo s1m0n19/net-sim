@@ -13,14 +13,34 @@
   --line: #cdd3db;
   --accent: #0b6e8a;
   --on-accent: #ffffff;
-  --arp: #b86a00;
+  --arp: #a65f00;
   --icmp: #7a3fd0;
-  --up: #1c9650;
+  --up: #188044;
   --down: #cf3a3a;
+  /* Il bordo dei campi in cui si scrive: è il solo segno che lì c'è un
+     campo, quindi arriva a 3:1 sullo sfondo (WCAG 1.4.11). Le righe di
+     separazione restano più leggere, con --line. */
+  --field-border: #8e9398;
 
   --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   --radius: 4px;
+
+  /* La scala dei caratteri (D-115): tre misure, e nessun testo sotto i
+     12 px. Testo e dati tecnici a 13 px, etichette, intestazioni delle
+     tabelle, titoli delle sezioni e metadati a 12, il titolo del pannello
+     a 16. I testi del disegno crescono con lo zoom e restano a parte. */
+  --text-small: 12px;
+  --text-base: 13px;
+  --text-title: 16px;
+
+  /* Le spaziature che si ripetono: stretta, normale, tra sezioni. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+
+  /* Un controllo spento: attenuato allo stesso modo ovunque. */
+  --disabled-opacity: 0.45;
 
   /* La barra in alto: la sua altezza, quella dei suoi controlli, il loro
      arrotondamento, e l'ombra dei menu che vi si aprono. */
@@ -28,6 +48,12 @@
   --bar-control: 34px;
   --radius-control: 6px;
   --shadow-menu: 0 8px 24px rgba(20, 30, 45, 0.14), 0 1px 3px rgba(20, 30, 45, 0.08);
+  /* Ciò che galleggia sul disegno o sopra un pannello. I menu, che si
+     aprono per un momento sopra tutto, hanno l'ombra più marcata; i
+     comandi che restano (barra della simulazione, zoom, messaggi) quella
+     leggera. Tutti hanno lo stesso arrotondamento. */
+  --shadow-float: 0 2px 10px rgba(20, 30, 45, 0.12);
+  --radius-float: 8px;
 
   color-scheme: light;
 }
@@ -48,7 +74,9 @@
     --icmp: #c09bff;
     --up: #4dc57f;
     --down: #f0716c;
+    --field-border: #626b75;
     --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-float: 0 2px 10px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
   }
 }
@@ -68,7 +96,9 @@
   --icmp: #c09bff;
   --up: #4dc57f;
   --down: #f0716c;
+  --field-border: #626b75;
   --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-float: 0 2px 10px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
 }
 
@@ -83,7 +113,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--text-base);
   line-height: 1.4;
 }
 
@@ -101,26 +131,57 @@ button {
   white-space: nowrap;
   cursor: pointer;
 }
+/* Gli stati, uguali per tutti i pulsanti di questa famiglia (D-115):
+   al passaggio il fondo si scurisce e il bordo si fa più netto; premuto
+   per un momento si scurisce ancora; il fuoco da tastiera è un contorno
+   nel colore d'accento; spento è attenuato e non reagisce. */
 .btn:hover:not(:disabled) {
+  background: var(--surface-2);
   border-color: var(--muted);
+}
+.btn:active:not(:disabled) {
+  background: var(--line);
 }
 .btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 .btn:disabled {
-  opacity: 0.45;
+  opacity: var(--disabled-opacity);
   cursor: default;
 }
+/* Acceso e che resta acceso (aria-pressed, un filtro, una tabella
+   appuntata): il bordo e il testo nel colore d'accento su un fondo
+   appena tinto. Chi lo usa aggiunge anche un segno che non sia il colore,
+   come una spunta. */
 .btn.on {
   border-color: var(--accent);
   color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
+.btn.on:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border-color: var(--accent);
+}
+/* L'azione principale del contesto: una sola per gruppo. */
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
   font-weight: 600;
+}
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  filter: brightness(1.08);
+}
+.btn.primary:active:not(:disabled) {
+  filter: brightness(0.94);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn {
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
 }
 
 .mono {

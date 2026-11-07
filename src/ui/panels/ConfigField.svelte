@@ -98,8 +98,8 @@
     font: inherit;
     color: var(--ink);
     background: var(--canvas);
-    border: 1px solid var(--line);
-    border-radius: 4px;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius);
   }
   input.mono {
     font-family: var(--font-mono);
@@ -110,7 +110,6 @@
     color: var(--muted);
     font-style: italic;
     font-family: var(--font-ui);
-    opacity: 0.8;
   }
   input:hover:not(:focus) {
     border-color: var(--muted);
@@ -130,7 +129,7 @@
     margin: 4px 0 0;
     padding-left: 7px;
     color: var(--down);
-    font-size: 0.92em;
+    font-size: var(--text-small);
     line-height: 1.35;
   }
   /* Nel pannello stretto (in presentazione, su uno schermo piccolo) ogni

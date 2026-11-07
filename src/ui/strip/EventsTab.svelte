@@ -103,7 +103,8 @@
       aria-pressed={session.protocols[protocol]}
       onclick={() => (session.protocols[protocol] = !session.protocols[protocol])}
     >
-      {protocol}
+      <!-- Acceso si vede anche dalla spunta, non solo dal colore (D-115). -->
+      {#if session.protocols[protocol]}<span class="tick" aria-hidden="true">✓</span>{/if}{protocol}
     </button>
   {/each}
 
@@ -186,11 +187,14 @@
   .count {
     margin-left: auto;
   }
+  .tick {
+    margin-right: 4px;
+  }
   select {
     font: inherit;
     color: inherit;
     padding: 3px 6px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--field-border);
     border-radius: var(--radius);
     background: var(--surface);
     max-width: 260px;
@@ -211,7 +215,7 @@
     border-bottom: 1px solid var(--line);
     color: var(--muted);
     font-weight: 500;
-    font-size: 0.85em;
+    font-size: var(--text-small);
     text-align: left;
     white-space: nowrap;
   }
@@ -225,7 +229,7 @@
     bottom: 8px;
     float: right;
     margin: 0 12px 8px 0;
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.14);
+    box-shadow: var(--shadow-float);
   }
   p {
     margin: 0;
@@ -285,7 +289,7 @@
   /* La sigla accompagna il colore: due segni, non uno solo. */
   .tag span {
     font-family: var(--font-mono);
-    font-size: 0.9em;
+    font-size: var(--text-small);
     padding: 0 5px;
     border-radius: 3px;
     color: var(--canvas);

@@ -225,7 +225,7 @@
     min-width: 250px;
     padding: 6px;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--radius-float);
     background: var(--surface);
     box-shadow: var(--shadow-menu);
     animation: appear 0.12s ease-out;
@@ -281,7 +281,7 @@
     box-shadow: inset 0 0 0 2px var(--accent);
   }
   .item:disabled {
-    opacity: 0.45;
+    opacity: var(--disabled-opacity);
     cursor: default;
   }
   .lead {
@@ -299,13 +299,13 @@
   }
   .description {
     color: var(--muted);
-    font-size: 0.92em;
+    font-size: var(--text-small);
     line-height: 1.35;
     max-width: 30ch;
   }
   .shortcut {
     color: var(--muted);
-    font-size: 0.9em;
+    font-size: var(--text-small);
     white-space: nowrap;
     padding-top: 1px;
   }
@@ -336,7 +336,7 @@
   }
   .heading-detail {
     color: var(--muted);
-    font-size: 0.92em;
+    font-size: var(--text-small);
   }
   .separator {
     height: 1px;

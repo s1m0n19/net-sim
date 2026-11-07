@@ -132,10 +132,10 @@
     gap: calc(2px * var(--k));
     padding: calc(4px * var(--k));
     border: 1px solid var(--line);
-    border-radius: calc(10px * var(--k));
+    border-radius: calc(var(--radius-float) * var(--k));
     background: var(--surface);
     box-shadow: var(--shadow-menu);
-    font-size: calc(12px * var(--k));
+    font-size: calc(var(--text-small) * var(--k));
   }
   /* Finché non si conosce la sua grandezza, la barretta non si vede: così
      non compare per un istante nel punto sbagliato. */

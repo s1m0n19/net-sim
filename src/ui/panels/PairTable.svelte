@@ -38,7 +38,7 @@
     border-collapse: collapse;
     width: 100%;
     font-family: var(--font-mono);
-    font-size: 0.95em;
+    font-size: var(--text-base);
     font-variant-numeric: tabular-nums;
   }
   th {
@@ -46,7 +46,7 @@
     border-bottom: 1px solid var(--muted);
     color: var(--muted);
     font-family: var(--font-ui);
-    font-size: 0.85em;
+    font-size: var(--text-small);
     font-weight: 500;
     text-align: left;
   }

@@ -51,7 +51,7 @@
   }
   h3 {
     margin: 0;
-    font-size: 0.82em;
+    font-size: var(--text-small);
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
@@ -59,13 +59,10 @@
   }
   .pin {
     padding: 1px 8px;
-    font-size: 0.92em;
+    font-size: var(--text-small);
   }
   .tick {
     margin-right: 4px;
   }
-  /* Appuntata: il colore d'accento, la spunta e la parola. */
-  .pin.on {
-    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  }
+  /* Appuntata: il colore d'accento (.btn.on), la spunta e la parola. */
 </style>

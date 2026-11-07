@@ -1,5 +1,6 @@
 <script lang="ts">
   import { session } from "../session.svelte";
+  import Icon from "../theme/Icon.svelte";
   import { pause, start, stepOnce } from "./playback";
   import { simulationState, STATE_TEXT } from "./simulation-state";
 
@@ -21,15 +22,17 @@
 <!-- Sul foglio vuoto non c'è nulla da far scorrere: la barra non c'è (D-107). -->
 {#if !session.isEmpty()}
   <div class="bar" role="toolbar" aria-label="Comandi della simulazione">
-    <button class="btn" onclick={() => session.restart()}>⟲ Ricomincia</button>
+    <!-- Ogni comando ha l'icona e la scritta; l'icona non si legge, il
+         nome resta la scritta. -->
+    <button class="btn command" onclick={() => session.restart()}><Icon name="restart" size={14} />Ricomincia</button>
 
     {#if session.running}
-      <button class="btn primary" onclick={pause}>❚❚ Pausa</button>
+      <button class="btn primary command" onclick={pause}><Icon name="pause" size={14} />Pausa</button>
     {:else}
-      <button class="btn primary" onclick={start} disabled={session.view.suspended}>▶ Avvia</button>
+      <button class="btn primary command" onclick={start} disabled={session.view.suspended}><Icon name="play" size={14} />Avvia</button>
     {/if}
 
-    <button class="btn" onclick={stepOnce} disabled={session.running || nothingToDo}>Passo ›</button>
+    <button class="btn command" onclick={stepOnce} disabled={session.running || nothingToDo}><Icon name="step" size={14} />Passo</button>
 
     <span class="separator"></span>
 
@@ -63,9 +66,18 @@
     padding: 6px 10px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+    border-radius: var(--radius-float);
+    box-shadow: var(--shadow-float);
     white-space: nowrap;
+  }
+  /* L'icona aggiunge larghezza: i comandi hanno un margine un po' più
+     stretto degli altri pulsanti, così in presentazione, su uno schermo
+     piccolo, la barra va a capo su due righe e non su tre (D-115). */
+  .command {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding-inline: 7px;
   }
   .separator {
     width: 1px;
@@ -88,7 +100,7 @@
     border: 1px solid var(--line);
     border-radius: 999px;
     color: var(--muted);
-    font-size: 0.92em;
+    font-size: var(--text-small);
   }
   .mark {
     display: grid;

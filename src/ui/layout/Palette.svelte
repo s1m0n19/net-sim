@@ -256,7 +256,7 @@
   }
   .caption {
     color: var(--muted);
-    font-size: 0.85em;
+    font-size: var(--text-small);
     text-align: center;
   }
   .tile {
@@ -271,7 +271,7 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    font-size: 0.85em;
+    font-size: var(--text-small);
   }
   button.tile {
     cursor: grab;
@@ -316,8 +316,8 @@
     inset: 0 0 0 4px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.14);
+    border-radius: var(--radius-float);
+    box-shadow: var(--shadow-menu);
   }
   .menu button {
     position: relative;
