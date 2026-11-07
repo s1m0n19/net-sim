@@ -136,7 +136,7 @@
     background: var(--down);
     color: var(--surface);
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
   }
 </style>

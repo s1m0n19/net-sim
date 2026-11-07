@@ -213,7 +213,7 @@
   h2 {
     margin: 0;
     font-size: var(--text-title);
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.25;
     overflow-wrap: anywhere;
   }

@@ -248,7 +248,7 @@
     stroke-linecap: round;
   }
   .wordmark {
-    font-weight: 650;
+    font-weight: 600;
     font-size: 15px;
     letter-spacing: -0.01em;
   }

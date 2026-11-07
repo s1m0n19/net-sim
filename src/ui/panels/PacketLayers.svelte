@@ -111,7 +111,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-weight: 650;
+    font-weight: 600;
     letter-spacing: 0.01em;
   }
   strong::before {

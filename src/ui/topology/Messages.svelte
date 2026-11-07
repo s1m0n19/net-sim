@@ -125,7 +125,7 @@
   }
   .sign {
     color: var(--down);
-    font-weight: 700;
+    font-weight: 600;
   }
   /* Condizione critica: tutto il bordo rosso, e il titolo in evidenza. */
   .storm {
