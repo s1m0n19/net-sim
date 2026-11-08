@@ -93,31 +93,62 @@ export async function writeNetworkFile(
 }
 
 /**
- * Scrive un'immagine PNG sul computer dell'utente (ED-8). Dove il browser
- * lo permette (Chrome, Edge) l'utente sceglie dove; negli altri browser
- * l'immagine viene scaricata nella cartella dei download.
- *
- * @param image - l'immagine
- * @param suggestedName - il nome proposto, con l'estensione .png
- * @returns il nome del file scritto, oppure null se l'utente ha annullato
- * @throws l'errore del browser, se la scrittura fallisce per altri motivi
+ * Dove scrivere un'immagine: un file scelto dall'utente (Chrome, Edge),
+ * oppure un download, negli altri browser.
  */
-export async function writeImageFile(image: Blob, suggestedName: string): Promise<string | null> {
+export type ImageTarget = { kind: "file"; name: string; handle: { createWritable(): Promise<any> } } | { kind: "download"; name: string };
+
+const IMAGE_TYPES = [{ description: "Immagine PNG", accept: { "image/png": [".png"] } }];
+
+/**
+ * Fa scegliere all'utente dove salvare un'immagine, prima di prepararla
+ * (ED-8, D-119). La finestra del browser si apre subito, nella chiamata:
+ * va chiamata direttamente dal gesto dell'utente, prima di qualsiasi
+ * attesa, perché il browser apre quella finestra solo in risposta a un
+ * gesto, e dopo un'attesa lunga potrebbe rifiutarla.
+ *
+ * @param suggestedName - il nome proposto, con l'estensione .png
+ * @returns dove scrivere, oppure null se l'utente ha annullato
+ * @throws l'errore del browser, se la finestra non si apre per altri motivi
+ */
+export function chooseImageTarget(suggestedName: string): Promise<ImageTarget | null> {
   const picker = (window as any).showSaveFilePicker;
-  if (typeof picker !== "function") {
-    downloadBlob(image, suggestedName);
-    return suggestedName;
+  if (typeof picker !== "function") return Promise.resolve({ kind: "download", name: suggestedName });
+  // La finestra si apre qui, adesso: nulla prima di questa riga attende.
+  const opening: Promise<{ name: string; createWritable(): Promise<any> }> = picker({ suggestedName, types: IMAGE_TYPES });
+  return opening.then(
+    (handle) => ({ kind: "file", name: handle.name, handle }),
+    (problem) => {
+      if (wasCancelled(problem)) return null;
+      throw problem;
+    },
+  );
+}
+
+/**
+ * Scrive un'immagine dove l'utente ha scelto, oppure la fa scaricare. Se la
+ * scrittura non riesce, il file non viene lasciato a metà: la scrittura
+ * passa da un file di appoggio, che si butta.
+ *
+ * @param target - dove scrivere, da `chooseImageTarget`
+ * @param image - l'immagine PNG
+ * @returns il nome del file scritto
+ * @throws l'errore del browser, se la scrittura non riesce
+ */
+export async function writeImage(target: ImageTarget, image: Blob): Promise<string> {
+  if (target.kind === "download") {
+    downloadBlob(image, target.name);
+    return target.name;
   }
+  const writable = await target.handle.createWritable();
   try {
-    const target = await picker({ suggestedName, types: [{ description: "Immagine PNG", accept: { "image/png": [".png"] } }] });
-    const writable = await target.createWritable();
     await writable.write(image);
     await writable.close();
-    return target.name;
   } catch (problem) {
-    if (wasCancelled(problem)) return null;
+    await writable.abort?.().catch(() => undefined);
     throw problem;
   }
+  return target.name;
 }
 
 /**

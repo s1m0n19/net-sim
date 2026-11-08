@@ -9,12 +9,18 @@
 // Il motore non c'entra: è soltanto una fotografia del disegno.
 
 import { tick } from "svelte";
-import { writeImageFile } from "../../storage/browser-files";
+import { chooseImageTarget, writeImage } from "../../storage/browser-files";
 import { session } from "../session.svelte";
 import type { Bounds } from "../view";
 
 /** Quanti pixel dell'immagine per unità del disegno: doppia risoluzione. */
 export const EXPORT_SCALE = 2;
+
+// I limiti di una tela che i browser riescono a creare: oltre, l'immagine
+// verrebbe vuota o il browser rifiuterebbe di disegnarla. Sono larghi:
+// una rete di 50 dispositivi resta lontanissima (D-119).
+export const MAX_IMAGE_SIDE = 16384;
+export const MAX_IMAGE_AREA = 64_000_000;
 
 // Lo spazio lasciato attorno a ciò che il disegno contiene, in unità del disegno.
 const FRAME_MARGIN = 32;
@@ -70,6 +76,20 @@ export function exportFrame(content: Bounds, margin = FRAME_MARGIN): Bounds {
 }
 
 /**
+ * Quanti pixel dell'immagine per unità del disegno: due, la doppia
+ * risoluzione, finché l'immagine resta entro i limiti di una tela; per un
+ * disegno enorme (una nota lontanissima) quanto basta per restarci, con le
+ * stesse proporzioni.
+ *
+ * @param frame - il rettangolo del disegno che l'immagine mostra
+ */
+export function exportScale(frame: Bounds): number {
+  const bySide = MAX_IMAGE_SIDE / Math.max(frame.width, frame.height);
+  const byArea = Math.sqrt(MAX_IMAGE_AREA / (frame.width * frame.height));
+  return Math.min(EXPORT_SCALE, bySide, byArea);
+}
+
+/**
  * Il nome proposto per l'immagine: quello della rete, oppure «rete».
  *
  * @param fileName - il nome del file della rete, senza estensione, se c'è
@@ -81,6 +101,11 @@ export function imageFileName(fileName: string | null): string {
 /**
  * Esporta il disegno come immagine e la fa salvare all'utente.
  *
+ * Va chiamata direttamente dal gesto dell'utente: prima di qualsiasi attesa
+ * si apre la finestra per scegliere dove salvare, che il browser concede
+ * solo in risposta a un gesto. Solo dopo la scelta si prepara l'immagine;
+ * se l'utente annulla, non si prepara nulla.
+ *
  * @returns il nome dell'immagine salvata, oppure null se non c'è nulla da
  *   esportare o se l'utente ha annullato
  * @throws l'errore del browser, se disegnare o salvare l'immagine non riesce
@@ -88,8 +113,13 @@ export function imageFileName(fileName: string | null): string {
 export async function exportImage(): Promise<string | null> {
   const svg = document.querySelector<SVGSVGElement>('svg[aria-label="Topologia della rete"]');
   if (svg === null) return null;
+  // La finestra di salvataggio si apre adesso, nel gesto dell'utente.
+  const target = await chooseImageTarget(imageFileName(session.fileName));
+  if (target === null) return null;
+
   // Nell'immagine non c'è nulla di selezionato o evidenziato: si toglie per
-  // il tempo della fotografia, e poi si rimette com'era.
+  // il tempo della fotografia, e poi si rimette com'era, anche se qualcosa
+  // va storto.
   const selection = session.selection;
   const highlight = session.highlight;
   session.selection = null;
@@ -102,18 +132,22 @@ export async function exportImage(): Promise<string | null> {
     session.selection = selection;
     session.highlight = highlight;
   }
-  return writeImageFile(image, imageFileName(session.fileName));
+  return writeImage(target, image);
 }
 
 // Disegna l'immagine del disegno: una copia con gli stili scritti dentro,
-// i caratteri, uno sfondo, poi in un'immagine a doppia risoluzione.
+// senza ciò che non va esportato, misurata, con i caratteri e uno sfondo,
+// poi in un'immagine a doppia risoluzione.
 async function drawImage(svg: SVGSVGElement): Promise<Blob> {
-  const frame = exportFrame(svg.getBBox());
   const { copy, background } = styledCopy(svg);
   for (const element of copy.querySelectorAll(SKIPPED)) element.remove();
+  // I confini si misurano sulla copia già senza buste, menu e maniglie:
+  // così non allargano l'immagine.
+  const frame = exportFrame(measure(copy));
 
-  const width = frame.width * EXPORT_SCALE;
-  const height = frame.height * EXPORT_SCALE;
+  const scale = exportScale(frame);
+  const width = Math.max(1, Math.floor(frame.width * scale));
+  const height = Math.max(1, Math.floor(frame.height * scale));
   copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   copy.setAttribute("viewBox", `${frame.x} ${frame.y} ${frame.width} ${frame.height}`);
   copy.setAttribute("width", String(width));
@@ -138,6 +172,25 @@ async function drawImage(svg: SVGSVGElement): Promise<Blob> {
   return rasterize(new XMLSerializer().serializeToString(copy), width, height);
 }
 
+// Lo spazio occupato da ciò che una copia del disegno contiene. Una copia
+// staccata dalla pagina non si può misurare (il browser risponde 0×0):
+// la si mette per un istante in un contenitore invisibile, fuori dallo
+// schermo e senza interazioni, e la si toglie subito, anche in caso di
+// errore. Il disegno vero non si tocca.
+function measure(copy: SVGSVGElement): Bounds {
+  const holder = document.createElement("div");
+  holder.setAttribute("aria-hidden", "true");
+  holder.style.cssText = "position:fixed;left:-100000px;top:0;width:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none";
+  holder.appendChild(copy);
+  document.body.appendChild(holder);
+  try {
+    const box = copy.getBBox();
+    return { x: box.x, y: box.y, width: box.width, height: box.height };
+  } finally {
+    holder.remove();
+  }
+}
+
 // Copia il disegno e scrive in ogni elemento della copia lo stile che
 // avrebbe con il tema chiaro. Il tema si cambia solo per il tempo della
 // lettura degli stili, senza che lo schermo si ridisegni nel frattempo.
@@ -147,6 +200,11 @@ function styledCopy(svg: SVGSVGElement): { copy: SVGSVGElement; background: stri
   root.setAttribute("data-theme", "light");
   try {
     const copy = svg.cloneNode(true) as SVGSVGElement;
+    // La copia non è il disegno: niente nome né ruolo, anche nell'istante
+    // in cui sta nella pagina per essere misurata.
+    copy.removeAttribute("aria-label");
+    copy.removeAttribute("role");
+    copy.removeAttribute("tabindex");
     const originals = [svg, ...svg.querySelectorAll("*")];
     const copies = [copy, ...copy.querySelectorAll("*")];
     originals.forEach((original, index) => {
