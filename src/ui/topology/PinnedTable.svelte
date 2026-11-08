@@ -155,6 +155,7 @@
 
   <g
     class="close"
+    data-export-skip
     transform="translate({size.width - 18} 5)"
     role="button"
     tabindex="0"

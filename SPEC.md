@@ -2,8 +2,8 @@
 
 Simulatore di reti per la didattica, pensato per sostituire Cisco Packet Tracer nelle lezioni di sistemi e reti.
 
-- **Stato:** in sviluppo. Il rilascio 1 è costruito, pubblicato e provato in aula. Del rilascio 2 sono costruiti il routing (router, rotte statiche, `tracert`, server), la CLI in stile IOS e le tabelle nel file; mancano offline e strumenti dell'editor. Il dettaglio è nella sezione 9.
-- **Ultimo aggiornamento:** 20 ottobre 2026.
+- **Stato:** in sviluppo. Il rilascio 1 è costruito, pubblicato e provato in aula. Del rilascio 2 sono costruiti il routing (router, rotte statiche, `tracert`, server), la CLI in stile IOS, le tabelle nel file e gli strumenti dell'editor (griglia, duplicare, annotazioni, esportazione come immagine); manca il funzionamento offline. Il dettaglio è nella sezione 9.
+- **Ultimo aggiornamento:** 8 novembre 2026.
 - **Nome dell'app:** *Doppino*, scelto l'11 ottobre 2026 con riserva di cambiarlo. Finché non è definitivo l'app, i file e il repository restano *net-sim*, e così questo documento.
 - **Documentazione tecnica:** [docs/](docs/README.md).
 
@@ -318,8 +318,8 @@ Deciso nell'intervista del 18 ottobre 2026, dopo la prova in aula. Dal più picc
 | 3 | **Fatto.** Duplicare a schermo: pulsante Duplica sulla barretta, la copia nasce accanto e selezionata, con annulla | Una LAN da molti PC si costruisce in pochi clic |
 | 4 | **Fatto.** Annotazioni nel modello della pagina e nei file: riquadri e note, con posizione, dimensione, colore e testo; nella cronologia di annulla e ripristina | Un file con annotazioni si apre, si salva e si riapre |
 | 5 | **Fatto.** Annotazioni a schermo (D-117): strumenti Riquadro e Nota nella colonna, selezione e barretta, testo nel pannello laterale, ridimensionare dagli angoli, presentazione | Il disegno si commenta e si divide in sottoreti |
-| 6 | Esportare come immagine: PNG di tutta la rete, tema chiaro, doppia risoluzione | La rete va nelle slide e nelle verifiche su carta |
-| 7 | La preparazione del criterio di accettazione come test nel browser; documentazione | Gli strumenti dell'editor sono collaudabili |
+| 6 | **Fatto.** Esportare come immagine (D-119): PNG di tutta la rete, tema chiaro, doppia risoluzione | La rete va nelle slide e nelle verifiche su carta |
+| 7 | **Fatto.** La preparazione del criterio di accettazione come test nel browser (`tests/e2e/strumenti.spec.ts`); documentazione | Gli strumenti dell'editor sono collaudabili |
 
 ## 6. Fuori ambito
 
@@ -486,18 +486,20 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-116 | 7 nov 2026 | Il menu Altro della barretta resta tutto dentro il disegno: sceglie l'allineamento al bordo destro o sinistro del pulsante e l'apertura sotto o sopra dove ci sta, si accosta al bordo se non ci sta in nessun modo, e in uno spazio più stretto o più basso di lui si stringe (le scritte vanno a capo) o fa scorrere le voci. Si misura trasparente prima di comparire. I menu Progetto e Visualizza non cambiano. I pesi di carattere non inclusi (650, 700) diventano 600 | Vicino al bordo sinistro il menu, allineato al bordo destro del pulsante, usciva dal disegno e finiva in parte sotto la colonna dei dispositivi, tagliato. Togliere il taglio del disegno o alzare il menu sopra la colonna l'avrebbe fatto coprire; restare dentro il disegno lo tiene lontano da colonna e pannello in ogni caso. Trasparente e non nascosto mentre si misura, perché la prima voce possa ricevere il fuoco da tastiera | Confermata |
 | D-117 | 7 nov 2026 | Le annotazioni a schermo (passaggio 5 del piano degli strumenti dell'editor). Gli strumenti Riquadro e Nota stanno nella colonna sotto Cavo, in uno stato loro (`annotating`), non in `placing`: ne resta scelto uno solo, un secondo clic o Esc lo lasciano. Il riquadro si disegna trascinando sullo sfondo, con l'anteprima; un clic non crea nulla, Esc rinuncia, il minimo è 40×40, la griglia non vale. La nota si posa con un clic e porta il cursore nel testo; vuota mostra «Nota vuota», che non va nel file. La selezione ha un tipo nuovo, `annotation`. I riquadri stanno sotto cavi e dispositivi e ricevono i clic solo dal bordo (con una fascia invisibile più larga) e dall'etichetta; le note stanno sopra i dispositivi. Mentre si sceglie un dispositivo o si posa qualcosa, le annotazioni lasciano passare i clic. Spostare e ridimensionare (quattro maniglie agli angoli, l'angolo opposto fermo) sono un passo da annullare a trascinamento finito. Etichetta, testo e colore stanno nel pannello: l'etichetta si conferma con Invio, il testo con Ctrl+Invio (Invio va a capo), tutti e due uscendo dal campo; Esc rimette il testo di prima. Cinque colori con il nome scritto. Sulla barretta solo Elimina: il colore, previsto anche lì da D-103, sta nel pannello, che è sempre accanto. Adatta e l'inquadratura automatica tengono dentro le annotazioni, anche senza dispositivi. In presentazione si vedono e si selezionano, ma non si modificano. Le righe delle note le calcola una funzione pura, per l'immagine esportata | Le annotazioni non sono dispositivi: uno stato a parte evita che `placing` debba distinguere. Un riquadro che intercetta i clic all'interno renderebbe impossibile cliccare la rete che evidenzia. Invio che conferma una nota impedirebbe di andare a capo. Il colore nella barretta avrebbe richiesto un menu di cinque voci, per una scelta che il pannello mostra già con i nomi | Confermata |
 | D-118 | 7 nov 2026 | Lo spazio del disegno. La fascia in basso si apre da sola solo per il primo terminale (che si apre sempre con un gesto esplicito), non più per gli eventi; si richiude ancora da sola quando non resta nulla, e in mezzo vale la scelta di chi la usa. Cambia la parte di D-107 sulla fascia; il pannello laterale in presentazione segue ancora la selezione. L'inquadratura automatica, fuori dalla presentazione, non supera 1,25 pixel per unità del disegno (`AUTO_MAX_SCALE`): un PC occupa al più 65 pixel, un router 75. Vale per il foglio di base (allargato attorno al suo centro prima di contenere la rete), per Adatta e per l'apertura di un file; non per lo zoom a mano né in presentazione. Un trascinamento tiene ferma l'inquadratura che si vede, non il solo foglio dei dispositivi. Una barretta che non trova posto né sopra né sotto un oggetto più alto del disegno sta in cima al disegno | Il motore scrive un evento per ogni modifica, e la fascia si apriva al primo PC posato, togliendo quasi 200 px al disegno mentre si costruisce. A 1920×1080 una rete piccola veniva ingrandita fino a riempire lo schermo: un PC solo 83 pixel, 108 con Adatta, molto più di quanto serve per leggerlo. Il limite in pixel per unità non dipende dalla grandezza della finestra; 1,25 tiene il router nella fascia 60–80 pixel indicata, e a 1366×768 la scala di prima era già lì. Allargare il foglio prima di aggiungere la rete evita che il disegno si ricentri lasciando un dispositivo vicino al bordo di ciò che si vede. In presentazione la rete deve venire grande | Confermata |
+| D-119 | 8 nov 2026 | Esporta immagine sta nel menu Progetto, sotto Salva con nome, ed è spento quando sul disegno non c'è nulla. L'immagine nasce dal disegno sullo schermo: selezione ed evidenziature tolte per un istante, una copia con gli stili del tema chiaro scritti in ogni elemento, senza buste in viaggio, indicatori di attesa, elenco delle porte, maniglie e crocette delle tabelle appuntate, con i caratteri IBM Plex dentro, disegnata a due pixel per unità. L'inquadratura è l'estensione vera del disegno, scritte comprese, più un margine di 32 unità, invece dei margini stimati di Adatta previsti da D-104. Si salva come un file di rete: dove si può si sceglie dove, altrimenti si scarica | Un secondo disegno della rete fatto apposta per l'immagine si separerebbe presto da quello sullo schermo; copiare quello che c'è garantisce che l'immagine sia uguale a ciò che si vede. L'estensione vera non taglia una scritta lunga e non lascia spazi vuoti; un'immagine non ha la barra della simulazione da evitare | Confermata |
+| D-120 | 8 nov 2026 | Dall'intervista dell'8 novembre sui punti mai discussi, da costruire dopo gli strumenti dell'editor, in quest'ordine. Una **copia di recupero** nel browser, una sola: rete, posizioni e annotazioni con il nome del file di provenienza, non traffico né terminali; riaprendo la pagina l'app propone di ripristinarla, e un salvataggio riuscito la cancella. Il codice esce con licenza **GPL versione 3**. Una **guida breve** dentro l'app, che funziona anche offline, aperta da un'icona «?» nella barra in alto (cambia D-110). I test girano anche in **Firefox e Safari**: si correggono i difetti veri, e dove manca una funzione basta il ripiego che c'è. Con il funzionamento offline, una **versione nuova** si scarica in silenzio e si usa alla prossima apertura, mai a metà lezione. Una voce **Segnala un problema** apre le issue di GitHub | Uno studente che chiude la scheda o ricarica la pagina perdeva tutto il lavoro non salvato; il file resta l'unica consegna, per non confondere quale versione conta. La GPL lascia il codice libero come materiale didattico, e libere anche le sue modifiche. A casa molti studenti usano altri browser. Un aggiornamento a metà lezione cambierebbe l'app sotto gli occhi della classe | Confermata |
 
 ## 9. Stato di avanzamento
 
-Aggiornato al 6 novembre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
+Aggiornato all'8 novembre 2026. Le percentuali sono stime a occhio, pesate sul lavoro e non sul numero di requisiti.
 
 | Traguardo | Completamento |
 | --- | --- |
 | Motore del rilascio 1 | completo |
 | Rilascio 1 intero | circa 99%: costruito e provato in aula; restano la LIM con il dito e una rete grande su un PC dell'aula |
-| Rilascio 2 | circa 80%: routing, CLI e tabelle nel file costruiti; degli strumenti dell'editor fatti 2 passaggi su 7; manca l'offline |
-| Prima versione (rilasci 1 e 2) | circa 90% |
-| Progetto completo, fino alla tappa T8 | circa 30%: le tappe T1–T8 non sono cominciate, e T1, T3 e T5 valgono ciascuna quanto il rilascio 2 o più |
+| Rilascio 2 | circa 93%: routing, CLI, tabelle nel file e strumenti dell'editor costruiti; manca l'offline, che aspetta nome e dominio |
+| Prima versione (rilasci 1 e 2) | circa 95% |
+| Progetto completo, fino alla tappa T8 | circa 33%: le tappe T1–T8 non sono cominciate, e T1, T3 e T5 valgono ciascuna quanto il rilascio 2 o più |
 
 Motore e interfaccia del rilascio 1 sono entrambi costruiti. L'interfaccia è stata progettata il 10 ottobre 2026 ([docs/interfaccia.md](docs/interfaccia.md)) e costruita in nove passaggi, tutti fatti. Il sito è pubblicato (D-64) e la prova in aula, a ottobre 2026, non ha mostrato problemi: il sito si apre dai PC della scuola, la presentazione si legge dal fondo dell'aula con l'ingrandimento di partenza (D-61, confermata), e il passo-passo del ping è accettabile. Restano da provare l'uso di una LIM con il dito, perché non ce n'era una a disposizione, e una rete grande su un PC dell'aula.
 
@@ -514,15 +516,30 @@ Rilascio 2: progettato l'11 ottobre 2026 (criteri di accettazione e piani nella 
 - **CLI in stile IOS**, i sette passaggi del suo piano, dal 13 al 14 ottobre. Le porte degli switch si spengono. L'interprete (`src/shell/ios/`) ha modalità, abbreviazioni, `?`, Tab, `do` e i messaggi di errore di IOS. I comandi di configurazione passano dalle azioni del pannello (D-95), i `show` leggono la rete (D-96), il router fa ping e traceroute (D-97). La CLI si apre dalla barretta di router e switch, e ogni comando che cambia la rete è un passo della cronologia (D-98). La lezione del criterio di accettazione è eseguita da `tests/e2e/cli.spec.ts`; il codice è descritto in `docs/cli.md`.
 - **Tabelle nel file**, il 18 ottobre (D-100). La casella delle tabelle, nel menu Progetto (D-110), fa salvare le tabelle ARP e MAC; un file che le contiene parte già caldo, e Ricomincia torna a quelle. Il percorso è eseguito da `tests/e2e/file.spec.ts`.
 
-Restano: strumenti dell'editor, progettati il 18 ottobre 2026 dopo la prova in aula (criterio di accettazione e piano nella sezione 5, decisioni D-101…D-104; fatti i passaggi da 1 a 5: la griglia magnetica, il duplicare nel motore e a schermo, le annotazioni nei file e nella cronologia, e a schermo), e funzionamento offline, che aspetta nome e dominio. Tappe successive: nulla è iniziato.
+Restano: strumenti dell'editor, progettati il 18 ottobre 2026 dopo la prova in aula (criterio di accettazione e piano nella sezione 5, decisioni D-101…D-104; tutti e sette i passaggi: la griglia magnetica, il duplicare, le annotazioni nei file, nella cronologia e a schermo, l'esportazione come immagine e il test del criterio), e funzionamento offline, che aspetta nome e dominio. Tappe successive: nulla è iniziato.
 
 ### Requisiti del rilascio 2
 
 | Stato | Requisiti |
 | --- | --- |
-| **Fatto** | ED-6 duplicare, un dispositivo alla volta (D-101) · ED-9 annotazioni, riquadri e note (D-103, D-117) · ED-7 griglia magnetica · FILE-5 tabelle nel file · DEV-3 router · DEV-4 routing statico e tabella di routing · DEV-5 server · CFG-3 `tracert` · CFG-4 CLI in stile IOS · CFG-5 CLI e pannello sincronizzati · SIM-18 messaggi ICMP di errore |
+| **Fatto** | ED-6 duplicare, un dispositivo alla volta (D-101) · ED-8 esportare come immagine (D-119) · ED-9 annotazioni, riquadri e note (D-103, D-117) · ED-7 griglia magnetica · FILE-5 tabelle nel file · DEV-3 router · DEV-4 routing statico e tabella di routing · DEV-5 server · CFG-3 `tracert` · CFG-4 CLI in stile IOS · CFG-5 CLI e pannello sincronizzati · SIM-18 messaggi ICMP di errore |
 | **Fatto in parte** | SIM-7 porta spenta: interfacce dei router e porte degli switch sì, scheda di un host no |
-| **Da fare** | NF-2 offline e installabile · ED-8 esportare come immagine |
+| **Da fare** | NF-2 offline e installabile |
+
+### Rispetto al criterio di accettazione degli strumenti dell'editor
+
+| Punto | Stato |
+| --- | --- |
+| 1. Griglia accesa: switch e PC sui punti della griglia | Funziona |
+| 2. PC configurato, duplicato quattro volte, collegato allo switch | Funziona: PC2…PC5 con MAC nuovi, indirizzi da .11 a .14, stessa maschera e stesso gateway |
+| 3. Router duplicato: stesse interfacce, spente e senza indirizzi, nessuna rotta | Funziona |
+| 4. Riquadro attorno alla LAN, con colore ed etichetta; una nota con la consegna | Funziona |
+| 5. Spostare, ridimensionare dagli angoli, eliminare e far tornare con Annulla | Funziona |
+| 6. Salvare e riaprire: riquadro e nota al loro posto | Funziona |
+| 7. In presentazione si vedono, ma non si spostano né si modificano | Funziona |
+| 8. Esportare l'immagine con il tema scuro: PNG su sfondo chiaro, con riquadro e nota, senza buste | Funziona |
+
+Gli otto punti sono eseguiti di fila da un test in un browser vero (`tests/e2e/strumenti.spec.ts`), che controlla anche i pixel dell'immagine: lo sfondo chiaro, il colore del riquadro e della nota, nessun pixel del colore delle buste.
 
 ### Rispetto al criterio di accettazione della CLI
 
@@ -572,8 +589,8 @@ Dall'11 ottobre 2026 gli otto punti sono eseguiti di fila da un test automatico 
 
 ### Che cosa esiste oltre ai requisiti
 
-- 105 test della pagina in un browser vero (`tests/e2e/`), tra cui le lezioni dei tre criteri di accettazione eseguite per intero, la schermata in cinque grandezze di finestra e a ogni ingrandimento della presentazione (D-112), i segnali dell'interfaccia: stato della simulazione, messaggi, scheda Eventi (D-113), il pannello laterale: campi, interfacce, tabelle, rotte, strati dei pacchetti (D-114), e la coerenza visiva: misure dei caratteri, contrasti nei due temi, icone, fuoco e stati dei pulsanti (D-115), il menu Altro vicino ai bordi (D-116) le annotazioni: strumenti, disegnare, spostare, ridimensionare, testo, colore, file, presentazione (D-117), e lo spazio del disegno: fascia che non si apre da sola, limite dell'ingrandimento automatico, inquadratura delle annotazioni (D-118); e un controllo automatico a ogni push.
-- 1007 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
+- 107 test della pagina in un browser vero (`tests/e2e/`), tra cui le lezioni dei tre criteri di accettazione eseguite per intero, la schermata in cinque grandezze di finestra e a ogni ingrandimento della presentazione (D-112), i segnali dell'interfaccia: stato della simulazione, messaggi, scheda Eventi (D-113), il pannello laterale: campi, interfacce, tabelle, rotte, strati dei pacchetti (D-114), e la coerenza visiva: misure dei caratteri, contrasti nei due temi, icone, fuoco e stati dei pulsanti (D-115), il menu Altro vicino ai bordi (D-116) le annotazioni: strumenti, disegnare, spostare, ridimensionare, testo, colore, file, presentazione (D-117), e lo spazio del disegno: fascia che non si apre da sola, limite dell'ingrandimento automatico, inquadratura delle annotazioni (D-118), e la preparazione del criterio degli strumenti dell'editor con l'immagine esportata (D-119); e un controllo automatico a ogni push.
+- 1010 test automatici su motore, lettura e scrittura dei file, comandi del terminale e sulle parti dell'interfaccia che non hanno bisogno di uno schermo: preparazione del disegno, orologio del tempo reale, modifiche e cronologia, inquadratura, presentazione.
 - Cinque reti di esempio in `examples/`: due PC, una LAN con uno switch, tre switch ad anello, due LAN unite da un router, tre reti con due router in fila.
 - Il sito pubblicato, che si aggiorna a ogni push sul ramo `stabile` (D-99), e l'anteprima del ramo `main`.
 

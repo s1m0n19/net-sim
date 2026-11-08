@@ -59,7 +59,7 @@ Alta 52 px, divisa in quattro gruppi (D-110):
 
 | Gruppo | Che cosa contiene |
 | --- | --- |
-| Identità e progetto | Il marchio e il nome dell'app; il nome del file, o «Senza nome», con la pastiglia **Da salvare** quando ci sono modifiche non salvate (un punto e una scritta, non il solo colore); il menu **Progetto**, che in testa ripete il nome intero del file e lo stato («Modifiche non salvate», «Tutto salvato»), poi Nuova rete, Apri rete…, Salva con nome… e la casella «Salva anche le tabelle ARP e MAC», con una riga che ne spiega l'effetto; il pulsante **Salva**, fuori dal menu e sempre in vista, l'unico pieno nel colore d'accento, con l'etichetta «con tabelle» accanto quando la casella è spuntata |
+| Identità e progetto | Il marchio e il nome dell'app; il nome del file, o «Senza nome», con la pastiglia **Da salvare** quando ci sono modifiche non salvate (un punto e una scritta, non il solo colore); il menu **Progetto**, che in testa ripete il nome intero del file e lo stato («Modifiche non salvate», «Tutto salvato»), poi Nuova rete, Apri rete…, Salva con nome…, Esporta immagine… (vedi «Esportare come immagine») e la casella «Salva anche le tabelle ARP e MAC», con una riga che ne spiega l'effetto; il pulsante **Salva**, fuori dal menu e sempre in vista, l'unico pieno nel colore d'accento, con l'etichetta «con tabelle» accanto quando la casella è spuntata |
 | Modifica | Annulla e Ripristina, due icone con il suggerimento e la scorciatoia; spente quando non c'è nulla da annullare o ripristinare |
 | Visualizzazione | Il menu **Visualizza**: caselle per indirizzi IP, indirizzi MAC, nomi delle porte, griglia magnetica e tema scuro. Una casella cambia subito il disegno, e il menu resta aperto per cambiarne altre |
 | Presentazione | **Presenta**, con il contorno e il testo nel colore d'accento: si trova subito, ma non domina la barra di chi lavora |
@@ -106,6 +106,14 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 - Accanto al nome della rete, la pastiglia **Da salvare** dice che ci sono modifiche non salvate: il file che ne uscirebbe è diverso dall'ultimo aperto o salvato. Contano le modifiche alla rete, gli spostamenti e i guasti; non il traffico, nemmeno quando le tabelle si salvano, e non la casella delle tabelle. Annullare tutto riporta a "salvata".
 - Con modifiche non salvate, **Nuova rete**, **Apri rete** e la chiusura della pagina chiedono conferma (D-58). Per ora la conferma, come la richiesta del nome, è una finestrella del browser; prima del rilascio completo diventeranno riquadri nello stile dell'app.
 - Salvare non tocca la simulazione, la selezione né la cronologia.
+
+### Esportare come immagine
+
+**Esporta immagine…**, nel menu Progetto sotto Salva con nome, produce un'immagine PNG di tutta la rete, per le slide e le verifiche su carta (ED-8, D-104, D-119). Dove il browser lo permette chiede dove salvarla, proponendo il nome della rete con `.png` (o «rete.png»); altrimenti la scarica. È spento quando sul disegno non c'è nulla, né dispositivi né annotazioni; in presentazione non c'è, come tutto il menu Progetto.
+
+- **Che cosa contiene.** Ciò che il disegno contiene, scritte comprese, con un margine attorno: dispositivi, cavi, le etichette accese in quel momento (IP, MAC, porte), le tabelle appuntate, riquadri e note. Non contiene le buste in viaggio, gli indicatori di attesa, l'elenco delle porte aperto, la selezione, le evidenziature e le crocette per togliere le tabelle appuntate.
+- **Com'è fatta.** Sempre con i colori del tema chiaro, anche se è acceso lo scuro, e a doppia risoluzione: due pixel per unità del disegno. I caratteri sono gli IBM Plex dell'app, messi dentro l'immagine. L'inquadratura è quella dell'estensione vera del disegno, scritte comprese, più precisa dei margini stimati di Adatta; non dipende dallo zoom né dalla grandezza della finestra.
+- **Come nasce** (`topology/export-image.ts`). Dal disegno sullo schermo: per un istante si toglie la selezione, si copia il disegno scrivendo in ogni elemento lo stile che avrebbe con il tema chiaro, si tolgono gli elementi segnati come «da non esportare», e la copia si disegna su una tela. Lo schermo non cambia: tema, selezione e simulazione restano come erano. Se qualcosa non riesce, una riga in alto lo dice.
 
 ## All'avvio
 

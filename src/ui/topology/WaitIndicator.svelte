@@ -12,7 +12,8 @@
   const circumference = 2 * Math.PI * RADIUS;
 </script>
 
-<g transform="translate({device.x + 34 * preferences.scale} {device.y - 30 * preferences.scale}) scale({preferences.scale})">
+<!-- Un'attesa non va nell'immagine esportata: è un istante della simulazione. -->
+<g data-export-skip transform="translate({device.x + 34 * preferences.scale} {device.y - 30 * preferences.scale}) scale({preferences.scale})">
   <title>{device.name} sta aspettando una risposta</title>
   <circle class="track" r={RADIUS} />
   <circle

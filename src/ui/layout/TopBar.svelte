@@ -10,6 +10,7 @@
   import { FILE_EXTENSION, session } from "../session.svelte";
   import Icon from "../theme/Icon.svelte";
   import Menu, { type MenuItem } from "./Menu.svelte";
+  import { exportImage } from "../topology/export-image";
 
   // Il file su disco da cui viene la rete, quando il browser lo lascia
   // tenere: Salva ci scrive senza richiedere dove.
@@ -57,6 +58,16 @@
     }
   }
 
+  // Esporta il disegno come immagine PNG (ED-8, D-119): sempre con il tema
+  // chiaro, a doppia risoluzione, senza buste in viaggio.
+  async function exportPicture() {
+    try {
+      await exportImage();
+    } catch {
+      session.notice = "Non è stato possibile esportare l'immagine.";
+    }
+  }
+
   // Il menu Progetto: i comandi di file meno frequenti di Salva, che resta
   // fuori, sempre a portata di mano.
   const projectItems: MenuItem[] = $derived([
@@ -77,6 +88,15 @@
       shortcut: "Ctrl+Maiusc+S",
       disabled: session.isEmpty(),
       run: () => save(true),
+    },
+    {
+      kind: "action",
+      label: "Esporta immagine…",
+      icon: "image",
+      description: "Un'immagine PNG di tutta la rete, con il tema chiaro, per le slide e le verifiche su carta",
+      // Serve qualcosa da fotografare: un dispositivo o un'annotazione.
+      disabled: session.isEmpty() && session.view.annotations.length === 0,
+      run: exportPicture,
     },
     { kind: "separator" },
     {

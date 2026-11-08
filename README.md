@@ -12,7 +12,7 @@ Il progetto è in sviluppo. Simula PC, server, switch e router, con ARP, IPv4, p
 
 Oggi l'app apre e salva una rete su file e permette di condurre una dimostrazione, con ping, tempo reale o passi, guasti, contenuto dei pacchetti, tabelle, elenco degli eventi, terminale dei PC e CLI in stile IOS di router e switch. L'editor è completo: si posano, si spostano, si collegano, si configurano e si eliminano i dispositivi, e ogni modifica si annulla. Con Presenta si proietta in aula.
 
-Mancano, per completare la prima versione: il funzionamento offline e l'esportazione del disegno come immagine. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
+Manca, per completare la prima versione, il funzionamento offline. Che cosa è previsto, e a che punto è ogni parte, è scritto in [SPEC.md](SPEC.md), sezione 9.
 
 ## Pubblicazione
 
@@ -119,7 +119,7 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 
 | Comando | Effetto |
 | --- | --- |
-| **Progetto ▾** | Il menu dei file. In testa ripete il nome intero del file e dice se ci sono modifiche da salvare; poi **Nuova rete** torna al foglio vuoto; **Apri rete…** apre un file di rete; **Salva con nome…**; la casella **Salva anche le tabelle ARP e MAC** |
+| **Progetto ▾** | Il menu dei file. In testa ripete il nome intero del file e dice se ci sono modifiche da salvare; poi **Nuova rete** torna al foglio vuoto; **Apri rete…** apre un file di rete; **Salva con nome…**; **Esporta immagine…** salva un'immagine PNG di tutta la rete (sempre con il tema chiaro, a doppia risoluzione, senza le buste in viaggio), per le slide e le verifiche su carta; la casella **Salva anche le tabelle ARP e MAC** |
 | **Salva** | Salva nel file della rete, o chiede dove la prima volta. Accanto, l'etichetta «con tabelle» dice che salverà anche le tabelle |
 | **Apri rete…** | Apre un file di rete. Se il file non è valido, una riga rossa dice che cosa non va. Un file salvato da una versione più recente dell'app (per esempio con annotazioni, sul sito non ancora aggiornato) viene rifiutato con l'invito a ricaricare la pagina, invece di essere aperto a metà |
 | **Annulla, Ripristina** | Le due frecce curve: annullano e rifanno le modifiche alla rete |

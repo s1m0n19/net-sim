@@ -93,6 +93,34 @@ export async function writeNetworkFile(
 }
 
 /**
+ * Scrive un'immagine PNG sul computer dell'utente (ED-8). Dove il browser
+ * lo permette (Chrome, Edge) l'utente sceglie dove; negli altri browser
+ * l'immagine viene scaricata nella cartella dei download.
+ *
+ * @param image - l'immagine
+ * @param suggestedName - il nome proposto, con l'estensione .png
+ * @returns il nome del file scritto, oppure null se l'utente ha annullato
+ * @throws l'errore del browser, se la scrittura fallisce per altri motivi
+ */
+export async function writeImageFile(image: Blob, suggestedName: string): Promise<string | null> {
+  const picker = (window as any).showSaveFilePicker;
+  if (typeof picker !== "function") {
+    downloadBlob(image, suggestedName);
+    return suggestedName;
+  }
+  try {
+    const target = await picker({ suggestedName, types: [{ description: "Immagine PNG", accept: { "image/png": [".png"] } }] });
+    const writable = await target.createWritable();
+    await writable.write(image);
+    await writable.close();
+    return target.name;
+  } catch (problem) {
+    if (wasCancelled(problem)) return null;
+    throw problem;
+  }
+}
+
+/**
  * Dice se il browser lascia scegliere all'utente dove scrivere un file.
  *
  * @returns true in Chrome ed Edge; false dove un file si può solo scaricare
@@ -108,7 +136,11 @@ function wasCancelled(problem: unknown): boolean {
 
 // Fa scaricare un testo come file, con un collegamento creato sul momento.
 function download(text: string, name: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  downloadBlob(new Blob([text], { type: "application/json" }), name);
+}
+
+function downloadBlob(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = name;

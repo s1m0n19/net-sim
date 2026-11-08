@@ -11,6 +11,8 @@
     save: "M5 3h11l3 3v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1zM8 3v5h7V3M8 21v-7h8v7",
     // Un foglio con una freccia verso il basso: salvare in un altro file.
     saveAs: "M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M12 11v6M9 14l3 3 3-3",
+    // Una cornice con un paesaggio: un'immagine da esportare.
+    image: "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 9h.01",
     // Le frecce curve di annulla e ripristina.
     undo: "M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3",
     redo: "M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3",

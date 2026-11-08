@@ -33,7 +33,8 @@ test("il menu Progetto si usa con la tastiera, e si chiude con Esc o con un clic
   // Un clic fuori dal menu lo chiude.
   await project.click();
   await expect(page.getByRole("menu")).toBeVisible();
-  await drawing(page).click({ position: { x: 300, y: 300 } });
+  // Un punto del disegno lontano dal menu, che con Esporta immagine è più alto.
+  await drawing(page).click({ position: { x: 700, y: 450 } });
   await expect(page.getByRole("menu")).toHaveCount(0);
 });
 
