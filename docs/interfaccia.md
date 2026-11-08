@@ -117,7 +117,13 @@ Dopo i nove passaggi del piano, e le parti del rilascio 2:
 
 ## All'avvio
 
-L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: trascinare un dispositivo dalla colonna, oppure aprire un file. Non ricorda l'ultima rete e non ha reti di esempio integrate: quelle della cartella `examples/` si aprono come qualsiasi file.
+L'app si apre sempre su un foglio vuoto, con un invito al centro del disegno: trascinare un dispositivo dalla colonna, oppure aprire un file. Non ha reti di esempio integrate: quelle della cartella `examples/` si aprono come qualsiasi file.
+
+**La copia di recupero** (D-120, D-121). L'app non riapre da sola l'ultima rete, ma non perde il lavoro non salvato. Finché la rete è «Da salvare», nel browser c'è una copia di ciò che andrebbe nel file (rete, posizioni, annotazioni; non le tabelle, il traffico, i terminali), con il nome del file da cui veniva. È una sola: l'ultima rete su cui si lavorava. Si riscrive quando la rete cambia, non a ogni passo della simulazione, e sparisce quando la rete torna salvata, con un salvataggio riuscito o annullando tutte le modifiche.
+
+Se alla riapertura della pagina c'è una copia, una riga sotto la barra in alto lo dice: «C'è una rete non salvata dell'ultima volta («lezione»), lasciata alle 10:42 di sabato 8 novembre. Vuoi riprenderla?», con **Riprendi** e **Scarta**. Il pulsante non si chiama «Ripristina», che è già il nome di quello che rifà una modifica annullata. Riprendi riapre la rete con il suo nome, ed è «Da salvare»: il file su disco è ancora quello di prima, e Salva chiede dove scrivere, perché dopo il ricaricamento il browser non ricorda più il file. Scarta lascia andare la copia. Finché non si sceglie la copia non si tocca: una modifica fatta per sbaglio prima di rispondere non la cancella.
+
+Non sostituisce il file: il lavoro si consegna sempre salvandolo. Se il browser non ha dove tenerla (una finestra anonima, lo spazio finito), la copia non c'è e l'app funziona come prima. La tengono `storage/recovery.ts` e lo strato del file della sessione.
 
 ## Colonna dei dispositivi e degli strumenti
 

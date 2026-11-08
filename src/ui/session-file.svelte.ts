@@ -8,6 +8,7 @@
 import { copyTables, type NetworkTables } from "../engine/model/tables";
 import { Simulator } from "../engine/simulator";
 import { loadNetworkFile } from "../storage/load";
+import { browserStore, clearRecovery, readRecovery, writeRecovery, type RecoveryCopy } from "../storage/recovery";
 import { serializeNetwork } from "../storage/save";
 import { messageOf, SessionCore } from "./session-core.svelte";
 
@@ -50,6 +51,20 @@ export class SessionFile extends SessionCore {
 
   // Un messaggio per l'utente quando un file non si può aprire.
   error = $state<string | null>(null);
+
+  /**
+   * La copia di recupero trovata all'apertura della pagina, finché l'utente
+   * non sceglie se ripristinarla o scartarla (D-120). Intanto la copia nel
+   * browser non si tocca: un clic per sbaglio non la cancella.
+   */
+  recoveryOffer = $state.raw<RecoveryCopy | null>(null);
+
+  // Dove tenere la copia di recupero; null se il browser non lo permette.
+  private recoveryStore = browserStore();
+  // La copia si tiene solo dopo aver guardato se ce n'era una (checkRecovery).
+  private recoveryChecked = false;
+  // Il testo dell'ultima copia scritta: si riscrive solo se cambia.
+  private lastRecoveryText: string | null = null;
 
   /**
    * Apre una rete a partire dal contenuto di un file.
@@ -99,7 +114,59 @@ export class SessionFile extends SessionCore {
   // riporta a "salvata".
   protected override refresh(): void {
     super.refresh();
-    this.dirty = this.serialize() !== this.savedText;
+    const text = this.serialize();
+    this.dirty = text !== this.savedText;
+    this.keepRecovery(text);
+  }
+
+  /**
+   * Da chiamare all'apertura della pagina: guarda se nel browser c'è una
+   * copia di recupero, e da lì in poi la tiene aggiornata (D-120).
+   */
+  checkRecovery(): void {
+    if (this.recoveryChecked) return;
+    this.recoveryChecked = true;
+    this.recoveryOffer = this.recoveryStore === null ? null : readRecovery(this.recoveryStore);
+    if (this.recoveryOffer === null) this.keepRecovery(this.serialize());
+  }
+
+  /**
+   * Riapre la rete della copia di recupero, con il nome del file da cui
+   * veniva. Resta da salvare: il file su disco è ancora quello di prima.
+   */
+  restoreRecovery(): void {
+    const copy = this.recoveryOffer;
+    if (copy === null) return;
+    this.recoveryOffer = null;
+    this.open(`${copy.fileName ?? "rete"}${FILE_EXTENSION}`, copy.text);
+    if (this.error !== null) return;
+    this.fileName = copy.fileName;
+    this.savedText = "";
+    this.refresh();
+  }
+
+  /** Lascia andare la copia di recupero: da qui si tiene quella del lavoro nuovo. */
+  discardRecovery(): void {
+    this.recoveryOffer = null;
+    if (this.recoveryStore !== null) clearRecovery(this.recoveryStore);
+    this.lastRecoveryText = null;
+    this.keepRecovery(this.serialize());
+  }
+
+  // Tiene la copia di recupero al passo con la rete: c'è finché ci sono
+  // modifiche non salvate, sparisce quando la rete torna salvata. Si scrive
+  // solo quando il testo cambia, non a ogni passo della simulazione.
+  private keepRecovery(text: string): void {
+    const store = this.recoveryStore;
+    if (store === null || !this.recoveryChecked || this.recoveryOffer !== null) return;
+    if (this.dirty) {
+      if (text === this.lastRecoveryText) return;
+      writeRecovery(store, { fileName: this.fileName, text, savedAt: Date.now() });
+      this.lastRecoveryText = text;
+    } else if (this.lastRecoveryText !== null) {
+      clearRecovery(store);
+      this.lastRecoveryText = null;
+    }
   }
 
   /**
@@ -138,7 +205,10 @@ export class SessionFile extends SessionCore {
     this.fileName = baseName(name);
     this.savedText = draft.config;
     if (draft.tables !== null) this.simulator?.setStartingTables(draft.tables);
-    this.dirty = this.serialize() !== this.savedText;
+    const text = this.serialize();
+    this.dirty = text !== this.savedText;
+    // Salvata, la copia di recupero non serve più (D-120).
+    this.keepRecovery(text);
   }
 
   // La rete aperta; un foglio vuoto se non ce n'è nessuna.

@@ -14,6 +14,10 @@ import { start } from "./ui/simulation/playback";
 
 mount(App, { target: document.getElementById("app")! });
 
+// Se l'ultima volta è rimasto lavoro non salvato, l'app propone di
+// ripristinarlo; da qui in poi tiene la copia di recupero aggiornata (D-120).
+session.checkRecovery();
+
 // Solo durante lo sviluppo: l'indirizzo può aprire un esempio e mettere la
 // rete in una certa situazione, senza toccare il mouse. Serve a provare
 // la pagina e a fotografarla. Nel sito pubblicato questo blocco non esiste.

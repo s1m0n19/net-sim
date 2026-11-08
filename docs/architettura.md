@@ -91,7 +91,8 @@ net-sim/
 │   │   ├── annotations-file.ts riquadri e note del disegno: il tipo, e come stanno nel file
 │   │   ├── fields.ts          i controlli sui singoli campi di un file
 │   │   ├── migrations.ts      le versioni del formato, e il passaggio dall'una all'altra
-│   │   └── browser-files.ts   scelta, lettura e scrittura di un file nel browser
+│   │   ├── browser-files.ts   scelta, lettura e scrittura di un file nel browser
+│   │   └── recovery.ts        la copia di recupero del lavoro non salvato, nel browser
 │   ├── shell/
 │   │   ├── windows.ts         prompt dei comandi degli host: da testo a comando, da risultato a testo
 │   │   └── ios/               la CLI in stile IOS di router e switch (vedi cli.md)
@@ -145,6 +146,7 @@ Gli interpreti di `src/shell/` stanno fuori dal motore perché traducono testo i
 | Configurazione | dispositivi, porte, collegamenti, indirizzi, rotte statiche | nei dispositivi della rete (`Host`, `Switch`, `Router`) | sì |
 | Disegno | coordinate di ogni dispositivo; riquadri e note (annotazioni) | fuori dal motore, in `LoadedFile.positions` e `LoadedFile.annotations` | sì |
 | Stato di esecuzione | tabelle MAC e ARP, pacchetti in attesa, echo in sospeso, coda degli eventi, tempo | nei dispositivi e nel `Simulator`, che tiene anche le tabelle di partenza (la tabella di routing no: `routingTableOf` la calcola ogni volta da configurazione e segnale) | le sole tabelle MAC e ARP, se chi salva lo chiede (D-25, D-100); il resto mai |
+| Copia di recupero | l'ultima rete con modifiche non salvate, con il nome del file (D-120) | nel browser, in `localStorage`, attraverso `storage/recovery.ts` | è il contenuto di un file, senza tabelle |
 | Stato della vista | selezione, tabelle appuntate, terminali aperti e modalità della CLI, filtro, inquadratura, cronologia per annullare; tema, etichette, pannelli aperti, presentazione | in `session` e in `preferences` (`src/ui/`) | no |
 
 `createHost` e `createSwitch` costruiscono un dispositivo "appena acceso": la configurazione data più lo stato di esecuzione iniziale. Li usano il lettore dei file e i test, così lo stato iniziale è definito in un solo punto. Le tabelle di un file salvato con le tabelle non passano da lì: il lettore le restituisce a parte, e il simulatore le aggiunge come tabelle di partenza (`model/tables.ts`).
@@ -162,6 +164,7 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 | `file.spec.ts` | Salvare e riaprire, modifiche non salvate, file non valido |
 | `vista.spec.ts` | Rotella, sfondo e Adatta; modalità presentazione; fascia, pannello e barra che seguono il loro contenuto |
 | `barra.spec.ts` | La barra in alto: i menu Progetto e Visualizza con il mouse e con la tastiera, Salva e annulla, il tema, la presentazione, uno schermo da 1024×768 |
+| `recupero.spec.ts` | La copia di recupero: una rete costruita e una aperta da un file si riprendono dopo aver ricaricato la pagina, con annotazioni e nome del file; salvando, scartando o annullando tutto la copia sparisce; mentre è proposta, una modifica per sbaglio non la cancella (D-121) |
 | `strumenti.spec.ts` | Il criterio di accettazione degli strumenti dell'editor, di fila: griglia, PC duplicato quattro volte e collegato, router duplicato, riquadro e nota, spostare, ridimensionare, eliminare e annullare, salvare e riaprire, presentazione, immagine esportata con il tema scuro e una busta in viaggio (con i pixel controllati); l'esportazione spenta sul foglio vuoto (D-119) |
 | `spazi.spec.ts` | Lo spazio del disegno: la fascia in basso che non si apre costruendo la rete e si apre con la scheda Eventi, con un terminale, con E e T in presentazione; il limite dell'ingrandimento automatico per un PC solo e una piccola rete, lo zoom a mano oltre il limite, una rete grande inquadrata tutta, la vista a mano che non cambia posando, il trascinamento senza salti; annotazioni lontane all'apertura, dopo Adatta e in presentazione (D-118) |
 | `annotazioni.spec.ts` | Le annotazioni sul disegno: strumenti Riquadro e Nota, disegnare un riquadro in ogni direzione, posare una nota e scriverne il testo su più righe, etichetta e colore, spostare e ridimensionare con un passo da annullare ciascuno e il minimo di 40×40, eliminare, salvare e riaprire (formato 2, e 1 senza annotazioni), dispositivi e cavi dentro un riquadro, Ping e Collega, zoom e Adatta, presentazione in sola lettura, tastiera, cinque grandezze di finestra (D-117) |

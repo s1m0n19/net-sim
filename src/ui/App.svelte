@@ -5,6 +5,7 @@
   import { untrack } from "svelte";
   import { followContent, stripFollows, type StripContent } from "./layout/auto-open";
   import Palette from "./layout/Palette.svelte";
+  import RecoveryOffer from "./layout/RecoveryOffer.svelte";
   import TopBar from "./layout/TopBar.svelte";
   import { preferences } from "./preferences.svelte";
   import SidePanel from "./panels/SidePanel.svelte";
@@ -47,12 +48,17 @@
 
 <div class="shell" class:presenting={preferences.presenting} style="--ui-scale: {preferences.scale}">
   <div class="top"><TopBar /></div>
-  {#if session.error !== null}
-    <div class="error" role="alert">
-      <span><strong>Il file non si può aprire.</strong> {session.error}</span>
-      <button class="btn" onclick={() => (session.error = null)}>Chiudi</button>
-    </div>
-  {/if}
+  <!-- Le righe sotto la barra: il file che non si apre, il lavoro da
+       ripristinare. Ci sono solo quando servono. -->
+  <div class="notices">
+    {#if session.error !== null}
+      <div class="error" role="alert">
+        <span><strong>Il file non si può aprire.</strong> {session.error}</span>
+        <button class="btn" onclick={() => (session.error = null)}>Chiudi</button>
+      </div>
+    {/if}
+    <RecoveryOffer />
+  </div>
   <!-- In presentazione la colonna dei dispositivi non c'è. -->
   {#if preferences.presenting}
     <span></span>
@@ -75,7 +81,7 @@
      file lungo) non allarghi la pagina: si accorcia o scorre al suo
      interno (D-112). */
   .top,
-  .error,
+  .notices,
   .bottom {
     grid-column: 1 / -1;
     min-width: 0;
@@ -116,7 +122,7 @@
     grid-row: 3;
   }
   .presenting > .top,
-  .presenting > .error,
+  .presenting > .notices,
   .presenting > .bottom,
   .presenting > :global(aside),
   .presenting :global(.canvas > .bar),
