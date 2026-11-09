@@ -300,3 +300,27 @@ for (const size of [
     }
   });
 }
+
+test("se il pannello perde spazio (una barra di scorrimento larga), gli indirizzi delle interfacce restano interi", async ({ page }) => {
+  // Firefox su Linux mette nel pannello una barra di scorrimento che occupa
+  // posto dentro la parte che scorre, mentre il pannello resta largo uguale:
+  // qui la si imita togliendo 40 pixel a ciò che il pannello contiene (D-123).
+  const squeeze = () =>
+    sidePanel(page).evaluate((panel) => {
+      for (const el of [panel, ...panel.querySelectorAll<HTMLElement>("*")]) {
+        if (getComputedStyle(el).containerName === "panel") for (const child of el.children) (child as HTMLElement).style.marginRight = "40px";
+      }
+    });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openApp(page);
+  await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+  await page.getByRole("button", { name: "Presenta" }).click();
+  await device(page, "R1").click();
+  const larger = page.getByRole("button", { name: "Ingrandisci testo e disegno" });
+  for (;;) {
+    await squeeze();
+    for (const name of ["ip-Gi0/0", "mask-Gi0/1"]) await expectReadable(field(page, name));
+    if (!(await larger.isEnabled())) break;
+    await larger.click();
+  }
+});

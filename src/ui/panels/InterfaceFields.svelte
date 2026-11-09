@@ -55,6 +55,11 @@
     border-left: 3px dashed var(--muted);
     border-radius: 0 var(--radius) var(--radius) 0;
     background: var(--surface-2);
+    /* I campi dentro guardano lo spazio che resta nel riquadro, non solo il
+       pannello: con l'ingrandimento della presentazione, o una barra di
+       scorrimento che occupa posto (Firefox su Linux), il pannello può
+       essere largo abbastanza e il riquadro no (D-112, D-123). */
+    container: interface / inline-size;
   }
   .interface.on {
     border-left-style: solid;
@@ -114,6 +119,13 @@
     .interface {
       padding-inline: 6px 4px;
     }
+  }
+  /* Accanto all'etichetta (6.2em, 81 pixel, più 8 di spazio) un indirizzo
+     intero, 255.255.255.255, chiede 117 pixel di testo e 16 di margini e
+     bordo del campo: sotto i 228 pixel, qualcuno di scorta compreso, ogni
+     etichetta va sopra il suo campo. Il carattere dei campi resta di 13
+     pixel anche ingrandendo, perciò la soglia è in pixel. */
+  @container interface (max-width: 228px) {
     .fields {
       grid-template-columns: minmax(0, 1fr);
       gap: 2px;

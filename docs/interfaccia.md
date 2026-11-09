@@ -311,7 +311,7 @@ Una barra compatta che galleggia in basso al centro del disegno, come i comandi 
 
 Mostra l'ultima cosa selezionata. Si chiude con la freccia nell'angolo in alto a destra, e si riduce a una striscia sottile sul bordo, da cui si riapre. Chiuso, resta chiuso anche quando si seleziona qualcosa: lo riapre solo l'utente.
 
-Largo 290 px; in presentazione, ingrandito, al massimo due quinti della finestra. Quando il suo contenuto è più stretto di 250 px ogni etichetta va sopra il suo campo, anche nell'editor delle rotte, perché un indirizzo non si tagli (D-112). Il contenuto che non ci sta scorre in verticale, mai di lato.
+Largo 290 px; in presentazione, ingrandito, al massimo due quinti della finestra. Quando il suo contenuto è più stretto di 250 px ogni etichetta va sopra il suo campo (nei riquadri delle interfacce dei router, quando il riquadro è più stretto di 228 px: con una barra di scorrimento che occupa posto il pannello può bastare e il riquadro no, D-123), anche nell'editor delle rotte, perché un indirizzo non si tagli (D-112). Il contenuto che non ci sta scorre in verticale, mai di lato.
 
 **Come è organizzato** (D-114). In testa l'**intestazione**: il nome grande, e sotto il tipo seguito dagli stati già noti, separati da un punto a mezza altezza («PC · acceso · segnale presente»). Ogni stato ha un cerchietto pieno se acceso, collegato, presente o in viaggio, vuoto se no: la parola dice lo stesso, e il colore non è il solo segno. Gli stati dicono com'è il dispositivo, non perché: «senza segnale» non diventa una diagnosi.
 
