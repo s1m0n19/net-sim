@@ -39,6 +39,38 @@ export async function openNetwork(page: Page, fileName: string, text: string): P
   await (await chooser).setFiles({ name: fileName, mimeType: "application/json", buffer: Buffer.from(text) });
 }
 
+/**
+ * Dove sta una scritta del disegno sullo schermo, misurato dal browser.
+ *
+ * Per le scritte dentro l'SVG Playwright, in WebKit, sbaglia la posizione:
+ * dimentica l'ingrandimento del disegno (il suo viewBox) e clicca altrove.
+ * Il browser invece la conosce, e la sente al posto giusto.
+ */
+export async function textBox(locator: Locator): Promise<{ x: number; y: number; width: number; height: number }> {
+  return locator.evaluate((element) => {
+    const { x, y, width, height } = element.getBoundingClientRect();
+    return { x, y, width, height };
+  });
+}
+
+/**
+ * Fa clic al centro di una scritta del disegno (vedi textBox), quando sta
+ * ferma: aprendo il pannello laterale il disegno si stringe, e le scritte
+ * si spostano subito dopo essere comparse.
+ */
+export async function clickText(page: Page, locator: Locator): Promise<void> {
+  await locator.waitFor();
+  let box = await textBox(locator);
+  await expect
+    .poll(async () => {
+      const before = box;
+      box = await textBox(locator);
+      return before.x === box.x && before.y === box.y;
+    })
+    .toBe(true);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 /** Un dispositivo del disegno, dal nome. */
 export function device(page: Page, name: string): Locator {
   return page.locator(`g.device[aria-label="${name}"], g.device[aria-label="${name}, selezionato"]`);

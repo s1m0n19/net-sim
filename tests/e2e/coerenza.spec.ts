@@ -121,7 +121,9 @@ test("il fuoco da tastiera si vede su ogni famiglia di pulsanti, e gli spenti so
     page.locator("aside section").getByRole("button", { name: "appunta" }), // pannello
     page.getByRole("button", { name: "Chiudi il pannello laterale" }), // apri e chiudi
   ];
-  await page.keyboard.press("Shift"); // da qui il fuoco arriva "da tastiera"
+  // Un Tab: da qui il fuoco arriva "da tastiera", anche per WebKit, che
+  // non lo deduce da un tasto qualsiasi.
+  await page.keyboard.press("Tab");
   for (const control of controls) {
     await control.focus();
     const outline = await control.evaluate((el) => {

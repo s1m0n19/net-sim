@@ -4,7 +4,7 @@
 // presentazione inquadrano anche le annotazioni.
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { action, clickDrawing, device, drag, exampleFile, moreAction, openApp, openNetwork, pointOn } from "./helpers";
+import { action, clickDrawing, device, drag, exampleFile, moreAction, openApp, openNetwork, pointOn, textBox } from "./helpers";
 
 const stripBody = (page: Page) => page.locator("footer .body");
 const canvas = (page: Page) => page.locator(".canvas");
@@ -209,13 +209,13 @@ test.describe("l'inquadratura delle annotazioni", () => {
     await expect(page.locator(".top .file")).toHaveText("scuola");
     // Si ingrandisce con la rotella attorno all'etichetta del riquadro, che
     // resta sotto il puntatore.
-    const start = await boxOf(page.locator("g.annotation.box text.label"));
+    const start = await textBox(page.locator("g.annotation.box text.label"));
     await page.mouse.move(start.x + 5, start.y + 5);
     for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -300);
     const pcBefore = await boxOf(device(page, "PC1").locator("rect.box"));
 
     // Si sposta il riquadro grande trascinandone l'etichetta: la vista resta.
-    const label = await boxOf(page.locator("g.annotation.box text.label"));
+    const label = await textBox(page.locator("g.annotation.box text.label"));
     await drag(page, { x: label.x + 5, y: label.y + 5 }, { x: label.x + 45, y: label.y + 25 });
     await expect(page.locator("g.annotation")).toHaveCount(2);
     expect(await boxOf(device(page, "PC1").locator("rect.box"))).toEqual(pcBefore);

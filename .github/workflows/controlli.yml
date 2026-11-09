@@ -1,5 +1,7 @@
 # A ogni push: test, controllo dei tipi, costruzione del sito e test della
-# pagina in un browser vero. L'esito compare accanto al commit.
+# pagina in tre browser veri: Chromium (Chrome ed Edge), Firefox e WebKit
+# (il motore di Safari), ciascuno in un lavoro a parte, in parallelo
+# (D-123). L'esito compare accanto al commit.
 #
 # Gira su ogni ramo. Non blocca nulla da solo: il sito delle classi si
 # aggiorna solo con un push sul ramo stabile, che si fa dopo che questi
@@ -13,7 +15,7 @@ on:
 jobs:
   controlli:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -31,16 +33,37 @@ jobs:
       - name: Controllo dei tipi
         run: npm run check
 
+  pagina:
+    name: pagina (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      # Un browser che fallisce non ferma gli altri: si vede subito se il
+      # difetto è di uno solo.
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Installa le dipendenze
+        run: npm ci
+
       - name: Installa il browser dei test
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Test della pagina (costruiscono il sito e lo provano)
-        run: npm run test:e2e
+        run: npx playwright test --project=${{ matrix.browser }}
 
       - name: Conserva le tracce dei test falliti
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: tracce-dei-test
+          name: tracce-dei-test-${{ matrix.browser }}
           path: test-results/
           retention-days: 7

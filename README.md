@@ -38,7 +38,7 @@ Come Cloudflare costruisce e pubblica è scritto in `wrangler.jsonc`: il sito è
 ## Requisiti
 
 - [Node.js](https://nodejs.org/) 22.12 o successivo (anche 24 o 26), con npm.
-- Un browser aggiornato (Chrome o Edge). La schermata è provata dal monitor grande (1920×1080) fino a una finestra di 900×700: nelle finestre piccole ogni area si stringe, e nessun comando esce dallo schermo.
+- Un browser aggiornato: Chrome o Edge vanno meglio; anche Firefox e Safari funzionano, e i test li provano a ogni modifica. La schermata è provata dal monitor grande (1920×1080) fino a una finestra di 900×700: nelle finestre piccole ogni area si stringe, e nessun comando esce dallo schermo.
 
 ## Avvio
 
@@ -222,7 +222,8 @@ Durante lo sviluppo l'indirizzo può aprire un esempio e mettere la rete in una 
 | `npx vitest run tests/engine/arp.test.ts` | Esegue un solo file di test |
 | `npm run check` | Controlla i tipi di TypeScript e dei componenti Svelte |
 | `npm run build` | Produce il sito statico nella cartella `dist/` |
-| `npm run test:e2e` | Costruisce il sito e ne prova i percorsi principali in un browser vero. La prima volta serve `npx playwright install chromium` |
+| `npm run test:e2e` | Costruisce il sito e ne prova i percorsi principali in un browser vero, Chromium. La prima volta serve `npx playwright install chromium` |
+| `npm run test:e2e:browser` | Gli stessi percorsi in Chromium, Firefox e WebKit (il motore di Safari). La prima volta serve `npx playwright install` |
 
 ## Come è fatto
 

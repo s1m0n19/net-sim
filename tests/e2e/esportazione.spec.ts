@@ -217,8 +217,11 @@ test.describe("i confini dell'immagine", () => {
     await expect(page.locator("g.packet")).not.toHaveCount(0);
 
     // L'elenco delle porte aperto sporge sotto il disegno: nell'immagine non c'è.
-    await cable(page, "PC3", "SW1").click();
-    await page.getByRole("button", { name: /^Porta Fa0\/\d+ di SW1: cambia porta/ }).click();
+    // Da tastiera: le buste che scorrono sul cavo coprirebbero il nome della porta.
+    await cable(page, "PC3", "SW1").focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("button", { name: /^Porta Fa0\/\d+ di SW1: cambia porta/ }).focus();
+    await page.keyboard.press("Enter");
     await expect(page.locator("g.menu")).toBeVisible();
     const withMenu = await measurePng(page, await exportByDownload(page));
     expect([withMenu.width, withMenu.height]).toEqual([still.width, still.height]);

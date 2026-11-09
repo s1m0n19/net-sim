@@ -179,4 +179,4 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 
 Le finestre di Chrome per scegliere dove aprire e salvare non si possono comandare da un test: lì l'app viene provata con il ripiego che usa negli altri browser, cioè campo di tipo file e scaricamento. L'aspetto (colori, dimensioni, leggibilità) resta da guardare a occhio.
 
-A ogni push GitHub Actions esegue test, controllo dei tipi e test della pagina (`.github/workflows/controlli.yml`) e segna l'esito sul commit. Non blocca nulla da solo, ma il sito delle classi si aggiorna solo portando un commit sul ramo `stabile`, e lo si fa dopo che i controlli su quel commit sono passati (D-99).
+A ogni push GitHub Actions esegue test, controllo dei tipi e test della pagina (`.github/workflows/controlli.yml`) e segna l'esito sul commit. I test della pagina girano in tre lavori paralleli, uno per browser: Chromium, Firefox e WebKit (D-123). Non blocca nulla da solo, ma il sito delle classi si aggiorna solo portando un commit sul ramo `stabile`, e lo si fa dopo che i controlli su quel commit sono passati (D-99).

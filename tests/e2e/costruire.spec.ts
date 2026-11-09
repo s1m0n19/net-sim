@@ -2,7 +2,7 @@
 // spostare, annullare, eliminare.
 
 import { expect, test } from "@playwright/test";
-import { action, centreOf, clickDrawing, device, drag, fillField, openApp, pointOn, sidePanel } from "./helpers";
+import { action, centreOf, clickDrawing, clickText, device, drag, fillField, openApp, pointOn, sidePanel } from "./helpers";
 
 test("una rete costruita da zero risponde al ping", async ({ page }) => {
   await openApp(page);
@@ -34,7 +34,7 @@ test("una rete costruita da zero risponde al ping", async ({ page }) => {
   // Il cavo nuovo ha preso la seconda porta dello switch; la si cambia
   // dal suo nome.
   await expect(sidePanel(page)).toContainText("SW1 · Fa0/2");
-  await page.getByRole("button", { name: /Porta Fa0\/2 di SW1/ }).click();
+  await clickText(page, page.getByRole("button", { name: /Porta Fa0\/2 di SW1/ }));
   await page.getByRole("option", { name: "Fa0/5" }).click();
   await expect(sidePanel(page)).toContainText("SW1 · Fa0/5");
 

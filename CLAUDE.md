@@ -28,7 +28,8 @@ Il punto preciso sta nella sezione 9 di `SPEC.md`, che va tenuta aggiornata; qui
   - **Tabelle nel file** (fatte, D-100): `model/tables.ts`, le tabelle di partenza del `Simulator` (Ricomincia ci torna), `storage/tables-file.ts`, la casella delle tabelle nel menu Progetto della barra in alto (`session.saveTables`).
   - **Strumenti dell'editor** (fatti, D-101…D-104, D-117, D-119, piano in sette passaggi): fatti la griglia magnetica (`session.grid`, `topology/grid.ts`; in sviluppo `&griglia`) e il duplicare, nel motore (azione `duplicate-device`, `engine/duplicating.ts`) e a schermo (pulsante Duplica, `session.duplicate`, posto della copia in `topology/placement.ts`; in sviluppo `&duplica=PC1`). Fatte anche le annotazioni nei file e nella cronologia (D-106): tipo e file in `storage/annotations-file.ts`, metodi nello strato `session-annotations.svelte.ts`, nella vista `view.annotations`. Fatte anche le annotazioni a schermo (D-117): strumenti Riquadro e Nota nella colonna (`session.annotating`, `session.sketch`, `topology/box-drawing.ts`), `AnnotationBox.svelte` e `AnnotationNote.svelte` con i calcoli in `topology/annotation-geometry.ts` e i gesti in `topology/annotation-interaction.ts`, il pannello in `panels/AnnotationPanel.svelte`, la selezione `{ kind: "annotation" }`; la lezione è in `tests/e2e/annotazioni.spec.ts`. Fatta anche l'esportazione come immagine (D-119): `topology/export-image.ts`, voce Esporta immagine nel menu Progetto, `chooseImageTarget` e `writeImage` in `storage/browser-files.ts` (la finestra per scegliere dove salvare si apre per prima, nel clic: D-122); gli elementi da non esportare hanno `data-export-skip`. Il criterio di accettazione è eseguito da `tests/e2e/strumenti.spec.ts`, i casi difficili dell'esportazione da `tests/e2e/esportazione.spec.ts`.
   - **Copia di recupero** (fatta, D-120, D-121): `storage/recovery.ts`, `checkRecovery`, `restoreRecovery` e `discardRecovery` nello strato del file, la riga `layout/RecoveryOffer.svelte`; la lezione è in `tests/e2e/recupero.spec.ts`.
-  - **Da costruire dopo** (D-120, intervista dell'8 novembre): licenza GPL-3, test anche in Firefox e Safari, guida nell'app con l'icona «?», voce Segnala un problema; gli aggiornamenti alla prossima apertura vengono con l'offline.
+  - **Firefox e Safari** (fatto, D-123): i test della pagina girano anche in Firefox e WebKit, ciascuno in un lavoro di GitHub Actions; per le scritte dell'SVG i test usano `textBox` e `clickText` di `tests/e2e/helpers.ts`, perché Playwright in WebKit ne sbaglia la posizione.
+  - **Da costruire dopo** (D-120, intervista dell'8 novembre): licenza GPL-3, guida nell'app con l'icona «?», voce Segnala un problema; gli aggiornamenti alla prossima apertura vengono con l'offline.
   - **Offline** (NF-2): da fare; aspetta nome e dominio definitivi.
 - **Tappe successive** (T1–T8): non cominciate.
 
@@ -41,7 +42,8 @@ npm run dev      # server di sviluppo su http://localhost:5173
 npm test         # tutti i test, una sola esecuzione
 npm run check    # controllo dei tipi (TypeScript e componenti Svelte)
 npm run build    # sito statico in dist/
-npm run test:e2e # test della pagina in un browser vero (costruisce il sito e lo prova)
+npm run test:e2e # test della pagina in Chromium (costruisce il sito e lo prova)
+npm run test:e2e:browser # gli stessi in Chromium, Firefox e WebKit (D-123)
 
 npx vitest run tests/engine/arp.test.ts    # un solo file di test
 npx vitest run -t "la richiesta parte"     # i test il cui nome contiene il testo
@@ -50,7 +52,7 @@ npx playwright test lezione                # un solo file dei test della pagina
 npx playwright install chromium            # una volta sola: scarica il browser dei test
 ```
 
-Non c'è un linter. `npm run check` deve chiudersi senza errori né avvisi. A ogni push GitHub Actions (`.github/workflows/controlli.yml`) esegue test, controllo dei tipi e test della pagina e segna l'esito sul commit: dopo un push va controllato, insieme alla costruzione di Cloudflare (l'anteprima di `main`, o il sito se il push era su `stabile`).
+Non c'è un linter. `npm run check` deve chiudersi senza errori né avvisi. A ogni push GitHub Actions (`.github/workflows/controlli.yml`) esegue test, controllo dei tipi e test della pagina nei tre browser e segna l'esito sul commit: dopo un push va controllato, insieme alla costruzione di Cloudflare (l'anteprima di `main`, o il sito se il push era su `stabile`).
 
 Per vedere davvero la pagina, con il server di sviluppo acceso:
 

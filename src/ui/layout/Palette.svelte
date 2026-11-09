@@ -59,6 +59,18 @@
     (event.currentTarget as HTMLElement).querySelector<HTMLButtonElement>(".tile")?.focus();
   }
 
+  // Safari, su Mac, non dà il fuoco a un pulsante cliccato: aperto il
+  // menu con il mouse, Esc arriva alla pagina e non al contenitore. Lo si
+  // prende prima di tutti, così chiude il menu e nient'altro.
+  function windowKey(event: KeyboardEvent) {
+    if (event.key !== "Escape" || !(switchMenuOpen || routerMenuOpen)) return;
+    // Con il fuoco dentro il menu ci pensa menuKey, che ridà il fuoco alla voce.
+    if (document.activeElement?.closest(".with-menu")) return;
+    event.stopPropagation();
+    switchMenuOpen = false;
+    routerMenuOpen = false;
+  }
+
   function menuFocusOut(event: FocusEvent, close: () => void) {
     const next = event.relatedTarget as Node | null;
     if (next === null || !(event.currentTarget as HTMLElement).contains(next)) close();
@@ -80,6 +92,8 @@
     if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
   }
 </script>
+
+<svelte:window onkeydowncapture={windowKey} />
 
 {#if preferences.paletteOpen}
   <aside class="open">

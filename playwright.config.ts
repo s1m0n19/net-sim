@@ -20,7 +20,11 @@ export default defineConfig({
     viewport: { width: 1400, height: 860 },
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1400, height: 860 } } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1400, height: 860 } } },
+    { name: "firefox", use: { ...devices["Desktop Firefox"], viewport: { width: 1400, height: 860 } } },
+    { name: "webkit", use: { ...devices["Desktop Safari"], viewport: { width: 1400, height: 860 } } },
+  ],
   webServer: {
     command: "npm run build && npx vite preview --port 4173 --strictPort",
     url: "http://localhost:4173",
