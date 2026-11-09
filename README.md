@@ -16,7 +16,7 @@ Manca, per completare la prima versione, il funzionamento offline. Che cosa è p
 
 ## Pubblicazione
 
-Il sito pubblico sta su Cloudflare, nel piano gratuito, ed è collegato a questo repository. Due rami (decisione D-99 in [SPEC.md](SPEC.md)):
+Il codice è pubblico, su GitHub: https://github.com/s1m0n19/net-sim (D-125). Il sito pubblico sta su Cloudflare, nel piano gratuito, ed è collegato a questo repository. Due rami (decisione D-99 in [SPEC.md](SPEC.md)):
 
 - **`stabile`** è il sito che si usa in classe: a ogni push su questo ramo Cloudflare esegue `npm run build` e pubblica la cartella `dist/` all'indirizzo pubblico.
 - **`main`** è il ramo su cui si lavora: Cloudflare lo costruisce come anteprima, a un indirizzo diverso, senza toccare il sito della classe.
