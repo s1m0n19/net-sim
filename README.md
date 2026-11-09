@@ -245,3 +245,9 @@ Il motore è scritto per essere letto: un file per protocollo, nomi dei campi co
 | [docs/motore.md](docs/motore.md) | Come funziona il motore di simulazione, dove semplifica la realtà, difetti noti |
 | [docs/formato-file.md](docs/formato-file.md) | Il formato dei file delle reti |
 | [docs/interfaccia.md](docs/interfaccia.md) | L'interfaccia definitiva: progetto, stato e piano di costruzione |
+
+## Licenza
+
+net-sim è software libero: lo si può usare, studiare, modificare e ridistribuire secondo i termini della GNU General Public License, versione 3 o (a scelta) qualsiasi versione successiva, pubblicata dalla Free Software Foundation. Chi distribuisce una versione modificata deve darla con la stessa licenza e con il suo codice sorgente. Il testo completo è nel file [LICENSE](LICENSE) (D-120, D-124).
+
+Copyright © 2026 Simon Nucifora.
