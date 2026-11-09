@@ -12,7 +12,10 @@ const section = (page: Page, title: string) => sidePanel(page).getByRole("region
 // Il testo del campo si vede tutto, senza tagli.
 async function expectReadable(input: Locator): Promise<void> {
   await expect(input).toBeVisible();
-  expect(await input.evaluate((el: HTMLInputElement) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  // Il testo sta tutto nel campo: nulla da scorrere. Le due misure finiscono
+  // nel messaggio, così un fallimento dice di quanto.
+  const { scroll, client, value } = await input.evaluate((el: HTMLInputElement) => ({ scroll: el.scrollWidth, client: el.clientWidth, value: el.value }));
+  expect(scroll, `«${value}» nel campo: larghezza del testo e del campo`).toBeLessThanOrEqual(client);
 }
 
 // Scrive in un campo qualsiasi del pannello e conferma con Invio.

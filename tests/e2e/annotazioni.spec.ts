@@ -216,8 +216,13 @@ test("spostare e ridimensionare: un passo ciascuno, e mai sotto 40×40", async (
   await redo(page).click();
 
   // Dall'angolo in alto a sinistra, oltre l'angolo opposto: si ferma a 40×40.
+  // (Oltre l'angolo opposto ma dentro la finestra: Firefox non segue il
+  // mouse dei test fuori dalla finestra.)
   const nw = await boxOf(box.locator("rect.handle.nw"));
-  await drag(page, { x: nw.x + nw.width / 2, y: nw.y + nw.height / 2 }, { x: nw.x + 900, y: nw.y + 700 });
+  const far = await boxOf(box.locator("rect.handle.se"));
+  const viewport = page.viewportSize()!;
+  const beyond = { x: Math.min(far.x + 120, viewport.width - 5), y: Math.min(far.y + 120, viewport.height - 5) };
+  await drag(page, { x: nw.x + nw.width / 2, y: nw.y + nw.height / 2 }, beyond);
   await expect(sidePanel(page).locator("header")).toContainText("40 × 40");
   // Un clic sul bordo senza muovere non è una modifica: Annulla torna al ridimensionamento.
   await page.mouse.click((await edgePoint(box)).x, (await edgePoint(box)).y);
