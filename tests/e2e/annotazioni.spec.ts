@@ -323,7 +323,9 @@ test("dentro un riquadro dispositivi e cavi restano da cliccare, e lo sfondo tog
   await cable(page, "PC1", "SW1").click({ force: true });
   await expect(sidePanel(page).locator("header h2")).toHaveText(/Cavo tra/);
   // Un punto vuoto dentro il riquadro: è il disegno, e toglie la selezione.
-  await page.mouse.click(pc.x + pc.width / 2, pc.y - 30);
+  // (Il PC si rimisura: con il pannello aperto il disegno può essersi spostato.)
+  const now = await boxOf(device(page, "PC1").locator("rect.box"));
+  await page.mouse.click(now.x + now.width / 2, now.y - 30);
   await expect(sidePanel(page).locator("header h2")).toHaveText("Nessuna selezione");
   // Il riquadro si seleziona dal bordo.
   const grip = await edgePoint(boxes(page).first());
