@@ -16,6 +16,7 @@
     anchor,
     area,
     obstacles = [],
+    neighbours = [],
     scale = 1,
     roomy = false,
     subject,
@@ -27,6 +28,8 @@
     area: Size;
     // I comandi sul disegno da non coprire: zoom e barra della simulazione.
     obstacles?: Rect[];
+    // Gli altri dispositivi: meglio non coprirli, se c'è un altro posto.
+    neighbours?: Rect[];
     // L'ingrandimento della presentazione.
     scale?: number;
     // Pulsanti più grandi, quelli della presentazione (D-127); nell'editor
@@ -68,7 +71,7 @@
     }
   });
 
-  const placement = $derived(placeBar(anchor, { width, height }, area, obstacles));
+  const placement = $derived(placeBar(anchor, { width, height }, area, obstacles, neighbours));
   // Il menu "Altro" si apre dalla parte dove c'è più spazio.
   const opensUp = $derived(placement.top > area.height - placement.top - height);
 

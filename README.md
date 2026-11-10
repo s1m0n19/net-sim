@@ -70,7 +70,7 @@ Per provare: apri `examples/tre-reti-due-router.netsim.json`. Senza rotte un pin
 - trascinando la voce **PC** sul disegno;
 - con un clic sulla voce e poi un clic sul disegno per ogni dispositivo da posare. Esc per finire.
 
-Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte; da tastiera si apre con Invio e si chiude con Esc. Il **Server** si posa e si usa come un PC: stesso pannello, stesso terminale; prende il nome SRV1. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con Elimina, nel menu Altro della sua barretta, o con il tasto Canc.
+Passando su **Switch** si apre l'elenco delle varianti, a 8 o a 24 porte; alla LIM lo si apre e richiude toccando la voce; da tastiera si apre con Invio o freccia giù, si percorre con le frecce e si chiude con Esc. Il **Server** si posa e si usa come un PC: stesso pannello, stesso terminale; prende il nome SRV1. I dispositivi prendono da soli un nome (PC1, PC2, SW1) e i loro indirizzi MAC. Un dispositivo si sposta trascinandolo, e si elimina con Elimina, nel menu Altro della sua barretta, o con il tasto Canc.
 
 Per collegare due dispositivi ci sono due modi:
 

@@ -38,6 +38,14 @@ export class SessionCore {
   // Il tempo scorre da solo?
   running = $state(false);
 
+  /**
+   * L'istante in cui è partito l'ultimo traffico (un ping, un tracert) con
+   * il tempo fermo; null se il tempo scorreva o se da allora la rete è
+   * stata riaperta o ricominciata. Finché il tempo resta fermo lì, in alto
+   * sul disegno un'istruzione dice di premere Avvia o Passo (D-129).
+   */
+  launchedAt = $state<number | null>(null);
+
   // Il moltiplicatore della velocità in tempo reale: 0,5×, 1×, 2×.
   speed = $state(1);
 
@@ -194,6 +202,7 @@ export class SessionCore {
     } catch (problem) {
       return messageOf(problem);
     }
+    this.launchedAt = this.running ? null : this.displayTime;
     this.refresh();
     return null;
   }
@@ -233,6 +242,7 @@ export class SessionCore {
     this.generation += 1;
     this.displayTime = 0;
     this.running = false;
+    this.launchedAt = null;
     this.waitProgress = null;
     this.pingFrom = null;
     this.notice = null;

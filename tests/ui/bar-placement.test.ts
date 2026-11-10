@@ -72,3 +72,39 @@ describe("la barretta di un oggetto più alto di ciò che si vede (D-118)", () =
     expect(placeBar({ x: 500, top: -200, bottom: 900 }, BAR, AREA, []).top).toBe(600 - 60 - 8);
   });
 });
+
+describe("la barretta e i dispositivi vicini (D-129)", () => {
+  const OBJECT = { x: 500, top: 300, bottom: 400 };
+
+  test("con un vicino sopra e un po' di lato, scivola quanto basta, restando sopra l'oggetto", () => {
+    // Centrata andrebbe da 370 a 630, sul vicino: si sposta alla sua sinistra.
+    const above = { left: 560, top: 200, right: 640, bottom: 290 };
+    const placed = placeBar(OBJECT, BAR, AREA, [], [above]);
+    expect(placed.side).toBe("above");
+    expect(placed.left + BAR.width).toBeLessThanOrEqual(above.left);
+  });
+
+  test("con un vicino proprio sopra, o una fila di vicini, va sotto le scritte, se lì è libera", () => {
+    const right = { left: 460, top: 200, right: 540, bottom: 290 };
+    expect(placeBar(OBJECT, BAR, AREA, [], [right]).side).toBe("below");
+    const row = { left: 0, top: 200, right: 1000, bottom: 290 };
+    expect(placeBar(OBJECT, BAR, AREA, [], [row])).toEqual({ left: 370, top: 410, side: "below" });
+  });
+
+  test("chiuso tra vicini sopra e sotto, vale la regola di sempre: sopra", () => {
+    const rowAbove = { left: 0, top: 200, right: 1000, bottom: 290 };
+    const rowBelow = { left: 0, top: 405, right: 1000, bottom: 500 };
+    expect(placeBar(OBJECT, BAR, AREA, [], [rowAbove, rowBelow]).side).toBe("above");
+  });
+
+  test("i comandi contano più dei vicini: non si va sotto se lì c'è la barra della simulazione", () => {
+    const row = { left: 0, top: 200, right: 1000, bottom: 290 };
+    const simulation = { left: 300, top: 405, right: 700, bottom: 470 };
+    expect(placeBar(OBJECT, BAR, AREA, [simulation], [row]).side).toBe("above");
+  });
+
+  test("vicino al bordo basso non va sotto, dove finirebbe sull'oggetto", () => {
+    const row = { left: 0, top: 400, right: 1000, bottom: 490 };
+    expect(placeBar({ x: 500, top: 500, bottom: 560 }, BAR, AREA, [], [row]).side).toBe("above");
+  });
+});

@@ -5,6 +5,8 @@
 // sotto le sue scritte, e se nemmeno lì c'è posto si ferma al bordo basso.
 // Sopra o sotto, evita se può i comandi che stanno sul disegno (lo zoom,
 // la barra della simulazione): copriti, non si potrebbero usare (D-112).
+// Meglio ancora se non copre nemmeno gli altri dispositivi: con dei vicini
+// sopra, va sotto, se lì è libera (D-129).
 // Di lato non esce mai dal disegno: se con le scritte è troppo larga, la
 // barretta le toglie (barFits). Tutto in pixel dello schermo.
 
@@ -46,9 +48,11 @@ const MARGIN = 8;
  * @param bar - la grandezza della barretta
  * @param area - la grandezza del disegno sullo schermo
  * @param obstacles - i comandi sul disegno da non coprire, se si può
+ * @param neighbours - gli altri dispositivi, con le loro scritte: meglio non
+ *   coprirli, ma contano meno dei comandi
  * @returns l'angolo in alto a sinistra della barretta, e da che parte sta
  */
-export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles: Rect[] = []): BarPlacement {
+export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles: Rect[] = [], neighbours: Rect[] = []): BarPlacement {
   const within = (left: number) => clamp(left, MARGIN, area.width - bar.width - MARGIN);
   // Il punto dell'oggetto a cui la barretta resta vicina: il suo centro, o
   // il punto più vicino che si vede, se il centro è fuori dal disegno.
@@ -61,12 +65,24 @@ export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles:
   // A una data altezza, il primo posto libero: centrata, oppure spostata
   // di lato quanto basta per scansare un comando, purché resti sopra (o
   // sotto) l'oggetto.
-  const freeLeft = (top: number): number | null => {
+  const freeLeft = (top: number, avoid: Rect[] = obstacles): number | null => {
     const hits = (left: number) =>
-      obstacles.filter((o) => left < o.right && o.left < left + bar.width && top < o.bottom && o.top < top + bar.height);
+      avoid.filter((o) => left < o.right && o.left < left + bar.width && top < o.bottom && o.top < top + bar.height);
     const choices = [centred, ...hits(centred).flatMap((o) => [within(o.left - GAP - bar.width), within(o.right + GAP)])];
     return choices.find((left) => hits(left).length === 0 && left <= x && x <= left + bar.width) ?? null;
   };
+
+  // Prima un posto che non copra né i comandi né i dispositivi vicini:
+  // sopra, oppure sotto le scritte (ma non schiacciata contro il bordo,
+  // dove finirebbe sull'oggetto stesso).
+  if (neighbours.length > 0) {
+    const everything = [...obstacles, ...neighbours];
+    const clearAbove = aboveFits ? freeLeft(above, everything) : null;
+    if (clearAbove !== null) return { left: clearAbove, top: above, side: "above" };
+    const belowFits = anchor.bottom + GAP + bar.height <= area.height - MARGIN;
+    const clearBelow = belowFits ? freeLeft(below, everything) : null;
+    if (clearBelow !== null) return { left: clearBelow, top: below, side: "below" };
+  }
 
   // Sopra, se c'è posto e non copre nulla; altrimenti sotto, se lì non
   // copre nulla. Se coprirebbe qualcosa in tutti e due i posti, vale la

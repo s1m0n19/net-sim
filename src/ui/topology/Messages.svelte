@@ -16,6 +16,7 @@
   //
   // Nessuna sparisce da sola: un'istruzione resta finché l'operazione è in
   // corso, un rifiuto finché non si fa qualcos'altro.
+  import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
 
   // Che cosa si sta per posare, a parole.
@@ -29,6 +30,18 @@
   });
 
   const pingSource = $derived(session.view.devices.find((device) => device.id === session.pingFrom));
+
+  // Un ping appena lanciato con il tempo fermo non si muove finché non si
+  // preme Avvia o Passo: chi lo usa la prima volta non lo sa (D-129). In
+  // presentazione il docente lo sa, e l'istruzione non serve alla classe.
+  const awaitingClock = $derived(
+    session.launchedAt !== null &&
+      !session.running &&
+      session.displayTime === session.launchedAt &&
+      session.view.nextEvent !== null &&
+      !session.view.suspended &&
+      !preferences.presenting,
+  );
   const linkSource = $derived(session.view.devices.find((device) => device.id === session.linkFrom));
 </script>
 
@@ -86,6 +99,10 @@
       <div class="message">
         <strong>Ping da {pingSource.name}.</strong> Fai clic sul dispositivo di destinazione.
         <kbd>Esc</kbd> per annullare.
+      </div>
+    {:else if awaitingClock}
+      <div class="message">
+        <strong>Traffico pronto.</strong> Premi <b>Avvia</b>, oppure <b>Passo</b> per un istante alla volta.
       </div>
     {/if}
   </div>

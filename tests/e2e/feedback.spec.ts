@@ -216,7 +216,10 @@ test("uno strumento alla volta: un ping in attesa e la voce della colonna si esc
   await expect(instructions(page)).toContainText("Ping da PC2.");
   await device(page, "PC3").click();
   await expect(page.locator("g.packet").first()).toBeVisible();
-  await expect(instructions(page)).toHaveCount(0);
+  // Il ping è partito: al posto della sua istruzione, quella del traffico
+  // pronto (D-129). Nessun PC posato.
+  await expect(instructions(page)).not.toContainText("Ping da");
+  await expect(instructions(page)).toContainText("Traffico pronto.");
   await expect(page.locator("g.device")).toHaveCount(4);
 });
 
@@ -243,6 +246,43 @@ test("entrando in presentazione nessuno strumento resta scelto, nemmeno all'usci
   await expect(instructions(page)).toHaveCount(0);
   await page.getByRole("button", { name: "Esci" }).click();
   await expect(pressedTools(page)).toHaveCount(0);
+  await expect(instructions(page)).toHaveCount(0);
+});
+
+test("un ping appena partito a tempo fermo dice di premere Avvia o Passo, finché il tempo non avanza", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await device(page, "PC1").click();
+  await action(page, "Ping da PC1").click();
+  await device(page, "PC2").click();
+  await expect(instructions(page)).toContainText("Traffico pronto.");
+  await expect(instructions(page)).toContainText("Avvia");
+  // Un Passo fa avanzare il tempo: l'istruzione non serve più.
+  await page.getByRole("button", { name: /Passo/ }).click();
+  await expect(instructions(page)).toHaveCount(0);
+
+  // Con Avvia sparisce subito; con il tempo che scorre non compare.
+  await page.getByRole("button", { name: /Ricomincia/ }).click();
+  await device(page, "PC1").click();
+  await action(page, "Ping da PC1").click();
+  await device(page, "PC3").click();
+  await expect(instructions(page)).toContainText("Traffico pronto.");
+  await page.getByRole("button", { name: /Avvia/ }).click();
+  await expect(instructions(page)).toHaveCount(0);
+  await device(page, "PC1").click();
+  await action(page, "Ping da PC1").click();
+  await device(page, "PC2").click();
+  await expect(instructions(page)).toHaveCount(0);
+});
+
+test("in presentazione il ping pronto non mostra l'istruzione: il docente sa che cosa fare", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await page.getByRole("button", { name: "Presenta" }).click();
+  await device(page, "PC1").click();
+  await action(page, "Ping da PC1").click();
+  await device(page, "PC2").click();
+  await expect(page.locator("g.packet").first()).toBeVisible();
   await expect(instructions(page)).toHaveCount(0);
 });
 

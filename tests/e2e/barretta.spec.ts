@@ -309,3 +309,28 @@ test("il menu Altro vicino al bordo si usa ancora con la tastiera, ed Esc ridà 
   await expect(page.getByRole("menu")).toHaveCount(0);
   await expect(more).toBeFocused();
 });
+
+test("con un dispositivo vicino sopra, la barretta non lo copre se trova un altro posto", async ({ page }) => {
+  await openApp(page);
+  // PC2 proprio sopra PC1, e niente sotto: la barretta va sotto le scritte.
+  const file = JSON.parse(exampleFile("lan-switch"));
+  const at = (name: string, x: number, y: number) => {
+    file.network.devices.find((d: { name: string }) => d.name === name).position = { x, y };
+  };
+  at("PC1", 300, 300);
+  at("PC2", 300, 210);
+  at("PC3", 700, 300);
+  at("SW1", 500, 300);
+  await openNetwork(page, "vicini.netsim.json", JSON.stringify(file));
+  await expect(page.locator(".top .file")).toHaveText("vicini");
+  await device(page, "PC1").click();
+  const bar = (await toolbar(page).boundingBox())!;
+  const above = (await device(page, "PC2").boundingBox())!;
+  const own = (await device(page, "PC1").locator("rect.box").boundingBox())!;
+  const overlaps = (a: typeof bar, b: typeof bar) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  expect(overlaps(bar, above)).toBe(false);
+  expect(bar.y).toBeGreaterThan(own.y + own.height);
+  // Le azioni si usano come sempre.
+  await action(page, "Apri il terminale di PC1").click();
+  await expect(page.getByRole("tab", { name: /Terminale · PC1/ })).toBeVisible();
+});

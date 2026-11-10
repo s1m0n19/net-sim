@@ -3,6 +3,7 @@
   // Due modi: trascinare una voce sul disegno, per posarne uno; oppure un
   // clic sulla voce e poi un clic sul disegno per ogni dispositivo, finché
   // non si preme Esc.
+  import { tick } from "svelte";
   import type { DeviceTemplate } from "../../engine/editing";
   import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
@@ -41,21 +42,69 @@
     routerMenuOpen = false;
   }
 
+  // Il puntatore dell'ultimo gesto sulla voce: mouse, dito o penna.
+  let pointerType = "mouse";
+
   // Con il mouse l'elenco si è già aperto passandoci sopra: il clic sulla
-  // voce lo lascia aperto, invece di richiuderlo. Da tastiera (un clic con
-  // detail 0) Invio lo apre e lo chiude.
+  // voce lo lascia aperto, invece di richiuderlo. Con il dito o la penna
+  // (alla LIM) e da tastiera (un clic con detail 0) un tocco o Invio lo
+  // aprono, e un altro lo richiude (D-129).
   function toggled(event: MouseEvent, open: boolean): boolean {
-    return event.detail === 0 ? !open : true;
+    if (event.detail === 0 || pointerType !== "mouse") return !open;
+    return true;
   }
 
-  // Da tastiera l'elenco delle varianti si apre con Invio sulla voce, e
-  // Tab ci entra. Esc lo chiude e ridà il fuoco alla voce; si chiude anche
+  // Passare sopra la voce apre l'elenco, ma solo con il mouse: con il dito
+  // il passaggio e il tocco arrivano insieme, e l'elenco si aprirebbe e
+  // richiuderebbe nello stesso istante.
+  function hovered(event: PointerEvent, open: () => void) {
+    pointerType = event.pointerType;
+    if (event.pointerType === "mouse") open();
+  }
+
+  // Aperto da tastiera, il fuoco va sulla prima variante: l'elenco si usa
+  // con le frecce, come ogni menu.
+  function focusFirst(group: HTMLElement) {
+    void tick().then(() => group.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus());
+  }
+
+  // Da tastiera l'elenco delle varianti si apre con Invio, Spazio o freccia
+  // giù sulla voce; le frecce su e giù, Inizio e Fine si muovono tra le
+  // varianti. Esc lo chiude e ridà il fuoco alla voce; si chiude anche
   // quando il fuoco va altrove, come quando il puntatore se ne va.
-  function menuKey(event: KeyboardEvent, close: () => void) {
-    if (event.key !== "Escape") return;
-    event.stopPropagation();
-    close();
-    (event.currentTarget as HTMLElement).querySelector<HTMLButtonElement>(".tile")?.focus();
+  function menuKey(event: KeyboardEvent, open: boolean, setOpen: (value: boolean) => void) {
+    const group = event.currentTarget as HTMLElement;
+    const tile = group.querySelector<HTMLButtonElement>(".tile");
+    const items = [...group.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      setOpen(false);
+      tile?.focus();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    if (!open) {
+      if (event.key !== "ArrowDown" || document.activeElement !== tile) return;
+      setOpen(true);
+      focusFirst(group);
+      return;
+    }
+    const at = items.indexOf(document.activeElement as HTMLButtonElement);
+    const to =
+      event.key === "Home" ? 0
+      : event.key === "End" ? items.length - 1
+      : event.key === "ArrowDown" ? (at + 1) % items.length
+      : (at - 1 + items.length) % items.length;
+    items[to]?.focus();
+  }
+
+  // Un clic, un tocco o Invio sulla voce: apre o chiude l'elenco; aperto da
+  // tastiera, porta il fuoco sulla prima variante.
+  function tileClick(event: MouseEvent, open: boolean, setOpen: (value: boolean) => void) {
+    const next = toggled(event, open);
+    setOpen(next);
+    if (next && !open && event.detail === 0) focusFirst((event.currentTarget as HTMLElement).parentElement!);
   }
 
   // Safari, su Mac, non dà il fuoco a un pulsante cliccato: aperto il
@@ -115,7 +164,7 @@
         class="with-menu"
         role="presentation"
         onmouseleave={() => (switchMenuOpen = false)}
-        onkeydown={(event) => menuKey(event, () => (switchMenuOpen = false))}
+        onkeydown={(event) => menuKey(event, switchMenuOpen, (value) => (switchMenuOpen = value))}
         onfocusout={(event) => menuFocusOut(event, () => (switchMenuOpen = false))}
       >
         <button
@@ -125,8 +174,9 @@
           aria-haspopup="menu"
           aria-expanded={switchMenuOpen}
           title="Switch: scegli quante porte"
-          onmouseenter={() => (switchMenuOpen = true)}
-          onclick={(event) => (switchMenuOpen = toggled(event, switchMenuOpen))}
+          onpointerenter={(event) => hovered(event, () => (switchMenuOpen = true))}
+          onpointerdown={(event) => (pointerType = event.pointerType)}
+          onclick={(event) => tileClick(event, switchMenuOpen, (value) => (switchMenuOpen = value))}
         >
           <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="switch" /></svg>
           <span class="name">Switch ›</span>
@@ -151,7 +201,7 @@
         class="with-menu"
         role="presentation"
         onmouseleave={() => (routerMenuOpen = false)}
-        onkeydown={(event) => menuKey(event, () => (routerMenuOpen = false))}
+        onkeydown={(event) => menuKey(event, routerMenuOpen, (value) => (routerMenuOpen = value))}
         onfocusout={(event) => menuFocusOut(event, () => (routerMenuOpen = false))}
       >
         <button
@@ -161,8 +211,9 @@
           aria-haspopup="menu"
           aria-expanded={routerMenuOpen}
           title="Router: scegli quante interfacce"
-          onmouseenter={() => (routerMenuOpen = true)}
-          onclick={(event) => (routerMenuOpen = toggled(event, routerMenuOpen))}
+          onpointerenter={(event) => hovered(event, () => (routerMenuOpen = true))}
+          onpointerdown={(event) => (pointerType = event.pointerType)}
+          onclick={(event) => tileClick(event, routerMenuOpen, (value) => (routerMenuOpen = value))}
         >
           <svg viewBox="-20 -16 40 32" aria-hidden="true"><DeviceIcon kind="router" /></svg>
           <span class="name">Router ›</span>
@@ -195,7 +246,9 @@
         <span class="name">Server</span>
       </button>
 
-      <div class="caption">Strumenti</div>
+      <!-- Tra dispositivi e strumenti una riga: resta anche nella colonna
+           stretta, dove le scritte non ci stanno (D-129). -->
+      <div class="caption tools">Strumenti</div>
       <button
         class="tile tool"
         class:active={session.cabling}
@@ -282,6 +335,14 @@
     .tile svg {
       display: none;
     }
+    /* Della scritta «Strumenti» resta la riga che separa. */
+    .caption.tools {
+      display: block;
+      height: 0;
+      padding: 0;
+      margin: 2px 6px;
+      font-size: 0;
+    }
     .tile {
       padding: 6px 2px;
     }
@@ -299,6 +360,10 @@
     }
     .tile {
       padding: 1px 0;
+    }
+    .caption.tools {
+      grid-column: 1 / -1;
+      margin: 1px 4px;
     }
     .tile svg {
       display: block;
@@ -329,6 +394,11 @@
     color: var(--muted);
     font-size: var(--text-small);
     text-align: center;
+  }
+  /* Gli strumenti non si posano: li separa dai dispositivi una riga. */
+  .caption.tools {
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
   }
   .tile {
     width: 100%;

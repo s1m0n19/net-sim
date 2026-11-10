@@ -146,6 +146,25 @@
           bottom: (bar.anchor.bottom - bounds.y) * screen.k + screen.y,
         },
   );
+  // Gli altri dispositivi sullo schermo, con il nome e l'indirizzo sotto: la
+  // barretta, se può, non li copre (D-129).
+  const neighbours = $derived.by((): Rect[] => {
+    const selection = session.selection;
+    // Mentre si trascina un dispositivo la barretta non salta da sopra a
+    // sotto passando vicino agli altri: vale la regola di sempre.
+    if (bar === null || selection === null || session.frozenBounds !== null) return [];
+    const shape = preferences.shape;
+    const k = preferences.scale * screen.k;
+    return session.view.devices
+      .filter((device) => !(selection.kind === "device" && selection.id === device.id))
+      .map((device) => {
+        const half = device.kind === "host" ? shape.hostHalfWidth : shape.otherHalfWidth;
+        const x = (device.x - bounds.x) * screen.k + screen.x;
+        const y = (device.y - bounds.y) * screen.k + screen.y;
+        return { left: x - half * k, right: x + half * k, top: y + shape.barTop * k, bottom: y + shape.barBottom * k };
+      });
+  });
+
   // Di che cosa sono le azioni della barretta, a parole.
   const barSubject = $derived.by(() => {
     const selection = session.selection;
@@ -299,6 +318,7 @@
       anchor={barAnchor}
       area={{ width: canvasWidth, height: canvasHeight }}
       obstacles={controls}
+      {neighbours}
       scale={preferences.scale}
       roomy={preferences.presenting}
       subject={barSubject}
