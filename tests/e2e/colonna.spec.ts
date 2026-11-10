@@ -84,3 +84,31 @@ for (const height of [860, 520, 280]) {
     expect(box.y).toBeLessThanOrEqual(cable.y);
   });
 }
+
+test("ogni dispositivo posato ha la stessa sagoma della sua voce nella colonna, e i quattro tipi sono diversi (D-130)", async ({ page }) => {
+  await openApp(page);
+  // La sagoma di un'icona: i suoi elementi e la loro geometria, senza le classi.
+  const shapeOf = (svg: import("@playwright/test").Locator) =>
+    svg.evaluate((el) =>
+      [...el.children].map((child) => child.outerHTML.replace(/\s*class="[^"]*"/g, "").replace(/<!---->/g, "")).join(""),
+    );
+  const kinds: { tile: RegExp; variant?: string; name: string }[] = [
+    { tile: /^PC$/, name: "PC1" },
+    { tile: /^Server$/, name: "SRV1" },
+    { tile: /^Switch/, variant: "Switch a 8 porte", name: "SW1" },
+    { tile: /^Router/, variant: "Router a 2 interfacce", name: "R1" },
+  ];
+  const shapes: string[] = [];
+  for (const [index, kind] of kinds.entries()) {
+    const tile = palette(page).getByRole("button", { name: kind.tile });
+    const inPalette = await shapeOf(tile.locator("svg"));
+    await tile.click();
+    if (kind.variant !== undefined) await page.getByRole("menuitem", { name: kind.variant }).click();
+    await clickDrawing(page, 0.2 + index * 0.2, 0.5);
+    await page.keyboard.press("Escape");
+    const onDrawing = await shapeOf(page.locator(`g.device[aria-label^="${kind.name}"] g.icon`));
+    expect(onDrawing).toBe(inPalette);
+    shapes.push(inPalette);
+  }
+  expect(new Set(shapes).size).toBe(4);
+});

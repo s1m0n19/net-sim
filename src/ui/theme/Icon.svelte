@@ -28,8 +28,8 @@
     exit: "M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h10",
     // Le azioni della barretta accanto a ciò che è selezionato.
     power: "M12 3v8M7 6.5a7 7 0 1 0 10 0",
-    // Una freccia che parte verso la destinazione.
-    ping: "M5 19L19 5M10 5h9v9",
+    // Due punti, una freccia che va e una che torna: c'è risposta? (D-130)
+    ping: "M4.5 9.5a2 2 0 1 0 0 .01M19.5 14.5a2 2 0 1 0 0 .01M8 8h9.5M15 5.5l2.5 2.5-2.5 2.5M16 16H6.5M9 13.5L6.5 16 9 18.5",
     // Un cavo con un connettore a ogni capo.
     link: "M7.5 16.5c6 0 3-9 9-9M4 15h3.5v4H4zM16.5 5H20v4h-3.5z",
     duplicate: "M8 8h11v11H8zM5 16V5h11",

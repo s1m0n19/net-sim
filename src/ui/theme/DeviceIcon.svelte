@@ -9,21 +9,27 @@
 </script>
 
 {#if kind === "host"}
+  <!-- Un monitor sul suo piedistallo. -->
   <rect x="-13" y="-11" width="26" height="17" rx="2.5" />
-  <path d="M0 6V11M-7 11H7" />
+  <path d="M0 6V10.5M-6.5 11H6.5" />
 {:else if kind === "switch"}
-  <!-- Il simbolo degli schemi di rete: quattro frecce, a versi alternati. -->
-  <rect x="-17" y="-11" width="34" height="22" rx="4" />
-  <path d="M-3 -6.5H11M8.4 -9.1L11 -6.5L8.4 -3.9M3 -2.2H-11M-8.4 -4.8L-11 -2.2L-8.4 0.4" />
-  <path d="M-3 2.2H11M8.4 -0.4L11 2.2L8.4 4.8M3 6.5H-11M-8.4 3.9L-11 6.5L-8.4 9.1" />
+  <!-- Una scatola larga e bassa con una fila di porte Ethernet: si
+       riconosce senza conoscere i simboli degli schemi (D-130). -->
+  <rect x="-17" y="-8" width="34" height="16" rx="3" />
+  <path d="M-12 -1.5h4.2v4.5h-4.2zM-5.3 -1.5h4.2v4.5h-4.2zM1.4 -1.5h4.2v4.5h-4.2zM8.1 -1.5h4.2v4.5h-4.2z" />
 {:else if kind === "router"}
-  <!-- Il simbolo degli schemi di rete: due frecce entrano, due escono. -->
+  <!-- Il cerchio degli schemi di rete; dentro, una strada che si divide in
+       due: il router sceglie dove mandare ciò che arriva (D-130). -->
   <circle r="13" />
-  <path d="M-10 0H-3.5M-6.1 -2.6L-3.5 0L-6.1 2.6M10 0H3.5M6.1 -2.6L3.5 0L6.1 2.6" />
-  <path d="M0 -3.5V-10M-2.6 -7.4L0 -10L2.6 -7.4M0 3.5V10M-2.6 7.4L0 10L2.6 7.4" />
+  <path d="M-8 0H-2M-2 0L5.5 -5.5M-2 0L5.5 5.5M2 -5.8H5.8V-2M2 5.8H5.8V2" />
 {:else if kind === "server"}
-  <rect x="-10" y="-13" width="20" height="11" rx="2.5" />
-  <rect x="-10" y="2" width="20" height="11" rx="2.5" />
+  <!-- Un armadio con tre unità: una fessura e una spia ciascuna. Più alto
+       che largo, non si confonde con il monitor del PC (D-130). -->
+  <rect x="-9.5" y="-13.5" width="19" height="27" rx="2.5" />
+  <path d="M-9.5 -4.5H9.5M-9.5 4.5H9.5M-5.5 -9H1M-5.5 0H1M-5.5 9H1" />
+  <circle cx="5" cy="-9" r="0.9" />
+  <circle cx="5" cy="0" r="0.9" />
+  <circle cx="5" cy="9" r="0.9" />
 {:else if kind === "box"}
   <!-- Un rettangolo tratteggiato, con l'etichetta nell'angolo. -->
   <rect x="-14" y="-10" width="28" height="20" rx="3" stroke-dasharray="3.5 3" />
@@ -33,9 +39,10 @@
   <path d="M-11 -12H7L11 -8V12H-11Z" />
   <path d="M-6 -5H5M-6 0H5M-6 5H1" />
 {:else}
-  <path d="M-13 9C-4 9 4 -9 13 -9" />
-  <circle cx="-13" cy="9" r="2.5" />
-  <circle cx="13" cy="-9" r="2.5" />
+  <!-- Un cavo con un connettore a ogni capo, come Collega sulla barretta. -->
+  <path d="M-10.5 8.5C-1 8.5 1 -8.5 10.5 -8.5" />
+  <rect x="-16" y="6" width="5.5" height="5" rx="1" />
+  <rect x="10.5" y="-11" width="5.5" height="5" rx="1" />
 {/if}
 
 <style>
