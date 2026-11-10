@@ -130,6 +130,20 @@ export class SessionCore {
     this.rewind();
   }
 
+  /**
+   * Lascia andare gli strumenti e le operazioni a metà: la voce scelta
+   * nella colonna, lo strumento Cavo e il cavo cominciato, il ping in
+   * attesa della destinazione (gli strati sopra aggiungono Riquadro e
+   * Nota). Chi attiva uno strumento lo chiama prima: così ne resta attivo
+   * uno solo, e le istruzioni in alto sul disegno ne mostrano una (D-128).
+   */
+  releaseTools(): void {
+    this.placing = null;
+    this.cabling = false;
+    this.linkFrom = null;
+    this.pingFrom = null;
+  }
+
   /** Seleziona un dispositivo, un cavo o un pacchetto; null toglie la selezione. */
   select(selection: Selection | null): void {
     this.selection = selection;

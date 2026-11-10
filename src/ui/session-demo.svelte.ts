@@ -272,8 +272,10 @@ export class SessionDemo extends SessionFile {
    * la destinazione.
    */
   armPing(deviceId: string): void {
+    // Un ping alla volta, e nient'altro di attivo: un clic sullo sfondo
+    // non posa un dispositivo scelto prima nella colonna (D-128).
+    this.releaseTools();
     this.pingFrom = deviceId;
-    this.linkFrom = null;
     this.notice = null;
   }
 

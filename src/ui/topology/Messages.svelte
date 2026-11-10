@@ -9,8 +9,10 @@
   //      chi non ha un indirizzo, un dato che il motore non accetta). Dice
   //      che cosa non è stato fatto, mai come sistemare la rete (SIM-8);
   //   3. le istruzioni dell'operazione in corso: che cosa sta aspettando
-  //      l'app (un clic per posare, la destinazione di un ping, l'altro capo
-  //      di un cavo) e come rinunciare.
+  //      l'app (un clic per posare un dispositivo o una nota, un riquadro da
+  //      trascinare, la destinazione di un ping, l'altro capo di un cavo) e
+  //      come rinunciare. Ne compare una sola: gli strumenti si escludono a
+  //      vicenda (D-128).
   //
   // Nessuna sparisce da sola: un'istruzione resta finché l'operazione è in
   // corso, un rifiuto finché non si fa qualcos'altro.
@@ -60,13 +62,24 @@
     {/if}
     {#if linkSource !== undefined}
       <div class="message">
-        <strong>Cavo da {linkSource.name}.</strong> Fai clic sul dispositivo da collegare.
+        <strong>Cavo da {linkSource.name}.</strong> Fai clic sul secondo dispositivo.
         <kbd>Esc</kbd> per annullare.
       </div>
     {:else if session.cabling}
       <div class="message">
         <strong>Cavo.</strong> Trascina da un dispositivo a un altro, oppure fai clic sul primo e poi
         sul secondo. <kbd>Esc</kbd> per finire.
+      </div>
+    {/if}
+    {#if session.annotating === "box"}
+      <div class="message">
+        <strong>Riquadro.</strong> Trascina sul disegno per disegnarne uno; puoi disegnarne altri.
+        <kbd>Esc</kbd> per finire.
+      </div>
+    {:else if session.annotating === "note"}
+      <div class="message">
+        <strong>Nota.</strong> Fai clic sul disegno per posarne una; puoi posarne altre.
+        <kbd>Esc</kbd> per finire.
       </div>
     {/if}
     {#if pingSource !== undefined}

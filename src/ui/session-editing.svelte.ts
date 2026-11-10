@@ -171,8 +171,12 @@ export class SessionEditing extends SessionHistory {
    * cliccato sarà l'altro capo.
    */
   armLink(deviceId: string): void {
+    // Con lo strumento Cavo il primo clic arriva qui, e lo strumento resta;
+    // da Collega, sulla barretta, non c'è. Il resto si lascia (D-128).
+    const cabling = this.cabling;
+    this.releaseTools();
+    this.cabling = cabling;
     this.linkFrom = deviceId;
-    this.pingFrom = null;
     this.notice = null;
   }
 

@@ -58,11 +58,15 @@ export class SessionAnnotations extends SessionEditing {
    * attivo uno solo.
    */
   chooseAnnotationTool(tool: AnnotationTool): void {
-    this.annotating = this.annotating === tool ? null : tool;
-    this.placing = null;
-    this.cabling = false;
-    this.linkFrom = null;
-    this.pingFrom = null;
+    const next = this.annotating === tool ? null : tool;
+    this.releaseTools();
+    this.annotating = next;
+  }
+
+  /** Lascia andare anche Riquadro e Nota, e il riquadro a metà (D-128). */
+  override releaseTools(): void {
+    super.releaseTools();
+    this.annotating = null;
     this.sketch = null;
   }
 

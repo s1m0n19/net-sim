@@ -83,6 +83,169 @@ test("Ping e Collega dicono che cosa fare, ed Esc annulla", async ({ page }) => 
   await expect(page.locator("line.wire")).toHaveCount(3);
 });
 
+// Le voci della colonna: un nome, come si sceglie, e che cosa dice l'istruzione.
+const TOOLS: { name: RegExp; variant?: string; says: string }[] = [
+  { name: /^PC$/, says: "PC." },
+  { name: /^Server$/, says: "Server." },
+  { name: /^Switch/, variant: "Switch a 8 porte", says: "Switch a 8 porte." },
+  { name: /^Router/, variant: "Router a 2 interfacce", says: "Router a 2 interfacce." },
+  { name: /^Cavo$/, says: "Cavo." },
+  { name: /^Riquadro$/, says: "Riquadro." },
+  { name: /^Nota$/, says: "Nota." },
+];
+const palette = (page: Page) => page.locator("aside").first();
+const pressedTools = (page: Page) => palette(page).locator('button.tile[aria-pressed="true"]');
+
+test("ogni strumento della colonna si vede attivo, dice che cosa fare e come finire; Esc lo lascia", async ({ page }) => {
+  await openApp(page);
+  for (const tool of TOOLS) {
+    const tile = palette(page).getByRole("button", { name: tool.name });
+    await tile.click();
+    if (tool.variant !== undefined) await page.getByRole("menuitem", { name: tool.variant }).click();
+    // Attivo: premuto per chi usa un lettore di schermo, e a vista con il
+    // fondo tinto e la spunta, oltre al colore (D-128).
+    await expect(pressedTools(page)).toHaveCount(1);
+    const look = await pressedTools(page).evaluate((el) => ({
+      background: getComputedStyle(el).backgroundColor,
+      tick: getComputedStyle(el, "::after").borderRightWidth,
+    }));
+    const idle = await palette(page).locator('button.tile[aria-pressed="false"]').first().evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(look.background).not.toBe(idle);
+    expect(look.tick).toBe("2px");
+    // Una sola istruzione: il nome dello strumento, il passo e Esc.
+    await expect(instructions(page).locator(".message")).toHaveCount(1);
+    await expect(instructions(page)).toContainText(tool.says);
+    await expect(instructions(page).locator("kbd")).toHaveText("Esc");
+    await page.keyboard.press("Escape");
+    await expect(pressedTools(page)).toHaveCount(0);
+    await expect(instructions(page)).toHaveCount(0);
+  }
+});
+
+test("tre PC di fila: l'istruzione resta finché lo strumento è attivo", async ({ page }) => {
+  await openApp(page);
+  await palette(page).getByRole("button", { name: /^PC$/ }).click();
+  for (const x of [0.25, 0.5, 0.75]) {
+    await clickDrawing(page, x, 0.5);
+    await expect(instructions(page)).toContainText("PC.");
+  }
+  await expect(page.locator("g.device")).toHaveCount(3);
+  // Un secondo clic sulla voce la lascia, come Esc.
+  await palette(page).getByRole("button", { name: /^PC$/ }).click();
+  await expect(pressedTools(page)).toHaveCount(0);
+  await expect(instructions(page)).toHaveCount(0);
+});
+
+test("lo strumento Cavo dice il passo successivo, e dopo un cavo resta attivo; un cavo impossibile è un rifiuto", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await palette(page).getByRole("button", { name: /^Cavo$/ }).click();
+  await expect(instructions(page)).toContainText("Cavo.");
+  await expect(instructions(page)).toContainText("Trascina da un dispositivo a un altro");
+
+  // PC1 ha già il suo cavo: verso PC2 non ci sono porte libere.
+  await device(page, "PC1").click();
+  await expect(instructions(page)).toContainText("Cavo da PC1.");
+  await expect(instructions(page)).toContainText("Fai clic sul secondo dispositivo.");
+  await device(page, "PC2").click();
+  await expect(page.getByRole("alert")).toContainText("PC1 non ha porte libere.");
+  await expect(page.locator("line.wire")).toHaveCount(3);
+  // Lo strumento resta: l'istruzione torna al primo passo.
+  await expect(instructions(page)).toContainText("Cavo.");
+  await expect(instructions(page)).not.toContainText("Cavo da");
+
+  // Un cavo che si può fare: un PC nuovo, collegato allo switch.
+  await page.keyboard.press("Escape");
+  await palette(page).getByRole("button", { name: /^PC$/ }).click();
+  await clickDrawing(page, 0.5, 0.85);
+  await palette(page).getByRole("button", { name: /^Cavo$/ }).click();
+  await device(page, "PC4").click();
+  await device(page, "SW1").click();
+  await expect(page.locator("line.wire")).toHaveCount(4);
+  await expect(instructions(page)).toContainText("Cavo.");
+  // Esc a metà annulla il cavo cominciato; un altro Esc lascia lo strumento.
+  await device(page, "PC4").click();
+  await expect(instructions(page)).toContainText("Cavo da PC4.");
+  await page.keyboard.press("Escape");
+  await expect(instructions(page)).not.toContainText("Cavo da");
+  await expect(instructions(page)).toContainText("Cavo.");
+  await page.keyboard.press("Escape");
+  await expect(instructions(page)).toHaveCount(0);
+  await expect(pressedTools(page)).toHaveCount(0);
+});
+
+test("Riquadro e Nota dicono che cosa fare, e restano attivi dopo il primo", async ({ page }) => {
+  await openApp(page);
+  await palette(page).getByRole("button", { name: /^Riquadro$/ }).click();
+  await expect(instructions(page)).toContainText("Trascina sul disegno per disegnarne uno");
+  const area = (await page.locator(".canvas").boundingBox())!;
+  const start = { x: area.x + area.width * 0.3, y: area.y + area.height * 0.3 };
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 120, start.y + 80, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator("g.annotation.box")).toHaveCount(1);
+  await expect(instructions(page)).toContainText("Riquadro.");
+
+  await palette(page).getByRole("button", { name: /^Nota$/ }).click();
+  await expect(pressedTools(page)).toHaveCount(1);
+  await expect(instructions(page).locator(".message")).toHaveCount(1);
+  await expect(instructions(page)).toContainText("Fai clic sul disegno per posarne una");
+  await clickDrawing(page, 0.6, 0.7);
+  await expect(page.locator("g.annotation.note")).toHaveCount(1);
+});
+
+test("uno strumento alla volta: un ping in attesa e la voce della colonna si escludono", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await device(page, "PC1").click();
+  await action(page, "Ping da PC1").click();
+  await expect(instructions(page)).toContainText("Ping da PC1.");
+
+  // Si sceglie PC nella colonna: il ping in attesa si lascia.
+  await palette(page).getByRole("button", { name: /^PC$/ }).click();
+  await expect(instructions(page).locator(".message")).toHaveCount(1);
+  await expect(instructions(page)).toContainText("PC.");
+
+  // E viceversa: Ping dalla barretta lascia la voce, e un clic sullo
+  // sfondo non posa un PC.
+  await device(page, "PC2").click();
+  await action(page, "Ping da PC2").click();
+  await expect(pressedTools(page)).toHaveCount(0);
+  await expect(instructions(page).locator(".message")).toHaveCount(1);
+  await expect(instructions(page)).toContainText("Ping da PC2.");
+  await device(page, "PC3").click();
+  await expect(page.locator("g.packet").first()).toBeVisible();
+  await expect(instructions(page)).toHaveCount(0);
+  await expect(page.locator("g.device")).toHaveCount(4);
+});
+
+test("con un terminale aperto gli strumenti funzionano, e Esc li lascia anche dal terminale", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await device(page, "PC1").click();
+  await action(page, "Apri il terminale di PC1").click();
+  await typeCommand(page, "ipconfig");
+  await palette(page).getByRole("button", { name: /^PC$/ }).click();
+  await clickDrawing(page, 0.5, 0.2);
+  await expect(page.locator("g.device")).toHaveCount(5);
+  await page.getByLabel(/Riga di comando/).click();
+  await page.keyboard.press("Escape");
+  await expect(pressedTools(page)).toHaveCount(0);
+  await expect(instructions(page)).toHaveCount(0);
+});
+
+test("entrando in presentazione nessuno strumento resta scelto, nemmeno all'uscita", async ({ page }) => {
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await palette(page).getByRole("button", { name: /^Riquadro$/ }).click();
+  await page.getByRole("button", { name: "Presenta" }).click();
+  await expect(instructions(page)).toHaveCount(0);
+  await page.getByRole("button", { name: "Esci" }).click();
+  await expect(pressedTools(page)).toHaveCount(0);
+  await expect(instructions(page)).toHaveCount(0);
+});
+
 test("un'operazione rifiutata si distingue dalle istruzioni e non commenta la rete", async ({ page }) => {
   await openApp(page);
   await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));

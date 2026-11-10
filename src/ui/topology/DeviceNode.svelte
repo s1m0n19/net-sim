@@ -51,7 +51,10 @@
   const THRESHOLD = 4;
   let press: { clientX: number; clientY: number; x: number; y: number; scale: number; cable: boolean } | null =
     null;
-  let dragging = false;
+  let dragging = $state(false);
+  // Si sta spostando il dispositivo (non tirando un cavo): il puntatore
+  // diventa la mano chiusa, come quando si sposta la vista.
+  let moving = $state(false);
   // Dopo un trascinamento il browser manda comunque un clic: va ignorato.
   let justDragged = false;
 
@@ -78,6 +81,7 @@
     if (!dragging) {
       if (Math.hypot(dx, dy) < THRESHOLD) return;
       dragging = true;
+      moving = !press.cable;
       if (!press.cable) session.holdBounds(true);
     }
     if (press.cable) {
@@ -108,12 +112,14 @@
     }
     press = null;
     dragging = false;
+    moving = false;
   }
 </script>
 
 <g
   class="device"
   class:off={!device.powered}
+  class:moving
   data-device-id={device.id}
   transform="translate({device.x} {device.y}) scale({preferences.scale})"
   role="button"
@@ -168,6 +174,9 @@
   .device {
     cursor: pointer;
     outline: none;
+  }
+  .device.moving {
+    cursor: grabbing;
   }
   .box {
     fill: var(--surface);

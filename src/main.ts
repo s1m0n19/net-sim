@@ -56,6 +56,9 @@ if (import.meta.env.DEV) {
     session.addDevice(template, { x, y });
   }
   if (params.has("scegli")) session.placing = { kind: "host" };
+  // &strumento=riquadro (o nota)              sceglie uno strumento di annotazione nella colonna
+  const tool = params.get("strumento");
+  if (tool === "riquadro" || tool === "nota") session.chooseAnnotationTool(tool === "riquadro" ? "box" : "note");
   // &collega=PC1>SW1;PC2>SW1                  tira cavi tra i dispositivi posati
   const named = (name: string | null) => session.view.devices.find((device) => device.name === name);
   for (const pair of (params.get("collega") ?? "").split(";").filter((text) => text !== "")) {

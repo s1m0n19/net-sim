@@ -165,6 +165,33 @@ describe("annotazioni a schermo: strumenti, selezione, inquadratura", () => {
     expect(session.annotating).toBeNull();
   });
 
+  test("uno strumento alla volta: Ping e Collega lasciano Riquadro e Nota e la voce della colonna (D-128)", () => {
+    session.open("lan-switch.netsim.json", lanFile);
+    const [pc1, pc2] = session.view.devices.filter((d) => d.kind === "host");
+    session.chooseAnnotationTool("note");
+    session.armPing(pc1.id);
+    expect([session.annotating, session.pingFrom]).toEqual([null, pc1.id]);
+
+    session.placing = { kind: "host" };
+    session.armPing(pc2.id);
+    expect([session.placing, session.pingFrom]).toEqual([null, pc2.id]);
+
+    // Collega dalla barretta lascia il ping; con lo strumento Cavo il primo
+    // clic non spegne lo strumento.
+    session.armLink(pc1.id);
+    expect([session.pingFrom, session.linkFrom, session.cabling]).toEqual([null, pc1.id, false]);
+    session.linkFrom = null;
+    session.cabling = true;
+    session.armLink(pc2.id);
+    expect([session.cabling, session.linkFrom]).toEqual([true, pc2.id]);
+
+    // Scegliere Riquadro lascia il cavo cominciato e lo strumento Cavo.
+    session.chooseAnnotationTool("box");
+    expect([session.annotating, session.cabling, session.linkFrom]).toEqual(["box", false, null]);
+    session.releaseTools();
+    expect([session.annotating, session.placing, session.cabling, session.linkFrom, session.pingFrom]).toEqual([null, null, false, null, null]);
+  });
+
   test("un'annotazione selezionata si elimina come un passo da annullare, e la selezione se ne va", () => {
     const id = session.addBox(RECT);
     session.select({ kind: "annotation", id });

@@ -22,9 +22,9 @@ export function enterPresentation(): void {
   before = { stripOpen: preferences.stripOpen, sideOpen: preferences.sideOpen, camera: session.camera };
   preferences.stripOpen = false;
   preferences.sideOpen = session.selection !== null;
-  session.placing = null;
-  session.cabling = false;
-  session.linkFrom = null;
+  // In presentazione non si costruisce: nessuno strumento resta scelto,
+  // nemmeno Riquadro o Nota (D-128).
+  session.releaseTools();
   preferences.presenting = true;
 }
 

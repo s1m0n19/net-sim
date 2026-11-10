@@ -34,10 +34,9 @@
   // Un clic sulla voce già scelta la lascia andare.
   function choose(template: DeviceTemplate) {
     const same = JSON.stringify(session.placing) === JSON.stringify(template);
+    // Uno strumento alla volta: anche un ping o un cavo a metà si lasciano.
+    session.releaseTools();
     session.placing = same ? null : template;
-    session.cabling = false;
-    session.annotating = null;
-    session.linkFrom = null;
     switchMenuOpen = false;
     routerMenuOpen = false;
   }
@@ -79,10 +78,9 @@
   // Lo strumento Cavo resta attivo finché non lo si spegne, con un altro
   // clic o con Esc.
   function toggleCable() {
-    session.cabling = !session.cabling;
-    session.placing = null;
-    session.annotating = null;
-    session.linkFrom = null;
+    const next = !session.cabling;
+    session.releaseTools();
+    session.cabling = next;
   }
 
   // Trascinando, il disegno legge da qui che cosa sta arrivando.
@@ -359,11 +357,32 @@
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
-  /* La voce scelta: il prossimo clic sul disegno ne posa uno. */
+  /* La voce scelta: il prossimo clic sul disegno ne posa uno. Come ogni
+     cosa accesa che resta accesa (.btn.on, D-115), oltre al colore ha un
+     fondo tinto e un segno: il bordo doppio e una spunta nell'angolo
+     (D-128). */
   .tile.active {
+    position: relative;
     border-color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent);
     color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    font-weight: 600;
+  }
+  .tile.active:hover {
+    border-color: var(--accent);
+  }
+  /* La spunta: due tratti del bordo, ruotati, in alto a destra. */
+  .tile.active::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    width: 4px;
+    height: 7px;
+    border: solid var(--accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
   }
   .tile svg {
     width: 34px;
