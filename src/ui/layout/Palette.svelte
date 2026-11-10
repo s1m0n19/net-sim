@@ -54,9 +54,9 @@
     return true;
   }
 
-  // Passare sopra la voce apre l'elenco, ma solo con il mouse: con il dito
-  // il passaggio e il tocco arrivano insieme, e l'elenco si aprirebbe e
-  // richiuderebbe nello stesso istante.
+  // Passare sopra la voce apre l'elenco, e andarsene lo chiude, ma solo con
+  // il mouse: con il dito il passaggio e il tocco arrivano insieme, e
+  // l'elenco si aprirebbe e richiuderebbe da solo mentre si sceglie.
   function hovered(event: PointerEvent, open: () => void) {
     pointerType = event.pointerType;
     if (event.pointerType === "mouse") open();
@@ -163,7 +163,9 @@
       <div
         class="with-menu"
         role="presentation"
-        onmouseleave={() => (switchMenuOpen = false)}
+        onpointerleave={(event) => {
+          if (event.pointerType === "mouse") switchMenuOpen = false;
+        }}
         onkeydown={(event) => menuKey(event, switchMenuOpen, (value) => (switchMenuOpen = value))}
         onfocusout={(event) => menuFocusOut(event, () => (switchMenuOpen = false))}
       >
@@ -200,7 +202,9 @@
       <div
         class="with-menu"
         role="presentation"
-        onmouseleave={() => (routerMenuOpen = false)}
+        onpointerleave={(event) => {
+          if (event.pointerType === "mouse") routerMenuOpen = false;
+        }}
         onkeydown={(event) => menuKey(event, routerMenuOpen, (value) => (routerMenuOpen = value))}
         onfocusout={(event) => menuFocusOut(event, () => (routerMenuOpen = false))}
       >
