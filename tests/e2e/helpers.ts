@@ -71,6 +71,21 @@ export async function clickText(page: Page, locator: Locator): Promise<void> {
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
+/**
+ * Apre la scheda di un'interfaccia di router nel pannello laterale, se è
+ * chiusa (D-131): i suoi campi diventano visibili.
+ */
+export async function openInterface(page: Page, name: string): Promise<void> {
+  const toggle = page.getByRole("group", { name: `Interfaccia ${name}`, exact: true }).locator("button.disclosure");
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+}
+
+/** Apre il modulo per aggiungere una rotta statica, se è chiuso (D-131). */
+export async function openRouteForm(page: Page): Promise<void> {
+  const toggle = page.getByRole("button", { name: "Nuova rotta statica" });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+}
+
 /** Un dispositivo del disegno, dal nome. */
 export function device(page: Page, name: string): Locator {
   return page.locator(`g.device[aria-label="${name}"], g.device[aria-label="${name}, selezionato"]`);

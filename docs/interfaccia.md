@@ -344,7 +344,7 @@ Esc, dentro un campo, rimette il valore della rete senza togliere la selezione. 
 
 ### Router
 
-Nome, stato, e poi le sue **interfacce**, una sotto l'altra, ciascuna in un gruppo leggero con il fondo appena più scuro (D-114). Ciascuna ha:
+Nome, stato, e poi le sue **interfacce**, una sotto l'altra, ciascuna in un gruppo leggero con il fondo appena più scuro (D-114). Ogni interfaccia è una **scheda** che si apre e si chiude (D-131): chiusa è una riga sola, con una freccia, il nome, l'indirizzo con il prefisso (o «nessun indirizzo») e l'interruttore; un clic sulla riga, o Invio, la apre e mostra i campi. Si comincia con tutte chiuse, e se ne possono aprire quante si vuole. Aperta o chiusa resta tale finché non la si cambia: una modifica, Annulla o un passo della simulazione non la toccano; cambiando router si riparte chiusi. I campi di una scheda chiusa restano nella pagina, nascosti, e ciò che vi si era scritto non si perde. Ciascuna ha:
 
 - il nome completo, in grassetto;
 - un **interruttore** che dice «accesa» o «spenta» e la cambia con un clic. Un router nasce con tutte le interfacce spente (D-70);
@@ -363,7 +363,7 @@ Sotto le interfacce, la **tabella di routing**: una rotta per rete, con la sigla
 Ogni rotta sta su due righe, con le colonne allineate tra una rotta e l'altra (D-114, una griglia CSS con `subgrid`): sopra la sigla, la rete di destinazione in grassetto e la crocetta; sotto il prossimo salto e l'uscita. Le intestazioni hanno la stessa forma. In cinque colonne affiancate, con indirizzi lunghi ma comuni (`172.16.128.0/17` via `192.168.200.254`), la tabella era più larga del pannello; su due righe ci sta sempre, e destinazioni, prossimi salti e uscite restano in colonna, facili da confrontare. Il lettore di schermo legge ogni rotta di seguito, con le parole «rete collegata» o «rotta statica», «prossimo salto» e «uscita».
 
 - **Togliere una rotta statica**: la crocetta a destra della rotta.
-- **Aggiungerne una**: il riquadro **Aggiungi rotta statica**, sotto la tabella e separato da lei, con i tre campi (rete, maschera, prossimo salto) e il pulsante Aggiungi rotta, o Invio. La maschera si scrive per esteso oppure come prefisso (`/24`); il prefisso può stare anche in coda alla rete (`192.168.2.0/24`). Una rotta rifiutata lascia i campi come sono, con il motivo sotto.
+- **Aggiungerne una**: il pulsante **Nuova rotta statica**, sotto la tabella, apre il riquadro **Aggiungi rotta statica** (D-131); la tabella resta sempre in vista. Il riquadro, separato dalla tabella, ha i tre campi (rete, maschera, prossimo salto) e il pulsante Aggiungi rotta, o Invio. La maschera si scrive per esteso oppure come prefisso (`/24`); il prefisso può stare anche in coda alla rete (`192.168.2.0/24`). Una rotta rifiutata lascia i campi come sono, con il motivo sotto.
 
 In fondo, la **tabella ARP** del router.
 

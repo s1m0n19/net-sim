@@ -4,7 +4,7 @@
 // intero, non solo che ci siano.
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { cable, clickDrawing, device, exampleFile, fillField, openApp, openNetwork, sidePanel } from "./helpers";
+import { cable, clickDrawing, device, exampleFile, fillField, openApp, openInterface, openNetwork, openRouteForm, sidePanel } from "./helpers";
 
 const field = (page: Page, name: string) => page.locator(`[data-field="${name}"]`);
 const section = (page: Page, title: string) => sidePanel(page).getByRole("region", { name: title, exact: true });
@@ -18,13 +18,22 @@ async function expectReadable(input: Locator): Promise<void> {
   expect(scroll, `«${value}» nel campo: larghezza del testo e del campo`).toBeLessThanOrEqual(client);
 }
 
+// Apre la scheda dell'interfaccia di un campo come "ip-Gi0/1", se è di
+// un'interfaccia: chiusa, i suoi campi non si vedono (D-131).
+async function reveal(page: Page, name: string): Promise<void> {
+  const port = /^(?:ip|mask)-(.+)$/.exec(name)?.[1];
+  if (port !== undefined) await openInterface(page, port);
+}
+
 // Scrive in un campo qualsiasi del pannello e conferma con Invio.
 async function fill(page: Page, name: string, text: string): Promise<void> {
+  await reveal(page, name);
   await field(page, name).fill(text);
   await field(page, name).press("Enter");
 }
 
 async function addRoute(page: Page, network: string, mask: string, nextHop: string): Promise<void> {
+  await openRouteForm(page);
   await field(page, "route-network").fill(network);
   await field(page, "route-mask").fill(mask);
   await field(page, "route-next-hop").fill(nextHop);
@@ -129,11 +138,13 @@ test("un router: interfacce accese e spente, con indirizzo o senza, e due router
   await expect(field(page, "ip-Gi0/0")).toHaveValue("192.168.1.1");
 
   // Il secondo router ha le sue otto interfacce, vuote: nulla del primo.
+  await reveal(page, "ip-Gi0/2");
   await field(page, "ip-Gi0/2").fill("172.16.0.1");
   await device(page, "R2").click();
   await expect(interfaces).toHaveCount(8);
   for (let i = 0; i < 8; i++) await expect(field(page, `ip-Gi0/${i}`)).toHaveValue("");
   await expect(sidePanel(page).locator("header h2")).toHaveText("R2");
+  await reveal(page, "ip-Gi0/7");
   await field(page, "ip-Gi0/7").scrollIntoViewIfNeeded();
   await expect(field(page, "ip-Gi0/7")).toBeInViewport();
 });
@@ -284,6 +295,7 @@ for (const size of [
     const check = async () => {
       expect(await sidePanel(page).evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+      for (const name of ["ip-Gi0/0", "mask-Gi0/1"]) await reveal(page, name);
       for (const name of ["ip-Gi0/0", "mask-Gi0/1"]) await expectReadable(field(page, name));
     };
     await check();
@@ -318,9 +330,126 @@ test("se il pannello perde spazio (una barra di scorrimento larga), gli indirizz
   await device(page, "R1").click();
   const larger = page.getByRole("button", { name: "Ingrandisci testo e disegno" });
   for (;;) {
+    for (const name of ["ip-Gi0/0", "mask-Gi0/1"]) await reveal(page, name);
     await squeeze();
     for (const name of ["ip-Gi0/0", "mask-Gi0/1"]) await expectReadable(field(page, name));
     if (!(await larger.isEnabled())) break;
     await larger.click();
   }
+});
+
+test.describe("le interfacce di un router come schede (D-131)", () => {
+  const card = (page: Page, name: string) => sidePanel(page).getByRole("group", { name: `Interfaccia ${name}`, exact: true });
+  const toggle = (page: Page, name: string) => card(page, name).locator("button.disclosure");
+
+  test("all'inizio tutte chiuse, con nome, stato e indirizzo; si aprono con un clic o da tastiera, anche più insieme", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    for (const name of ["Gi0/0", "Gi0/1"]) {
+      await expect(toggle(page, name)).toHaveAttribute("aria-expanded", "false");
+      await expect(field(page, `ip-${name}`)).toBeHidden();
+    }
+    // Chiusa, la scheda dice nome e indirizzo con il prefisso, e lo stato.
+    await expect(toggle(page, "Gi0/0")).toHaveText(/Gi0\/0\s*192\.168\.1\.1\/24/);
+    await expect(card(page, "Gi0/0").getByRole("button", { name: /accesa/ })).toBeVisible();
+    // Il pulsante dice che cosa apre.
+    const controlled = await toggle(page, "Gi0/0").getAttribute("aria-controls");
+    await expect(page.locator(`[id="${controlled}"]`)).toBeHidden();
+
+    await toggle(page, "Gi0/0").click();
+    await expect(toggle(page, "Gi0/0")).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator(`[id="${controlled}"]`)).toBeVisible();
+    await expect(field(page, "ip-Gi0/0")).toHaveValue("192.168.1.1");
+    // Da tastiera, e senza chiudere l'altra.
+    await toggle(page, "Gi0/1").focus();
+    await page.keyboard.press("Enter");
+    await expect(field(page, "mask-Gi0/1")).toBeVisible();
+    await expect(field(page, "ip-Gi0/0")).toBeVisible();
+    // Un altro clic la richiude.
+    await toggle(page, "Gi0/0").click();
+    await expect(field(page, "ip-Gi0/0")).toBeHidden();
+  });
+
+  test("una modifica, l'interruttore, Annulla e la simulazione non aprono né chiudono le schede", async ({ page }) => {
+    await openApp(page);
+    await page.getByRole("button", { name: /^Router/ }).click();
+    await page.getByRole("menuitem", { name: "Router a 8 interfacce" }).click();
+    await clickDrawing(page, 0.5, 0.5);
+    await page.keyboard.press("Escape");
+    await device(page, "R1").click();
+    await expect(toggle(page, "Gi0/3")).toHaveText(/nessun indirizzo/);
+
+    await toggle(page, "Gi0/3").click();
+    await fill(page, "ip-Gi0/3", "10.3.0.1");
+    // Il riassunto si aggiorna, la scheda resta aperta.
+    await expect(toggle(page, "Gi0/3")).toHaveText(/10\.3\.0\.1\/8/);
+    await expect(field(page, "ip-Gi0/3")).toBeVisible();
+    // Accenderla dalla riga non apre né chiude nulla.
+    await card(page, "Gi0/5").getByRole("button", { name: /spenta/ }).click();
+    await expect(card(page, "Gi0/5").getByRole("button", { name: /accesa/ })).toBeVisible();
+    await expect(toggle(page, "Gi0/5")).toHaveAttribute("aria-expanded", "false");
+    await expect(field(page, "ip-Gi0/3")).toBeVisible();
+    // Annulla e Ripristina cambiano la rete, non le schede.
+    await page.getByRole("button", { name: "Annulla", exact: true }).click();
+    await page.getByRole("button", { name: "Annulla", exact: true }).click();
+    await expect(toggle(page, "Gi0/3")).toHaveText(/nessun indirizzo/);
+    await expect(field(page, "ip-Gi0/3")).toBeVisible();
+    await page.getByRole("button", { name: "Ripristina", exact: true }).click();
+    await expect(toggle(page, "Gi0/3")).toHaveText(/10\.3\.0\.1\/8/);
+    await expect(toggle(page, "Gi0/3")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("ciò che si stava scrivendo resta anche chiudendo la scheda; cambiando router si riparte chiusi", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    await toggle(page, "Gi0/1").click();
+    // Un indirizzo rifiutato resta nel campo, con il motivo (D-53).
+    await fill(page, "ip-Gi0/1", "10.0.0.3/30");
+    await expect(field(page, "ip-Gi0/1")).toHaveValue("10.0.0.3/30");
+    await toggle(page, "Gi0/1").click();
+    await toggle(page, "Gi0/1").click();
+    await expect(field(page, "ip-Gi0/1")).toHaveValue("10.0.0.3/30");
+
+    await device(page, "R2").click();
+    await expect(toggle(page, "Gi0/1")).toHaveAttribute("aria-expanded", "false");
+    await device(page, "R1").click();
+    await expect(toggle(page, "Gi0/1")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("su un router a otto interfacce la tabella di routing si vede senza scorrere", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await openApp(page);
+    await page.getByRole("button", { name: /^Router/ }).click();
+    await page.getByRole("menuitem", { name: "Router a 8 interfacce" }).click();
+    await clickDrawing(page, 0.5, 0.5);
+    await page.keyboard.press("Escape");
+    await device(page, "R1").click();
+    await expect(section(page, "Tabella di routing")).toBeInViewport();
+    await expect(page.getByRole("button", { name: "Nuova rotta statica" })).toBeInViewport();
+  });
+
+  test("il modulo delle rotte si apre con un clic; la tabella resta sempre in vista", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    const routes = section(page, "Tabella di routing").getByRole("list", { name: "Rotte" });
+    await expect(routes).toBeVisible();
+    const open = page.getByRole("button", { name: "Nuova rotta statica" });
+    await expect(open).toHaveAttribute("aria-expanded", "false");
+    await expect(field(page, "route-network")).toBeHidden();
+    await open.click();
+    await expect(field(page, "route-network")).toBeVisible();
+    await field(page, "route-network").fill("192.168.3.0");
+    // Chiuso e riaperto, ciò che si era scritto c'è ancora.
+    await open.click();
+    await open.click();
+    await expect(field(page, "route-network")).toHaveValue("192.168.3.0");
+    await field(page, "route-mask").fill("/24");
+    await field(page, "route-next-hop").fill("10.0.0.2");
+    await page.getByRole("button", { name: "Aggiungi rotta" }).click();
+    await expect(routes.locator("li:not(.heading)")).toHaveCount(3);
+    await expect(field(page, "route-network")).toBeVisible();
+  });
 });

@@ -34,6 +34,7 @@ Il punto preciso sta nella sezione 9 di `SPEC.md`, che va tenuta aggiornata; qui
   - **Chiarezza degli strumenti** (fatta, D-128): uno strumento alla volta con `session.releaseTools()`; voce attiva della colonna con fondo tinto e spunta; istruzioni anche per Riquadro e Nota in `topology/Messages.svelte`; i test in `feedback.spec.ts`.
   - **Colonna, barretta e flussi** (fatti, D-129): riga tra dispositivi e strumenti, varianti con il dito e da tastiera (`colonna.spec.ts`), barretta che evita i vicini (`placeBar`, argomento `neighbours`), istruzione «Traffico pronto» (`session.launchedAt`).
   - **Icone** (fatte, D-130): switch con le porte, router con la strada che si divide, server ad armadio, Ping andata e ritorno; una sagoma per tipo in `theme/DeviceIcon.svelte`, uguale in colonna e disegno.
+  - **Pannello del router** (fatto, D-131): interfacce come schede che si aprono (`panels/InterfaceFields.svelte`), modulo delle rotte apribile (`RouteEditor.svelte`); nei test `openInterface` e `openRouteForm` di `tests/e2e/helpers.ts`.
   - **Guida e segnalazioni** (decise, D-126, piano in otto passaggi nella sezione 5 di `SPEC.md`): menu «?» con Guida (F1, riquadro sopra l'app), Segnala un problema (issue impostata) e Informazioni su net-sim (avvisi della GPL); da costruire.
   - **Da costruire dopo** (D-120): gli aggiornamenti alla prossima apertura vengono con l'offline.
   - **Offline** (NF-2): da fare; aspetta nome e dominio definitivi.

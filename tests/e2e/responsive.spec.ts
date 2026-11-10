@@ -4,7 +4,7 @@
 // veda per intero e si possa usare.
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { action, centreOf, clickDrawing, device, drag, exampleFile, fillField, openApp, openNetwork, sidePanel } from "./helpers";
+import { action, centreOf, clickDrawing, device, drag, exampleFile, fillField, openApp, openInterface, openNetwork, sidePanel } from "./helpers";
 
 const SIZES = [
   { width: 1920, height: 1080 },
@@ -179,8 +179,11 @@ for (const size of SIZES) {
           .toBe(true);
         // Il pannello non prende più di due quinti della finestra.
         expect((await boxOf(sidePanel(page))).width).toBeLessThanOrEqual(Math.max(290, size.width * 0.4) + 1);
-        // Gli indirizzi nel pannello si leggono per intero.
+        // Gli indirizzi nel pannello si leggono per intero: si apre la scheda
+        // dell'interfaccia, perché un campo nascosto non si misura (D-131).
+        await openInterface(page, "Gi0/0");
         const field = page.locator('[data-field="ip-Gi0/0"]');
+        await expect(field).toBeVisible();
         expect(await field.evaluate((input: HTMLInputElement) => input.scrollWidth <= input.clientWidth)).toBe(true);
         if (!(await larger.isEnabled())) break;
         await larger.click();

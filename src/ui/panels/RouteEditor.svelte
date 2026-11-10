@@ -3,6 +3,7 @@
   // serve a cambiarla: una crocetta su ogni rotta statica, e tre campi per
   // aggiungerne una.
   import { session } from "../session.svelte";
+  import Chevron from "../theme/Chevron.svelte";
   import type { DeviceView } from "../view";
 
   let { device }: { device: DeviceView } = $props();
@@ -11,6 +12,12 @@
   let mask = $state("");
   let nextHop = $state("");
   let problem = $state<string | null>(null);
+  // Il modulo si apre con un clic (D-131): la tabella, che si consulta,
+  // resta in vista; il modulo, che serve solo per aggiungere, non la
+  // allontana. Chiuso resta nella pagina, nascosto: ciò che si è scritto
+  // non si perde.
+  let formOpen = $state(false);
+  const formId = $derived(`route-form-${device.id}`);
 
   function add(event: SubmitEvent) {
     event.preventDefault();
@@ -66,8 +73,12 @@
 {/if}
 
 <!-- Consultare la tabella e aggiungere una rotta sono due cose diverse:
-     il modulo sta in un riquadro a sé, con il suo titolo. -->
-<form onsubmit={add} aria-labelledby="route-form-title">
+     il modulo sta in un riquadro a sé, con il suo titolo, e si apre con
+     il pulsante qui sotto. -->
+<button class="btn open-form" aria-expanded={formOpen} aria-controls={formId} onclick={() => (formOpen = !formOpen)}>
+  <Chevron direction={formOpen ? "down" : "right"} />Nuova rotta statica
+</button>
+<form id={formId} hidden={!formOpen} onsubmit={add} aria-labelledby="route-form-title">
   <h4 id="route-form-title">Aggiungi rotta statica</h4>
   <label for="route-network">Rete</label>
   <input id="route-network" data-field="route-network" bind:value={network} placeholder="192.168.2.0" autocomplete="off" spellcheck="false" />
@@ -194,6 +205,16 @@
   }
   /* Il modulo per aggiungere una rotta: un riquadro leggero, separato
      dalla tabella che si consulta. */
+  .open-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding-left: 5px;
+  }
+  form[hidden] {
+    display: none;
+  }
   form {
     display: grid;
     grid-template-columns: var(--label-width, 7em) minmax(0, 1fr);

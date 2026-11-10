@@ -150,7 +150,7 @@ In fondo alla barra lo stato: **Ferma**, **In esecuzione** (anche quando non c'�
 | --- | --- | --- |
 | Un PC o un server | **Terminale · Ping · Collega**; nel menu Altro (⋯): Tabella ARP · Spegni o Accendi · Duplica · Elimina | Identità (nome, MAC), configurazione IPv4, tabella ARP, pacchetti in attesa |
 | Uno switch | **Terminale (la CLI) · Collega · Tabella MAC**; nel menu Altro: Spegni o Accendi · Duplica · Elimina | Numero di porte, tabella MAC |
-| Un router | **Terminale (la CLI) · Collega · Tabella routing**; nel menu Altro: Spegni o Accendi · Duplica · Elimina | Interfacce (accesa o spenta, indirizzo, maschera; un campo vuoto dice «nessun indirizzo»), tabella di routing con ogni rotta su due righe (destinazione sopra, prossimo salto e uscita sotto), il riquadro Aggiungi rotta statica, tabella ARP |
+| Un router | **Terminale (la CLI) · Collega · Tabella routing**; nel menu Altro: Spegni o Accendi · Duplica · Elimina | Interfacce, come schede che si aprono con un clic (chiusa: nome, indirizzo o «nessun indirizzo», accesa o spenta; aperta: anche i campi di indirizzo e maschera), tabella di routing con ogni rotta su due righe (destinazione sopra, prossimo salto e uscita sotto), il pulsante Nuova rotta statica che apre il modulo per aggiungerne una, tabella ARP |
 | Un cavo | **Stacca** o **Riattacca** · **Elimina** (in rosso) | I due capi e lo stato |
 | Una busta | — | Il contenuto a strati annidati: Ethernet, poi ARP oppure IPv4 e ICMP |
 | Un riquadro o una nota | **Elimina** | Etichetta o testo, colore, Elimina |

@@ -1,10 +1,12 @@
 // Costruire con il mouse una rete con un router, e attraversarlo.
 
 import { expect, test, type Page } from "@playwright/test";
-import { action, clickDrawing, device, fillField, openApp, sidePanel, terminal, typeCommand } from "./helpers";
+import { action, clickDrawing, device, fillField, openApp, openInterface, openRouteForm, sidePanel, terminal, typeCommand } from "./helpers";
 
 // Scrive in un campo di un'interfaccia del router selezionato e conferma.
 async function fillInterface(page: Page, field: string, text: string): Promise<void> {
+  // La scheda dell'interfaccia si apre prima, come farebbe lo studente (D-131).
+  await openInterface(page, field.replace(/^(ip|mask)-/, ""));
   const input = page.locator(`[data-field="${field}"]`);
   await input.fill(text);
   await input.press("Enter");
@@ -93,6 +95,7 @@ test("la lezione sul routing statico: tre reti, due router", async ({ page }) =>
 
   // Aggiunge una rotta statica al router selezionato.
   const addRoute = async (network: string, mask: string, nextHop: string) => {
+    await openRouteForm(page);
     await page.locator('[data-field="route-network"]').fill(network);
     await page.locator('[data-field="route-mask"]').fill(mask);
     await page.locator('[data-field="route-next-hop"]').fill(nextHop);
