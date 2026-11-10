@@ -17,8 +17,18 @@
 
   // Si comincia chiusi: si vede l'elenco intero, e si apre ciò che serve.
   let open = $state(false);
-  const bodyId = $derived(`interface-${deviceId}-${port.name}`.replace(/[^\w-]/g, "-"));
 
+  // I valori rifiutati dei due campi, come li dicono i campi stessi. Una
+  // scheda chiusa li segnala nella sua riga: un errore non sparisce
+  // chiudendola. Restano qui, nella pagina: non vanno né nel motore né
+  // nel file.
+  let problems = $state<{ ip: string | null; mask: string | null }>({ ip: null, mask: null });
+  const rejected = $derived(problems.ip !== null || problems.mask !== null);
+
+  // L'indirizzo a pezzi, per andare a capo solo dopo un punto o prima della
+  // barra del prefisso: in un pannello strettissimo un numero non si spezza.
+  const addressParts = $derived(port.ipLabel === null ? [] : port.ipLabel.split(/(?<=\.)|(?=\/)/));
+  const bodyId = $derived(`interface-${deviceId}-${port.name}`.replace(/[^\w-]/g, "-"));
 </script>
 
 <!-- Accesa o spenta si legge tre volte: la parola sul pulsante, il
@@ -32,10 +42,25 @@
   <div class="head">
     <!-- Il nome e l'indirizzo aprono e chiudono la scheda; la freccia dice
          da che parte è, oltre ai campi che compaiono. -->
+    <!-- A sinistra il testo, tutto allineato al nome: l'indirizzo, se non
+         ci sta accanto, va a capo sotto il nome. A destra la freccia, che
+         dice da che parte è la scheda. -->
     <button class="disclosure" aria-expanded={open} aria-controls={bodyId} onclick={() => (open = !open)}>
+      <span class="summary">
+        <span class="line">
+          <strong>{port.name}</strong>
+          <!-- Il valore che la rete ha davvero, non la bozza rifiutata. -->
+          <span class="address" class:none={port.ipLabel === null}>
+            {#if port.ipLabel === null}nessun indirizzo{:else}{#each addressParts as part, index (index)}{part}<wbr />{/each}{/if}
+          </span>
+        </span>
+        {#if rejected && !open}
+          <!-- Chiusa con un valore rifiutato: una crocetta e due parole,
+               non solo il colore. Aperta, il motivo sta sotto il campo. -->
+          <span class="rejected"><span aria-hidden="true">✕</span> Non valida: apri per correggere</span>
+        {/if}
+      </span>
       <span class="chevron" aria-hidden="true"><Chevron direction={open ? "down" : "right"} /></span>
-      <strong>{port.name}</strong>
-      <span class="address" class:none={port.ipLabel === null}>{port.ipLabel ?? "nessun indirizzo"}</span>
     </button>
     <button
       class="btn state"
@@ -54,6 +79,7 @@
       value={port.ip}
       placeholder="nessun indirizzo"
       apply={(text) => session.configureInterface(deviceId, port.name, "ip", text)}
+      onproblem={(problem) => (problems.ip = problem)}
     />
     <ConfigField
       label="Subnet mask"
@@ -61,6 +87,7 @@
       value={port.mask}
       placeholder="nessuna"
       apply={(text) => session.configureInterface(deviceId, port.name, "mask", text)}
+      onproblem={(problem) => (problems.mask = problem)}
     />
   </div>
 </div>
@@ -92,13 +119,15 @@
   }
   /* Tutta la riga, tranne l'interruttore, apre e chiude: un bersaglio
      grande, senza l'aspetto di un pulsante. */
+  /* Due aree: il testo, che si prende lo spazio e va a capo, e la freccia,
+     sempre della stessa larghezza, accanto. */
   .disclosure {
     flex: 1;
     min-width: 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    column-gap: 6px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 4px;
     padding: 2px 0;
     border: none;
     background: none;
@@ -112,8 +141,27 @@
     outline-offset: 2px;
     border-radius: var(--radius);
   }
+  .summary {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  /* Nome e indirizzo su una riga; se non ci stanno, l'indirizzo va a capo
+     sotto il nome, allineato a lui. */
+  .line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 6px;
+    min-width: 0;
+  }
+  .rejected {
+    color: var(--down);
+    font-size: var(--text-small);
+    font-weight: 600;
+  }
   .chevron {
-    align-self: center;
     display: inline-flex;
     color: var(--muted);
   }
@@ -125,7 +173,7 @@
   /* Se accanto al nome non ci sta, l'indirizzo va a capo sotto di lui,
      intero: un indirizzo tagliato non si legge. */
   .address {
-    white-space: nowrap;
+    min-width: 0;
     font-family: var(--font-mono);
     font-size: var(--text-small);
     color: var(--muted);

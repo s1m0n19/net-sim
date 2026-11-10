@@ -453,3 +453,119 @@ test.describe("le interfacce di un router come schede (D-131)", () => {
     await expect(field(page, "route-network")).toBeVisible();
   });
 });
+
+test.describe("una scheda chiusa non nasconde un valore rifiutato (D-131)", () => {
+  const card = (page: Page, name: string) => sidePanel(page).getByRole("group", { name: `Interfaccia ${name}`, exact: true });
+  const toggle = (page: Page, name: string) => card(page, name).locator("button.disclosure");
+  const warning = (page: Page, name: string) => card(page, name).locator(".rejected");
+
+  test("chiusa con un indirizzo rifiutato lo segnala, riaperta ha ancora la bozza; corretto o con Esc la segnalazione sparisce", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    // L'indirizzo di broadcast della rete: rifiutato, resta nel campo con il motivo.
+    await fill(page, "ip-Gi0/0", "192.168.1.255");
+    await expect(field(page, "ip-Gi0/0")).toHaveAttribute("aria-invalid", "true");
+    // Aperta, il motivo sta sotto il campo: nessun avviso doppio nella riga.
+    await expect(warning(page, "Gi0/0")).toHaveCount(0);
+    await toggle(page, "Gi0/0").click();
+    // Chiusa: la crocetta e le parole, e il valore vero della rete, non la bozza.
+    await expect(warning(page, "Gi0/0")).toHaveText(/✕\s*Non valida: apri per correggere/);
+    await expect(toggle(page, "Gi0/0")).toContainText("192.168.1.1/24");
+    await expect(toggle(page, "Gi0/0")).not.toContainText("192.168.1.255");
+    // Per il lettore di schermo l'avviso fa parte del nome della riga.
+    await expect(toggle(page, "Gi0/0")).toHaveAccessibleName(/Non valida/);
+
+    // Da tastiera si riapre: bozza e motivo ci sono ancora.
+    await toggle(page, "Gi0/0").focus();
+    await page.keyboard.press("Enter");
+    await expect(field(page, "ip-Gi0/0")).toHaveValue("192.168.1.255");
+    await expect(card(page, "Gi0/0").getByRole("alert")).toBeVisible();
+    // Corretto e accettato: la riga si aggiorna, e chiusa non segnala più nulla.
+    await fill(page, "ip-Gi0/0", "192.168.1.254");
+    await toggle(page, "Gi0/0").click();
+    await expect(warning(page, "Gi0/0")).toHaveCount(0);
+    await expect(toggle(page, "Gi0/0")).toContainText("192.168.1.254/24");
+
+    // Con Esc la bozza torna il valore della rete, e la segnalazione se ne va.
+    await fill(page, "ip-Gi0/0", "192.168.1.255");
+    await field(page, "ip-Gi0/0").focus();
+    await page.keyboard.press("Escape");
+    await toggle(page, "Gi0/0").click();
+    await expect(warning(page, "Gi0/0")).toHaveCount(0);
+  });
+
+  test("un errore nella maschera, o in tutti e due i campi, si segnala finché ne resta uno", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    await fill(page, "mask-Gi0/1", "255.0.255.0");
+    await fill(page, "ip-Gi0/1", "10.0.0.3");
+    await expect(field(page, "mask-Gi0/1")).toHaveAttribute("aria-invalid", "true");
+    await expect(field(page, "ip-Gi0/1")).toHaveAttribute("aria-invalid", "true");
+    await toggle(page, "Gi0/1").click();
+    await expect(warning(page, "Gi0/1")).toHaveCount(1);
+    // Corretto l'indirizzo, resta la maschera: la segnalazione resta.
+    await toggle(page, "Gi0/1").click();
+    await fill(page, "ip-Gi0/1", "10.0.0.1");
+    await toggle(page, "Gi0/1").click();
+    await expect(warning(page, "Gi0/1")).toHaveCount(1);
+    // Corretta anche la maschera: sparisce.
+    await toggle(page, "Gi0/1").click();
+    await fill(page, "mask-Gi0/1", "255.255.255.252");
+    await toggle(page, "Gi0/1").click();
+    await expect(warning(page, "Gi0/1")).toHaveCount(0);
+  });
+
+  test("la segnalazione resta aprendo altre schede e facendo avanzare la simulazione", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "tre-reti.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    await fill(page, "ip-Gi0/0", "192.168.1.255");
+    await toggle(page, "Gi0/0").click();
+    await toggle(page, "Gi0/1").click();
+    await expect(warning(page, "Gi0/0")).toHaveCount(1);
+    // Del traffico, e un passo: la scheda non cambia.
+    await page.getByRole("button", { name: "Apri il terminale di R1" }).click();
+    await page.getByLabel(/Riga di comando/).fill("ping 10.0.0.2");
+    await page.getByLabel(/Riga di comando/).press("Enter");
+    await page.getByRole("button", { name: /Passo/ }).click();
+    await expect(warning(page, "Gi0/0")).toHaveCount(1);
+    await expect(toggle(page, "Gi0/0")).toHaveAttribute("aria-expanded", "false");
+    // Un altro router, e ritorno: come per ogni campo, la bozza resta al
+    // router che si lascia (il pannello si ricrea), e si riparte puliti.
+    await device(page, "R2").click();
+    await expect(warning(page, "Gi0/0")).toHaveCount(0);
+  });
+
+  for (const presenting of [false, true]) {
+    test(`un indirizzo lungo va a capo sotto il nome, non sotto la freccia${presenting ? ", anche in presentazione al 200%" : ""}`, async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await openApp(page);
+      await page.getByRole("button", { name: /^Router/ }).click();
+      await page.getByRole("menuitem", { name: "Router a 8 interfacce" }).click();
+      await clickDrawing(page, 0.5, 0.5);
+      await page.keyboard.press("Escape");
+      await device(page, "R1").click();
+      await fill(page, "ip-Gi0/0", "192.168.100.100");
+      await toggle(page, "Gi0/0").click();
+      if (presenting) {
+        await page.getByRole("button", { name: "Presenta" }).click();
+        await device(page, "R1").click();
+        const larger = page.getByRole("button", { name: "Ingrandisci testo e disegno" });
+        while (await larger.isEnabled()) await larger.click();
+      }
+      const name = (await card(page, "Gi0/0").locator("strong").boundingBox())!;
+      const address = (await card(page, "Gi0/0").locator(".address").boundingBox())!;
+      const chevron = (await card(page, "Gi0/0").locator(".chevron").boundingBox())!;
+      // Intero, allineato al nome, a capo sotto di lui; la freccia a destra.
+      await expect(card(page, "Gi0/0").locator(".address")).toHaveText("192.168.100.100/24");
+      expect(Math.abs(address.x - name.x)).toBeLessThan(1);
+      expect(address.y).toBeGreaterThan(name.y);
+      expect(chevron.x).toBeGreaterThan(address.x + address.width);
+      // Nessuno scorrimento di lato, né nel pannello né nella riga.
+      expect(await sidePanel(page).evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+      expect(await toggle(page, "Gi0/0").evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    });
+  }
+});

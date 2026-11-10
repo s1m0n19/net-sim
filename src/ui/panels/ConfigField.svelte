@@ -10,6 +10,7 @@
     apply,
     mono = true,
     placeholder = "",
+    onproblem,
   }: {
     label: string;
     // Nome del campo nella pagina: serve a ritrovarlo, e a dare un id.
@@ -21,6 +22,9 @@
     apply: (text: string) => string | null;
     mono?: boolean;
     placeholder?: string;
+    // Chiamata quando il motivo del rifiuto compare o sparisce: chi contiene
+    // il campo può segnalarlo anche quando il campo non si vede (D-131).
+    onproblem?: (problem: string | null) => void;
   } = $props();
 
   let draft = $state("");
@@ -35,6 +39,12 @@
   $effect(() => {
     draft = current;
     problem = null;
+  });
+
+  // Chi lo chiede sa sempre se il campo ha un valore rifiutato: dopo un
+  // rifiuto, una correzione accettata, Esc, o un nuovo valore della rete.
+  $effect(() => {
+    onproblem?.(problem);
   });
 
   function confirm() {
