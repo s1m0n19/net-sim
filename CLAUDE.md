@@ -30,6 +30,7 @@ Il punto preciso sta nella sezione 9 di `SPEC.md`, che va tenuta aggiornata; qui
   - **Copia di recupero** (fatta, D-120, D-121): `storage/recovery.ts`, `checkRecovery`, `restoreRecovery` e `discardRecovery` nello strato del file, la riga `layout/RecoveryOffer.svelte`; la lezione è in `tests/e2e/recupero.spec.ts`.
   - **Firefox e Safari** (fatto, D-123): i test della pagina girano anche in Firefox e WebKit, ciascuno in un lavoro di GitHub Actions; per le scritte dell'SVG i test usano `textBox` e `clickText` di `tests/e2e/helpers.ts`, perché Playwright in WebKit ne sbaglia la posizione.
   - **Licenza** (fatta, D-124): GPL versione 3 o successive, testo in `LICENSE`.
+  - **Proporzioni del disegno** (fatte, D-127): dispositivi e barretta più compatti nell'editor, uguali a prima in presentazione; tutte le misure del dispositivo e di ciò che gli sta attorno in `topology/device-shape.ts` (`preferences.shape`).
   - **Guida e segnalazioni** (decise, D-126, piano in otto passaggi nella sezione 5 di `SPEC.md`): menu «?» con Guida (F1, riquadro sopra l'app), Segnala un problema (issue impostata) e Informazioni su net-sim (avvisi della GPL); da costruire.
   - **Da costruire dopo** (D-120): gli aggiornamenti alla prossima apertura vengono con l'offline.
   - **Offline** (NF-2): da fare; aspetta nome e dominio definitivi.

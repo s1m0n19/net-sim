@@ -28,10 +28,11 @@ const inside = (inner: Box, outer: Box) =>
 // La larghezza sullo schermo del riquadro di un dispositivo.
 const widthOf = async (page: Page, name: string) => (await boxOf(device(page, name).locator("rect.box"))).width;
 
-// Un PC è largo 52 unità del disegno, più il bordo (1,8): con il limite di
-// 1,25 pixel per unità, circa 67 pixel. Un router è largo 60.
-const PC_AT_LIMIT = (52 + 1.8) * 1.25;
-const ROUTER_AT_LIMIT = (60 + 1.8) * 1.25;
+// Nell'editor un PC è largo 44 unità del disegno, più il bordo (1,8): con
+// il limite di 1,25 pixel per unità, circa 57 pixel. Un router è largo 50
+// (D-127).
+const PC_AT_LIMIT = (44 + 1.8) * 1.25;
+const ROUTER_AT_LIMIT = (50 + 1.8) * 1.25;
 
 test.describe("la fascia in basso", () => {
   test("costruire la rete non la apre; gli eventi ci sono e si leggono aprendola", async ({ page }) => {

@@ -1,5 +1,7 @@
 // Piccoli calcoli sui punti del disegno, usati da più componenti.
 
+import { EDITOR_SHAPE } from "./device-shape";
+
 export interface Point {
   x: number;
   y: number;
@@ -33,10 +35,19 @@ export function pointNear(start: Point, other: Point, distance: number, sideways
  *   dal dispositivo quanto lui cresce
  * @param flipped true per metterla dall'altro lato del cavo: serve quando
  *   il suo posto solito è occupato dall'indirizzo dell'interfaccia
+ * @param reach quanto dista dal centro del dispositivo, lungo il cavo,
+ *   prima dell'ingrandimento (device-shape.ts)
  */
-export function portLabelPoint(from: Point, to: Point, end: "a" | "b", scale = 1, flipped = false): Point {
+export function portLabelPoint(
+  from: Point,
+  to: Point,
+  end: "a" | "b",
+  scale = 1,
+  flipped = false,
+  reach = EDITOR_SHAPE.portLabelDistance,
+): Point {
   const side = (flipped ? -13 : 13) * scale;
-  const point = end === "a" ? pointNear(from, to, 62 * scale, side) : pointNear(to, from, 62 * scale, -side);
+  const point = end === "a" ? pointNear(from, to, reach * scale, side) : pointNear(to, from, reach * scale, -side);
   return { x: point.x, y: point.y + 4 * scale };
 }
 
@@ -57,6 +68,8 @@ export function portLabelPoint(from: Point, to: Point, end: "a" | "b", scale = 1
  * @param centred true per centrarla a metà del cavo invece di farla
  *   partire dal router: serve quando il cavo è troppo corto perché ci
  *   stia per intero, e finirebbe sopra il dispositivo all'altro capo
+ * @param reach quanto dista dal centro del router l'inizio della scritta,
+ *   lungo il cavo, prima dell'ingrandimento (device-shape.ts)
  * @returns il punto, e l'allineamento del testo rispetto a quel punto
  */
 export function addressLabelPoint(
@@ -66,13 +79,14 @@ export function addressLabelPoint(
   scale = 1,
   below = false,
   centred = false,
+  reach = EDITOR_SHAPE.addressDistance,
 ): Point & { anchor: "start" | "middle" | "end" } {
   const [start, other] = end === "a" ? [from, to] : [to, from];
   const length = Math.hypot(other.x - start.x, other.y - start.y) || 1;
   const ux = (other.x - start.x) / length;
   const uy = (other.y - start.y) / length;
 
-  const along = centred ? length / 2 : 52 * scale;
+  const along = centred ? length / 2 : reach * scale;
   let x = start.x + ux * along;
   let y = start.y + uy * along;
   // Sotto il cavo se il cavo sale, o se sopra il posto è preso.

@@ -21,7 +21,7 @@
   // Il riquadro sta subito sotto il nome della porta; nella metà bassa
   // del disegno sta sopra, per non finire sotto la barra della simulazione.
   const origin = $derived.by(() => {
-    const label = portLabelPoint(link.from, link.to, end, preferences.scale);
+    const label = portLabelPoint(link.from, link.to, end, preferences.scale, false, preferences.shape.portLabelDistance);
     const bounds = session.view.bounds;
     const below = label.y < bounds.y + bounds.height / 2;
     return {

@@ -137,10 +137,11 @@ export function selectionBar(): SelectionBar | null {
         },
       );
     }
-    // Il riquadro del dispositivo è alto 64 (k in presentazione); sotto ci
-    // sono il nome e, per un host, l'indirizzo.
+    // Sopra, il bordo della selezione; sotto, il nome e, per un host,
+    // l'indirizzo (device-shape.ts; k in presentazione).
     const k = preferences.scale;
-    return { anchor: { x: device.x, top: device.y - 32 * k, bottom: device.y + 66 * k }, actions };
+    const shape = preferences.shape;
+    return { anchor: { x: device.x, top: device.y + shape.barTop * k, bottom: device.y + shape.barBottom * k }, actions };
   }
 
   if (selection.kind === "link") {

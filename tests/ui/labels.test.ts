@@ -2,9 +2,12 @@ import { describe, expect, test } from "vitest";
 import routerFile from "../../examples/due-lan-router.netsim.json?raw";
 import twoRoutersFile from "../../examples/tre-reti-due-router.netsim.json?raw";
 import { session } from "../../src/ui/session.svelte";
+import { EDITOR_SHAPE, PRESENTATION_SHAPE } from "../../src/ui/topology/device-shape";
 import { addressLabelPoint, portLabelPoint } from "../../src/ui/topology/geometry";
 
 const ROUTER = { x: 400, y: 300 };
+// Quanto dista dal centro del router l'inizio del suo indirizzo, nell'editor.
+const REACH = EDITOR_SHAPE.addressDistance;
 
 describe("indirizzi delle interfacce accanto ai cavi", () => {
   test("ogni capo che è un'interfaccia di router porta il suo indirizzo", () => {
@@ -39,8 +42,8 @@ describe("dove sta la scritta dell'indirizzo", () => {
     const right = addressLabelPoint(ROUTER, { x: 700, y: 300 }, "a");
     const left = addressLabelPoint(ROUTER, { x: 100, y: 300 }, "a");
 
-    expect(right).toMatchObject({ x: 452, anchor: "start" });
-    expect(left).toMatchObject({ x: 348, anchor: "end" });
+    expect(right).toMatchObject({ x: 400 + REACH, anchor: "start" });
+    expect(left).toMatchObject({ x: 400 - REACH, anchor: "end" });
     expect(right.y).toBeLessThan(300);
     expect(left.y).toBeLessThan(300);
   });
@@ -48,7 +51,7 @@ describe("dove sta la scritta dell'indirizzo", () => {
   test("vale per tutti e due i capi: ciascuno misura dal suo dispositivo", () => {
     const atB = addressLabelPoint({ x: 100, y: 300 }, ROUTER, "b");
 
-    expect(atB).toMatchObject({ x: 348, anchor: "end" });
+    expect(atB).toMatchObject({ x: 400 - REACH, anchor: "end" });
   });
 
   test("se il cavo sale la scritta sta sotto, se scende sta sopra: non lo attraversa mai", () => {
@@ -57,7 +60,7 @@ describe("dove sta la scritta dell'indirizzo", () => {
     // Il punto del cavo alla stessa distanza dal router.
     const onCable = (target: { x: number; y: number }) => {
       const length = Math.hypot(target.x - ROUTER.x, target.y - ROUTER.y);
-      return ROUTER.y + ((target.y - ROUTER.y) / length) * 52;
+      return ROUTER.y + ((target.y - ROUTER.y) / length) * REACH;
     };
 
     expect(up.y).toBeGreaterThan(onCable({ x: 700, y: 100 }));
@@ -75,6 +78,14 @@ describe("dove sta la scritta dell'indirizzo", () => {
     const below = addressLabelPoint({ x: 100, y: 300 }, ROUTER, "b", 1, true);
 
     expect(below.y).toBeGreaterThan(300);
+  });
+
+  test("in presentazione, dove il router è più grande, parte più lontano", () => {
+    const editor = addressLabelPoint(ROUTER, { x: 700, y: 300 }, "a");
+    const presenting = addressLabelPoint(ROUTER, { x: 700, y: 300 }, "a", 1, false, false, PRESENTATION_SHAPE.addressDistance);
+
+    expect(presenting.x).toBe(400 + PRESENTATION_SHAPE.addressDistance);
+    expect(presenting.x).toBeGreaterThan(editor.x);
   });
 
   test("in presentazione si allontana dal router quanto lui cresce", () => {

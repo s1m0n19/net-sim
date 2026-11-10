@@ -8,8 +8,8 @@
   let { packet }: { packet: PacketView } = $props();
 
   // La busta non parte dal centro di un dispositivo e non arriva al centro
-  // dell'altro: viaggia tra i due bordi, così non copre le icone.
-  const EDGE = 46;
+  // dell'altro: viaggia tra i due bordi, così non copre le icone. Quanto
+  // lontano dal centro lo dice device-shape.ts.
 
   // Quanta strada ha fatto, da 0 a 1: dipende dal tempo che si sta mostrando.
   const progress = $derived(
@@ -21,7 +21,7 @@
     const dy = packet.to.y - packet.from.y;
     const length = Math.hypot(dx, dy) || 1;
     // Con i dispositivi ingranditi, anche i loro bordi sono più lontani.
-    const edge = EDGE * preferences.scale;
+    const edge = preferences.shape.packetEdge * preferences.scale;
     const travel = Math.max(0, length - 2 * edge);
     const distance = edge + travel * progress;
     return { x: packet.from.x + (dx / length) * distance, y: packet.from.y + (dy / length) * distance };

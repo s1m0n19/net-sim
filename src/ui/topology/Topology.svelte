@@ -300,6 +300,7 @@
       area={{ width: canvasWidth, height: canvasHeight }}
       obstacles={controls}
       scale={preferences.scale}
+      roomy={preferences.presenting}
       subject={barSubject}
     />
   {/if}

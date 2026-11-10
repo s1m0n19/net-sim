@@ -8,8 +8,12 @@
 
   let { device }: { device: DeviceView } = $props();
 
-  // Switch e router sono un po' più larghi di un PC.
-  const halfWidth = $derived(device.kind === "host" ? 26 : 30);
+  // Le misure vengono da device-shape.ts: compatte nell'editor, più grandi
+  // in presentazione. Switch e router sono un po' più larghi di un PC.
+  const shape = $derived(preferences.shape);
+  const halfWidth = $derived(device.kind === "host" ? shape.hostHalfWidth : shape.otherHalfWidth);
+  const halfHeight = $derived(shape.halfHeight);
+  const ring = $derived(shape.selectionMargin);
   const selected = $derived(session.selection?.kind === "device" && session.selection.id === device.id);
   // Il mouse è su una riga dell'elenco degli eventi che parla di questo dispositivo.
   const highlighted = $derived(session.highlight?.deviceId === device.id);
@@ -130,26 +134,28 @@
   onkeydown={onKey}
 >
   {#if selected}
-    <rect class="selection" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
+    <rect class="selection" x={-halfWidth - ring} y={-halfHeight - ring} width={(halfWidth + ring) * 2} height={(halfHeight + ring) * 2} rx={shape.cornerRadius + ring - 3} />
   {/if}
   {#if (highlighted && !selected) || linking}
-    <rect class="highlight" x={-halfWidth - 6} y="-32" width={halfWidth * 2 + 12} height="64" rx="13" />
+    <rect class="highlight" x={-halfWidth - ring} y={-halfHeight - ring} width={(halfWidth + ring) * 2} height={(halfHeight + ring) * 2} rx={shape.cornerRadius + ring - 3} />
   {/if}
-  <rect class="box" x={-halfWidth} y="-26" width={halfWidth * 2} height="52" rx="10" />
-  <g class="icon"><DeviceIcon kind={device.role === "server" ? "server" : device.kind} /></g>
+  <rect class="box" x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={shape.cornerRadius} />
+  <!-- L'icona è disegnata per il riquadro grande: nel riquadro compatto si
+       riduce tutta, senza deformarsi. -->
+  <g class="icon" transform="scale({shape.iconScale})"><DeviceIcon kind={device.role === "server" ? "server" : device.kind} /></g>
 
-  <text class="name" y="46">{device.name}</text>
+  <text class="name" y={shape.nameY} style="font-size: {shape.nameSize}px">{device.name}</text>
 
   {#if device.kind === "host"}
     {#if preferences.labels.ip}
       {#if device.ipLabel !== null}
-        <text class="address" y="62">{device.ipLabel}</text>
+        <text class="address" y={shape.firstLineY}>{device.ipLabel}</text>
       {:else}
-        <text class="address none" y="62">non configurato</text>
+        <text class="address none" y={shape.firstLineY}>non configurato</text>
       {/if}
     {/if}
     {#if preferences.labels.mac}
-      <text class="address" y={preferences.labels.ip ? 78 : 62}>{device.mac}</text>
+      <text class="address" y={preferences.labels.ip ? shape.firstLineY + shape.lineStep : shape.firstLineY}>{device.mac}</text>
     {/if}
   {/if}
 
@@ -192,7 +198,6 @@
     fill: var(--ink);
     font-family: var(--font-ui);
     font-weight: 600;
-    font-size: 14px;
     text-anchor: middle;
   }
   .address {

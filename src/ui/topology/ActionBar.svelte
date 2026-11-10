@@ -17,6 +17,7 @@
     area,
     obstacles = [],
     scale = 1,
+    roomy = false,
     subject,
   }: {
     actions: BarAction[];
@@ -28,6 +29,9 @@
     obstacles?: Rect[];
     // L'ingrandimento della presentazione.
     scale?: number;
+    // Pulsanti più grandi, quelli della presentazione (D-127); nell'editor
+    // la barretta è compatta, perché non pesi più del dispositivo.
+    roomy?: boolean;
     // Di che cosa sono le azioni, per il lettore di schermo: "PC1", "il cavo".
     subject: string;
   } = $props();
@@ -55,7 +59,7 @@
   // barretta non oscilla tra le due forme.
   let fullWidth = $state(0);
   let measuredFor = $state("");
-  const look = $derived(`${actions.map((action) => action.text).join("|")} ${scale}`);
+  const look = $derived(`${actions.map((action) => action.text).join("|")} ${scale} ${roomy}`);
   const compact = $derived(measuredFor === look && !barFits(fullWidth, area.width));
   $effect(() => {
     if (!compact && width > 0) {
@@ -87,6 +91,7 @@
   class="actions"
   class:measuring={width === 0}
   class:compact
+  class:roomy
   bind:this={bar}
   bind:clientWidth={width}
   bind:clientHeight={height}
@@ -110,7 +115,7 @@
         action.run();
       }}
     >
-      <Icon name={action.icon} size={20} />
+      <Icon name={action.icon} size={roomy ? 20 : 17} />
       <span class="text">{action.text}</span>
     </button>
   {/each}
@@ -134,13 +139,21 @@
   /* Non si chiama "bar": in presentazione App.svelte ingrandisce con zoom
      la barra della simulazione, che ha quel nome; qui l'ingrandimento lo fa
      --k, perché zoom sposterebbe anche la posizione. */
+  /* Le misure dei pulsanti: compatte nell'editor, quelle di prima in
+     presentazione (.roomy, D-127). Tutte crescono con --k. */
   .actions {
+    --button-height: 40px;
+    --button-width: 44px;
+    --button-padding: 6px;
+    --icon-size: 17px;
+    --icon-gap: 2px;
+    --more-width: 34px;
     position: absolute;
     z-index: 6;
     display: flex;
     align-items: stretch;
     gap: calc(2px * var(--k));
-    padding: calc(4px * var(--k));
+    padding: calc(3px * var(--k));
     border: 1px solid var(--line);
     border-radius: calc(var(--radius-float) * var(--k));
     background: var(--surface);
@@ -149,6 +162,15 @@
   }
   /* Finché non si conosce la sua grandezza, la barretta non si vede: così
      non compare per un istante nel punto sbagliato. */
+  .actions.roomy {
+    --button-height: 50px;
+    --button-width: 56px;
+    --button-padding: 8px;
+    --icon-size: 20px;
+    --icon-gap: 3px;
+    --more-width: 40px;
+    padding: calc(4px * var(--k));
+  }
   .actions.measuring {
     visibility: hidden;
   }
@@ -160,10 +182,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: calc(3px * var(--k));
-    min-width: calc(56px * var(--k));
-    height: calc(50px * var(--k));
-    padding: 0 calc(8px * var(--k));
+    gap: calc(var(--icon-gap) * var(--k));
+    min-width: calc(var(--button-width) * var(--k));
+    height: calc(var(--button-height) * var(--k));
+    padding: 0 calc(var(--button-padding) * var(--k));
     border: 1px solid transparent;
     border-radius: calc(7px * var(--k));
     background: none;
@@ -172,13 +194,13 @@
     transition: background-color 0.12s ease;
   }
   .action :global(svg) {
-    width: calc(20px * var(--k));
-    height: calc(20px * var(--k));
+    width: calc(var(--icon-size) * var(--k));
+    height: calc(var(--icon-size) * var(--k));
   }
-  /* Compatta: le sole icone, in pulsanti quadrati. */
+  /* Con le sole icone: pulsanti quadrati. */
   .compact .action {
-    min-width: calc(44px * var(--k));
-    padding: 0 calc(6px * var(--k));
+    min-width: calc(var(--button-height) * var(--k));
+    padding: 0 calc(var(--button-padding) * var(--k) * 0.75);
   }
   .compact .text {
     display: none;
@@ -213,8 +235,8 @@
   }
   /* Il pulsante "Altro": alto come gli altri. */
   .actions :global(.trigger) {
-    height: calc(50px * var(--k));
-    width: calc(40px * var(--k));
+    height: calc(var(--button-height) * var(--k));
+    width: calc(var(--more-width) * var(--k));
     border-radius: calc(7px * var(--k));
   }
   @media (prefers-reduced-motion: reduce) {

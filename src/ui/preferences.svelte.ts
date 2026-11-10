@@ -2,6 +2,7 @@
 // Riguardano solo lo schermo: il motore non le conosce e non stanno nel file.
 
 import { STRIP_HEIGHT } from "./layout/auto-open";
+import { deviceShape, type DeviceShape } from "./topology/device-shape";
 
 export type Theme = "light" | "dark";
 
@@ -30,6 +31,14 @@ class Preferences {
   /** Il fattore di ingrandimento in uso: 1 fuori dalla presentazione. */
   get scale(): number {
     return this.presenting ? this.magnification : 1;
+  }
+
+  /**
+   * Le misure dei dispositivi sul disegno: compatte nell'editor, più
+   * grandi in presentazione (D-127). Vanno moltiplicate per `scale`.
+   */
+  get shape(): DeviceShape {
+    return deviceShape(this.presenting);
   }
 
   /**

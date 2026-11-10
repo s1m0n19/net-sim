@@ -10,9 +10,12 @@
 
   const selected = $derived(session.selection?.kind === "link" && session.selection.id === link.id);
 
+  // Le distanze dal dispositivo vengono da device-shape.ts.
+  const shape = $derived(preferences.shape);
+
   // I pallini del segnale stanno sul cavo, poco fuori dal dispositivo.
-  const signalFrom = $derived(pointNear(link.from, link.to, 42 * preferences.scale));
-  const signalTo = $derived(pointNear(link.to, link.from, 42 * preferences.scale));
+  const signalFrom = $derived(pointNear(link.from, link.to, shape.signalDistance * preferences.scale));
+  const signalTo = $derived(pointNear(link.to, link.from, shape.signalDistance * preferences.scale));
 
   const cableLength = $derived(Math.hypot(link.to.x - link.from.x, link.to.y - link.from.y));
 
@@ -23,7 +26,7 @@
     const k = preferences.scale;
     const length = Math.hypot(link.to.x - link.from.x, link.to.y - link.from.y);
     // Circa 7,3 unità per carattere, più lo spazio lasciato accanto ai router.
-    const needed = (link.fromAddress.length + link.toAddress.length) * 7.3 * k + 2 * 52 * k + 16 * k;
+    const needed = (link.fromAddress.length + link.toAddress.length) * 7.3 * k + 2 * shape.addressDistance * k + 16 * k;
     return length < needed;
   });
 
@@ -38,8 +41,8 @@
       // dispositivo all'altro capo: allora sta centrata a metà cavo.
       const k = preferences.scale;
       const alone = link.fromAddress === null || link.toAddress === null;
-      const centred = alone && cableLength < text.length * 7.3 * k + 52 * k + 40 * k;
-      return [{ end, text, at: addressLabelPoint(link.from, link.to, end, k, below, centred) }];
+      const centred = alone && cableLength < text.length * 7.3 * k + shape.addressDistance * k + 40 * k;
+      return [{ end, text, at: addressLabelPoint(link.from, link.to, end, k, below, centred, shape.addressDistance) }];
     }),
   );
 
@@ -54,7 +57,7 @@
       name: end === "a" ? link.fromPort : link.toPort,
       deviceName: end === "a" ? link.fromName : link.toName,
       // Dove il capo b ha l'indirizzo sotto il cavo, il nome della porta va sopra.
-      at: portLabelPoint(link.from, link.to, end, preferences.scale, end === "b" && crowded),
+      at: portLabelPoint(link.from, link.to, end, preferences.scale, end === "b" && crowded, shape.portLabelDistance),
       // Il capo è un'interfaccia di router o una porta di switch spenta.
       off: end === "a" ? link.fromOff : link.toOff,
       open: session.portMenu?.linkId === link.id && session.portMenu.end === end,
