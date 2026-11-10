@@ -152,6 +152,11 @@ async function drawImage(svg: SVGSVGElement): Promise<Blob> {
   copy.setAttribute("viewBox", `${frame.x} ${frame.y} ${frame.width} ${frame.height}`);
   copy.setAttribute("width", String(width));
   copy.setAttribute("height", String(height));
+  // Larghezza e altezza sono arrotondate per difetto: le proporzioni della
+  // tela differiscono da quelle del rettangolo di una frazione di pixel. Il
+  // disegno riempie comunque tutta la tela, invece di stringersi e lasciare
+  // ai lati due bande trasparenti; la deformazione resta sotto il pixel.
+  copy.setAttribute("preserveAspectRatio", "none");
   copy.removeAttribute("style");
   copy.removeAttribute("class");
 
