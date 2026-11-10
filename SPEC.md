@@ -321,6 +321,33 @@ Deciso nell'intervista del 18 ottobre 2026, dopo la prova in aula. Dal più picc
 | 6 | **Fatto.** Esportare come immagine (D-119): PNG di tutta la rete, tema chiaro, doppia risoluzione | La rete va nelle slide e nelle verifiche su carta |
 | 7 | **Fatto.** La preparazione del criterio di accettazione come test nel browser (`tests/e2e/strumenti.spec.ts`); documentazione | Gli strumenti dell'editor sono collaudabili |
 
+### Criterio di accettazione della guida e delle segnalazioni
+
+La guida e le segnalazioni sono pronte quando, senza uscire dall'app e anche senza rete:
+
+1. Sul foglio vuoto l'invito al centro dice dove trovare la guida; la guida non si apre da sola.
+2. Dal menu «?» della barra in alto, o con F1 anche mentre si scrive in un terminale, si apre la guida in un riquadro sopra l'app, sulla voce Primi passi; la rete sotto resta com'era.
+3. Dall'indice si passa da una voce all'altra con il mouse e con la tastiera; Esc e la crocetta chiudono il riquadro e il fuoco torna dov'era.
+4. La voce sulla CLI elenca gli stessi comandi che la CLI capisce, presi dallo stesso albero dei comandi (D-94); quella sul prompt dei PC gli stessi comandi del prompt.
+5. Informazioni su net-sim mostra versione (data e commit della costruzione), copyright, la frase sulla garanzia, la licenza e il collegamento al codice su GitHub.
+6. Segnala un problema apre, in una scheda nuova, una issue del repository con la traccia da completare e con versione e browser già scritti.
+7. In presentazione l'icona «?» non c'è, e F1 non apre nulla.
+
+### Piano di costruzione della guida e delle segnalazioni
+
+Deciso nell'intervista del 10 novembre 2026 (D-126). Prima ciò che serve a tutto (la versione), poi il contenitore, poi i contenuti.
+
+| N. | Passaggio | Che cosa si può fare dopo |
+| --- | --- | --- |
+| 1 | Versione della costruzione: data e commit scritti nel sito a ogni `npm run build`, letti da un solo punto | L'app sa dire quale versione è |
+| 2 | Menu «?» nella barra in alto, accanto a Visualizza, con Guida (F1), Segnala un problema e Informazioni su net-sim; non in presentazione | I tre comandi hanno il loro posto |
+| 3 | Informazioni su net-sim: un riquadro piccolo con versione e avvisi della GPL | La licenza è rispettata anche a schermo |
+| 4 | Segnala un problema: l'indirizzo di una issue nuova, con traccia, versione e browser | Chi trova un difetto lo può segnalare |
+| 5 | Il riquadro della guida: indice e voce, tastiera, Esc, fuoco che torna, F1; la voce Primi passi | La guida si apre e si legge |
+| 6 | Le altre nove voci; i comandi dei terminali presi dagli interpreti | La guida è completa |
+| 7 | L'invito nel foglio vuoto | Chi apre l'app la prima volta sa dove guardare |
+| 8 | Il criterio di accettazione come test nel browser (`tests/e2e/guida.spec.ts`); documentazione | La guida è collaudabile |
+
 ## 6. Fuori ambito
 
 - Modelli commerciali di dispositivi, moduli hardware, viste di rack e armadi.
@@ -493,6 +520,7 @@ Lo stato è *confermata* se è stata scelta o approvata esplicitamente dal docen
 | D-123 | 8 nov 2026 | I test della pagina girano in tre browser (D-120): Chromium, Firefox e WebKit, il motore di Safari. In GitHub Actions ciascuno ha un lavoro suo, in parallelo, e i test unitari con il controllo dei tipi un altro; `npm run test:e2e` prova solo Chromium, il più veloce, prima di ogni push, e `npm run test:e2e:browser` tutti e tre. Difetto vero trovato e corretto: Safari, su Mac, non dà il fuoco a un pulsante cliccato, e il menu delle varianti di switch e router non si chiudeva con Esc; ora Esc lo chiude anche con il fuoco fuori. Due differenze dei test, non dell'app: Playwright in WebKit sbaglia la posizione delle scritte dentro l'SVG (dimentica il viewBox), e i test le misurano con il browser (`textBox`, `clickText`); WebKit riconosce il fuoco da tastiera da un Tab, non da un tasto qualsiasi. Secondo difetto vero, trovato da Firefox: nel pannello del router la maschera più lunga non stava nel campo quando una barra di scorrimento toglieva spazio ai riquadri delle interfacce ma non al pannello; ora i campi del riquadro guardano lo spazio del riquadro (soglia di 228 px). Chromium sotto la proprietà `zoom` della presentazione misura male i campi, e non se n'era accorto | A casa molti studenti usano Firefox o Safari: un difetto lì si vede solo provandolo. Tre lavori in parallelo tengono il tempo di un push come prima; prima del push basta Chromium, perché gli altri due li prova comunque GitHub Actions | Confermata |
 | D-124 | 9 nov 2026 | La licenza (D-120) è la GPL **versione 3 o successive** (`GPL-3.0-or-later`): il testo ufficiale di gnu.org nel file `LICENSE`, il campo `license` di `package.json`, una sezione nel README | È la formula consigliata dalla Free Software Foundation: chi riusa il codice potrà adottare anche una versione futura della GPL, e resta compatibile con i progetti che la adotteranno | Confermata |
 | D-125 | 9 nov 2026 | Il repository è **pubblico** (https://github.com/s1m0n19/net-sim), dal 9 novembre 2026; cambia D-66. Prima di aprirlo il repository, cronologia compresa, è stato controllato: nessun segreto, nessun dato personale oltre al nome e all'indirizzo dell'autore nei commit. Sui marchi basta ciò che c'è: «Cisco» compare solo nei commenti e nella documentazione, per dire che cosa la CLI imita, mai nei testi a schermo; l'output non ha diciture di marca (D-90). Per i protocolli futuri si implementano gli standard aperti (RIP, OSPF, 802.1D, 802.1Q), e i testi dell'aiuto della CLI si scrivono, non si copiano | La licenza GPL (D-124) chiede che il sorgente sia disponibile a chi riceve l'app, e il sito la distribuisce compilata. Le issue di GitHub, dove porta Segnala un problema (D-120), si leggono solo in un repository pubblico. In più i minuti di GitHub Actions sono senza limite, e i test nei tre browser (D-123) costano il triplo | Confermata |
+| D-126 | 10 nov 2026 | Dall'intervista del 10 novembre sulla guida e sulle segnalazioni (D-120). La **guida** spiega l'uso dell'app e i comandi dei terminali, non le reti (SIM-8); è scritta per gli studenti, una voce per compito, frasi brevi. Dieci voci: Primi passi, Costruire la rete, Configurare, Simulare, Terminali dei PC, CLI di router e switch, Riquadri e note, File, immagine e copia di recupero, Presentare, Scorciatoie. Si apre in un **riquadro sopra l'app**, con l'indice a sinistra e la voce a destra; si chiude con Esc o la crocetta, e la rete resta com'era. I comandi dei terminali vengono dagli interpreti stessi, così la guida non resta indietro. L'icona «?» apre un **menu** con Guida (anche con **F1**), Segnala un problema e Informazioni su net-sim; in presentazione non c'è. **Segnala un problema** apre una issue nuova del repository, in una scheda nuova, con una traccia (cosa facevi, cosa ti aspettavi, cosa è successo) e con versione e browser già scritti. **Informazioni su net-sim** mostra versione, copyright, la frase sulla garanzia, la licenza e il collegamento al codice: sono gli avvisi legali che la GPL 3 chiede a un programma interattivo. La **versione** è la data e il commit della costruzione, scritti da soli. Alla prima apertura la guida non si apre da sola: l'invito del foglio vuoto dice dove trovarla | Lo studente che non ricorda come si fa una cosa cerca un compito, non una funzione. Un riquadro lascia la rete sotto gli occhi e non fa uscire dall'app; una pagina a parte si perderebbe tra le schede. Un menu tiene insieme ciò che non è lavoro sulla rete. F1 è il tasto dell'aiuto in Windows e funziona anche mentre si scrive, dove «?» è un carattere. Una issue già impostata dà segnalazioni utili; versione e browser bastano a ritrovare il codice esatto. Data e commit non vanno ricordati a ogni pubblicazione. Una finestra che si apre da sola in aula disturba la lezione | Confermata |
 
 ## 9. Stato di avanzamento
 

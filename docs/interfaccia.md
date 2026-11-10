@@ -32,7 +32,7 @@ Il riferimento visivo è il [bozzetto](https://claude.ai/artifact/LeV9qPUha1C4oQ
 
 | Area | Contenuto | Si può chiudere |
 | --- | --- | --- |
-| Barra in alto | Marchio e nome della rete con le modifiche non salvate; menu Progetto e Salva; annulla e ripristina; menu Visualizza, con il tema; Presenta (vedi «Barra in alto») | no |
+| Barra in alto | Marchio e nome della rete con le modifiche non salvate; menu Progetto e Salva; annulla e ripristina; menu Visualizza, con il tema; menu «?» con guida, segnalazioni e informazioni (previsto, D-126); Presenta (vedi «Barra in alto») | no |
 | Colonna a sinistra | Dispositivi da posare e strumento Cavo | sì |
 | Disegno | La topologia, con sopra la barra della simulazione | no |
 | Pannello laterale | Ciò che è selezionato: un dispositivo, un cavo o un pacchetto | sì |
