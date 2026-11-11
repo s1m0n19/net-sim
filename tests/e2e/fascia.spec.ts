@@ -175,3 +175,114 @@ test("B-1: un ping dal terminale mentre un ping della barretta dello stesso PC a
   // Finito il ping, la riga di comando torna.
   await expect(prompt(page)).toBeVisible();
 });
+
+test.describe("in presentazione la fascia lascia spazio al disegno (R-1, D-134)", () => {
+  type Box = { x: number; y: number; width: number; height: number };
+  const overlap = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+  // Router selezionato, terminale del router aperto, pannello aperto, in presentazione.
+  async function presentRouterWithTerminal(page: Page, width: number, height: number) {
+    await page.setViewportSize({ width, height });
+    await openApp(page);
+    await openNetwork(page, "r.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    await action(page, "Apri il terminale di R1").click();
+    await page.getByRole("button", { name: "Presenta" }).click();
+    await device(page, "R1").click();
+    await page.keyboard.press("t");
+    await expect(page.getByRole("tab", { name: /Terminale · R1/ })).toBeVisible();
+  }
+
+  async function space(page: Page) {
+    const canvas = (await page.locator(".canvas").boundingBox())!;
+    const simulation = (await page.getByRole("toolbar", { name: "Comandi della simulazione" }).boundingBox())!;
+    const zoom = (await page.getByRole("group", { name: "Inquadratura" }).boundingBox())!;
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth + (document.documentElement.scrollHeight - innerHeight));
+    return { canvas, simulation, zoom, overflow };
+  }
+
+  const zoomTo = async (page: Page, percent: number) => {
+    const smaller = page.getByRole("button", { name: "Rimpicciolisci testo e disegno" });
+    const larger = page.getByRole("button", { name: "Ingrandisci testo e disegno" });
+    while (await smaller.isEnabled()) await smaller.click();
+    for (let p = 100; p < percent; p += 20) await larger.click();
+    await expect(page.getByText(`${percent}%`, { exact: true })).toBeVisible();
+  };
+
+  test("lo scenario R-1: a 1366×768 al 200% il disegno conserva rete, barra della simulazione e zoom", async ({ page }) => {
+    await presentRouterWithTerminal(page, 1366, 768);
+    await zoomTo(page, 200);
+    const { canvas, simulation, zoom, overflow } = await space(page);
+    // Prima erano circa 210 pixel: ora almeno il 45% della finestra, e lo
+    // spazio per i comandi del disegno più 120 pixel di rete.
+    expect(canvas.height).toBeGreaterThanOrEqual((72 + 54) * 2 + 120 - 4);
+    expect(canvas.height).toBeGreaterThanOrEqual(768 * 0.45);
+    // La barra della simulazione è tutta nel disegno, e non copre lo zoom.
+    expect(simulation.y + simulation.height).toBeLessThanOrEqual(canvas.y + canvas.height + 1);
+    expect(overlap(simulation, zoom)).toBe(false);
+    expect(overflow).toBe(0);
+    // I dispositivi si vedono, dentro il disegno.
+    const r1 = (await device(page, "R1").boundingBox())!;
+    expect(r1.y).toBeGreaterThanOrEqual(canvas.y);
+    expect(r1.y + r1.height).toBeLessThanOrEqual(canvas.y + canvas.height);
+    // Il terminale resta utilizzabile.
+    await page.getByLabel(/Riga di comando/).fill("show ip route");
+    await page.getByLabel(/Riga di comando/).press("Enter");
+    await expect(page.locator(".screen")).toContainText("192.168.1.0");
+  });
+
+  test("il limite segue l'ingrandimento, la tastiera lo rispetta, e il valore accessibile è l'altezza vera", async ({ page }) => {
+    await presentRouterWithTerminal(page, 1366, 768);
+    await zoomTo(page, 200);
+    const edge = page.getByRole("separator", { name: /Altezza della fascia/ });
+    const max = Number(await edge.getAttribute("aria-valuemax"));
+    await edge.focus();
+    await page.keyboard.press("End");
+    await expect(edge).toHaveAttribute("aria-valuenow", String(max));
+    // Il valore accessibile è l'altezza applicata, per l'ingrandimento.
+    const body = (await page.locator("footer .body").boundingBox())!;
+    expect(Math.abs(body.height - max * 2)).toBeLessThan(2);
+    await page.keyboard.press("ArrowUp");
+    await expect(edge).toHaveAttribute("aria-valuenow", String(max));
+    // Scendendo di ingrandimento il limite si allarga.
+    await zoomTo(page, 140);
+    expect(Number(await edge.getAttribute("aria-valuemax"))).toBeGreaterThan(max);
+  });
+
+  test("uscendo dalla presentazione torna l'altezza scelta prima", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await openApp(page);
+    await openNetwork(page, "r.netsim.json", exampleFile("tre-reti-due-router"));
+    await device(page, "R1").click();
+    await action(page, "Apri il terminale di R1").click();
+    const edge = page.getByRole("separator", { name: /Altezza della fascia/ });
+    await edge.focus();
+    for (let i = 0; i < 4; i++) await page.keyboard.press("ArrowUp");
+    await expect(edge).toHaveAttribute("aria-valuenow", "270");
+
+    await page.getByRole("button", { name: "Presenta" }).click();
+    await page.keyboard.press("t");
+    await zoomTo(page, 200);
+    const limited = Number(await page.getByRole("separator", { name: /Altezza della fascia/ }).getAttribute("aria-valuenow"));
+    expect(limited).toBeLessThan(270);
+    // Un ridimensionamento in presentazione non sostituisce la scelta di prima.
+    await page.getByRole("separator", { name: /Altezza della fascia/ }).focus();
+    await page.keyboard.press("Home");
+    await page.getByRole("button", { name: "Esci" }).click();
+    await expect(page.getByRole("separator", { name: /Altezza della fascia/ })).toHaveAttribute("aria-valuenow", "270");
+  });
+
+  for (const [width, height] of [[1920, 1080], [1600, 900], [1366, 768], [1280, 800], [1024, 768], [900, 700]] as const) {
+    test(`a ${width}×${height}, da 100% a 200%: barra della simulazione e zoom nel disegno, nessuno scorrimento`, async ({ page }) => {
+      await presentRouterWithTerminal(page, width, height);
+      for (const percent of [100, 140, 180, 200]) {
+        await zoomTo(page, percent);
+        const { canvas, simulation, zoom, overflow } = await space(page);
+        expect(overflow, `${percent}%`).toBe(0);
+        expect(simulation.y + simulation.height, `${percent}%`).toBeLessThanOrEqual(canvas.y + canvas.height + 1);
+        expect(overlap(simulation, zoom), `${percent}%`).toBe(false);
+        expect(canvas.height, `${percent}%`).toBeGreaterThanOrEqual(Math.min(height * 0.45, (72 + 54) * (percent / 100) + 120) - 4);
+      }
+    });
+  }
+});

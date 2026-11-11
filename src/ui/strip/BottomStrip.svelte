@@ -1,7 +1,7 @@
 <script lang="ts">
   // La fascia in basso: una scheda per ogni terminale aperto, più la
   // scheda Eventi, che c'è sempre.
-  import { STRIP_HEIGHT, stripHeightWithin } from "../layout/auto-open";
+  import { STRIP_HEIGHT, stripHeightLimit, stripHeightUpTo } from "../layout/auto-open";
   import { preferences } from "../preferences.svelte";
   import { session } from "../session.svelte";
   import Chevron from "../theme/Chevron.svelte";
@@ -18,33 +18,50 @@
   // In presentazione la fascia è ingrandita: lo spostamento del puntatore
   // va diviso per l'ingrandimento.
   let drag: { y: number; height: number } | null = $state(null);
-  // L'altezza massima, per il lettore di schermo: il 60% della finestra.
   let windowHeight = $state(800);
-  const maxHeight = $derived(stripHeightWithin(Number.POSITIVE_INFINITY, windowHeight / preferences.scale));
+
+  // Quanto occupano sullo schermo, sopra il corpo della fascia, la barra in
+  // alto e la riga delle schede: in presentazione sono ingrandite, e
+  // contano per quello che occupano davvero, non per le loro misure CSS.
+  let tabsRow: HTMLDivElement | undefined = $state();
+  let chrome = $state(0);
+  $effect(() => {
+    const dependsOn = [preferences.scale, preferences.presenting, windowHeight, session.terminals.length];
+    if (tabsRow === undefined || dependsOn.length === 0) return;
+    const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bar-height")) || 52;
+    chrome = bar * preferences.scale + tabsRow.getBoundingClientRect().height;
+  });
+
+  // L'altezza voluta resta nelle preferenze; quella applicata è la più
+  // piccola tra la voluta e il limite di adesso (D-134). In presentazione,
+  // a ingrandimento alto, il limite lascia al disegno il suo spazio senza
+  // toccare la scelta di chi usa l'app.
+  const maxHeight = $derived(stripHeightLimit({ windowHeight, scale: preferences.scale, chrome, presenting: preferences.presenting }));
+  const height = $derived(Math.min(preferences.stripHeight, maxHeight));
 
   function startResize(event: PointerEvent) {
-    drag = { y: event.clientY, height: preferences.stripHeight };
+    drag = { y: event.clientY, height };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   }
 
   function resize(event: PointerEvent) {
     if (drag === null) return;
     const wanted = drag.height + (drag.y - event.clientY) / preferences.scale;
-    preferences.stripHeight = stripHeightWithin(wanted, window.innerHeight / preferences.scale);
+    preferences.stripHeight = stripHeightUpTo(wanted, maxHeight);
   }
 
   // Da tastiera: frecce su e giù, a scatti di 20 pixel; Inizio e Fine
   // portano al minimo e al massimo.
   function resizeKey(event: KeyboardEvent) {
     const wanted =
-      event.key === "ArrowUp" ? preferences.stripHeight + 20
-      : event.key === "ArrowDown" ? preferences.stripHeight - 20
+      event.key === "ArrowUp" ? height + 20
+      : event.key === "ArrowDown" ? height - 20
       : event.key === "Home" ? STRIP_HEIGHT.min
       : event.key === "End" ? Number.POSITIVE_INFINITY
       : null;
     if (wanted === null) return;
     event.preventDefault();
-    preferences.stripHeight = stripHeightWithin(wanted, window.innerHeight / preferences.scale);
+    preferences.stripHeight = stripHeightUpTo(wanted, maxHeight);
   }
 
   // Le schede, nell'ordine in cui si vedono: i terminali, poi Eventi.
@@ -100,10 +117,10 @@
       role="separator"
       aria-orientation="horizontal"
       aria-label="Altezza della fascia: trascina, o usa le frecce"
-      aria-valuenow={preferences.stripHeight}
-      aria-valuemin={STRIP_HEIGHT.min}
+      aria-valuenow={height}
+      aria-valuemin={Math.min(STRIP_HEIGHT.min, maxHeight)}
       aria-valuemax={maxHeight}
-      aria-valuetext="{preferences.stripHeight} pixel"
+      aria-valuetext="{height} pixel"
       tabindex="0"
       onpointerdown={startResize}
       onpointermove={resize}
@@ -112,7 +129,7 @@
       onkeydown={resizeKey}
     ><span class="grip" aria-hidden="true"></span></div>
   {/if}
-  <div class="tabs" role="tablist">
+  <div class="tabs" role="tablist" bind:this={tabsRow}>
     <div class="terminals" bind:this={terminalTabs}>
       {#each session.terminals as terminal (terminal.deviceId)}
         <span class="tab" class:selected={session.activeTab === terminal.deviceId}>
@@ -170,7 +187,7 @@
   </div>
 
   {#if preferences.stripOpen}
-    <div class="body" id="strip-panel" role="tabpanel" aria-labelledby={tabId(session.activeTab)} style="height: {preferences.stripHeight}px">
+    <div class="body" id="strip-panel" role="tabpanel" aria-labelledby={tabId(session.activeTab)} style="height: {height}px">
       {#if active !== undefined}
         {#key active.deviceId}
           <TerminalTab terminal={active} />

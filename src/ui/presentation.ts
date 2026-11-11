@@ -8,7 +8,7 @@ import { pause, start, stepOnce } from "./simulation/playback";
 import type { Bounds } from "./view";
 
 // Com'era la schermata prima di entrare, per rimetterla uguale all'uscita.
-let before: { stripOpen: boolean; sideOpen: boolean; camera: Bounds | null } | null = null;
+let before: { stripOpen: boolean; sideOpen: boolean; stripHeight: number; camera: Bounds | null } | null = null;
 
 /**
  * Entra in modalità presentazione: la fascia in basso si chiude, il
@@ -19,7 +19,7 @@ let before: { stripOpen: boolean; sideOpen: boolean; camera: Bounds | null } | n
  */
 export function enterPresentation(): void {
   if (preferences.presenting) return;
-  before = { stripOpen: preferences.stripOpen, sideOpen: preferences.sideOpen, camera: session.camera };
+  before = { stripOpen: preferences.stripOpen, sideOpen: preferences.sideOpen, stripHeight: preferences.stripHeight, camera: session.camera };
   preferences.stripOpen = false;
   preferences.sideOpen = session.selection !== null;
   // In presentazione non si costruisce: nessuno strumento resta scelto,
@@ -35,6 +35,9 @@ export function exitPresentation(): void {
   if (before !== null) {
     preferences.stripOpen = before.stripOpen;
     preferences.sideOpen = before.sideOpen;
+    // L'altezza scelta prima resta: un ridimensionamento fatto in
+    // presentazione, entro il suo limite, non la sostituisce (D-134).
+    preferences.stripHeight = before.stripHeight;
     session.camera = before.camera;
   }
   before = null;
