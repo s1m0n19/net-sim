@@ -6,7 +6,8 @@
 // tracert). Il simulatore le esegue e le registra.
 
 import type { Ipv4Address } from "../model/addresses";
-import type { EthernetFrame, Ipv4Packet } from "../model/frames";
+import type { EthernetFrame } from "../model/frames";
+import type { PendingPacket } from "../model/network";
 
 // Perché un frame è stato scartato. Serve ai test: l'interfaccia mostra
 // che il frame è stato scartato, ma non ne spiega la causa.
@@ -110,6 +111,17 @@ export interface HostOutput {
   pingResults: PingResult[];
   // Sonde di tracert arrivate a una conclusione.
   traceHops: TraceHop[];
+  // Cose da fare per conto di un'altra conversazione: ciò che riguarda i
+  // pacchetti che aspettavano un MAC, quando la risposta ARP li fa partire
+  // o l'attesa scade. Restano della conversazione che li aveva fatti
+  // nascere, non di quella che li sblocca.
+  onBehalfOf?: OnBehalfOf<HostOutput>[];
+}
+
+/** Un elenco di cose da fare che appartiene a una conversazione precisa. */
+export interface OnBehalfOf<Output> {
+  conversationId: number;
+  output: Output;
 }
 
 // Che cosa ha fatto l'host dopo aver ricevuto un frame.
@@ -120,8 +132,8 @@ export interface HostReaction extends HostOutput {
 
 // Che cosa ha fatto l'host allo scadere di un'attesa.
 export interface TimerReaction extends HostOutput {
-  // Pacchetti a cui l'host ha rinunciato.
-  droppedPackets: Ipv4Packet[];
+  // Pacchetti a cui l'host ha rinunciato, ciascuno con la sua conversazione.
+  droppedPackets: PendingPacket[];
 }
 
 // L'elenco vuoto: nulla da inviare, nulla da aspettare, nulla di concluso.
@@ -140,5 +152,19 @@ export function merge(a: HostOutput, b: HostOutput): HostOutput {
     cancelTimers: [...a.cancelTimers, ...b.cancelTimers],
     pingResults: [...a.pingResults, ...b.pingResults],
     traceHops: [...a.traceHops, ...b.traceHops],
+    onBehalfOf: [...(a.onBehalfOf ?? []), ...(b.onBehalfOf ?? [])],
   };
+}
+
+/**
+ * Mette ciò che riguarda un pacchetto in attesa nella conversazione del
+ * pacchetto. Se il simulatore non gli ha ancora dato un numero, resta
+ * della conversazione corrente.
+ *
+ * @param pending - il pacchetto che aspettava un MAC
+ * @param output - ciò che ne nasce: il frame che parte, l'esito di un ping
+ */
+export function onBehalfOf(pending: PendingPacket, output: HostOutput): HostOutput {
+  if (pending.conversationId === null) return output;
+  return { ...NOTHING, onBehalfOf: [{ conversationId: pending.conversationId, output }] };
 }

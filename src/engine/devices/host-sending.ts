@@ -11,7 +11,7 @@ import type { EthernetFrame, Ipv4Packet } from "../model/frames";
 import type { Host } from "../model/network";
 import { ARP_TIMEOUT_TICKS, makeArpRequest } from "../protocols/arp";
 import { nextHopFor } from "../protocols/ipv4";
-import { NOTHING, type HostOutput } from "./host-output";
+import { merge, NOTHING, onBehalfOf, type HostOutput } from "./host-output";
 
 /**
  * Spedisce un pacchetto IP: lo incapsula in un frame Ethernet diretto al
@@ -40,7 +40,7 @@ export function sendIpv4Packet(host: Host, packet: Ipv4Packet): HostOutput {
 
   // Non lo conosco: il pacchetto aspetta.
   const alreadyAsking = host.pendingPackets.some((pending) => pending.nextHop === nextHop);
-  host.pendingPackets.push({ nextHop, packet });
+  host.pendingPackets.push({ nextHop, packet, conversationId: null });
   if (alreadyAsking) {
     // C'è già una richiesta ARP in corso per questo indirizzo: basta quella.
     return NOTHING;
@@ -66,11 +66,13 @@ export function releasePendingPackets(host: Host, ip: Ipv4Address): HostOutput {
   if (mac === undefined || ready.length === 0) return NOTHING;
 
   host.pendingPackets = host.pendingPackets.filter((pending) => pending.nextHop !== ip);
-  return {
-    ...NOTHING,
-    send: ready.map((pending) => encapsulate(host, mac, pending.packet)),
-    cancelTimers: [{ kind: "arp-timeout", ip }],
-  };
+  // L'attesa della risposta è di chi ha chiesto l'ARP; ogni pacchetto che
+  // parte è invece della sua conversazione (D-133).
+  let output: HostOutput = { ...NOTHING, cancelTimers: [{ kind: "arp-timeout", ip }] };
+  for (const pending of ready) {
+    output = merge(output, onBehalfOf(pending, { ...NOTHING, send: [encapsulate(host, mac, pending.packet)] }));
+  }
+  return output;
 }
 
 // Mette un pacchetto IP dentro un frame Ethernet.

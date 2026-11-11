@@ -29,6 +29,7 @@ import {
   NOTHING,
   releasePendingPackets,
   report,
+  routerOnBehalfOf,
   routePacket,
   type RouterOutput,
   type RouterReaction,
@@ -98,11 +99,14 @@ export function routerTimerExpired(router: Router, timer: HostTimer, table: Rout
   let output: RouterOutput = NOTHING;
   for (const pending of waiting) {
     const arrivedOn = router.ports.find((p) => p.name === pending.arrivedOn) ?? null;
-    output = merge(output, report(router, arrivedOn, "host-unreachable", pending.packet, table));
+    // L'avviso, o l'esito di un ping del router, è della conversazione del
+    // pacchetto, non di chi aveva chiesto l'ARP (D-133).
+    let consequences = report(router, arrivedOn, "host-unreachable", pending.packet, table);
     // Se il pacchetto era un echo request del router stesso, finisce qui.
-    if (arrivedOn === null) output = merge(output, echoNeverLeft(router, pending.packet, table));
+    if (arrivedOn === null) consequences = merge(consequences, echoNeverLeft(router, pending.packet, table));
+    output = merge(output, routerOnBehalfOf(pending, consequences));
   }
-  return { ...output, droppedPackets: waiting.map((pending) => pending.packet) };
+  return { ...output, droppedPackets: waiting };
 }
 
 function receiveArp(router: Router, port: RouterInterface, arp: ArpPacket): RouterReaction {

@@ -16,7 +16,7 @@ import type { Host } from "../model/network";
 import { makeArpReply, makeArpRequest } from "../protocols/arp";
 import { isEcho, makeEchoReply } from "../protocols/icmp";
 import { makeIpv4Packet } from "../protocols/ipv4";
-import { merge, NOTHING, type HostReaction, type HostTimer, type TimerReaction } from "./host-output";
+import { merge, NOTHING, onBehalfOf, type HostReaction, type HostTimer, type TimerReaction } from "./host-output";
 import { echoNeverLeft, echoTimedOut, receiveEchoReply, receiveIcmpError } from "./host-ping";
 import { learn, releasePendingPackets, sendIpv4Packet } from "./host-sending";
 
@@ -85,12 +85,13 @@ function arpTimedOut(host: Host, ip: Ipv4Address): TimerReaction {
   host.pendingPackets = host.pendingPackets.filter((pending) => pending.nextHop !== ip);
 
   // Se tra i pacchetti scartati ci sono echo request dell'host, quelli
-  // finiscono qui: non sono mai partiti.
+  // finiscono qui: non sono mai partiti. L'esito è del ping a cui
+  // appartenevano, non di chi aveva chiesto l'ARP (D-133).
   let output = NOTHING;
-  for (const { packet } of waiting) {
-    output = merge(output, echoNeverLeft(host, packet));
+  for (const pending of waiting) {
+    output = merge(output, onBehalfOf(pending, echoNeverLeft(host, pending.packet)));
   }
-  return { ...output, droppedPackets: waiting.map((pending) => pending.packet) };
+  return { ...output, droppedPackets: waiting };
 }
 
 function receiveArp(host: Host, arp: ArpPacket): HostReaction {

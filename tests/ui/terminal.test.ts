@@ -257,3 +257,72 @@ describe("tracert e ping attraverso un router, dal terminale", () => {
     expect(screenOf("d2")).toEqual([]);
   });
 });
+
+describe("un ping dal terminale mentre un ping dalla barretta dello stesso PC è in corso (B-1, D-133)", () => {
+  // Il terminale di PC1 è aperto (beforeEach). La conversazione dell'ultima
+  // voce del terminale: quella del suo ping.
+  const terminalConversation = () => {
+    const entry = session.terminals.find((t) => t.deviceId === "d1")!.entries.at(-1)!;
+    return entry.kind === "text" ? null : entry.conversationId;
+  };
+
+  test("la sequenza del collaudo: il terminale mostra la risposta e le statistiche del suo ping", () => {
+    // Ping dalla barretta verso PC2, fatto avanzare finché la richiesta ARP
+    // è in viaggio ma la risposta non è ancora tornata.
+    session.armPing("d1");
+    session.pingTo("d2");
+    session.step();
+    session.step();
+    // Il ping del terminale aspetta la stessa risposta ARP.
+    session.execute("d1", "ping -n 1 192.168.1.11");
+    runToEnd();
+
+    const screen = screenOf("d1");
+    // Il tempo dipende da quanto il ping ha aspettato l'ARP: conta la risposta.
+    expect(screen.some((line) => /^Reply from 192\.168\.1\.11: bytes=32 time=\d+ms TTL=128$/.test(line))).toBe(true);
+    expect(screen).toContain("    Packets: Sent = 1, Received = 1, Lost = 0 (0% loss),");
+    expect(session.isBusy(session.terminals[0])).toBe(false);
+  });
+
+  test("al contrario, il ping del terminale prima e quello della barretta dopo: ognuno ha il suo esito", () => {
+    session.execute("d1", "ping -n 1 192.168.1.11");
+    session.step();
+    session.armPing("d1");
+    session.pingTo("d2");
+    runToEnd();
+
+    expect(screenOf("d1").some((line) => /^Reply from 192\.168\.1\.11: bytes=32 time=\d+ms TTL=128$/.test(line))).toBe(true);
+    // La barretta non ha un terminale: il suo esito sta nel registro, nella sua conversazione.
+    const mine = terminalConversation();
+    const others = session.view.pingResults.filter((r) => r.conversationId !== mine);
+    expect(others).toHaveLength(1);
+    expect(others[0].outcome).toBe("reply");
+  });
+
+  test("il filtro per conversazione mostra solo gli scambi del ping scelto", () => {
+    session.armPing("d1");
+    session.pingTo("d2");
+    session.step();
+    session.step();
+    session.execute("d1", "ping -n 1 192.168.1.11");
+    runToEnd();
+
+    session.followed = terminalConversation();
+    const shown = session.view.events.filter((event) => session.shows(event.conversationId, event.protocol));
+    const icmp = shown.filter((event) => event.protocol === "ICMP");
+    // Un solo echo request spedito da PC1 e una sola risposta ricevuta: quelli del terminale.
+    expect(icmp.filter((event) => event.text.startsWith("invia ICMP echo request") && event.deviceName === "PC1")).toHaveLength(1);
+    expect(icmp.filter((event) => event.text.startsWith("ping:"))).toHaveLength(1);
+    session.followed = null;
+  });
+
+  test("tre echo dal terminale, in attesa dell'ARP della barretta: le statistiche contano tutti e tre", () => {
+    session.armPing("d1");
+    session.pingTo("d2");
+    session.step();
+    session.execute("d1", "ping -n 3 192.168.1.11");
+    runToEnd();
+
+    expect(screenOf("d1")).toContain("    Packets: Sent = 3, Received = 3, Lost = 0 (0% loss),");
+  });
+});

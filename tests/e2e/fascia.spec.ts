@@ -150,3 +150,28 @@ test("nessun evento e eventi nascosti dal filtro si dicono in modo diverso, e il
   await expect(list).toContainText("accendi ARP e ICMP");
   await expect(page.locator("footer .count")).toHaveText("0 di 1 eventi");
 });
+
+test("B-1: un ping dal terminale mentre un ping della barretta dello stesso PC aspetta l'ARP mostra il suo esito (D-133)", async ({ page }) => {
+  test.setTimeout(90_000);
+  await openApp(page);
+  await openNetwork(page, "lan.netsim.json", exampleFile("lan-switch"));
+  // Ping dalla barretta da PC1 a PC2, Avvia, e Pausa dopo circa tre secondi.
+  await device(page, "PC1").click();
+  await action(page, "Ping da PC1").click();
+  await device(page, "PC2").click();
+  await page.getByRole("button", { name: /^Avvia/ }).click();
+  await page.waitForTimeout(3000);
+  await page.getByRole("button", { name: /^Pausa/ }).click();
+  // La risposta ARP non è ancora tornata: è proprio la situazione del collaudo.
+  await expect(page.locator("aside").last().getByRole("region", { name: "Tabella ARP" })).toContainText("Vuota.");
+
+  // Il ping del terminale di PC1, che aspetta la stessa risposta ARP.
+  await action(page, "Apri il terminale di PC1").click();
+  await typeCommand(page, "ping -n 1 192.168.1.11");
+  await page.getByRole("button", { name: /^Avvia/ }).click();
+  await expect(screen(page)).toContainText("Ping statistics", { timeout: 60_000 });
+  await expect(screen(page)).toContainText(/Reply from 192\.168\.1\.11: bytes=32 time=\d+ms TTL=128/);
+  await expect(screen(page)).toContainText("Received = 1, Lost = 0");
+  // Finito il ping, la riga di comando torna.
+  await expect(prompt(page)).toBeVisible();
+});

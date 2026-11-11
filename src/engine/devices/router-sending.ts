@@ -8,12 +8,12 @@
 
 import type { Ipv4Address } from "../model/addresses";
 import type { EthernetFrame, Ipv4Packet } from "../model/frames";
-import type { Router, RouterInterface } from "../model/network";
+import type { PendingPacket, Router, RouterInterface } from "../model/network";
 import { ARP_TIMEOUT_TICKS, makeArpRequest } from "../protocols/arp";
 import { isEcho, makeIcmpError, type DeliveryFailure } from "../protocols/icmp";
 import { makeIpv4Packet } from "../protocols/ipv4";
 import { lookupRoute, type Route } from "../protocols/routing";
-import type { HostTimer, PingResult, TimerRequest, TraceHop } from "./host-output";
+import type { HostTimer, OnBehalfOf, PingResult, TimerRequest, TraceHop } from "./host-output";
 
 // Perché il router ha scartato un frame. Serve ai test: l'interfaccia
 // mostra che è stato scartato, ma non ne spiega la causa.
@@ -42,6 +42,9 @@ export interface RouterOutput {
   // traceroute: come per un host (vedi host-output.ts).
   pingResults: PingResult[];
   traceHops: TraceHop[];
+  // Cose da fare per conto di un'altra conversazione: i pacchetti che
+  // aspettavano un MAC restano della loro (come per un host, D-133).
+  onBehalfOf?: OnBehalfOf<RouterOutput>[];
 }
 
 // Che cosa ha fatto il router dopo aver ricevuto un frame.
@@ -52,8 +55,8 @@ export interface RouterReaction extends RouterOutput {
 
 // Che cosa ha fatto il router allo scadere di un'attesa.
 export interface RouterTimerReaction extends RouterOutput {
-  // Pacchetti a cui il router ha rinunciato.
-  droppedPackets: Ipv4Packet[];
+  // Pacchetti a cui il router ha rinunciato, ciascuno con la sua conversazione.
+  droppedPackets: PendingPacket[];
 }
 
 // L'elenco vuoto: nulla da inviare, nulla da aspettare, nulla di concluso.
@@ -97,7 +100,7 @@ export function routePacket(
   // una richiesta ARP dall'interfaccia di uscita. Se per quell'indirizzo
   // una richiesta è già in corso, basta mettersi in coda.
   const alreadyAsking = router.pendingPackets.some((pending) => pending.nextHop === nextHop);
-  router.pendingPackets.push({ nextHop, packet, portName: port.name, arrivedOn: arrivedOn?.name ?? null });
+  router.pendingPackets.push({ nextHop, packet, portName: port.name, arrivedOn: arrivedOn?.name ?? null, conversationId: null });
   if (alreadyAsking) {
     return { ...NOTHING, dropped: null, tableChanged: false };
   }
@@ -155,7 +158,21 @@ export function merge(a: RouterOutput, b: RouterOutput): RouterOutput {
     cancelTimers: [...a.cancelTimers, ...b.cancelTimers],
     pingResults: [...a.pingResults, ...b.pingResults],
     traceHops: [...a.traceHops, ...b.traceHops],
+    onBehalfOf: [...(a.onBehalfOf ?? []), ...(b.onBehalfOf ?? [])],
   };
+}
+
+/**
+ * Mette ciò che riguarda un pacchetto in attesa nella conversazione del
+ * pacchetto (D-133). Se il simulatore non gli ha ancora dato un numero,
+ * resta della conversazione corrente.
+ *
+ * @param pending - il pacchetto che aspettava un MAC
+ * @param output - ciò che ne nasce: il frame che parte, un avviso, un esito
+ */
+export function routerOnBehalfOf(pending: PendingPacket, output: RouterOutput): RouterOutput {
+  if (pending.conversationId === null) return output;
+  return { ...NOTHING, onBehalfOf: [{ conversationId: pending.conversationId, output }] };
 }
 
 /**
@@ -182,11 +199,14 @@ export function releasePendingPackets(router: Router, ip: Ipv4Address): RouterOu
   if (mac === undefined || waiting.length === 0) return NOTHING;
 
   router.pendingPackets = router.pendingPackets.filter((pending) => pending.nextHop !== ip);
-  const send = waiting.map((pending) => {
+  // L'attesa della risposta è di chi ha chiesto l'ARP; ogni pacchetto che
+  // parte è invece della sua conversazione (D-133).
+  let output: RouterOutput = { ...NOTHING, cancelTimers: [{ kind: "arp-timeout", ip }] };
+  for (const pending of waiting) {
     const port = router.ports.find((p) => p.name === pending.portName)!;
-    return frameFor(port, mac, pending.packet);
-  });
-  return { ...NOTHING, send, cancelTimers: [{ kind: "arp-timeout", ip }] };
+    output = merge(output, routerOnBehalfOf(pending, { ...NOTHING, send: [frameFor(port, mac, pending.packet)] }));
+  }
+  return output;
 }
 
 // La busta nuova: dal MAC dell'interfaccia di uscita al MAC del prossimo salto.

@@ -298,7 +298,7 @@ Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che i
 
 Ogni azione dell'utente riceve un numero di conversazione. Tutto ciò che nasce elaborando un frame o un'attesa eredita il numero di quel frame o di quell'attesa. Così la richiesta ARP causata da un ping, i suoi quattro echo e i loro esiti appartengono alla stessa conversazione. Servirà all'interfaccia per mostrare solo quella (requisito VIS-5).
 
-Un caso limite: se due ping aspettano la stessa risposta ARP, quando arriva partono entrambi con il numero di conversazione del primo.
+Un'eccezione, decisa in D-133: i pacchetti che aspettano il MAC del prossimo salto. Quando un dispositivo ne mette uno in attesa (`pendingPackets`), il simulatore ci scrive il numero della conversazione che l'ha fatto nascere (`PendingPacket.conversationId`; il dispositivo non conosce le conversazioni). Quando la risposta ARP lo fa partire, o l'attesa scade, ciò che lo riguarda (il frame che parte, l'esito «irraggiungibile», lo scarto, gli echo successivi della stessa serie) resta della sua conversazione: il dispositivo lo restituisce in `onBehalfOf`, e il simulatore lo esegue con quel numero. L'ARP resta di chi l'ha chiesta. Così due ping che aspettano la stessa risposta ARP, uno dalla barretta e uno dal terminale, hanno ciascuno il suo esito; vale anche per i pacchetti che un router inoltra.
 
 ## Come un dispositivo parla con il simulatore
 

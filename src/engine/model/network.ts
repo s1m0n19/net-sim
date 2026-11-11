@@ -31,6 +31,12 @@ export interface Link {
 export interface PendingPacket {
   nextHop: Ipv4Address;
   packet: Ipv4Packet;
+  // La conversazione a cui il pacchetto appartiene: quella dell'operazione
+  // che lo ha fatto nascere. Quando partirà, sbloccato da una risposta ARP
+  // magari chiesta da un'altra operazione, resterà della sua conversazione.
+  // Il dispositivo non conosce le conversazioni: lo mette in coda con null,
+  // e il simulatore scrive il numero subito dopo.
+  conversationId: number | null;
 }
 
 // Un echo request di cui l'host aspetta ancora la risposta.

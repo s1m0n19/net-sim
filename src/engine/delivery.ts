@@ -56,14 +56,15 @@ export function fireTimer(sim: Wire, event: TimerExpiry, produced: Trace[]): voi
   const host = findDevice(sim.network, event.deviceId);
   if (host.kind === "router") {
     const reaction = routerTimerExpired(host, event.timer, routingTableOf(sim.network, host));
-    for (const packet of reaction.droppedPackets) {
+    for (const pending of reaction.droppedPackets) {
       produced.push({
         time: sim.time,
         kind: "packet-dropped",
         deviceId: host.id,
-        packet,
+        packet: pending.packet,
         reason: "arp-timeout",
-        conversationId: event.conversationId,
+        // Lo scarto è della conversazione del pacchetto (D-133).
+        conversationId: pending.conversationId ?? event.conversationId,
       });
     }
     applyRouterOutput(sim, host, reaction, event.conversationId, produced);
@@ -72,14 +73,15 @@ export function fireTimer(sim: Wire, event: TimerExpiry, produced: Trace[]): voi
   if (host.kind !== "host") return;
 
   const reaction = timerExpired(host, event.timer);
-  for (const packet of reaction.droppedPackets) {
+  for (const pending of reaction.droppedPackets) {
     produced.push({
       time: sim.time,
       kind: "packet-dropped",
       deviceId: host.id,
-      packet,
+      packet: pending.packet,
       reason: "arp-timeout",
-      conversationId: event.conversationId,
+      // Lo scarto è della conversazione del pacchetto (D-133).
+      conversationId: pending.conversationId ?? event.conversationId,
     });
   }
   applyHostOutput(sim, host, reaction, event.conversationId, produced);
@@ -109,6 +111,21 @@ export function applyHostOutput(sim: Wire, host: Host, output: HostOutput, conve
   for (const request of output.startTimers) {
     sim.startTimer(host.id, request, conversationId);
   }
+  // I pacchetti messi in coda adesso sono di questa conversazione; poi ciò
+  // che riguarda pacchetti di altre conversazioni si fa per conto loro.
+  claimPendingPackets(host.pendingPackets, conversationId);
+  for (const other of output.onBehalfOf ?? []) {
+    applyHostOutput(sim, host, other.output, other.conversationId, produced);
+  }
+}
+
+// I pacchetti appena messi in attesa di un MAC appartengono alla
+// conversazione di ciò che li ha fatti nascere: lo si scrive adesso, perché
+// il dispositivo non conosce le conversazioni. Quando una risposta ARP li
+// farà partire, magari chiesta da un'altra operazione, resteranno della
+// loro (D-133).
+function claimPendingPackets(pending: { conversationId: number | null }[], conversationId: number): void {
+  for (const waiting of pending) waiting.conversationId ??= conversationId;
 }
 
 function deliverToHost(sim: Wire, host: Host, event: FrameArrival, produced: Trace[]): void {
@@ -219,6 +236,10 @@ export function applyRouterOutput(sim: Wire, router: Router, output: RouterOutpu
   }
   for (const request of output.startTimers) {
     sim.startTimer(router.id, request, conversationId);
+  }
+  claimPendingPackets(router.pendingPackets, conversationId);
+  for (const other of output.onBehalfOf ?? []) {
+    applyRouterOutput(sim, router, other.output, other.conversationId, produced);
   }
 }
 
