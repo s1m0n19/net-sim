@@ -3,7 +3,21 @@
 // tastiera, la presentazione, i bordi del disegno e lo zoom.
 
 import { expect, test, type Page } from "@playwright/test";
-import { action, cable, device, drag, drawing, exampleFile, moreAction, openApp, openNetwork, pointOn, sidePanel } from "./helpers";
+import {
+  action,
+  cable,
+  device,
+  drag,
+  drawing,
+  exampleFile,
+  moreAction,
+  openApp,
+  openNetwork,
+  pointOn,
+  presentationZoom,
+  presentRouterWithTerminal,
+  sidePanel,
+} from "./helpers";
 
 const toolbar = (page: Page) => page.getByRole("toolbar", { name: /Azioni su/ });
 
@@ -333,4 +347,139 @@ test("con un dispositivo vicino sopra, la barretta non lo copre se trova un altr
   // Le azioni si usano come sempre.
   await action(page, "Apri il terminale di PC1").click();
   await expect(page.getByRole("tab", { name: /Terminale · PC1/ })).toBeVisible();
+});
+
+test.describe("in presentazione la barretta si fa compatta quando non trova spazio (R-1b, D-135)", () => {
+  type Box = { x: number; y: number; width: number; height: number };
+  const overlap = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+  // I pulsanti da non coprire: quelli della simulazione e quelli dello zoom.
+  async function controlButtons(page: Page): Promise<Box[]> {
+    const buttons = page
+      .getByRole("toolbar", { name: "Comandi della simulazione" })
+      .getByRole("button")
+      .or(page.getByRole("group", { name: "Inquadratura" }).getByRole("button"));
+    const boxes: Box[] = [];
+    for (const button of await buttons.all()) boxes.push((await button.boundingBox())!);
+    return boxes;
+  }
+
+  // La barretta è tutta nel disegno e non copre nessun pulsante dei comandi.
+  // Dopo un cambio d'ingrandimento la barretta si rimisura e si sposta nel
+  // fotogramma successivo: si aspetta che sia ferma al suo posto.
+  async function problems(page: Page): Promise<string[]> {
+    const bar = (await toolbar(page).boundingBox())!;
+    const canvas = (await page.locator(".canvas").boundingBox())!;
+    const found: string[] = [];
+    if (bar.x < canvas.x || bar.y < canvas.y) found.push("esce in alto o a sinistra");
+    if (bar.x + bar.width > canvas.x + canvas.width + 1 || bar.y + bar.height > canvas.y + canvas.height + 1) found.push("esce in basso o a destra");
+    const covered = (await controlButtons(page)).filter((button) => overlap(bar, button));
+    if (covered.length > 0) found.push(`copre ${covered.length} pulsanti: barretta ${JSON.stringify(bar)}, ${JSON.stringify(covered)}`);
+    return found;
+  }
+  async function expectClear(page: Page, note: string) {
+    await expect.poll(() => problems(page), { message: note, timeout: 3000 }).toEqual([]);
+  }
+
+  test("lo scenario R-1: al 200% la barretta compatta è più bassa, lascia liberi simulazione e zoom, e ha tutte le azioni", async ({ page }) => {
+    await presentRouterWithTerminal(page, 1366, 768);
+    await presentationZoom(page, 140);
+    await expect(toolbar(page)).not.toHaveClass(/compact/);
+    const normal = (await toolbar(page).boundingBox())!;
+    await presentationZoom(page, 200);
+    await expect(toolbar(page)).toHaveClass(/compact/);
+    const compact = (await toolbar(page).boundingBox())!;
+    // Al 200% la forma normale sarebbe alta 118 pixel: la compatta molto meno.
+    expect(compact.height).toBeLessThan((normal.height / 1.4) * 2 * 0.8);
+    await expectClear(page, "200%");
+    // Sole icone, ma la descrizione resta, per il lettore di schermo e il suggerimento.
+    await expect(toolbar(page).locator(".text").first()).toBeHidden();
+    await expect(action(page, "Apri il terminale di R1")).toHaveAttribute("title", /terminale di R1/);
+    await expect(action(page, "Appunta la tabella di routing di R1")).toBeVisible();
+    // Il menu Altro si apre e resta nella finestra.
+    await page.getByRole("button", { name: /^Altre azioni su R1/ }).click();
+    const menu = (await page.getByRole("menu").boundingBox())!;
+    expect(menu.y).toBeGreaterThanOrEqual(0);
+    expect(menu.y + menu.height).toBeLessThanOrEqual(768);
+    await page.keyboard.press("Escape");
+  });
+
+  test("con la simulazione in corso i suoi pulsanti si premono, e la barretta resta al suo posto", async ({ page }) => {
+    await presentRouterWithTerminal(page, 1366, 768);
+    await presentationZoom(page, 200);
+    const simulation = page.getByRole("toolbar", { name: "Comandi della simulazione" });
+    // Un ping dal router: traffico pronto da far scorrere.
+    await page.getByLabel(/Riga di comando/).fill("ping 192.168.2.10");
+    await page.getByLabel(/Riga di comando/).press("Enter");
+    await simulation.getByRole("button", { name: "Avvia" }).click();
+    await expectClear(page, "in corso");
+    await expect(page.locator(".screen")).toContainText("Success rate", { timeout: 15000 });
+    await simulation.getByRole("button", { name: /^Velocità/ }).click();
+    await simulation.getByRole("button", { name: "Ricomincia" }).click();
+    await page.getByRole("group", { name: "Inquadratura" }).getByRole("button", { name: /Adatta/ }).click();
+    await expect(toolbar(page)).toBeVisible();
+  });
+
+  test("passa alla compatta e torna normale con l'ingrandimento, senza oscillare", async ({ page }) => {
+    await presentRouterWithTerminal(page, 1366, 768);
+    for (const [percent, compact] of [[200, true], [140, false], [200, true], [100, false]] as const) {
+      await presentationZoom(page, percent);
+      if (compact) await expect(toolbar(page)).toHaveClass(/compact/);
+      else await expect(toolbar(page)).not.toHaveClass(/compact/);
+      // Ferma: la forma non cambia da sola nei momenti successivi.
+      const before = await toolbar(page).getAttribute("class");
+      await page.waitForTimeout(300);
+      expect(await toolbar(page).getAttribute("class"), `${percent}%`).toBe(before);
+      await expectClear(page, `${percent}%`);
+    }
+  });
+
+  test("compatta si usa con la tastiera: frecce, Invio, e il menu Altro", async ({ page }) => {
+    await presentRouterWithTerminal(page, 1366, 768);
+    await presentationZoom(page, 200);
+    await expect(toolbar(page)).toHaveClass(/compact/);
+    await action(page, "Apri il terminale di R1").focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(action(page, "Appunta la tabella di routing di R1")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("button", { name: /^Altre azioni su R1/ })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("menu")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: /^Altre azioni su R1/ })).toBeFocused();
+  });
+
+  test("un dispositivo al bordo destro, con il pannello chiuso o aperto: barretta nel disegno, comandi liberi", async ({ page }) => {
+    await presentRouterWithTerminal(page, 1366, 768);
+    await presentationZoom(page, 200);
+    await device(page, "PC2").click();
+    await expectClear(page, "PC2, pannello aperto");
+    await page.getByRole("button", { name: "Chiudi il pannello laterale" }).click();
+    await expectClear(page, "PC2, pannello chiuso");
+    await device(page, "R1").click();
+    await expectClear(page, "R1, pannello chiuso");
+  });
+
+  for (const [width, height] of [[1920, 1080], [1600, 900], [1366, 768], [1280, 800], [1024, 768], [900, 700]] as const) {
+    test(`a ${width}×${height}, al 140, 180 e 200%: la barretta non copre simulazione e zoom, con la fascia aperta e chiusa`, async ({ page }) => {
+      await presentRouterWithTerminal(page, width, height);
+      for (const percent of [140, 180, 200]) {
+        await presentationZoom(page, percent);
+        await expectClear(page, `${percent}%, fascia aperta`);
+      }
+      await page.getByRole("button", { name: "Chiudi la fascia in basso" }).click();
+      await expectClear(page, "200%, fascia chiusa");
+    });
+  }
+});
+
+test("nell'editor, con spazio, la barretta resta con le scritte anche accanto ai comandi", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await openApp(page);
+  await openNetwork(page, "r.netsim.json", exampleFile("tre-reti-due-router"));
+  for (const name of ["PC1", "R1", "R2", "PC2"]) {
+    await device(page, name).click();
+    await expect(toolbar(page)).not.toHaveClass(/compact/);
+    await expect(toolbar(page).locator(".text").first()).toBeVisible();
+  }
 });

@@ -7,14 +7,21 @@
 // la barra della simulazione): copriti, non si potrebbero usare (D-112).
 // Meglio ancora se non copre nemmeno gli altri dispositivi: con dei vicini
 // sopra, va sotto, se lì è libera (D-129).
-// Di lato non esce mai dal disegno: se con le scritte è troppo larga, la
-// barretta le toglie (barFits). Tutto in pixel dello schermo.
+// Se sopra e sotto coprirebbe un comando, prova al fianco dell'oggetto.
+// Di lato non esce mai dal disegno: se con le scritte è troppo larga, o se
+// con le scritte non trova un posto che lasci liberi i comandi (coversAny),
+// la barretta le toglie e diventa più bassa (D-112, D-135). Tutto in pixel
+// dello schermo.
 
 /** L'oggetto selezionato, sullo schermo: il centro e il bordo alto e basso. */
 export interface ScreenAnchor {
   x: number;
   top: number;
   bottom: number;
+  // Metà della larghezza dell'oggetto, se la si conosce (un dispositivo):
+  // permette di mettere la barretta al suo fianco quando sopra e sotto non
+  // c'è un posto libero (D-135).
+  halfWidth?: number;
 }
 
 export interface Size {
@@ -30,19 +37,24 @@ export interface Rect {
   bottom: number;
 }
 
-/** Dove sta la barretta: l'angolo in alto a sinistra, e se è sopra o sotto. */
+/** Dove sta la barretta: l'angolo in alto a sinistra, e da che parte dell'oggetto. */
 export interface BarPlacement {
   left: number;
   top: number;
-  side: "above" | "below";
+  side: "above" | "below" | "right" | "left";
 }
 
 // Lo spazio tra la barretta e l'oggetto, e quello lasciato dai bordi.
 const GAP = 10;
 const MARGIN = 8;
+// Lo spazio dai bordi e dai comandi quando non c'è un posto vicino (D-135).
+const TIGHT = 3;
 
 /**
- * Sceglie dove mettere la barretta.
+ * Sceglie dove mettere la barretta: il primo posto vicino all'oggetto che
+ * lasci liberi i comandi (findNearbySpot); se non ce n'è, un posto più
+ * lontano che li lasci liberi; se nemmeno quello, sopra l'oggetto se c'è
+ * posto, altrimenti sotto.
  *
  * @param anchor - l'oggetto selezionato, in pixel del disegno sullo schermo
  * @param bar - la grandezza della barretta
@@ -53,6 +65,41 @@ const MARGIN = 8;
  * @returns l'angolo in alto a sinistra della barretta, e da che parte sta
  */
 export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles: Rect[] = [], neighbours: Rect[] = []): BarPlacement {
+  const nearby = findNearbySpot(anchor, bar, area, obstacles, neighbours);
+  if (nearby !== null) return nearby;
+  const above = anchor.top - GAP - bar.height;
+  const below = clamp(anchor.bottom + GAP, MARGIN, area.height - bar.height - MARGIN);
+  const aboveFits = above >= MARGIN;
+  const centred = clamp(clamp(anchor.x, MARGIN, area.width - MARGIN) - bar.width / 2, MARGIN, area.width - bar.width - MARGIN);
+  // I comandi della simulazione contano più della vicinanza: sopra, sotto
+  // o all'altezza dell'oggetto, oppure in cima o in fondo al disegno,
+  // spostata di lato quanto serve, anche se non resta più accanto
+  // all'oggetto. Qui lo spazio è poco, e la barretta si stringe ai bordi
+  // e ai comandi più del solito (D-135).
+  const within = (left: number) => clamp(left, TIGHT, area.width - bar.width - TIGHT);
+  const middle = clamp((anchor.top + anchor.bottom) / 2 - bar.height / 2, TIGHT, area.height - bar.height - TIGHT);
+  const tops = [...(aboveFits ? [above] : []), below, middle, TIGHT, area.height - bar.height - TIGHT];
+  for (const top of tops) {
+    const dodges = obstacles.flatMap((o) => [within(o.left - TIGHT - bar.width), within(o.right + TIGHT)]);
+    const left = [centred, ...dodges].find((l) => !coversAny({ left: l, top, side: "below" }, bar, obstacles));
+    if (left !== undefined) return { left, top, side: top === above ? "above" : "below" };
+  }
+  return aboveFits ? { left: centred, top: above, side: "above" } : { left: centred, top: below, side: "below" };
+}
+
+/**
+ * Cerca un posto per la barretta vicino all'oggetto che non copra nessun
+ * comando: sopra, sotto, al fianco. Se non c'è, la barretta con le
+ * scritte passa alla forma compatta (D-135).
+ *
+ * @param anchor - l'oggetto selezionato, in pixel del disegno sullo schermo
+ * @param bar - la grandezza della barretta
+ * @param area - la grandezza del disegno sullo schermo
+ * @param obstacles - i comandi sul disegno da non coprire
+ * @param neighbours - gli altri dispositivi: meglio non coprirli
+ * @returns il posto, oppure null se ogni posto vicino copre un comando
+ */
+export function findNearbySpot(anchor: ScreenAnchor, bar: Size, area: Size, obstacles: Rect[] = [], neighbours: Rect[] = []): BarPlacement | null {
   const within = (left: number) => clamp(left, MARGIN, area.width - bar.width - MARGIN);
   // Il punto dell'oggetto a cui la barretta resta vicina: il suo centro, o
   // il punto più vicino che si vede, se il centro è fuori dal disegno.
@@ -91,6 +138,22 @@ export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles:
   if (leftAbove !== null) return { left: leftAbove, top: above, side: "above" };
   const leftBelow = freeLeft(below);
   if (leftBelow !== null) return { left: leftBelow, top: below, side: "below" };
+  // Sopra e sotto coprirebbe un comando: al fianco dell'oggetto, a destra
+  // e poi a sinistra, all'altezza del suo centro, se lì è tutta nel disegno
+  // e non copre nulla, nemmeno gli altri dispositivi: di fianco coprirebbe
+  // facilmente il resto della rete, e allora è meglio la forma compatta
+  // sopra o sotto (D-135).
+  if (anchor.halfWidth !== undefined) {
+    const top = clamp((anchor.top + anchor.bottom) / 2 - bar.height / 2, MARGIN, area.height - bar.height - MARGIN);
+    const sides = [
+      { left: anchor.x + anchor.halfWidth + GAP, side: "right" as const },
+      { left: anchor.x - anchor.halfWidth - GAP - bar.width, side: "left" as const },
+    ];
+    for (const { left, side } of sides) {
+      const inside = left >= MARGIN && left + bar.width <= area.width - MARGIN && top + bar.height <= area.height - MARGIN;
+      if (inside && !coversAny({ left, top, side }, bar, [...obstacles, ...neighbours])) return { left, top, side };
+    }
+  }
   // L'oggetto è più alto di ciò che si vede (un grande riquadro, D-118):
   // né sopra né sotto c'è posto, e la barretta sta in cima al disegno,
   // sopra l'oggetto stesso, se lì non copre nulla.
@@ -98,7 +161,20 @@ export function placeBar(anchor: ScreenAnchor, bar: Size, area: Size, obstacles:
     const leftTop = freeLeft(MARGIN);
     if (leftTop !== null) return { left: leftTop, top: MARGIN, side: "below" };
   }
-  return aboveFits ? { left: centred, top: above, side: "above" } : { left: centred, top: below, side: "below" };
+  return null;
+}
+
+/**
+ * Dice se la barretta, in quella posizione, coprirebbe uno dei comandi del
+ * disegno (zoom, barra della simulazione, messaggi).
+ *
+ * @param placement - dove starebbe la barretta
+ * @param bar - la grandezza della barretta
+ * @param obstacles - i comandi da non coprire
+ */
+export function coversAny(placement: BarPlacement, bar: Size, obstacles: Rect[]): boolean {
+  const { left, top } = placement;
+  return obstacles.some((o) => left < o.right && o.left < left + bar.width && top < o.bottom && o.top < top + bar.height);
 }
 
 /**

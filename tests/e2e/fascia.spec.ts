@@ -4,7 +4,7 @@
 // il registro degli eventi che non si fa coprire dal suo pulsante.
 
 import { expect, test, type Page } from "@playwright/test";
-import { action, device, exampleFile, fillField, openApp, openNetwork, typeCommand } from "./helpers";
+import { action, device, exampleFile, fillField, openApp, openNetwork, presentationZoom, presentRouterWithTerminal, typeCommand } from "./helpers";
 
 const screen = (page: Page) => page.locator(".screen");
 const prompt = (page: Page) => page.getByLabel(/Riga di comando/);
@@ -180,19 +180,6 @@ test.describe("in presentazione la fascia lascia spazio al disegno (R-1, D-134)"
   type Box = { x: number; y: number; width: number; height: number };
   const overlap = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-  // Router selezionato, terminale del router aperto, pannello aperto, in presentazione.
-  async function presentRouterWithTerminal(page: Page, width: number, height: number) {
-    await page.setViewportSize({ width, height });
-    await openApp(page);
-    await openNetwork(page, "r.netsim.json", exampleFile("tre-reti-due-router"));
-    await device(page, "R1").click();
-    await action(page, "Apri il terminale di R1").click();
-    await page.getByRole("button", { name: "Presenta" }).click();
-    await device(page, "R1").click();
-    await page.keyboard.press("t");
-    await expect(page.getByRole("tab", { name: /Terminale · R1/ })).toBeVisible();
-  }
-
   async function space(page: Page) {
     const canvas = (await page.locator(".canvas").boundingBox())!;
     const simulation = (await page.getByRole("toolbar", { name: "Comandi della simulazione" }).boundingBox())!;
@@ -201,13 +188,7 @@ test.describe("in presentazione la fascia lascia spazio al disegno (R-1, D-134)"
     return { canvas, simulation, zoom, overflow };
   }
 
-  const zoomTo = async (page: Page, percent: number) => {
-    const smaller = page.getByRole("button", { name: "Rimpicciolisci testo e disegno" });
-    const larger = page.getByRole("button", { name: "Ingrandisci testo e disegno" });
-    while (await smaller.isEnabled()) await smaller.click();
-    for (let p = 100; p < percent; p += 20) await larger.click();
-    await expect(page.getByText(`${percent}%`, { exact: true })).toBeVisible();
-  };
+  const zoomTo = presentationZoom;
 
   test("lo scenario R-1: a 1366×768 al 200% il disegno conserva rete, barra della simulazione e zoom", async ({ page }) => {
     await presentRouterWithTerminal(page, 1366, 768);

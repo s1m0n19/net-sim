@@ -168,3 +168,29 @@ export async function typeCommand(page: Page, command: string): Promise<void> {
 export function terminal(page: Page): Locator {
   return page.locator(".screen");
 }
+
+/**
+ * Lo scenario R-1 del collaudo UX 5: la rete con due router aperta, il
+ * terminale di R1 aperto nella fascia, il pannello aperto, in presentazione
+ * con R1 selezionato.
+ */
+export async function presentRouterWithTerminal(page: Page, width: number, height: number): Promise<void> {
+  await page.setViewportSize({ width, height });
+  await openApp(page);
+  await openNetwork(page, "r.netsim.json", exampleFile("tre-reti-due-router"));
+  await device(page, "R1").click();
+  await action(page, "Apri il terminale di R1").click();
+  await page.getByRole("button", { name: "Presenta" }).click();
+  await device(page, "R1").click();
+  await page.keyboard.press("t");
+  await expect(page.getByRole("tab", { name: /Terminale · R1/ })).toBeVisible();
+}
+
+/** In presentazione, porta l'ingrandimento a quella percentuale (da 100 a 200, di 20 in 20). */
+export async function presentationZoom(page: Page, percent: number): Promise<void> {
+  const smaller = page.getByRole("button", { name: "Rimpicciolisci testo e disegno" });
+  const larger = page.getByRole("button", { name: "Ingrandisci testo e disegno" });
+  while (await smaller.isEnabled()) await smaller.click();
+  for (let p = 100; p < percent; p += 20) await larger.click();
+  await expect(page.getByText(`${percent}%`, { exact: true })).toBeVisible();
+}

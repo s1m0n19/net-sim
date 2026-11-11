@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { barFits, placeBar } from "../../src/ui/topology/bar-placement";
+import { barFits, coversAny, findNearbySpot, placeBar } from "../../src/ui/topology/bar-placement";
 
 const BAR = { width: 260, height: 60 };
 const AREA = { width: 1000, height: 600 };
@@ -106,5 +106,87 @@ describe("la barretta e i dispositivi vicini (D-129)", () => {
   test("vicino al bordo basso non va sotto, dove finirebbe sull'oggetto", () => {
     const row = { left: 0, top: 400, right: 1000, bottom: 490 };
     expect(placeBar({ x: 500, top: 500, bottom: 560 }, BAR, AREA, [], [row]).side).toBe("above");
+  });
+});
+
+describe("quando sopra e sotto c'è un comando (D-135)", () => {
+  // Una striscia di comandi in alto (lo zoom) e la barra della simulazione
+  // subito sotto l'oggetto: né sopra né sotto c'è un posto libero.
+  const TOP = { left: 0, top: 0, right: 1000, bottom: 60 };
+  const SIMULATION = { left: 0, top: 205, right: 1000, bottom: 300 };
+  const DEVICE = { x: 500, top: 100, bottom: 200, halfWidth: 30 };
+
+  test("va al fianco destro del dispositivo, all'altezza del suo centro", () => {
+    expect(placeBar(DEVICE, BAR, AREA, [TOP, SIMULATION])).toEqual({ left: 540, top: 120, side: "right" });
+  });
+
+  test("vicino al bordo destro, al fianco sinistro", () => {
+    expect(placeBar({ ...DEVICE, x: 950 }, BAR, AREA, [TOP, SIMULATION])).toEqual({ left: 650, top: 120, side: "left" });
+  });
+
+  test("senza la larghezza dell'oggetto (un cavo) non prova i fianchi, ma lascia comunque liberi i comandi", () => {
+    const { halfWidth: _, ...cable } = DEVICE;
+    const placed = placeBar(cable, BAR, AREA, [TOP, SIMULATION]);
+    expect(placed.side).not.toBe("right");
+    expect(coversAny(placed, BAR, [TOP, SIMULATION])).toBe(false);
+  });
+
+  test("con spazio sopra, i fianchi non servono: la barretta resta sopra", () => {
+    expect(placeBar({ ...DEVICE, top: 300, bottom: 400 }, BAR, AREA, [TOP]).side).toBe("above");
+  });
+});
+
+describe("il posto vicino decide la forma della barretta (D-135)", () => {
+  // Lo scenario R-1 in piccolo: disegno basso, zoom in alto a destra, barra
+  // della simulazione larga quasi quanto il disegno, subito sotto il router.
+  const AREA_R1 = { width: 600, height: 400 };
+  const ZOOM = { left: 300, top: 8, right: 592, bottom: 60 };
+  const SIMULATION = { left: 20, top: 260, right: 580, bottom: 392 };
+  const ROUTER = { x: 300, top: 150, bottom: 230, halfWidth: 30 };
+  const NORMAL = { width: 454, height: 118 };
+  const COMPACT = { width: 251, height: 90 };
+
+  test("con le scritte non c'è un posto vicino che lasci liberi i comandi", () => {
+    expect(findNearbySpot(ROUTER, NORMAL, AREA_R1, [ZOOM, SIMULATION])).toBeNull();
+  });
+
+  test("compatta sì, accanto al router e lontana da zoom e simulazione", () => {
+    const placed = findNearbySpot(ROUTER, COMPACT, AREA_R1, [ZOOM, SIMULATION]);
+    expect(placed).not.toBeNull();
+    expect(coversAny(placed!, COMPACT, [ZOOM, SIMULATION])).toBe(false);
+  });
+
+  test("senza comandi c'è sempre un posto vicino: nell'editor con spazio la barretta resta con le scritte", () => {
+    expect(findNearbySpot(ROUTER, NORMAL, { width: 1200, height: 800 })).not.toBeNull();
+  });
+
+  test("se nemmeno la compatta trova un posto vicino, la barretta lascia comunque liberi i comandi", () => {
+    const tight = { width: 600, height: 300 };
+    const simulation = { left: 20, top: 200, right: 580, bottom: 292 };
+    const placed = placeBar({ x: 300, top: 100, bottom: 180, halfWidth: 30 }, COMPACT, tight, [ZOOM, simulation]);
+    expect(coversAny(placed, COMPACT, [ZOOM, simulation])).toBe(false);
+  });
+});
+
+describe("coversAny", () => {
+  test("dice se la barretta copre un comando, anche solo in parte", () => {
+    const zoom = { left: 100, top: 0, right: 200, bottom: 50 };
+    expect(coversAny({ left: 150, top: 40, side: "below" }, { width: 100, height: 30 }, [zoom])).toBe(true);
+    expect(coversAny({ left: 0, top: 40, side: "below" }, { width: 100, height: 30 }, [zoom])).toBe(false);
+    expect(coversAny({ left: 150, top: 50, side: "below" }, { width: 100, height: 30 }, [zoom])).toBe(false);
+  });
+});
+
+describe("al fianco solo se non copre la rete (D-135)", () => {
+  test("se ai fianchi coprirebbe altri dispositivi, nessun posto vicino: tocca alla forma compatta", () => {
+    const top = { left: 0, top: 0, right: 1000, bottom: 60 };
+    const simulation = { left: 0, top: 205, right: 1000, bottom: 300 };
+    const right = { left: 600, top: 100, right: 660, bottom: 200 };
+    const left = { left: 340, top: 100, right: 400, bottom: 200 };
+    const device = { x: 500, top: 100, bottom: 200, halfWidth: 30 };
+    expect(findNearbySpot(device, BAR, AREA, [top, simulation], [left, right])).toBeNull();
+    // Con un vicino solo a destra, il fianco sinistro; senza vicini, il destro.
+    expect(findNearbySpot(device, BAR, AREA, [top, simulation], [right])?.side).toBe("left");
+    expect(findNearbySpot(device, BAR, AREA, [top, simulation], [])?.side).toBe("right");
   });
 });

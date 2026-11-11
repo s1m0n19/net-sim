@@ -144,6 +144,7 @@
           x: (bar.anchor.x - bounds.x) * screen.k + screen.x,
           top: (bar.anchor.top - bounds.y) * screen.k + screen.y,
           bottom: (bar.anchor.bottom - bounds.y) * screen.k + screen.y,
+          halfWidth: bar.anchor.halfWidth === undefined ? undefined : bar.anchor.halfWidth * screen.k,
         },
   );
   // Gli altri dispositivi sullo schermo, con il nome e l'indirizzo sotto: la

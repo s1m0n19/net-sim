@@ -39,6 +39,9 @@ export interface BarAnchor {
   x: number;
   top: number;
   bottom: number;
+  // Metà della larghezza, bordo della selezione compreso: per mettere la
+  // barretta al fianco di un dispositivo quando sopra e sotto non c'è posto.
+  halfWidth?: number;
 }
 
 // La barretta: accanto a che cosa, e i suoi pulsanti.
@@ -141,7 +144,9 @@ export function selectionBar(): SelectionBar | null {
     // l'indirizzo (device-shape.ts; k in presentazione).
     const k = preferences.scale;
     const shape = preferences.shape;
-    return { anchor: { x: device.x, top: device.y + shape.barTop * k, bottom: device.y + shape.barBottom * k }, actions };
+    const half = (device.kind === "host" ? shape.hostHalfWidth : shape.otherHalfWidth) + shape.selectionMargin;
+    const anchor = { x: device.x, top: device.y + shape.barTop * k, bottom: device.y + shape.barBottom * k, halfWidth: half * k };
+    return { anchor, actions };
   }
 
   if (selection.kind === "link") {

@@ -9,7 +9,7 @@
   import Menu, { type MenuItem } from "../layout/Menu.svelte";
   import Icon from "../theme/Icon.svelte";
   import type { BarAction } from "./bar-actions";
-  import { barFits, placeBar, type Rect, type ScreenAnchor, type Size } from "./bar-placement";
+  import { barFits, findNearbySpot, placeBar, type Rect, type ScreenAnchor, type Size } from "./bar-placement";
 
   let {
     actions,
@@ -55,18 +55,25 @@
       run: action.run,
     })),
   );
-  // Se con le scritte non sta nel disegno (in presentazione, su uno schermo
-  // stretto) la barretta resta con le sole icone; descrizione e suggerimento
-  // non cambiano (D-112). La larghezza con le scritte si misura una volta
-  // per ogni insieme di azioni e ingrandimento, e si ricorda: così la
-  // barretta non oscilla tra le due forme.
-  let fullWidth = $state(0);
+  // La forma compatta: sole icone, pulsanti più bassi, descrizione e
+  // suggerimento uguali (D-112, D-135). La barretta la prende quando con
+  // le scritte non trova spazio: troppo larga per il disegno, oppure, in
+  // ogni posto vicino all'oggetto, sopra un comando (zoom, barra della
+  // simulazione, messaggi). La grandezza con le scritte si misura una volta
+  // per ogni insieme di azioni e ingrandimento, e si ricorda: la scelta si
+  // fa sempre con quella, non con la grandezza di adesso, così la barretta
+  // non oscilla tra le due forme.
+  let full = $state<Size>({ width: 0, height: 0 });
   let measuredFor = $state("");
   const look = $derived(`${actions.map((action) => action.text).join("|")} ${scale} ${roomy}`);
-  const compact = $derived(measuredFor === look && !barFits(fullWidth, area.width));
+  const compact = $derived.by(() => {
+    if (measuredFor !== look) return false;
+    if (!barFits(full.width, area.width)) return true;
+    return findNearbySpot(anchor, full, area, obstacles, neighbours) === null;
+  });
   $effect(() => {
     if (!compact && width > 0) {
-      fullWidth = width;
+      full = { width, height };
       measuredFor = look;
     }
   });
@@ -200,7 +207,16 @@
     width: calc(var(--icon-size) * var(--k));
     height: calc(var(--icon-size) * var(--k));
   }
-  /* Con le sole icone: pulsanti quadrati. */
+  /* Con le sole icone: pulsanti più bassi e quasi quadrati, ma ancora
+     grandi abbastanza da colpire con il dito (D-135). */
+  .actions.compact {
+    --button-height: 34px;
+    --more-width: 30px;
+  }
+  .actions.roomy.compact {
+    --button-height: 36px;
+    --more-width: 34px;
+  }
   .compact .action {
     min-width: calc(var(--button-height) * var(--k));
     padding: 0 calc(var(--button-padding) * var(--k) * 0.75);
