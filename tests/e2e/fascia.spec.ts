@@ -407,7 +407,7 @@ test.describe("la scheda Eventi dice quanti esiti nuovi ci sono dei ping dalla b
     await startClock(page);
     await pingFromBar(page, "PC1", "PC2");
     await expect(eventsTab(page)).toHaveText("Eventi · 1 nuovo", LONG);
-    page.on("dialog", (dialog) => dialog.accept());
+    // Un ping non modifica la rete: si apre l'altra senza conferma.
     await openNetwork(page, "router.netsim.json", exampleFile("due-lan-router"));
     await expect(eventsTab(page)).toHaveText("Eventi");
   });

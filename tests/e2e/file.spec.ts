@@ -56,14 +56,15 @@ test("con modifiche non salvate, Nuova chiede conferma", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.getByText(unsaved)).toBeVisible();
 
-  // Rispondendo di no, la rete resta.
-  page.once("dialog", (dialog) => dialog.dismiss());
+  // Con Annulla, la rete resta (D-137).
+  const dialog = page.getByRole("dialog", { name: "Modifiche non salvate" });
   await projectCommand(page, "Nuova rete");
+  await dialog.getByRole("button", { name: "Annulla" }).click();
   await expect(device(page, "PC1")).toBeVisible();
 
-  // Rispondendo di sì, si torna al foglio vuoto.
-  page.once("dialog", (dialog) => dialog.accept());
+  // Scartando le modifiche, si torna al foglio vuoto.
   await projectCommand(page, "Nuova rete");
+  await dialog.getByRole("button", { name: "Scarta modifiche" }).click();
   await expect(page.getByText("La rete è vuota")).toBeVisible();
 });
 

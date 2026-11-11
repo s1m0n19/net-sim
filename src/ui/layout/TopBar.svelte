@@ -9,6 +9,7 @@
   import { enterPresentation, exitPresentation } from "../presentation";
   import { FILE_EXTENSION, session } from "../session.svelte";
   import Icon from "../theme/Icon.svelte";
+  import DiscardDialog from "./DiscardDialog.svelte";
   import Menu, { type MenuItem } from "./Menu.svelte";
   import { exportImage } from "../topology/export-image";
 
@@ -16,21 +17,43 @@
   // tenere: Salva ci scrive senza richiedere dove.
   let handle: FileHandle = null;
 
-  // Prima di buttare via una rete con modifiche non salvate si chiede conferma.
-  function mayDiscard(): boolean {
-    return !session.dirty || window.confirm("La rete ha modifiche non salvate, che andranno perse. Continuare?");
+  // La conferma in corso, se c'è: per quale operazione, e a chi dare la
+  // risposta. Una alla volta: finché c'è, Nuova rete e Apri rete non
+  // fanno nulla.
+  let asking = $state<{ action: "new" | "open"; resolve: (discard: boolean) => void } | null>(null);
+  let projectMenu: HTMLElement | undefined = $state();
+
+  // Prima di buttare via una rete con modifiche non salvate si chiede
+  // conferma, con il dialogo dell'app (D-137). Senza modifiche si va avanti.
+  function mayDiscard(action: "new" | "open"): Promise<boolean> {
+    if (!session.dirty) return Promise.resolve(true);
+    return new Promise((resolve) => (asking = { action, resolve }));
   }
 
-  function startNew() {
-    if (!mayDiscard()) return;
+  function answer(discard: boolean) {
+    const resolve = asking?.resolve;
+    asking = null;
+    resolve?.(discard);
+  }
+
+  async function startNew() {
+    if (asking !== null) return;
+    if (!(await mayDiscard("new"))) return;
     handle = null;
     session.clear();
   }
 
+  // Prima si sceglie il file e poi, se serve, si conferma: il browser apre
+  // la finestra dei file solo subito dopo un clic, e dopo un dialogo non
+  // lo sarebbe più. Fino alla conferma la rete aperta e il file su cui si
+  // salva restano quelli di prima; un file che non si può aprire non fa
+  // nemmeno chiedere.
   async function open() {
-    if (!mayDiscard()) return;
+    if (asking !== null) return;
     const file = await pickNetworkFile();
-    if (file === null) return;
+    if (file === null || asking !== null) return;
+    if (!session.checkFile(file.text)) return;
+    if (!(await mayDiscard("open"))) return;
     session.open(file.name, file.text);
     // Un file rifiutato non diventa quello su cui si salva.
     if (session.error === null) handle = file.handle;
@@ -158,6 +181,14 @@
 
 <svelte:window onkeydown={onKey} onbeforeunload={onLeave} />
 
+{#if asking !== null}
+  <DiscardDialog
+    action={asking.action}
+    onanswer={answer}
+    fallbackFocus={() => projectMenu?.querySelector<HTMLElement>("button") ?? null}
+  />
+{/if}
+
 <header>
   <!-- A. Identità e progetto. -->
   <div class="brand">
@@ -183,7 +214,7 @@
 
   {#if !preferences.presenting}
     <div class="group">
-      <Menu label="Progetto" items={projectItems} />
+      <span class="menu-slot" bind:this={projectMenu}><Menu label="Progetto" items={projectItems} /></span>
       <!-- Salva è l'azione principale di chi lavora: l'unico pulsante pieno. -->
       <button class="tb primary" disabled={session.isEmpty()} title="Salva la rete in un file (Ctrl+S)" onclick={() => save()}>
         <Icon name="save" /><span>Salva</span>
@@ -314,6 +345,10 @@
     height: 7px;
     border-radius: 50%;
     background: var(--accent);
+  }
+  /* Solo per ritrovare il pulsante del menu Progetto: non conta nella disposizione. */
+  .menu-slot {
+    display: contents;
   }
   .group {
     display: flex;

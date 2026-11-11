@@ -177,3 +177,26 @@ describe("salvare le tabelle", () => {
     expect(tablesNow().get("d1")).toEqual([["192.168.1.11", "02:00:00:00:00:02"]]);
   });
 });
+
+describe("controllare un file prima di aprirlo (D-137)", () => {
+  test("un file valido si può aprire, e la rete aperta non cambia", () => {
+    session.open("lan.netsim.json", lanFile);
+    const before = session.serialize();
+    expect(session.checkFile(lanFile)).toBe(true);
+    expect(session.error).toBeNull();
+    expect(session.serialize()).toBe(before);
+    expect(session.fileName).toBe("lan");
+  });
+
+  test("un file non valido no: error dice perché, e rete, nome e modifiche restano", () => {
+    session.open("lan.netsim.json", lanFile);
+    session.addDevice(PC, { x: 10, y: 10 });
+    const before = session.serialize();
+    expect(session.checkFile('{ "format": "altro" }')).toBe(false);
+    expect(session.error).not.toBeNull();
+    expect(session.serialize()).toBe(before);
+    expect(session.fileName).toBe("lan");
+    expect(session.dirty).toBe(true);
+    session.error = null;
+  });
+});

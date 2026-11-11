@@ -94,6 +94,25 @@ export class SessionFile extends SessionCore {
     }
   }
 
+  /**
+   * Controlla un file prima di aprirlo, senza toccare la rete aperta: così
+   * si chiede di scartare le modifiche solo per un file che si apre
+   * davvero (D-137).
+   *
+   * @param text - il contenuto del file
+   * @returns true se il file si può aprire; altrimenti false, e `error`
+   *   dice che cosa non va, come farebbe `open`
+   */
+  checkFile(text: string): boolean {
+    try {
+      loadNetworkFile(text);
+      return true;
+    } catch (problem) {
+      this.error = messageOf(problem);
+      return false;
+    }
+  }
+
   /** Torna al foglio vuoto: una rete nuova, senza dispositivi. */
   clear(): void {
     this.simulator = new Simulator({ devices: [], links: [] });

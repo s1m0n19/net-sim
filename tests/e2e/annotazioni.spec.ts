@@ -392,10 +392,10 @@ test("zoom, spostamento della vista e Adatta tengono conto delle annotazioni, an
   expect(inside(await pc(), area)).toBe(true);
 
   // Su un foglio senza dispositivi, una nota si vede e Adatta la inquadra.
-  // Ci sono modifiche non salvate: alla domanda si risponde di sì.
-  page.once("dialog", (dialog) => dialog.accept());
+  // Ci sono modifiche non salvate: si scartano (D-137).
   await page.getByRole("button", { name: "Progetto" }).click();
   await page.getByRole("menuitem", { name: "Nuova rete" }).click();
+  await page.getByRole("dialog", { name: "Modifiche non salvate" }).getByRole("button", { name: "Scarta modifiche" }).click();
   await expect(page.locator("g.device")).toHaveCount(0);
   await placeNote(page, [0.9, 0.1]);
   await page.keyboard.press("Escape");

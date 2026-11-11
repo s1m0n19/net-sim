@@ -108,7 +108,7 @@ Guasti, ping, terminale, tabelle appuntate e modifica degli indirizzi dal pannel
 - **Salva con nome**, o Ctrl+Maiusc+S, chiede sempre dove salvare e lascia intatto il file di partenza: da lì in poi Salva aggiorna il file nuovo.
 - In Firefox e Safari ogni Salva scarica il file nella cartella dei download; Salva con nome chiede prima il nome.
 - La casella **Salva anche le tabelle ARP e MAC**, nel menu **Progetto**, fa salvare anche le tabelle ARP e MAC di ogni dispositivo, così come sono in quel momento. Serve a preparare una rete che riparte già calda (il ping a passi non comincia con l'ARP), oppure con una riga sbagliata da scoprire: fai un ping, cambia l'indirizzo di un PC, e gli altri restano con la riga vecchia. Si accende da solo aprendo un file con le tabelle; Ricomincia torna a quelle salvate.
-- Accanto al nome compare la pastiglia «Da salvare» finché ci sono modifiche non salvate: contano le modifiche alla rete, gli spostamenti e i guasti, non il traffico. In quel caso **Nuova**, **Apri** e la chiusura della pagina chiedono conferma.
+- Accanto al nome compare la pastiglia «Da salvare» finché ci sono modifiche non salvate: contano le modifiche alla rete, gli spostamenti e i guasti, non il traffico. In quel caso **Nuova**, **Apri** e la chiusura della pagina chiedono conferma: per Nuova e Apri con il dialogo «Modifiche non salvate», dove Annulla conserva tutto e Scarta modifiche fa l'operazione. Con Apri si sceglie prima il file; un file che non si può aprire non fa chiedere nulla.
 
 **Annulla e ripristina.** Le due frecce nella barra in alto, oppure Ctrl+Z e Ctrl+Maiusc+Z (anche Ctrl+Y; Cmd su Mac), annullano e rifanno le modifiche alla rete, una alla volta, fino a cento:
 
