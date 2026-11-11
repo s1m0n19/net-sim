@@ -408,7 +408,7 @@ Una riga che dice che cosa comparirà qui.
 
 ## Fascia in basso
 
-Corre sotto tutta la schermata. Con molti terminali aperti, le loro schede scorrono di lato in una riga sottile, e quella aperta si porta sempre in vista; la scheda Eventi e la freccia restano ferme a destra, e la pagina non si allarga (D-112). Si chiude lasciando visibile la sola riga delle schede, e si apre e si chiude anche da sola, seguendo eventi e terminali (vedi «Ossatura»). Si fa più alta o più bassa trascinandone il bordo superiore, o con le frecce su e giù quando il bordo ha il fuoco: tra 100 px e il 60% della finestra, perché il disegno resti visibile. L'altezza scelta vale finché la pagina resta aperta.
+Corre sotto tutta la schermata. Con molti terminali aperti, le loro schede scorrono di lato in una riga sottile, e quella aperta si porta sempre in vista; la scheda Eventi e la freccia restano ferme a destra, e la pagina non si allarga (D-112). Si chiude lasciando visibile la sola riga delle schede, e si apre e si chiude anche da sola, seguendo eventi e terminali (vedi «Ossatura»). Le schede si scelgono con un clic o, da tastiera, con le frecce sinistra e destra, Inizio e Fine (sono una sola fermata di Tab); un nome di dispositivo lungo si accorcia con i puntini e si legge intero nel suggerimento (D-132). Si fa più alta o più bassa trascinandone il bordo superiore, che ha una tacca al centro, o con le frecce su e giù quando il bordo ha il fuoco (Inizio e Fine portano al minimo e al massimo): tra 100 px e il 60% della finestra, perché il disegno resti visibile. L'altezza scelta vale finché la pagina resta aperta.
 
 ### Terminali
 
@@ -416,7 +416,7 @@ Ogni terminale aperto dalla barretta diventa una **scheda**, con il nome del dis
 
 Questa scelta è presa con riserva: se si rivelasse macchinosa, si passerà a un solo terminale che segue il dispositivo selezionato.
 
-Quando un comando finisce, il cursore torna sulla riga di comando, così si può scrivere il successivo senza cliccare. Non però se nel frattempo si è fatto clic altrove, sul disegno o su un pulsante: in quel caso il cursore resta dov'è, e i tasti premuti per comandare la simulazione non finiscono scritti nel terminale.
+Il comando scritto si vede in grassetto, per ritrovarlo tra le righe che ha stampato. Lo schermo segue le righe nuove solo se lo si sta guardando in fondo: chi è risalito a leggere resta dov'è, e lo riportano alla riga di comando il pulsante «↓ Riga di comando» o un tasto premuto nella riga (D-132). Quando un comando finisce, il cursore torna sulla riga di comando, così si può scrivere il successivo senza cliccare. Non però se nel frattempo si è fatto clic altrove, sul disegno o su un pulsante: in quel caso il cursore resta dov'è, e i tasti premuti per comandare la simulazione non finiscono scritti nel terminale.
 
 I comandi sono quelli di Windows e i **messaggi sono in inglese**, come sui libri e in rete.
 

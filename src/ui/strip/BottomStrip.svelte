@@ -17,7 +17,10 @@
   // Il bordo superiore della fascia si trascina per cambiarne l'altezza.
   // In presentazione la fascia è ingrandita: lo spostamento del puntatore
   // va diviso per l'ingrandimento.
-  let drag: { y: number; height: number } | null = null;
+  let drag: { y: number; height: number } | null = $state(null);
+  // L'altezza massima, per il lettore di schermo: il 60% della finestra.
+  let windowHeight = $state(800);
+  const maxHeight = $derived(stripHeightWithin(Number.POSITIVE_INFINITY, windowHeight / preferences.scale));
 
   function startResize(event: PointerEvent) {
     drag = { y: event.clientY, height: preferences.stripHeight };
@@ -30,12 +33,39 @@
     preferences.stripHeight = stripHeightWithin(wanted, window.innerHeight / preferences.scale);
   }
 
-  // Da tastiera: frecce su e giù, a scatti di 20 pixel.
+  // Da tastiera: frecce su e giù, a scatti di 20 pixel; Inizio e Fine
+  // portano al minimo e al massimo.
   function resizeKey(event: KeyboardEvent) {
-    const step = event.key === "ArrowUp" ? 20 : event.key === "ArrowDown" ? -20 : 0;
-    if (step === 0) return;
+    const wanted =
+      event.key === "ArrowUp" ? preferences.stripHeight + 20
+      : event.key === "ArrowDown" ? preferences.stripHeight - 20
+      : event.key === "Home" ? STRIP_HEIGHT.min
+      : event.key === "End" ? Number.POSITIVE_INFINITY
+      : null;
+    if (wanted === null) return;
     event.preventDefault();
-    preferences.stripHeight = stripHeightWithin(preferences.stripHeight + step, window.innerHeight / preferences.scale);
+    preferences.stripHeight = stripHeightWithin(wanted, window.innerHeight / preferences.scale);
+  }
+
+  // Le schede, nell'ordine in cui si vedono: i terminali, poi Eventi.
+  const tabOrder = $derived([...session.terminals.map((terminal) => terminal.deviceId), "events"]);
+  const tabId = (tab: string) => `strip-tab-${tab.replace(/[^\w-]/g, "-")}`;
+
+  // Da tastiera le schede sono una sola fermata di Tab: le frecce sinistra
+  // e destra, Inizio e Fine passano da una all'altra e la aprono, come in
+  // ogni riga di schede (D-132).
+  function tabKey(event: KeyboardEvent) {
+    const at = tabOrder.indexOf(session.activeTab);
+    const to =
+      event.key === "ArrowRight" ? (at + 1) % tabOrder.length
+      : event.key === "ArrowLeft" ? (at - 1 + tabOrder.length) % tabOrder.length
+      : event.key === "Home" ? 0
+      : event.key === "End" ? tabOrder.length - 1
+      : null;
+    if (to === null) return;
+    event.preventDefault();
+    show(tabOrder[to]);
+    void Promise.resolve().then(() => document.getElementById(tabId(tabOrder[to]))?.focus());
   }
 
   // Con molti terminali le loro schede scorrono di lato (D-112): quella
@@ -55,37 +85,51 @@
   }
 </script>
 
+<svelte:window bind:innerHeight={windowHeight} />
+
 <footer>
   {#if preferences.stripOpen}
     <!-- Un separatore che si mette a fuoco e si regola è un controllo, per
          ARIA; Svelte non lo sa e lo segnalerebbe come non interattivo. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+    <!-- Una tacca al centro del bordo dice che si afferra; la zona da
+         afferrare è più alta della tacca, comoda anche con il dito. -->
     <div
       class="resize"
+      class:dragging={drag !== null}
       role="separator"
       aria-orientation="horizontal"
       aria-label="Altezza della fascia: trascina, o usa le frecce"
       aria-valuenow={preferences.stripHeight}
       aria-valuemin={STRIP_HEIGHT.min}
+      aria-valuemax={maxHeight}
+      aria-valuetext="{preferences.stripHeight} pixel"
       tabindex="0"
       onpointerdown={startResize}
       onpointermove={resize}
       onpointerup={() => (drag = null)}
       onpointercancel={() => (drag = null)}
       onkeydown={resizeKey}
-    ></div>
+    ><span class="grip" aria-hidden="true"></span></div>
   {/if}
   <div class="tabs" role="tablist">
     <div class="terminals" bind:this={terminalTabs}>
       {#each session.terminals as terminal (terminal.deviceId)}
         <span class="tab" class:selected={session.activeTab === terminal.deviceId}>
+          <!-- Un nome molto lungo si accorcia con i puntini: intero sta nel
+               suggerimento e nel nome per il lettore di schermo. -->
           <button
             class="name"
             role="tab"
+            id={tabId(terminal.deviceId)}
             aria-selected={session.activeTab === terminal.deviceId}
+            aria-controls={preferences.stripOpen ? "strip-panel" : undefined}
+            tabindex={session.activeTab === terminal.deviceId ? 0 : -1}
+            title="Terminale di {nameOf(terminal.deviceId)}"
             onclick={() => show(terminal.deviceId)}
+            onkeydown={tabKey}
           >
-            Terminale · {nameOf(terminal.deviceId)}{#if session.isOff(terminal.deviceId)}<span class="off">{" · spento"}</span>{/if}
+            Terminale · <span class="device">{nameOf(terminal.deviceId)}</span>{#if session.isOff(terminal.deviceId)}<span class="off">{" · spento"}</span>{/if}
           </button>
           <button
             class="close"
@@ -100,7 +144,16 @@
     </div>
 
     <span class="tab" class:selected={session.activeTab === "events"}>
-      <button class="name" role="tab" aria-selected={session.activeTab === "events"} onclick={() => show("events")}>
+      <button
+        class="name"
+        role="tab"
+        id={tabId("events")}
+        aria-selected={session.activeTab === "events"}
+        aria-controls={preferences.stripOpen ? "strip-panel" : undefined}
+        tabindex={session.activeTab === "events" ? 0 : -1}
+        onclick={() => show("events")}
+        onkeydown={tabKey}
+      >
         Eventi
       </button>
     </span>
@@ -117,7 +170,7 @@
   </div>
 
   {#if preferences.stripOpen}
-    <div class="body" style="height: {preferences.stripHeight}px">
+    <div class="body" id="strip-panel" role="tabpanel" aria-labelledby={tabId(session.activeTab)} style="height: {preferences.stripHeight}px">
       {#if active !== undefined}
         {#key active.deviceId}
           <TerminalTab terminal={active} />
@@ -183,6 +236,14 @@
     padding: 5px 12px;
     white-space: nowrap;
   }
+  /* Il nome del dispositivo: lungo, si accorcia con i puntini. */
+  .name .device {
+    display: inline-block;
+    max-width: 14em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
   .name .off {
     color: var(--muted);
     font-weight: 400;
@@ -218,23 +279,37 @@
     margin-right: -8px;
     align-self: center;
   }
-  /* Una striscia sottile sul bordo superiore, da afferrare: si vede solo
-     passandoci sopra o con il fuoco da tastiera. */
+  /* Il bordo superiore, da afferrare: alto 12 pixel, comodo anche con il
+     dito. Una tacca al centro lo dice sempre; passandoci sopra, con il
+     fuoco o mentre lo si trascina, la striscia si colora (D-132). */
   .resize {
     position: absolute;
-    top: -4px;
+    top: -6px;
     left: 0;
     right: 0;
-    height: 8px;
+    height: 12px;
     cursor: ns-resize;
     z-index: 2;
     touch-action: none;
+    display: grid;
+    place-items: center;
+  }
+  .grip {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line);
   }
   .resize:hover,
-  .resize:focus-visible {
-    background: var(--accent);
-    opacity: 0.35;
+  .resize:focus-visible,
+  .resize.dragging {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
     outline: none;
+  }
+  .resize:hover .grip,
+  .resize:focus-visible .grip,
+  .resize.dragging .grip {
+    background: var(--accent);
   }
   .body {
     display: flex;

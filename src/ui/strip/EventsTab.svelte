@@ -111,11 +111,11 @@
   <span class="count">{rows.length} di {session.view.events.length} eventi</span>
 </div>
 
-<div class="list" bind:this={list} onscroll={onScroll} onmouseleave={() => (session.highlight = null)} role="presentation">
+<div class="list" class:reading={!following} bind:this={list} onscroll={onScroll} onmouseleave={() => (session.highlight = null)} role="presentation">
   {#if session.view.events.length === 0}
     <p>Nessun evento: la simulazione non è ancora partita.</p>
   {:else if rows.length === 0}
-    <p>Il filtro nasconde tutti gli eventi.</p>
+    <p>Il filtro nasconde tutti gli eventi: per rivederli scegli «tutte» le conversazioni, o accendi ARP e ICMP.</p>
   {:else}
     <table>
       <!-- Le intestazioni restano in cima mentre l'elenco scorre. -->
@@ -222,6 +222,11 @@
   thead th.time {
     text-align: right;
     padding-left: 12px;
+  }
+  /* Mentre si legge più in alto, sotto l'ultima riga resta lo spazio del
+     pulsante: arrivati in fondo, non copre nessun evento (D-132). */
+  .list.reading table {
+    margin-bottom: 40px;
   }
   /* Il pulsante per tornare agli ultimi eventi, fermo in basso a destra. */
   .latest {

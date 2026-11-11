@@ -3,6 +3,7 @@
   // router o di uno switch. Mostra ciò che i comandi hanno stampato e,
   // quando il dispositivo non è occupato, la riga in cui scrivere.
   import { session, type Terminal } from "../session.svelte";
+  import { atBottom } from "./follow-list";
 
   let { terminal }: { terminal: Terminal } = $props();
 
@@ -19,15 +20,30 @@
   let screen: HTMLDivElement | undefined = $state();
   let input: HTMLInputElement | undefined = $state();
 
-  // A ogni riga nuova lo schermo scorre fino in fondo.
+  // A ogni riga nuova lo schermo scorre fino in fondo, ma solo se lo si
+  // stava già guardando in fondo: come nell'elenco degli eventi (D-113),
+  // chi è risalito a leggere l'output di prima resta dov'è, anche mentre
+  // un ping va avanti. Scrivere, o il pulsante, riportano alla riga di
+  // comando (D-132).
   const printed = $derived(
     terminal.entries.reduce((total, entry) => total + 1 + session.outputOf(terminal.deviceId, entry).length, 0),
   );
+  let following = $state(true);
   $effect(() => {
     printed;
     busy;
-    screen?.scrollTo({ top: screen.scrollHeight });
+    if (following) screen?.scrollTo({ top: screen.scrollHeight });
   });
+
+  function onScroll() {
+    if (screen !== undefined) following = atBottom(screen.scrollTop, screen.clientHeight, screen.scrollHeight);
+  }
+
+  function toPrompt() {
+    following = true;
+    screen?.scrollTo({ top: screen.scrollHeight });
+    input?.focus();
+  }
 
   // Appena il terminale è pronto, si può scrivere senza cliccare. Ma solo
   // se chi lo usa è rimasto lì: se mentre il comando era in corso ha fatto
@@ -55,6 +71,11 @@
   // in più: Tab completa la parola, il punto interrogativo risponde
   // subito senza Invio, Ctrl+Z lascia la configurazione come `end`.
   function onKey(event: KeyboardEvent) {
+    // Chi scrive vuole vedere la riga in cui scrive.
+    if (!following) {
+      following = true;
+      screen?.scrollTo({ top: screen.scrollHeight });
+    }
     if (isCli && cliKey(event)) return;
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
@@ -95,9 +116,11 @@
 <svelte:window onpointerdown={onPointerDown} />
 
 <!-- Un clic in qualsiasi punto dello schermo porta il cursore sulla riga di comando. -->
-<div class="screen mono" class:off={host !== undefined && !host.powered} bind:this={screen} onclick={() => input?.focus()} role="presentation">
+<div class="screen mono" class:off={host !== undefined && !host.powered} bind:this={screen} onscroll={onScroll} onclick={() => input?.focus()} role="presentation">
   {#each terminal.entries as entry}
-    <div class="command">{entry.prompt}{entry.command}</div>
+    <!-- Il comando scritto si distingue da ciò che ha stampato: in
+         grassetto, il prompt no (D-132). -->
+    <div class="command">{entry.prompt}<span class="typed">{entry.command}</span></div>
     {#each session.outputOf(terminal.deviceId, entry) as output}
       <div class="output">{output}</div>
     {/each}
@@ -127,6 +150,13 @@
       />
     </form>
   {/if}
+  {#if !following}
+    <!-- Si è risaliti a leggere: da qui si torna alla riga di comando. -->
+    <button class="btn latest" onclick={(event) => {
+      event.stopPropagation();
+      toPrompt();
+    }}>↓ Riga di comando</button>
+  {/if}
 </div>
 
 <style>
@@ -143,6 +173,18 @@
   .output {
     white-space: pre;
     min-height: 1.4em;
+  }
+  .typed {
+    font-weight: 600;
+  }
+  /* Il pulsante per tornare alla riga di comando, fermo in basso a destra,
+     come «Ultimi eventi». */
+  .latest {
+    position: sticky;
+    bottom: 0;
+    float: right;
+    font-family: var(--font-ui);
+    box-shadow: var(--shadow-float);
   }
   /* Spento, l'output di prima resta leggibile ma passa in secondo piano. */
   .screen.off .command,
