@@ -315,8 +315,8 @@ describe("conversazioni tra cui scegliere", () => {
     sim.dispatch(ping("d3", "192.168.1.10", 1));
 
     expect(view().conversations).toEqual([
-      { id: 1, label: "ping PC1 → 192.168.1.11" },
-      { id: 2, label: "ping PC3 → 192.168.1.10" },
+      { id: 1, label: "#1 · ping PC1 → 192.168.1.11" },
+      { id: 2, label: "#2 · ping PC3 → 192.168.1.10" },
     ]);
   });
 

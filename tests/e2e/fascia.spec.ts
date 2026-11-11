@@ -4,7 +4,18 @@
 // il registro degli eventi che non si fa coprire dal suo pulsante.
 
 import { expect, test, type Page } from "@playwright/test";
-import { action, device, exampleFile, fillField, openApp, openNetwork, presentationZoom, presentRouterWithTerminal, typeCommand } from "./helpers";
+import {
+  action,
+  device,
+  exampleFile,
+  fillField,
+  openApp,
+  openNetwork,
+  moreAction,
+  presentationZoom,
+  presentRouterWithTerminal,
+  typeCommand,
+} from "./helpers";
 
 const screen = (page: Page) => page.locator(".screen");
 const prompt = (page: Page) => page.getByLabel(/Riga di comando/);
@@ -263,6 +274,187 @@ test.describe("in presentazione la fascia lascia spazio al disegno (R-1, D-134)"
         expect(simulation.y + simulation.height, `${percent}%`).toBeLessThanOrEqual(canvas.y + canvas.height + 1);
         expect(overlap(simulation, zoom), `${percent}%`).toBe(false);
         expect(canvas.height, `${percent}%`).toBeGreaterThanOrEqual(Math.min(height * 0.45, (72 + 54) * (percent / 100) + 120) - 4);
+      }
+    });
+  }
+});
+
+test.describe("la scheda Eventi dice quanti esiti nuovi ci sono dei ping dalla barretta (U-1, D-136)", () => {
+  const eventsTab = (page: Page) => page.getByRole("tab", { name: /^Eventi/ });
+  const stripBody = (page: Page) => page.locator("#strip-panel");
+  const simulation = (page: Page) => page.getByRole("toolbar", { name: "Comandi della simulazione" });
+
+  async function pingFromBar(page: Page, from: string, to: string) {
+    await device(page, from).click();
+    await action(page, `Ping da ${from}`).click();
+    await device(page, to).click();
+  }
+
+  // Avvia la simulazione a 2×: da lì in poi il tempo scorre, e ogni ping
+  // lanciato arriva al suo esito da sé (il tempo reale resta in ascolto).
+  async function startClock(page: Page) {
+    await simulation(page).getByRole("button", { name: "Avvia" }).click();
+    const speed = simulation(page).getByRole("button", { name: /^Velocità/ });
+    while (!(await speed.getAttribute("aria-label"))!.startsWith("Velocità: 2×")) await speed.click();
+  }
+  const LONG = { timeout: 60_000 };
+
+  async function openLan(page: Page) {
+    await openApp(page);
+    await openNetwork(page, "lan.netsim.json", exampleFile("lan-switch"));
+    await expect(stripBody(page)).toHaveCount(0);
+  }
+
+  test("con la fascia chiusa: nulla finché il ping è in attesa, poi «1 nuovo»; la fascia non si apre da sola", async ({ page }) => {
+    await openLan(page);
+    await pingFromBar(page, "PC1", "PC2");
+    // Partito ma fermo: nessun esito ancora, nessuna segnalazione.
+    await expect(eventsTab(page)).toHaveText("Eventi");
+    // Un passo: la richiesta ARP è in viaggio, ancora nessun esito.
+    await simulation(page).getByRole("button", { name: "Passo" }).click();
+    await expect(page.getByText("tick 1", { exact: true })).toBeVisible();
+    await expect(eventsTab(page)).toHaveText("Eventi");
+    // Ripresa la simulazione, l'esito arriva.
+    await startClock(page);
+    await expect(eventsTab(page)).toHaveText("Eventi · 1 nuovo", LONG);
+    await expect(stripBody(page)).toHaveCount(0);
+    // La rete si usa come prima: un altro dispositivo si seleziona.
+    await device(page, "PC3").click();
+    await expect(action(page, "Ping da PC3")).toBeVisible();
+  });
+
+  test("aprire la scheda Eventi azzera l'indicatore; chiudere e riaprire la fascia non lo fa tornare", async ({ page }) => {
+    await openLan(page);
+    await startClock(page);
+    await pingFromBar(page, "PC1", "PC2");
+    await expect(eventsTab(page)).toHaveText("Eventi · 1 nuovo", LONG);
+    await eventsTab(page).click();
+    await expect(stripBody(page)).toBeVisible();
+    await expect(eventsTab(page)).toHaveText("Eventi");
+    // L'esito c'è, nel registro.
+    await expect(stripBody(page)).toContainText("ping: risposta da 192.168.1.11");
+    await page.getByRole("button", { name: "Chiudi la fascia in basso" }).click();
+    await expect(eventsTab(page)).toHaveText("Eventi");
+    await page.getByRole("button", { name: "Apri la fascia in basso" }).click();
+    await expect(eventsTab(page)).toHaveText("Eventi");
+  });
+
+  test("due ping distinti con la fascia chiusa: «2 nuovi»; un timeout conta come esito", async ({ page }) => {
+    await openLan(page);
+    await startClock(page);
+    await pingFromBar(page, "PC1", "PC2");
+    await pingFromBar(page, "PC1", "PC3");
+    await expect(eventsTab(page)).toHaveText("Eventi · 2 nuovi", LONG);
+    // Un terzo, verso PC2 spento: la richiesta scade, ed è un esito nuovo come gli altri.
+    await device(page, "PC2").click();
+    await (await moreAction(page, "Spegni")).click();
+    await pingFromBar(page, "PC1", "PC2");
+    await expect(eventsTab(page)).toHaveText("Eventi · 3 nuovi", LONG);
+    await eventsTab(page).click();
+    await expect(stripBody(page)).toContainText("ping: richiesta scaduta");
+  });
+
+  test("con la scheda Eventi già in vista l'indicatore non compare; il ping dal terminale non lo accende", async ({ page }) => {
+    await openLan(page);
+    await eventsTab(page).click();
+    await startClock(page);
+    await pingFromBar(page, "PC1", "PC2");
+    await expect(stripBody(page)).toContainText("ping: risposta da 192.168.1.11", LONG);
+    await expect(eventsTab(page)).toHaveText("Eventi");
+    // Dal terminale: l'esito si legge lì, e la scheda Eventi resta muta.
+    await device(page, "PC1").click();
+    await action(page, "Apri il terminale di PC1").click();
+    await typeCommand(page, "ping -n 1 192.168.1.12");
+    await expect(page.locator(".screen")).toContainText("Packets: Sent = 1", LONG);
+    await expect(eventsTab(page)).toHaveText("Eventi");
+  });
+
+  test("cambiare i filtri non fa tornare gli esiti visti; i due ping uguali hanno nomi distinti e ciascuno i suoi eventi", async ({ page }) => {
+    await openLan(page);
+    await startClock(page);
+    await pingFromBar(page, "PC1", "PC2");
+    await expect(eventsTab(page)).toHaveText("Eventi · 1 nuovo", LONG);
+    await pingFromBar(page, "PC1", "PC2");
+    await expect(eventsTab(page)).toHaveText("Eventi · 2 nuovi", LONG);
+    await eventsTab(page).click();
+    const conversation = page.locator("#events-conversation");
+    await expect(conversation.locator("option")).toHaveText(["tutte", "#1 · ping PC1 → 192.168.1.11", "#2 · ping PC1 → 192.168.1.11"]);
+    // Il primo ha l'ARP, il secondo no: il MAC era già noto.
+    const rows = stripBody(page).locator("tbody tr");
+    await conversation.selectOption({ label: "#1 · ping PC1 → 192.168.1.11" });
+    await expect(rows.filter({ hasText: "ARP" }).first()).toBeVisible();
+    await conversation.selectOption({ label: "#2 · ping PC1 → 192.168.1.11" });
+    await expect(rows.filter({ hasText: "ARP" })).toHaveCount(0);
+    await expect(rows.filter({ hasText: "ICMP" }).first()).toBeVisible();
+    // I filtri dei protocolli e il ritorno a tutte: nessun indicatore.
+    await page.getByRole("button", { name: "ARP", exact: true }).click();
+    await page.getByRole("button", { name: "ICMP", exact: true }).click();
+    await conversation.selectOption({ label: "tutte" });
+    await page.getByRole("button", { name: "ARP", exact: true }).click();
+    await page.getByRole("button", { name: "ICMP", exact: true }).click();
+    await page.getByRole("button", { name: "Chiudi la fascia in basso" }).click();
+    await expect(eventsTab(page)).toHaveText("Eventi");
+  });
+
+  test("Ricomincia e l'apertura di un'altra rete dimenticano gli esiti non visti", async ({ page }) => {
+    await openLan(page);
+    await startClock(page);
+    await pingFromBar(page, "PC1", "PC2");
+    await expect(eventsTab(page)).toHaveText("Eventi · 1 nuovo", LONG);
+    await simulation(page).getByRole("button", { name: "Ricomincia" }).click();
+    await expect(eventsTab(page)).toHaveText("Eventi");
+
+    await startClock(page);
+    await pingFromBar(page, "PC1", "PC2");
+    await expect(eventsTab(page)).toHaveText("Eventi · 1 nuovo", LONG);
+    page.on("dialog", (dialog) => dialog.accept());
+    await openNetwork(page, "router.netsim.json", exampleFile("due-lan-router"));
+    await expect(eventsTab(page)).toHaveText("Eventi");
+  });
+
+  test("da tastiera: le frecce tra le schede funzionano come prima, e arrivare su Eventi nella fascia aperta azzera", async ({ page }) => {
+    await openLan(page);
+    await device(page, "PC1").click();
+    await action(page, "Apri il terminale di PC1").click();
+    await startClock(page);
+    await pingFromBar(page, "PC1", "PC2");
+    // La fascia è aperta sul terminale: Eventi non è in vista, e segnala.
+    await expect(eventsTab(page)).toHaveText("Eventi · 1 nuovo", LONG);
+    await page.getByRole("tab", { name: /Terminale · PC1/ }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(eventsTab(page)).toBeFocused();
+    await expect(eventsTab(page)).toHaveAttribute("aria-selected", "true");
+    await expect(eventsTab(page)).toHaveText("Eventi");
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("tab", { name: /Terminale · PC1/ })).toBeFocused();
+  });
+
+  for (const [width, height] of [[1920, 1080], [1366, 768], [1280, 800], [1024, 768], [900, 700]] as const) {
+    test(`a ${width}×${height}, nell'editor e in presentazione al 140, 180 e 200%: l'indicatore sta nella riga, con Eventi e la freccia`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await openLan(page);
+      // Tre terminali aperti, per riempire la riga delle schede.
+      for (const name of ["PC1", "PC2", "PC3"]) {
+        await device(page, name).click();
+        await action(page, `Apri il terminale di ${name}`).click();
+      }
+      await page.getByRole("button", { name: "Chiudi la fascia in basso" }).click();
+      await startClock(page);
+      await pingFromBar(page, "PC1", "PC2");
+      const check = async (note: string) => {
+        await expect(eventsTab(page), note).toHaveText("Eventi · 1 nuovo", LONG);
+        const tab = (await eventsTab(page).boundingBox())!;
+        const fold = (await page.getByRole("button", { name: "Apri la fascia in basso" }).boundingBox())!;
+        expect(tab.x + tab.width, note).toBeLessThanOrEqual(fold.x + 1);
+        expect(fold.x + fold.width, note).toBeLessThanOrEqual(width + 1);
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+        expect(overflow, note).toBe(0);
+      };
+      await check("editor");
+      await page.getByRole("button", { name: "Presenta" }).click();
+      for (const percent of [140, 180, 200]) {
+        await presentationZoom(page, percent);
+        await check(`${percent}%`);
       }
     });
   }

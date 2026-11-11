@@ -38,8 +38,21 @@ export function detailsOf(id: number, frame: EthernetFrame, fromName: string, to
   return { id, fromName, toName, frame, protocol: protocolOf(frame), description: describeFrame(frame) };
 }
 
-// Come si chiama una conversazione nel filtro: l'azione che l'ha fatta nascere.
+/**
+ * Come si chiama una conversazione nel filtro: il suo numero e l'azione
+ * che l'ha fatta nascere, "#3 · ping PC1 → 192.168.1.11". Il numero è
+ * quello del simulatore: distingue due ping uguali uno dopo l'altro (U-2
+ * del collaudo UX 5, D-136).
+ *
+ * @param network - la rete, per i nomi dei dispositivi
+ * @param conversation - la conversazione
+ */
 export function labelOf(network: Network, conversation: Conversation): string {
+  return `#${conversation.id} · ${whatOf(network, conversation)}`;
+}
+
+// L'azione che ha fatto nascere una conversazione, a parole.
+function whatOf(network: Network, conversation: Conversation): string {
   const { action } = conversation;
   switch (action.kind) {
     case "ping":
@@ -49,7 +62,7 @@ export function labelOf(network: Network, conversation: Conversation): string {
     case "resolve-address":
       return `ARP ${nameOf(network, action.deviceId)} → ${action.targetIp}`;
     default:
-      return `conversazione ${conversation.id}`;
+      return "conversazione";
   }
 }
 

@@ -10,6 +10,15 @@
 
   const active = $derived(session.terminals.find((terminal) => terminal.deviceId === session.activeTab));
 
+  // Gli esiti dei ping lanciati dalla barretta si vedono nella scheda
+  // Eventi: finché non la si guarda, la scheda dice quanti sono i nuovi
+  // (D-136). Quando la scheda è in vista, nella fascia aperta, gli esiti
+  // sono visti, anche quelli che arrivano mentre la si guarda.
+  $effect(() => {
+    if (preferences.stripOpen && session.activeTab === "events") session.markResultsSeen();
+  });
+  const fresh = $derived(session.newResults);
+
   function nameOf(deviceId: string): string {
     return session.view.devices.find((device) => device.id === deviceId)?.name ?? "?";
   }
@@ -171,7 +180,9 @@
         onclick={() => show("events")}
         onkeydown={tabKey}
       >
-        Eventi
+        <!-- I nuovi esiti si dicono a parole, non solo con il colore; la
+             scheda non li annuncia da sé, per non parlare a ogni ping. -->
+        Eventi{#if fresh > 0}<span class="fresh">{" · "}{fresh} {fresh === 1 ? "nuovo" : "nuovi"}</span>{/if}
       </button>
     </span>
 
@@ -264,6 +275,11 @@
   .name .off {
     color: var(--muted);
     font-weight: 400;
+  }
+  /* I nuovi esiti dei ping dalla barretta (D-136). */
+  .name .fresh {
+    color: var(--accent);
+    font-weight: 600;
   }
   /* La crocetta sta dentro la scheda, subito dopo il nome. */
   .close {

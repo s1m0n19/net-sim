@@ -38,6 +38,14 @@ export class SessionDemo extends SessionFile {
   // Quali protocolli sono visibili.
   protocols = $state<Record<Protocol, boolean>>({ ARP: true, ICMP: true });
 
+  // I ping lanciati dalla barretta, per il numero della conversazione che
+  // il simulatore ha creato per ciascuno. Un ping dal terminale non c'è:
+  // il suo esito si legge già nel terminale (U-1 del collaudo UX 5, D-136).
+  barPings = $state<number[]>([]);
+
+  // Quali di quei ping hanno un esito già visto nella scheda Eventi.
+  seenResults = $state<number[]>([]);
+
   // Ciò su cui sta il mouse nell'elenco degli eventi: va evidenziato sul disegno.
   highlight = $state.raw<{ deviceId: string | null; packetId: number | null } | null>(null);
 
@@ -55,6 +63,32 @@ export class SessionDemo extends SessionFile {
       return false;
     }
     return protocol === null || this.protocols[protocol];
+  }
+
+  /**
+   * Quanti ping lanciati dalla barretta hanno un esito che non è ancora
+   * stato visto nella scheda Eventi. Conta i ping, non i frame né le
+   * risposte: un ping è nuovo quando il simulatore ne ha prodotto l'esito
+   * (risposta, scadenza o altro), non prima. Gli esiti si leggono dalla
+   * vista, che li copia dalle tracce del simulatore: non c'è un secondo
+   * elenco degli esiti.
+   */
+  get newResults(): number {
+    return this.finishedBarPings().filter((id) => !this.seenResults.includes(id)).length;
+  }
+
+  /**
+   * Segna come visti gli esiti dei ping dalla barretta arrivati finora: si
+   * chiama quando la scheda Eventi è in vista, nella fascia aperta.
+   */
+  markResultsSeen(): void {
+    const unseen = this.finishedBarPings().filter((id) => !this.seenResults.includes(id));
+    if (unseen.length > 0) this.seenResults = [...this.seenResults, ...unseen];
+  }
+
+  // I ping dalla barretta di cui il simulatore ha già prodotto l'esito.
+  private finishedBarPings(): number[] {
+    return this.barPings.filter((id) => this.view.pingResults.some((result) => result.conversationId === id));
   }
 
   /**
@@ -292,7 +326,13 @@ export class SessionDemo extends SessionFile {
       this.notice = `${target.name} non ha un indirizzo IP a cui fare ping.`;
       return;
     }
+    const before = this.simulator?.conversations.length ?? 0;
     this.notice = this.ping(from, target.ip, 1);
+    // Il ping partito ha creato una conversazione: è la sua.
+    const conversation = this.simulator?.conversations.at(-1);
+    if (this.notice === null && conversation !== undefined && this.simulator!.conversations.length > before) {
+      this.barPings = [...this.barPings, conversation.id];
+    }
   }
 
   /**
@@ -307,8 +347,11 @@ export class SessionDemo extends SessionFile {
 
   protected override rewind(): void {
     this.highlight = null;
-    // Le conversazioni di prima non esistono più.
+    // Le conversazioni di prima non esistono più, né i loro esiti; i numeri
+    // ripartono da capo.
     this.followed = null;
+    this.barPings = [];
+    this.seenResults = [];
     super.rewind();
   }
 

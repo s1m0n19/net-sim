@@ -181,7 +181,7 @@ describe("ping dal terminale", () => {
   test("il ping dal terminale compare tra le conversazioni del filtro", () => {
     session.execute("d1", "ping -n 1 192.168.1.11");
 
-    expect(session.view.conversations).toEqual([{ id: 1, label: "ping PC1 → 192.168.1.11" }]);
+    expect(session.view.conversations).toEqual([{ id: 1, label: "#1 · ping PC1 → 192.168.1.11" }]);
   });
 });
 
@@ -245,7 +245,7 @@ describe("tracert e ping attraverso un router, dal terminale", () => {
   test("tracert compare tra le conversazioni che si possono seguire", () => {
     session.execute("d2", "tracert 192.168.1.1");
 
-    expect(session.view.conversations.at(-1)?.label).toBe("tracert PC2 → 192.168.1.1");
+    expect(session.view.conversations.at(-1)?.label).toMatch(/^#\d+ · tracert PC2 → 192\.168\.1\.1$/);
   });
 
   test("Ricomincia svuota anche l'output di un tracert", () => {
