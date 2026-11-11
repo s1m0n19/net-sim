@@ -82,9 +82,17 @@
     ];
     if (canvas === undefined || dependsOn.length === 0) return;
     const origin = canvas.getBoundingClientRect();
+    // Di ogni comando conta il riquadro e anche i suoi pulsanti: con certi
+    // caratteri un pulsante sporge un poco dal riquadro del gruppo, e la
+    // barretta non deve coprirlo nemmeno di un pixel (D-135).
     controls = [...canvas.querySelectorAll(":scope > .zoom, :scope > .bar, :scope > .messages .message")].map((element) => {
-      const box = element.getBoundingClientRect();
-      return { left: box.left - origin.left, top: box.top - origin.top, right: box.right - origin.left, bottom: box.bottom - origin.top };
+      const boxes = [element, ...element.querySelectorAll("button")].map((part) => part.getBoundingClientRect());
+      return {
+        left: Math.min(...boxes.map((box) => box.left)) - origin.left,
+        top: Math.min(...boxes.map((box) => box.top)) - origin.top,
+        right: Math.max(...boxes.map((box) => box.right)) - origin.left,
+        bottom: Math.max(...boxes.map((box) => box.bottom)) - origin.top,
+      };
     });
   });
 
