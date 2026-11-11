@@ -53,8 +53,20 @@
   // la loro posizione, o quando compare o sparisce un messaggio.
   let canvas: HTMLDivElement | undefined = $state();
   let controls: Rect[] = $state([]);
+  // Zoom e barra della simulazione cambiano grandezza anche da soli, per
+  // esempio quando arriva il carattere delle scritte: allora lo zoom, che
+  // sta a destra, sposta il suo bordo sinistro. Lo si rimisura (D-135).
+  let controlsResized = $state(0);
+  $effect(() => {
+    const dependsOn = [preferences.presenting, session.isEmpty()];
+    if (canvas === undefined || dependsOn.length === 0) return;
+    const observer = new ResizeObserver(() => (controlsResized += 1));
+    for (const element of canvas.querySelectorAll(":scope > .zoom, :scope > .bar")) observer.observe(element);
+    return () => observer.disconnect();
+  });
   $effect(() => {
     const dependsOn = [
+      controlsResized,
       canvasWidth,
       canvasHeight,
       preferences.scale,
