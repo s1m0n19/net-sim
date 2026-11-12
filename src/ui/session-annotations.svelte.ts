@@ -63,6 +63,16 @@ export class SessionAnnotations extends SessionEditing {
     this.annotating = next;
   }
 
+  /**
+   * Dice se è scelto uno strumento della colonna: un dispositivo da posare,
+   * Cavo, Riquadro o Nota. Finché lo è, la barretta delle azioni non si
+   * vede (D-138). Ping e Collega premuti sulla barretta non contano: sono
+   * azioni della barretta, che ne mostra il pulsante premuto.
+   */
+  get usingPaletteTool(): boolean {
+    return this.placing !== null || this.cabling || this.annotating !== null;
+  }
+
   /** Lascia andare anche Riquadro e Nota, e il riquadro a metà (D-128). */
   override releaseTools(): void {
     super.releaseTools();

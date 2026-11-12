@@ -196,6 +196,8 @@ Mentre si aspetta il clic sulla destinazione, il pulsante Ping resta premuto, il
 
 **A simulazione sospesa** la barretta non compare: da una tempesta di broadcast si esce solo con Ricomincia.
 
+**Con uno strumento della colonna** (un dispositivo da posare, Cavo, Riquadro o Nota) la barretta non compare (D-138): le sue azioni non c'entrano con ciò che si sta facendo, e coprirebbe il punto dove si vuole fare clic. La selezione non cambia: il dispositivo posato o il cavo tirato vengono selezionati come sempre, e la barretta di ciò che è selezionato torna quando lo strumento si lascia (Esc, o un secondo clic sulla voce). Ping e Collega premuti sulla barretta non sono strumenti della colonna: la barretta resta, con il pulsante premuto. Un clic su un altro dispositivo con lo strumento scelto lo seleziona, senza barretta; Esc lascia lo strumento e la sua barretta compare.
+
 **Collega dalla barretta.** Si preme Collega e poi si fa clic sul dispositivo di destinazione: tira un cavo senza attivare lo strumento. Un clic sullo stesso dispositivo, o Esc, annulla.
 
 **Porte.** Il cavo nuovo occupa su ciascun capo la prima porta libera, e viene selezionato. Se un dispositivo non ha porte libere il cavo non nasce, e una riga in alto lo dice. I nomi delle due porte sono scritti accanto al cavo: su quello selezionato sempre, sugli altri quando è accesa l'etichetta Porte (D-50). Un clic su un nome apre l'elenco delle porte su cui quel capo può stare, cioè l'attuale e quelle libere dello stesso dispositivo, e un clic su una voce sposta il capo. L'elenco si apre sotto il nome, oppure sopra nella metà bassa del disegno, e si chiude con Esc o con un altro clic sul nome.

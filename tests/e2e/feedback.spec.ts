@@ -207,9 +207,12 @@ test("uno strumento alla volta: un ping in attesa e la voce della colonna si esc
   await expect(instructions(page).locator(".message")).toHaveCount(1);
   await expect(instructions(page)).toContainText("PC.");
 
-  // E viceversa: Ping dalla barretta lascia la voce, e un clic sullo
-  // sfondo non posa un PC.
+  // Con la voce scelta la barretta non si vede (D-138): si lascia la voce
+  // con Esc, la selezione di PC2 resta, e Ping dalla barretta riparte da
+  // lì. Un clic sullo sfondo non posa un PC.
   await device(page, "PC2").click();
+  await expect(page.getByRole("toolbar", { name: /Azioni su/ })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await action(page, "Ping da PC2").click();
   await expect(pressedTools(page)).toHaveCount(0);
   await expect(instructions(page).locator(".message")).toHaveCount(1);

@@ -6,6 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   action,
   cable,
+  clickDrawing,
   device,
   drag,
   drawing,
@@ -482,4 +483,128 @@ test("nell'editor, con spazio, la barretta resta con le scritte anche accanto ai
     await expect(toolbar(page)).not.toHaveClass(/compact/);
     await expect(toolbar(page).locator(".text").first()).toBeVisible();
   }
+});
+
+test.describe("con uno strumento della colonna la barretta non si vede (U-4, D-138)", () => {
+  const palette = (page: Page) => page.locator("aside").first();
+  const devices = (page: Page) => page.locator("g.device");
+  const selected = (page: Page) => page.locator('g.device[aria-label$=", selezionato"]');
+
+  // La rete con due LAN e un router, SW1 selezionato e la sua barretta in vista.
+  async function selectSwitch(page: Page) {
+    await openApp(page);
+    await openNetwork(page, "due-lan-router.netsim.json", exampleFile("due-lan-router"));
+    await device(page, "SW1").click();
+    await expect(toolbar(page)).toBeVisible();
+  }
+
+  test("con PC scelto la barretta sparisce, la selezione resta, e un clic dov'era la barretta posa un PC", async ({ page }) => {
+    await selectSwitch(page);
+    const where = (await toolbar(page).boundingBox())!;
+    const before = await devices(page).count();
+    await palette(page).getByRole("button", { name: "PC", exact: true }).click();
+    await expect(toolbar(page)).toHaveCount(0);
+    await expect(device(page, "SW1")).toHaveAttribute("aria-label", "SW1, selezionato");
+
+    // Il punto prima coperto dalla barretta ora è del disegno.
+    await page.mouse.click(where.x + where.width / 2, where.y + where.height / 2);
+    await expect(devices(page)).toHaveCount(before + 1);
+    // Il PC posato è selezionato, ma la sua barretta non compare finché si posa.
+    await expect(selected(page)).toHaveCount(1);
+    await expect(toolbar(page)).toHaveCount(0);
+
+    // Altri PC, uno dopo l'altro, e la barretta non ricompare mai.
+    for (const [x, y] of [[0.15, 0.15], [0.85, 0.15], [0.5, 0.92]]) {
+      await clickDrawing(page, x, y);
+      await expect(toolbar(page)).toHaveCount(0);
+    }
+    await expect(devices(page)).toHaveCount(before + 4);
+
+    // Esc lascia lo strumento: torna la barretta del dispositivo selezionato.
+    const last = (await selected(page).getAttribute("aria-label"))!.replace(", selezionato", "");
+    await page.keyboard.press("Escape");
+    await expect(toolbar(page)).toBeVisible();
+    await expect(toolbar(page)).toHaveAttribute("aria-label", `Azioni su ${last}`);
+  });
+
+  for (const kind of [
+    { tile: /^Server$/, label: "Server" },
+    { tile: /^Switch/, variant: "Switch a 8 porte", label: "Switch" },
+    { tile: /^Router/, variant: "Router a 2 interfacce", label: "Router" },
+  ]) {
+    test(`con ${kind.label} scelto la barretta sparisce, e torna lasciando lo strumento`, async ({ page }) => {
+      await selectSwitch(page);
+      await palette(page).getByRole("button", { name: kind.tile }).click();
+      if (kind.variant !== undefined) await page.getByRole("menuitem", { name: kind.variant }).click();
+      await expect(toolbar(page)).toHaveCount(0);
+      await clickDrawing(page, 0.15, 0.15);
+      await expect(toolbar(page)).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(toolbar(page)).toBeVisible();
+    });
+  }
+
+  test("con Cavo la barretta resta nascosta per tutti i cavi, e i capi e le porte si scelgono come sempre", async ({ page }) => {
+    // Su un foglio vuoto due PC e uno switch, tutti con le porte libere.
+    await openApp(page);
+    await palette(page).getByRole("button", { name: "PC", exact: true }).click();
+    await clickDrawing(page, 0.2, 0.3);
+    await clickDrawing(page, 0.8, 0.3);
+    await page.keyboard.press("Escape");
+    await palette(page).getByRole("button", { name: /^Switch/ }).click();
+    await page.getByRole("menuitem", { name: "Switch a 8 porte" }).click();
+    await clickDrawing(page, 0.5, 0.8);
+    await page.keyboard.press("Escape");
+    await expect(toolbar(page)).toBeVisible();
+
+    await palette(page).getByRole("button", { name: "Cavo", exact: true }).click();
+    await expect(toolbar(page)).toHaveCount(0);
+    for (const pc of ["PC1", "PC2"]) {
+      await device(page, pc).click();
+      await device(page, "SW1").click();
+      // Nemmeno dopo un cavo nuovo, che viene selezionato.
+      await expect(toolbar(page)).toHaveCount(0);
+    }
+    await expect(page.locator("line.wire")).toHaveCount(2);
+    // Lasciato lo strumento, la barretta del cavo selezionato torna, e le porte si cambiano.
+    await page.keyboard.press("Escape");
+    await expect(toolbar(page)).toHaveAttribute("aria-label", "Azioni su il cavo");
+  });
+
+  test("con Riquadro e con Nota la barretta sparisce, e torna lasciando lo strumento", async ({ page }) => {
+    await selectSwitch(page);
+    for (const name of ["Riquadro", "Nota"]) {
+      await palette(page).getByRole("button", { name, exact: true }).click();
+      await expect(toolbar(page)).toHaveCount(0);
+      await expect(device(page, "SW1")).toHaveAttribute("aria-label", "SW1, selezionato");
+      await palette(page).getByRole("button", { name, exact: true }).click();
+      await expect(toolbar(page)).toBeVisible();
+    }
+  });
+
+  test("Ping e Collega premuti sulla barretta la lasciano in vista, con il pulsante premuto", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "due-lan-router.netsim.json", exampleFile("due-lan-router"));
+    await device(page, "PC1").click();
+    await action(page, "Ping da PC1").click();
+    await expect(toolbar(page)).toBeVisible();
+    await expect(action(page, "Ping da PC1")).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
+
+    await action(page, "Collega PC1").click();
+    await expect(toolbar(page)).toBeVisible();
+    await expect(action(page, "Collega PC1")).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
+    await expect(action(page, "Collega PC1")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("con uno strumento scelto, un clic su un altro dispositivo lo seleziona senza mostrare la barretta", async ({ page }) => {
+    await selectSwitch(page);
+    await palette(page).getByRole("button", { name: "PC", exact: true }).click();
+    await device(page, "R1").click();
+    await expect(device(page, "R1")).toHaveAttribute("aria-label", "R1, selezionato");
+    await expect(toolbar(page)).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(toolbar(page)).toHaveAttribute("aria-label", "Azioni su R1");
+  });
 });

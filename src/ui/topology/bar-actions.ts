@@ -54,12 +54,17 @@ export interface SelectionBar {
  * La barretta di ciò che è selezionato adesso.
  *
  * @returns dove si aggancia e i suoi pulsanti, oppure null se non c'è
- *   nulla di selezionato a cui si possa fare qualcosa, o se la simulazione
- *   è sospesa
+ *   nulla di selezionato a cui si possa fare qualcosa, se la simulazione
+ *   è sospesa, o se è scelto uno strumento della colonna
  */
 export function selectionBar(): SelectionBar | null {
   const selection = session.selection;
   if (selection === null || session.view.suspended) return null;
+  // Mentre si posa, si tira un cavo o si annota con uno strumento della
+  // colonna, la barretta non si vede: le sue azioni non c'entrano, e
+  // coprirebbe il punto dove si vuole fare clic. La selezione resta, e la
+  // barretta torna quando lo strumento si lascia (D-138).
+  if (session.usingPaletteTool) return null;
   const presenting = preferences.presenting;
 
   if (selection.kind === "device") {
