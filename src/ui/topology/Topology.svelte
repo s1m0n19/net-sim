@@ -83,15 +83,18 @@
     if (canvas === undefined || dependsOn.length === 0) return;
     const origin = canvas.getBoundingClientRect();
     // Di ogni comando conta il riquadro e anche i suoi pulsanti: con certi
-    // caratteri un pulsante sporge un poco dal riquadro del gruppo, e la
-    // barretta non deve coprirlo nemmeno di un pixel (D-135).
+    // caratteri un pulsante sporge un poco dal riquadro del gruppo. In più
+    // un margine di due pixel per lato: la grandezza della barretta si
+    // misura in pixel interi, e un browser la disegna con i decimali (in
+    // WebKit su Linux la barretta toccava lo zoom di mezzo pixel, D-135).
+    const SAFETY = 2;
     controls = [...canvas.querySelectorAll(":scope > .zoom, :scope > .bar, :scope > .messages .message")].map((element) => {
       const boxes = [element, ...element.querySelectorAll("button")].map((part) => part.getBoundingClientRect());
       return {
-        left: Math.min(...boxes.map((box) => box.left)) - origin.left,
-        top: Math.min(...boxes.map((box) => box.top)) - origin.top,
-        right: Math.max(...boxes.map((box) => box.right)) - origin.left,
-        bottom: Math.max(...boxes.map((box) => box.bottom)) - origin.top,
+        left: Math.min(...boxes.map((box) => box.left)) - origin.left - SAFETY,
+        top: Math.min(...boxes.map((box) => box.top)) - origin.top - SAFETY,
+        right: Math.max(...boxes.map((box) => box.right)) - origin.left + SAFETY,
+        bottom: Math.max(...boxes.map((box) => box.bottom)) - origin.top + SAFETY,
       };
     });
   });
