@@ -16,6 +16,7 @@
   import Messages from "./Messages.svelte";
   import { viewGestures } from "./view-gestures";
   import DeviceNode from "./DeviceNode.svelte";
+  import { nameSides, type NameSide } from "./name-side";
   import LinkLine from "./LinkLine.svelte";
   import PinnedTable, { pinnedSize } from "./PinnedTable.svelte";
   import PortMenu from "./PortMenu.svelte";
@@ -151,7 +152,17 @@
   );
 
   // La barretta delle azioni di ciò che è selezionato: dove sta e che cosa offre.
-  const bar = $derived(selectionBar());
+  // Il lato del nome di switch e router (D-139). Mentre si trascina un
+  // dispositivo, o un'annotazione, resta quello di prima: si ricalcola
+  // quando lo si lascia, senza far saltare il nome a ogni passo.
+  let heldSides = new Map<string, NameSide>();
+  const sides = $derived.by(() => {
+    if (session.frozenBounds !== null) return heldSides;
+    heldSides = nameSides(session.view.devices, session.view.links);
+    return heldSides;
+  });
+
+  const bar = $derived(selectionBar(sides));
 
   // Da coordinate del disegno a pixel del disegno sullo schermo: lo stesso
   // calcolo che fa l'SVG con viewBox e preserveAspectRatio (centrato, senza
@@ -185,7 +196,9 @@
         const half = device.kind === "host" ? shape.hostHalfWidth : shape.otherHalfWidth;
         const x = (device.x - bounds.x) * screen.k + screen.x;
         const y = (device.y - bounds.y) * screen.k + screen.y;
-        return { left: x - half * k, right: x + half * k, top: y + shape.barTop * k, bottom: y + shape.barBottom * k };
+        // Con il nome sopra, il vicino comincia dal nome.
+        const top = sides.get(device.id) === "above" ? shape.nameAboveY - shape.nameSize : shape.barTop;
+        return { left: x - half * k, right: x + half * k, top: y + top * k, bottom: y + shape.barBottom * k };
       });
   });
 
@@ -311,7 +324,7 @@
         <LinkLine {link} />
       {/each}
       {#each session.view.devices as device (device.id)}
-        <DeviceNode {device} />
+        <DeviceNode {device} nameSide={sides.get(device.id)} />
       {/each}
       {#each notes as note (note.id)}
         <AnnotationNote {note} />

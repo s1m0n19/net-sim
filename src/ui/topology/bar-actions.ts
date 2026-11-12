@@ -11,6 +11,7 @@ import { preferences } from "../preferences.svelte";
 import { session } from "../session.svelte";
 import type { IconName } from "../theme/Icon.svelte";
 import { annotationRect } from "./annotation-geometry";
+import type { NameSide } from "./name-side";
 
 export interface BarAction {
   icon: IconName;
@@ -53,11 +54,13 @@ export interface SelectionBar {
 /**
  * La barretta di ciò che è selezionato adesso.
  *
+ * @param nameSides - il lato del nome di switch e router (name-side.ts):
+ *   con il nome sopra, la barretta si appoggia sopra il nome
  * @returns dove si aggancia e i suoi pulsanti, oppure null se non c'è
  *   nulla di selezionato a cui si possa fare qualcosa, se la simulazione
  *   è sospesa, o se è scelto uno strumento della colonna
  */
-export function selectionBar(): SelectionBar | null {
+export function selectionBar(nameSides: Map<string, NameSide> = new Map()): SelectionBar | null {
   const selection = session.selection;
   if (selection === null || session.view.suspended) return null;
   // Mentre si posa, si tira un cavo o si annota con uno strumento della
@@ -150,7 +153,9 @@ export function selectionBar(): SelectionBar | null {
     const k = preferences.scale;
     const shape = preferences.shape;
     const half = (device.kind === "host" ? shape.hostHalfWidth : shape.otherHalfWidth) + shape.selectionMargin;
-    const anchor = { x: device.x, top: device.y + shape.barTop * k, bottom: device.y + shape.barBottom * k, halfWidth: half * k };
+    // Con il nome sopra il riquadro (D-139), la barretta non lo copre.
+    const top = nameSides.get(device.id) === "above" ? shape.nameAboveY - shape.nameSize : shape.barTop;
+    const anchor = { x: device.x, top: device.y + top * k, bottom: device.y + shape.barBottom * k, halfWidth: half * k };
     return { anchor, actions };
   }
 

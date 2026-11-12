@@ -27,6 +27,12 @@ export interface DeviceShape {
   selectionMargin: number;
   /** La linea di base del nome, sotto il riquadro. */
   nameY: number;
+  /**
+   * La linea di base del nome quando sta sopra il riquadro (switch e
+   * router, D-139): alla stessa distanza dal contorno della selezione che
+   * ha il nome sotto.
+   */
+  nameAboveY: number;
   /** La grandezza del nome, in pixel. */
   nameSize: number;
   /** La linea di base della prima scritta sotto il nome (l'indirizzo IP di un host). */
@@ -61,6 +67,7 @@ export const EDITOR_SHAPE: DeviceShape = {
   iconScale: 0.85,
   selectionMargin: 5,
   nameY: 41,
+  nameAboveY: -32,
   nameSize: 13,
   firstLineY: 56,
   lineStep: 15,
@@ -85,6 +92,7 @@ export const PRESENTATION_SHAPE: DeviceShape = {
   iconScale: 1,
   selectionMargin: 6,
   nameY: 46,
+  nameAboveY: -37,
   nameSize: 14,
   firstLineY: 62,
   lineStep: 16,

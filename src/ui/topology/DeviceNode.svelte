@@ -5,8 +5,14 @@
   import { session } from "../session.svelte";
   import DeviceIcon from "../theme/DeviceIcon.svelte";
   import type { DeviceView } from "../view";
+  import type { NameSide } from "./name-side";
 
-  let { device }: { device: DeviceView } = $props();
+  let {
+    device,
+    // Il lato del nome: sotto, oppure sopra per uno switch o un router i
+    // cui cavi scendono e tagliano il nome (name-side.ts, D-139).
+    nameSide = "below",
+  }: { device: DeviceView; nameSide?: NameSide } = $props();
 
   // Le misure vengono da device-shape.ts: compatte nell'editor, più grandi
   // in presentazione. Switch e router sono un po' più larghi di un PC.
@@ -150,7 +156,7 @@
        riduce tutta, senza deformarsi. -->
   <g class="icon" transform="scale({shape.iconScale})"><DeviceIcon kind={device.role === "server" ? "server" : device.kind} /></g>
 
-  <text class="name" y={shape.nameY} style="font-size: {shape.nameSize}px">{device.name}</text>
+  <text class="name" y={nameSide === "above" ? shape.nameAboveY : shape.nameY} style="font-size: {shape.nameSize}px">{device.name}</text>
 
   {#if device.kind === "host"}
     {#if preferences.labels.ip}

@@ -8,7 +8,7 @@
 // rifiuta) e prende nota di quando e come è stata chiamata.
 
 import { expect, test, type Page } from "@playwright/test";
-import { action, cable, device, exampleFile, fillField, openApp, openNetwork, sidePanel } from "./helpers";
+import { action, cable, device, exampleFile, expectMargins, exportByDownload, exportFromMenu, fillField, measurePng, openApp, openNetwork, sidePanel } from "./helpers";
 
 type PickerMode = "save" | "cancel" | "fail";
 
@@ -71,76 +71,6 @@ async function openAppWithPicker(page: Page, mode: PickerMode): Promise<void> {
 }
 
 const pickerLog = (page: Page) => page.evaluate(() => (window as unknown as { pickerLog: PickerLog }).pickerLog);
-
-async function exportFromMenu(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Progetto" }).click();
-  await page.getByRole("menuitem", { name: "Esporta immagine…" }).click();
-}
-
-// Esporta con il ripiego dello scaricamento e restituisce il PNG.
-async function exportByDownload(page: Page): Promise<Buffer> {
-  const picture = page.waitForEvent("download");
-  await exportFromMenu(page);
-  const stream = await (await picture).createReadStream();
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) chunks.push(Buffer.from(chunk as Buffer));
-  return Buffer.concat(chunks);
-}
-
-// Le misure di un PNG: grandezza, e il rettangolo dei pixel che non sono
-// sfondo, cioè dove sta il disegno; più quanti pixel somigliano a un colore.
-interface Picture {
-  width: number;
-  height: number;
-  content: { left: number; top: number; right: number; bottom: number };
-  matching: number;
-}
-
-async function measurePng(page: Page, png: Buffer, color: [number, number, number] = [0, 0, 0]): Promise<Picture> {
-  return page.evaluate(
-    async ({ data, color }) => {
-      const picture = new Image();
-      picture.src = `data:image/png;base64,${data}`;
-      await picture.decode();
-      const canvas = document.createElement("canvas");
-      canvas.width = picture.width;
-      canvas.height = picture.height;
-      const context = canvas.getContext("2d")!;
-      context.drawImage(picture, 0, 0);
-      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      const [r0, g0, b0] = [pixels[0], pixels[1], pixels[2]];
-      let left = canvas.width, top = canvas.height, right = -1, bottom = -1, matching = 0;
-      for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          const i = (y * canvas.width + x) * 4;
-          const [r, g, b] = [pixels[i], pixels[i + 1], pixels[i + 2]];
-          if (Math.abs(r - color[0]) + Math.abs(g - color[1]) + Math.abs(b - color[2]) < 30) matching++;
-          if (Math.abs(r - r0) + Math.abs(g - g0) + Math.abs(b - b0) < 12) continue;
-          left = Math.min(left, x);
-          right = Math.max(right, x);
-          top = Math.min(top, y);
-          bottom = Math.max(bottom, y);
-        }
-      }
-      return { width: canvas.width, height: canvas.height, content: { left, top, right, bottom }, matching };
-    },
-    { data: png.toString("base64"), color },
-  );
-}
-
-// Il disegno non è tagliato e non ha spazio in più: attorno ai pixel
-// disegnati resta il margine di 32 unità, cioè 64 pixel a doppia
-// risoluzione. Le scritte occupano un po' più del loro inchiostro (lo
-// spazio delle lettere che scendono e salgono): qualche pixel di tolleranza.
-function expectMargins(picture: Picture, scale = 2): void {
-  const margin = 32 * scale;
-  const { left, top, right, bottom } = picture.content;
-  const sides = { left, top, right: picture.width - 1 - right, bottom: picture.height - 1 - bottom };
-  for (const [side, space] of Object.entries(sides)) {
-    expect(space, `margine ${side}`).toBeGreaterThanOrEqual(margin - 2);
-    expect(space, `margine ${side}`).toBeLessThanOrEqual(margin + 24 * scale);
-  }
-}
 
 // Una rete d'esempio con delle annotazioni aggiunte, come file di versione 2.
 function withAnnotations(example: string, annotations: object[]): string {
