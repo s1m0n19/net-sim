@@ -442,6 +442,12 @@
     width: 100%;
     height: 100%;
     outline: none;
+    /* Le scritte del disegno non si selezionano: trascinando un riquadro,
+       uno sfondo o un dispositivo il browser non le evidenzia (C-2, D-141).
+       Nel disegno non ci sono campi in cui scrivere: il testo delle note,
+       i nomi e gli indirizzi si modificano nel pannello laterale. */
+    -webkit-user-select: none;
+    user-select: none;
   }
   /* Il cavo che si sta tirando: tratteggiato, e trasparente ai clic, così
      si capisce su quale dispositivo viene lasciato. */

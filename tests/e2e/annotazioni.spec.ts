@@ -500,3 +500,80 @@ async function readAll(stream: NodeJS.ReadableStream): Promise<string> {
   for await (const chunk of stream) chunks.push(Buffer.from(chunk as Buffer));
   return Buffer.concat(chunks).toString("utf8");
 }
+
+test.describe("trascinando sul disegno il browser non seleziona le scritte (C-2, D-141)", () => {
+  const selection = (page: Page) => page.evaluate(() => window.getSelection()?.toString() ?? "");
+
+  test("un riquadro trascinato attraverso una nota e i nomi dei dispositivi non seleziona testo, anche più volte", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "lan.netsim.json", exampleFile("lan-switch"));
+    // Una nota con del testo, come nel collaudo.
+    await placeNote(page, [0.85, 0.15]);
+    await page.keyboard.type("LAN del laboratorio");
+    await page.keyboard.press("Control+Enter");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    // Le scritte del disegno non sono selezionabili; i campi del pannello sì.
+    const drawingSelect = await page.locator("svg[aria-label='Topologia della rete']").evaluate((svg) => {
+      const style = getComputedStyle(svg) as CSSStyleDeclaration & { webkitUserSelect?: string };
+      return [style.userSelect, style.webkitUserSelect];
+    });
+    expect(drawingSelect).toContain("none");
+
+    // Il secondo comincia dentro il primo, che lascia passare i clic al disegno.
+    for (const [from, to] of [[[0.98, 0.05], [0.05, 0.95]], [[0.3, 0.3], [0.9, 0.85]]] as const) {
+      await drawBox(page, [from[0], from[1]], [to[0], to[1]]);
+      // Il riquadro c'è, la barretta resta nascosta finché lo strumento è scelto.
+      await expect(page.getByRole("toolbar", { name: /Azioni su/ })).toHaveCount(0);
+      expect(await selection(page), "testo selezionato dal trascinamento").toBe("");
+    }
+    await page.keyboard.press("Escape");
+    await expect(boxes(page)).toHaveCount(2);
+    // Nessun dispositivo selezionato per sbaglio.
+    await expect(page.locator('g.device[aria-label$=", selezionato"]')).toHaveCount(0);
+    // A colpo d'occhio: nessun nome evidenziato.
+    const highlighted = await page.evaluate(() => {
+      const s = window.getSelection();
+      return s !== null && s.rangeCount > 0 && !s.getRangeAt(0).collapsed;
+    });
+    expect(highlighted).toBe(false);
+  });
+
+  test("i campi del pannello e il terminale si selezionano e si modificano come sempre", async ({ page }) => {
+    await openApp(page);
+    await openNetwork(page, "lan.netsim.json", exampleFile("lan-switch"));
+    // Il nome di un PC: selezione di una parte con la tastiera, poi sostituzione.
+    await device(page, "PC1").click();
+    const name = page.locator('[data-field="name"]');
+    await name.click();
+    await name.press("End");
+    await name.press("Shift+ArrowLeft");
+    expect(await name.evaluate((input: HTMLInputElement) => input.value.slice(input.selectionStart!, input.selectionEnd!))).toBe("1");
+    await page.keyboard.type("9");
+    await name.press("Enter");
+    await expect(device(page, "PC9")).toBeVisible();
+    // Un doppio clic sull'indirizzo IP lo seleziona.
+    const ip = page.locator('[data-field="ip"]');
+    await ip.dblclick();
+    expect(await ip.evaluate((input: HTMLInputElement) => input.selectionEnd! - input.selectionStart!)).toBeGreaterThan(0);
+    expect(await ip.evaluate((input) => getComputedStyle(input).userSelect)).not.toBe("none");
+    // Il testo di una nota, nel pannello: selezionato tutto, si sostituisce.
+    await placeNote(page, [0.85, 0.15]);
+    await page.keyboard.type("Prima versione");
+    await textField(page).press("ControlOrMeta+a");
+    expect(await textField(page).evaluate((area: HTMLTextAreaElement) => area.selectionEnd! - area.selectionStart!)).toBe("Prima versione".length);
+    await page.keyboard.type("Seconda");
+    await textField(page).press("Control+Enter");
+    await expect(page.getByRole("button", { name: "Nota: Seconda" })).toBeVisible();
+    // Il terminale: si scrive e si cancella come in un campo qualsiasi.
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await device(page, "PC2").click();
+    await action(page, "Apri il terminale di PC2").click();
+    const prompt = page.getByLabel(/Riga di comando/);
+    await prompt.fill("ipconfig /all");
+    await prompt.press("End");
+    for (let i = 0; i < 5; i++) await prompt.press("Shift+ArrowLeft");
+    expect(await prompt.evaluate((input: HTMLInputElement) => input.value.slice(input.selectionStart!, input.selectionEnd!))).toBe(" /all");
+  });
+});
