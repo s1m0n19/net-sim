@@ -15,6 +15,7 @@ import {
   type Router,
   type Switch,
 } from "../../engine/model/network";
+import { macEntries } from "../../engine/model/vlans";
 import { routingTableOf } from "../../engine/protocols/routing";
 import type { ShowTopic } from "./grammar";
 import { fullInterfaceName } from "./interface-names";
@@ -173,8 +174,7 @@ function interfaces(network: Network, device: Router | Switch): string[] {
   return lines;
 }
 
-// show mac address-table: ciò che lo switch ha imparato. Tutte le porte
-// stanno nella VLAN 1, come su uno switch appena acceso.
+// show mac address-table: ciò che lo switch ha imparato, VLAN per VLAN.
 function macTable(sw: Switch): string[] {
   const lines = [
     "          Mac Address Table",
@@ -183,8 +183,8 @@ function macTable(sw: Switch): string[] {
     "Vlan    Mac Address          Type        Ports",
     "----    -----------------    --------    -----",
   ];
-  for (const [mac, portName] of sw.macTable) {
-    lines.push(`   1    ${mac}    DYNAMIC     ${portName}`);
+  for (const { vlan, mac, port } of macEntries(sw)) {
+    lines.push(`${String(vlan).padStart(4)}    ${mac}    DYNAMIC     ${port}`);
   }
   return lines;
 }

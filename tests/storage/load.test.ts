@@ -6,6 +6,7 @@ import { ping, resolveAddress } from "../../src/engine/actions";
 import { hostsOf } from "../../src/engine/model/network";
 import { Simulator } from "../../src/engine/simulator";
 import { loadNetworkFile } from "../../src/storage/load";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 describe("lettura di un file di rete", () => {
   test("il file di esempio contiene due PC collegati, con le tabelle vuote", () => {
@@ -24,7 +25,7 @@ describe("lettura di un file di rete", () => {
     const sw = network.devices.find((d) => d.kind === "switch")!;
     expect(sw.name).toBe("SW1");
     expect(sw.ports.map((p) => p.name)).toEqual(["Fa0/1", "Fa0/2", "Fa0/3", "Fa0/4"]);
-    expect(sw.macTable.size).toBe(0);
+    expect(macTableOf(sw).size).toBe(0);
     expect(hostsOf(network).map((h) => h.name)).toEqual(["PC1", "PC2", "PC3"]);
     expect(network.links).toHaveLength(3);
     expect(positions.size).toBe(4);

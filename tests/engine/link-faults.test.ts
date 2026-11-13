@@ -5,6 +5,7 @@ import { ARP_TIMEOUT_TICKS } from "../../src/engine/protocols/arp";
 import { ECHO_TIMEOUT_TICKS } from "../../src/engine/protocols/icmp";
 import { Simulator } from "../../src/engine/simulator";
 import { PC1_IP, PC1_MAC, PC2_IP, PC2_MAC, buildLan, buildTwoHosts } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 // Nella LAN di prova: l1 è il cavo di PC1, l2 quello di PC2, l3 quello di PC3.
 
@@ -171,11 +172,11 @@ describe("lo switch e il cavo staccato", () => {
     const { sim, sw } = buildLan();
     sim.dispatch(ping("d1", PC2_IP, 1));
     run(sim);
-    expect([...sw.macTable.keys()]).toEqual([PC1_MAC, PC2_MAC]);
+    expect([...macTableOf(sw).keys()]).toEqual([PC1_MAC, PC2_MAC]);
 
     const traces = sim.dispatch(disconnectLink("l2"));
 
-    expect([...sw.macTable.keys()]).toEqual([PC1_MAC]);
+    expect([...macTableOf(sw).keys()]).toEqual([PC1_MAC]);
     expect(traces).toContainEqual(expect.objectContaining({ kind: "table-changed", deviceId: "s1", table: "mac" }));
   });
 
@@ -189,7 +190,7 @@ describe("lo switch e il cavo staccato", () => {
     sim.dispatch(ping("d1", PC2_IP, 1));
     run(sim);
 
-    expect(sw.macTable.get(PC2_MAC)).toBe("Fa0/2");
+    expect(macTableOf(sw).get(PC2_MAC)).toBe("Fa0/2");
     expect(results(sim).at(-1)?.[1]).toBe("reply");
   });
 });

@@ -14,6 +14,7 @@ import { freePortsOf } from "../../src/engine/editing";
 import { hostsOf, type Host, type Switch } from "../../src/engine/model/network";
 import { Simulator } from "../../src/engine/simulator";
 import { PC1_MAC, PC2_IP, PC2_MAC, buildLan } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 function emptyNetwork(): Simulator {
   return new Simulator({ devices: [], links: [] });
@@ -184,7 +185,7 @@ describe("togliere", () => {
 
     expect(sim.network.links.map((l) => l.id)).toEqual(["l1", "l3"]);
     expect(pc2.linkUp).toBe(false);
-    expect([...sw.macTable.keys()]).toEqual([PC1_MAC]);
+    expect([...macTableOf(sw).keys()]).toEqual([PC1_MAC]);
     expect(traces).toContainEqual({ time: 8, kind: "link-removed", linkId: "l2", between: ["PC2", "SW1"] });
   });
 
@@ -207,7 +208,7 @@ describe("togliere", () => {
 
     expect(sim.network.devices.map((d) => d.name)).toEqual(["SW1", "PC1", "PC3"]);
     expect(sim.network.links.map((l) => l.id)).toEqual(["l1", "l3"]);
-    expect(sw.macTable.has(PC2_MAC)).toBe(false);
+    expect(macTableOf(sw).has(PC2_MAC)).toBe(false);
     expect(traces).toContainEqual({ time: 8, kind: "link-removed", linkId: "l2", between: ["PC2", "SW1"] });
     expect(traces).toContainEqual({ time: 8, kind: "device-removed", deviceId: "d2", name: "PC2" });
   });

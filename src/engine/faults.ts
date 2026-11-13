@@ -16,6 +16,7 @@ import {
   type Link,
   type PortRef,
 } from "./model/network";
+import { forgetMacs } from "./model/vlans";
 import type { Trace } from "./traces";
 
 /**
@@ -133,13 +134,8 @@ export function refreshLinkState(sim: SimulationState, produced: Trace[]): void 
   // chi stava lì dietro non è più raggiungibile da quella parte.
   for (const device of sim.network.devices) {
     if (device.kind !== "switch") continue;
-    let changed = false;
-    for (const [mac, portName] of device.macTable) {
-      if (!hasCarrier(sim, { deviceId: device.id, portName })) {
-        device.macTable.delete(mac);
-        changed = true;
-      }
-    }
+    // Vale in ogni VLAN: una riga indica sempre una porta.
+    const changed = forgetMacs(device, (_vlan, portName) => !hasCarrier(sim, { deviceId: device.id, portName }));
     if (changed) {
       produced.push({
         time: sim.time,

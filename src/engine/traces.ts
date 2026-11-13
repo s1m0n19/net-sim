@@ -110,6 +110,9 @@ export type Trace =
   | { time: number; kind: "interface-changed"; deviceId: string; portName: string; enabled: boolean }
   | { time: number; kind: "route-added"; deviceId: string; route: StaticRoute }
   | { time: number; kind: "route-removed"; deviceId: string; route: StaticRoute }
+  // Modifiche alle VLAN di uno switch.
+  | { time: number; kind: "vlan-changed"; deviceId: string; vlan: number; change: "added" | "renamed" | "removed" }
+  | { time: number; kind: "port-vlan-changed"; deviceId: string; portName: string; vlan: number; from: number }
   | {
       // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
       time: number;

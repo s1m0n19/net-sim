@@ -4,6 +4,7 @@ import type { Host, Switch } from "../../src/engine/model/network";
 import { copyTables, type NetworkTables } from "../../src/engine/model/tables";
 import { Simulator } from "../../src/engine/simulator";
 import { PC1_MAC, PC2_IP, PC2_MAC, PC3_IP, PC3_MAC, buildLan } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 // Una LAN con uno switch e tre PC che riparte "già calda": PC1 conosce il
 // MAC di PC2, e lo switch sa dove stanno PC1 e PC2.
@@ -27,7 +28,7 @@ describe("tabelle di partenza", () => {
     const { pc1, sw } = warmLan();
 
     expect([...pc1.arpTable]).toEqual([[PC2_IP, PC2_MAC]]);
-    expect([...sw.macTable]).toEqual([
+    expect([...macTableOf(sw)]).toEqual([
       [PC1_MAC, "Fa0/1"],
       [PC2_MAC, "Fa0/2"],
     ]);
@@ -66,7 +67,7 @@ describe("tabelle di partenza", () => {
     sim.reset();
 
     expect([...pc1.arpTable]).toEqual([[PC2_IP, PC2_MAC]]);
-    expect(sw.macTable.size).toBe(2);
+    expect(macTableOf(sw).size).toBe(2);
   });
 
   test("le tabelle di partenza nuove valgono da Ricomincia in poi, senza toccare quelle di adesso", () => {
@@ -103,7 +104,7 @@ describe("tabelle di partenza", () => {
     );
 
     const sw = sim.network.devices.find((d) => d.id === "s1") as Switch;
-    expect([...sw.macTable]).toEqual([[PC1_MAC, "Fa0/1"]]);
+    expect([...macTableOf(sw)]).toEqual([[PC1_MAC, "Fa0/1"]]);
   });
 
   test("un dispositivo eliminato non riparte con le sue tabelle, anche se uno nuovo ne prende l'identificativo", () => {

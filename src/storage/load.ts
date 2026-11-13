@@ -15,7 +15,7 @@ import {
   type PortRef,
   type RouterInterface,
   type StaticRoute,
-  type SwitchPort,
+  type SwitchConfig,
 } from "../engine/model/network";
 import { checkInterfaceAddress, checkInterfacesApart, checkRoute, sameRoute } from "../engine/model/router-config";
 import type { NetworkTables } from "../engine/model/tables";
@@ -231,8 +231,10 @@ function readPorts(d: any, deviceName: string, family: "host" | "switch" | "rout
 
 // Le porte di uno switch: alle porte, già lette, si aggiunge lo stato. Una
 // porta senza il campo "enabled" è accesa, come nasce su uno switch: nel
-// file si scrive solo quando è spenta.
-function readSwitchPorts(d: any, ports: Port[], switchName: string): SwitchPort[] {
+// file si scrive solo quando è spenta. La VLAN il file non la dice ancora
+// (arriva con L2-1B): ogni porta sta nella VLAN 1, come la fa nascere
+// `createSwitch`.
+function readSwitchPorts(d: any, ports: Port[], switchName: string): SwitchConfig["ports"] {
   return ports.map((port, index) => ({
     ...port,
     enabled: readFlag(d.ports[index], "enabled", `${switchName} ${port.name}`),

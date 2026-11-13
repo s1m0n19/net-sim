@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { resolveAddress } from "../../src/engine/actions";
 import type { Trace } from "../../src/engine/simulator";
 import { PC1_MAC, PC2_MAC, buildLan as lan } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 // I dispositivi verso cui lo switch ha spedito un frame in queste tracce.
 function sentBySwitchTo(traces: Trace[]): string[] {
@@ -19,7 +20,7 @@ describe("scambio ARP in una LAN con uno switch", () => {
     const traces = sim.step(); // la richiesta arriva allo switch
 
     expect(sim.time).toBe(1);
-    expect(sw.macTable.get(PC1_MAC)).toBe("Fa0/1");
+    expect(macTableOf(sw).get(PC1_MAC)).toBe("Fa0/1");
     expect(sentBySwitchTo(traces)).toEqual(["d2", "d3"]); // non verso PC1, non su Fa0/4
     expect(sim.queue).toHaveLength(2);
   });
@@ -48,7 +49,7 @@ describe("scambio ARP in una LAN con uno switch", () => {
     const traces = sim.step(); // la risposta arriva allo switch
 
     expect(sim.time).toBe(3);
-    expect(sw.macTable.get(PC2_MAC)).toBe("Fa0/2");
+    expect(macTableOf(sw).get(PC2_MAC)).toBe("Fa0/2");
     expect(sentBySwitchTo(traces)).toEqual(["d1"]);
   });
 
@@ -65,7 +66,7 @@ describe("scambio ARP in una LAN con uno switch", () => {
     expect(pc1.arpTable.get("192.168.1.11")).toBe(PC2_MAC);
     expect(pc2.arpTable.get("192.168.1.10")).toBe(PC1_MAC);
     expect(pc3.arpTable.size).toBe(0);
-    expect([...sw.macTable]).toEqual([
+    expect([...macTableOf(sw)]).toEqual([
       [PC1_MAC, "Fa0/1"],
       [PC2_MAC, "Fa0/2"],
     ]);

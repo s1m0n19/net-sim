@@ -101,6 +101,8 @@ Campi di ogni dispositivo:
 | `arpTable` | La tabella ARP, solo se salvata con le tabelle (vedi «Tabelle») | host, server e router |
 | `macTable` | La tabella MAC, solo se salvata con le tabelle | switch |
 
+Le VLAN degli switch (decisione D-142) esistono per ora solo nel motore: il formato non le contiene ancora, e un file aperto mette tutte le porte nella VLAN 1. Il formato delle VLAN, con la versione 3, è previsto in L2-1B. Finché le VLAN non si possono configurare dall'app, salvare non perde nulla.
+
 Campi di ogni collegamento:
 
 | Campo | Contenuto |

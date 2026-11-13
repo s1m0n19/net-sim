@@ -8,10 +8,17 @@
 // trattano allo stesso modo.
 
 import type { Network } from "./network";
+import { activeVlanOf, learnMac, macEntries } from "./vlans";
 
 /**
  * Le righe della tabella di un dispositivo: per un host o un router
  * [indirizzo IP, MAC], per uno switch [MAC, nome della porta].
+ *
+ * Le righe di uno switch non dicono la VLAN: con le sole porte access la
+ * VLAN di una riga è sempre quella della sua porta, perché lo switch
+ * impara un MAC solo nella VLAN della porta da cui l'ha visto, e
+ * dimentica le righe di una porta quando la porta cambia VLAN. Lo stesso
+ * MAC può comparire in due righe, su porte di VLAN diverse.
  */
 export type TableRows = Array<[string, string]>;
 
@@ -27,8 +34,11 @@ export type NetworkTables = Map<string, TableRows>;
 export function copyTables(network: Network): NetworkTables {
   const tables: NetworkTables = new Map();
   for (const device of network.devices) {
-    const table = device.kind === "switch" ? device.macTable : device.arpTable;
-    tables.set(device.id, [...table]);
+    const rows: TableRows =
+      device.kind === "switch"
+        ? macEntries(device).map(({ mac, port }) => [mac, port])
+        : [...device.arpTable];
+    tables.set(device.id, rows);
   }
   return tables;
 }
@@ -38,7 +48,8 @@ export function copyTables(network: Network): NetworkTables {
  *
  * Valgono le regole di sempre: un dispositivo spento non sa nulla, quindi
  * le sue righe si saltano, e così le righe di uno switch che indicano una
- * porta che non ha. Un dispositivo che non c'è più si ignora.
+ * porta che non ha, o una porta inattiva perché la sua VLAN non c'è più.
+ * Un dispositivo che non c'è più si ignora.
  *
  * @param network - la rete da riempire
  * @param tables - le righe, per identificativo del dispositivo
@@ -49,7 +60,10 @@ export function fillTables(network: Network, tables: NetworkTables): void {
     if (rows === undefined || !device.powered) continue;
     if (device.kind === "switch") {
       for (const [mac, portName] of rows) {
-        if (device.ports.some((port) => port.name === portName)) device.macTable.set(mac, portName);
+        // La riga va nella VLAN della sua porta; non va da nessuna parte se
+        // la porta non c'è o se la sua VLAN è stata eliminata.
+        const vlan = activeVlanOf(device, portName);
+        if (vlan !== null) learnMac(device, vlan, mac, portName);
       }
     } else {
       for (const [ip, mac] of rows) device.arpTable.set(ip, mac);

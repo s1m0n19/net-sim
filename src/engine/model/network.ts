@@ -1,5 +1,6 @@
 import type { Ipv4Address, MacAddress } from "./addresses";
 import type { Ipv4Packet } from "./frames";
+import { DEFAULT_VLAN, defaultVlans, type Vlan } from "./vlans";
 
 export interface Network {
   devices: Device[];
@@ -79,11 +80,16 @@ export interface Host {
   awaitedEchoes: AwaitedEcho[];
 }
 
-// Una porta di uno switch: oltre a nome e MAC, si può spegnere.
+// Una porta di uno switch: oltre a nome e MAC, si può spegnere, e sta in
+// una VLAN.
 export interface SwitchPort extends Port {
   // false = la porta è spenta ("shutdown"): è come se il cavo non ci
   // fosse. Su uno switch le porte nascono accese.
   enabled: boolean;
+  // La VLAN della porta, che è una porta access (model/vlans.ts). Il
+  // numero resta anche se la VLAN viene eliminata: la porta allora è
+  // inattiva. Su uno switch le porte nascono nella VLAN 1.
+  vlan: number;
 }
 
 export interface Switch {
@@ -93,9 +99,13 @@ export interface Switch {
   // Configurazione: la imposta l'utente.
   ports: SwitchPort[];
   powered: boolean; // false = il dispositivo è spento
-  // Stato di esecuzione: per ogni MAC conosciuto, il nome della porta
-  // da cui lo si raggiunge.
-  macTable: Map<MacAddress, string>;
+  // Le VLAN configurate, in ordine di numero; la VLAN 1 c'è sempre.
+  vlans: Vlan[];
+  // Stato di esecuzione: una tabella MAC per ogni VLAN, perché ogni VLAN
+  // impara per conto suo (model/vlans.ts). Per ogni VLAN, per ogni MAC
+  // conosciuto, il nome della porta da cui lo si raggiunge. Una VLAN in cui
+  // lo switch non ha imparato nulla non compare.
+  macTable: Map<number, Map<MacAddress, string>>;
 }
 
 // Un'interfaccia di un router: una porta che ha anche un indirizzo IP, e
@@ -147,14 +157,16 @@ export type Device = Host | Switch | Router;
 // La parte di un dispositivo che l'utente imposta e che si salva nel file.
 // `powered` si può omettere: un dispositivo nasce acceso.
 // Anche `role` si può omettere: un host è un PC, se non si dice altro.
-// E così `enabled` nelle porte di uno switch: nascono accese.
+// E così `enabled` nelle porte di uno switch: nascono accese; e `vlan`, e
+// le VLAN dello switch: c'è solo la VLAN 1, e tutte le porte ci stanno.
 export type HostConfig = Pick<Host, "id" | "name" | "ports" | "ip" | "mask" | "gateway"> & {
   powered?: boolean;
   role?: Host["role"];
 };
 export type SwitchConfig = Pick<Switch, "id" | "name"> & {
-  ports: (Port & { enabled?: boolean })[];
+  ports: (Port & { enabled?: boolean; vlan?: number })[];
   powered?: boolean;
+  vlans?: Vlan[];
 };
 export type RouterConfig = Pick<Router, "id" | "name" | "ports" | "routes"> & { powered?: boolean };
 
@@ -184,13 +196,22 @@ export function createHost(config: HostConfig): Host {
  * Crea uno switch appena acceso: con la configurazione data e la tabella
  * MAC vuota.
  *
- * @param config - identificativo, nome e porte; una porta è accesa, se non
- *   si dice altro
- * @returns lo switch pronto per essere messo in una rete
+ * @param config - identificativo, nome, porte e VLAN; una porta è accesa e
+ *   sta nella VLAN 1, se non si dice altro. La VLAN 1 c'è sempre, anche se
+ *   le VLAN date non la comprendono.
+ * @returns lo switch pronto per essere messo in una rete; porte e VLAN
+ *   sono copie, che non condivide con la configurazione
  */
 export function createSwitch(config: SwitchConfig): Switch {
-  const ports = config.ports.map((port) => ({ ...port, enabled: port.enabled ?? true }));
-  return { kind: "switch", ...config, ports, powered: config.powered ?? true, macTable: new Map() };
+  const ports = config.ports.map((port) => ({
+    ...port,
+    enabled: port.enabled ?? true,
+    vlan: port.vlan ?? DEFAULT_VLAN,
+  }));
+  const vlans = defaultVlans().filter((vlan) => !config.vlans?.some((other) => other.id === vlan.id));
+  vlans.push(...(config.vlans ?? []).map((vlan) => ({ ...vlan })));
+  vlans.sort((a, b) => a.id - b.id);
+  return { kind: "switch", ...config, ports, vlans, powered: config.powered ?? true, macTable: new Map() };
 }
 
 /**

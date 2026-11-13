@@ -16,6 +16,7 @@ import {
 import type { Simulator } from "../../src/engine/simulator";
 import { stepsToRestore, takeSnapshot } from "../../src/engine/snapshot";
 import { PC2_IP, PC2_MAC, buildLan } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 function run(sim: Simulator): void {
   while (sim.canStep()) sim.step();
@@ -103,7 +104,7 @@ describe("tornare a una fotografia", () => {
     changeAndUndo(sim, addHost());
 
     expect(pc1.arpTable.size).toBe(1);
-    expect(sw.macTable.size).toBe(2);
+    expect(macTableOf(sw).size).toBe(2);
   });
 
   test("un cavo tolto torna, uno aggiunto sparisce, uno spostato torna alla sua porta", () => {

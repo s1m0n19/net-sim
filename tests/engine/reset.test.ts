@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { disconnectLink, ping, powerOff, resolveAddress } from "../../src/engine/actions";
 import { PC2_IP, buildLan, buildRing } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 describe("ricominciare", () => {
   test("riporta il tempo a zero e svuota coda, tracce e tabelle", () => {
@@ -15,7 +16,7 @@ describe("ricominciare", () => {
     expect(sim.queue).toEqual([]);
     expect(sim.traces).toEqual([]);
     expect(sim.conversations).toEqual([]);
-    expect(sw.macTable.size).toBe(0);
+    expect(macTableOf(sw).size).toBe(0);
     expect(pc1.arpTable.size).toBe(0);
     expect(pc2.arpTable.size).toBe(0);
     expect(pc1.pendingPackets).toEqual([]);

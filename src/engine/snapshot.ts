@@ -3,7 +3,7 @@
 // Serve ad annullare e ripristinare le modifiche (requisito ED-5): prima di
 // ogni modifica si fotografa la rete, e annullare vuol dire tornare alla
 // fotografia. La fotografia contiene solo la configurazione: dispositivi,
-// porte, indirizzi, cavi. Tabelle, pacchetti in viaggio e attese non ci
+// porte, indirizzi, VLAN, cavi. Tabelle, pacchetti in viaggio e attese non ci
 // sono.
 //
 // Per tornare a una fotografia non si butta via la rete: si calcolano le
@@ -20,7 +20,7 @@ import { sameRoute } from "./model/router-config";
 // stato di esecuzione.
 export type DeviceSnapshot =
   | ({ kind: "host" } & Required<HostConfig>)
-  | Pick<Switch, "kind" | "id" | "name" | "ports" | "powered">
+  | Pick<Switch, "kind" | "id" | "name" | "ports" | "powered" | "vlans">
   | ({ kind: "router" } & Required<RouterConfig>);
 
 export interface Snapshot {
@@ -44,7 +44,11 @@ export type RestoreStep =
           | "configure-interface"
           | "set-interface-enabled"
           | "add-route"
-          | "remove-route";
+          | "remove-route"
+          | "add-vlan"
+          | "rename-vlan"
+          | "remove-vlan"
+          | "set-port-vlan";
       }
     >
   | { kind: "put-device"; device: DeviceSnapshot }
@@ -67,7 +71,12 @@ export function takeSnapshot(network: Network): Snapshot {
         return { kind: "host", ...common, role, ports, ip, mask, gateway };
       }
       case "switch":
-        return { kind: "switch", ...common, ports: device.ports.map((port) => ({ ...port })) };
+        return {
+          kind: "switch",
+          ...common,
+          ports: device.ports.map((port) => ({ ...port })),
+          vlans: device.vlans.map((vlan) => ({ ...vlan })),
+        };
       case "router":
         return {
           kind: "router",
@@ -143,6 +152,7 @@ export function stepsToRestore(network: Network, snapshot: Snapshot): RestoreSte
     }
     if (device.kind === "switch" && wanted.kind === "switch") {
       steps.push(...portStateSteps(device, wanted));
+      steps.push(...vlanSteps(device, wanted));
     }
     if (device.kind === "router" && wanted.kind === "router") {
       steps.push(...routerSteps(device, wanted));
@@ -169,6 +179,39 @@ function portStateSteps(
     const now = device.ports.find((p) => p.name === port.name);
     if (now !== undefined && now.enabled !== port.enabled) {
       steps.push({ kind: "set-interface-enabled", deviceId: device.id, portName: port.name, enabled: port.enabled });
+    }
+  }
+  return steps;
+}
+
+// Le modifiche che riportano le VLAN di uno switch alla sua fotografia.
+// L'ordine evita di passare da stati che la fotografia non aveva: prima si
+// creano le VLAN che mancano, poi le porte tornano nella loro VLAN, poi
+// si correggono i nomi, e per ultime si eliminano le VLAN in più, quando
+// nessuna porta che deve restare attiva ci sta più.
+function vlanSteps(sw: Switch, wanted: Extract<DeviceSnapshot, { kind: "switch" }>): RestoreStep[] {
+  const steps: RestoreStep[] = [];
+  const deviceId = sw.id;
+  for (const vlan of wanted.vlans) {
+    if (!sw.vlans.some((other) => other.id === vlan.id)) {
+      steps.push({ kind: "add-vlan", deviceId, vlan: vlan.id, name: vlan.name });
+    }
+  }
+  for (const port of wanted.ports) {
+    const now = sw.ports.find((p) => p.name === port.name);
+    if (now !== undefined && now.vlan !== port.vlan) {
+      steps.push({ kind: "set-port-vlan", deviceId, portName: port.name, vlan: port.vlan });
+    }
+  }
+  for (const vlan of wanted.vlans) {
+    const now = sw.vlans.find((other) => other.id === vlan.id);
+    if (now !== undefined && now.name !== vlan.name) {
+      steps.push({ kind: "rename-vlan", deviceId, vlan: vlan.id, name: vlan.name });
+    }
+  }
+  for (const vlan of sw.vlans) {
+    if (!wanted.vlans.some((other) => other.id === vlan.id)) {
+      steps.push({ kind: "remove-vlan", deviceId, vlan: vlan.id });
     }
   }
   return steps;

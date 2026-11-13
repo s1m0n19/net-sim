@@ -161,6 +161,12 @@ export function describeTrace(network: Network, trace: Trace, index: number): Ev
       return row(trace.deviceId, `aggiunge la rotta verso ${routeText(trace.route)}`);
     case "route-removed":
       return row(trace.deviceId, `toglie la rotta verso ${routeText(trace.route)}`);
+    case "vlan-changed": {
+      const verb = { added: "crea", renamed: "rinomina", removed: "elimina" }[trace.change];
+      return row(trace.deviceId, `${verb} la VLAN ${trace.vlan}`);
+    }
+    case "port-vlan-changed":
+      return row(trace.deviceId, `sposta la porta ${trace.portName} dalla VLAN ${trace.from} alla VLAN ${trace.vlan}`);
     case "simulation-suspended":
       return row(null, "simulazione sospesa: tempesta di broadcast");
   }

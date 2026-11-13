@@ -11,6 +11,7 @@ import {
   buildLan,
   buildTwoHosts,
 } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 // "A caldo": i due host conoscono già il MAC l'uno dell'altro,
 // come dopo uno scambio ARP.
@@ -151,7 +152,7 @@ describe("ping a caldo in una LAN con uno switch", () => {
     runToEnd(sim);
 
     expect(sim.time).toBe(4);
-    expect([...sw.macTable]).toEqual([
+    expect([...macTableOf(sw)]).toEqual([
       [PC1_MAC, "Fa0/1"],
       [PC2_MAC, "Fa0/2"],
     ]);

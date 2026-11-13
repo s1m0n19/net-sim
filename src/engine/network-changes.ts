@@ -23,6 +23,7 @@ import {
   type StaticRoute,
 } from "./model/network";
 import { sameRoute } from "./model/router-config";
+import { forgetMacs } from "./model/vlans";
 import type { DeviceSnapshot } from "./snapshot";
 import { stepsToRestore, type RestoreStep, type Snapshot } from "./snapshot";
 import type { Trace } from "./traces";
@@ -135,6 +136,40 @@ export function applyEdit(sim: SimulationState, action: EditAction, produced: Tr
       editing.removeRoute(sim.network, action.deviceId, action.route);
       produced.push({ time, kind: "route-removed", deviceId: action.deviceId, route: { ...action.route } });
       break;
+    case "add-vlan":
+      if (editing.addVlan(sim.network, action.deviceId, action.vlan, action.name)) {
+        // Le porte che indicavano questa VLAN tornano attive: non c'è nulla
+        // da dimenticare, perché da inattive non hanno imparato nulla.
+        produced.push({ time, kind: "vlan-changed", deviceId: action.deviceId, vlan: action.vlan, change: "added" });
+      }
+      break;
+    case "rename-vlan":
+      if (editing.renameVlan(sim.network, action.deviceId, action.vlan, action.name)) {
+        produced.push({ time, kind: "vlan-changed", deviceId: action.deviceId, vlan: action.vlan, change: "renamed" });
+      }
+      break;
+    case "remove-vlan": {
+      const { deviceId, vlan } = action;
+      editing.removeVlan(sim.network, deviceId, vlan);
+      produced.push({ time, kind: "vlan-changed", deviceId, vlan, change: "removed" });
+      // Lo switch dimentica tutto ciò che aveva imparato in quella VLAN. Le
+      // porte restano assegnate al suo numero, inattive. I frame già sul
+      // cavo arrivano lo stesso: entrando da una porta inattiva, lo switch
+      // li scarterà.
+      forgetMacsWhere(sim, deviceId, (entryVlan) => entryVlan === vlan, produced);
+      break;
+    }
+    case "set-port-vlan": {
+      const { deviceId, portName, vlan } = action;
+      const from = editing.setPortVlan(sim.network, deviceId, portName, vlan);
+      if (from === null) break;
+      produced.push({ time, kind: "port-vlan-changed", deviceId, portName, vlan, from });
+      // Chi stava dietro la porta non si raggiunge più nella VLAN di prima.
+      // Le righe di altre porte e di altre VLAN restano. Un frame in
+      // viaggio verso la porta, arrivando, apparterrà alla VLAN nuova.
+      forgetMacsWhere(sim, deviceId, (entryVlan, entryPort) => entryVlan === from && entryPort === portName, produced);
+      break;
+    }
     case "restore-configuration":
       restore(sim, action.snapshot, produced);
       break;
@@ -192,6 +227,19 @@ function deviceFrom(snapshot: DeviceSnapshot): Device {
         routes: snapshot.routes.map((route) => ({ ...route })),
       });
   }
+}
+
+// Uno switch dimentica le righe della tabella MAC che una modifica alle
+// VLAN ha reso sbagliate; se ne toglie qualcuna, lo dice con una traccia.
+function forgetMacsWhere(
+  sim: SimulationState,
+  deviceId: string,
+  doomed: (vlan: number, portName: string) => boolean,
+  produced: Trace[],
+): void {
+  const sw = findDevice(sim.network, deviceId);
+  if (sw.kind !== "switch" || !forgetMacs(sw, doomed)) return;
+  produced.push({ time: sim.time, kind: "table-changed", deviceId, table: "mac", conversationId: null });
 }
 
 // I nomi dei dispositivi ai due capi di un cavo. Se uno dei due è appena

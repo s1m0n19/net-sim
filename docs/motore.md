@@ -122,21 +122,35 @@ interface Switch {
   kind: "switch";
   id: string;
   name: string;
-  ports: SwitchPort[];                // una porta, più `enabled`: false = spenta
+  ports: SwitchPort[];                // una porta, più `enabled` (false = spenta) e `vlan`
   powered: boolean;                   // false = spento
+  vlans: Vlan[];                      // le VLAN configurate, { id, name }; la 1 c'è sempre
   // stato di esecuzione
-  macTable: Map<MacAddress, string>;  // MAC -> nome della porta
+  macTable: Map<number, Map<MacAddress, string>>;  // VLAN -> MAC -> nome della porta
 }
 ```
 
 `createHost(config)` e `createSwitch(config)` costruiscono un dispositivo appena acceso: la configurazione data, più tabelle vuote e contatori iniziali. `clearRuntimeState(device)` riporta un dispositivo a quello stato: è ciò che succede quando lo si spegne. Le porte di uno switch (`SwitchPort`) si possono spegnere, e nascono accese (decisione D-93): `createSwitch` accende quelle di cui non si dice nulla.
+
+### VLAN (`vlans.ts`)
+
+Uno switch ha le VLAN sulle porte access (requisito DEV-6, prima parte L2-1, decisione D-142). Il modello ha due parti, come su un Cisco:
+
+- il **registro** delle VLAN configurate, `Switch.vlans`: numero (da 1 a 1001) e nome (da 1 a 32 caratteri, senza spazi). La VLAN 1 si chiama `default`, c'è sempre, non si rinomina e non si elimina; una VLAN creata senza nome si chiama `VLAN0010`. Una VLAN può stare nel registro senza porte;
+- la **VLAN di ogni porta**, `SwitchPort.vlan`: un numero, 1 se non si dice altro. Il numero resta anche se la VLAN viene eliminata: la porta allora è accesa ma **inattiva**, e non fa passare nulla finché la VLAN non torna o la porta non cambia VLAN. Spenta (`enabled`) e inattiva sono due cose diverse: una porta inattiva porta ancora il segnale, e il PC attaccato lo sente.
+
+`createSwitch` mette la VLAN 1 nel registro anche se la configurazione non la dice, e le porte senza VLAN nella 1: una rete senza VLAN funziona come prima. La tabella MAC è divisa per VLAN, perché ogni VLAN impara per conto suo: lo stesso MAC può stare in due VLAN, su porte diverse. Chi la legge usa le funzioni di `vlans.ts`: `macTableOf(sw, vlan)` la tabella di una VLAN, `macEntries(sw)` tutte le righe con la loro VLAN, `learnMac` e `forgetMacs` per scriverla. `activeVlanOf(sw, porta)` dice la VLAN di una porta, oppure null se è inattiva.
+
+Il frame non porta la VLAN: non c'è il tag 802.1Q, che verrà con le porte trunk (L2-2). Per lo switch la VLAN di un frame è quella della porta da cui è entrato. Gli host non sanno nulla delle VLAN.
 
 ### Tabelle di partenza (`tables.ts`)
 
 Una rete può partire con le tabelle già compilate, se il file le contiene (requisito FILE-5, decisione D-100). `tables.ts` tratta la tabella che ogni dispositivo impara (ARP per host e router, MAC per lo switch) come un elenco di coppie di testi, `TableRows`, e una rete intera come `NetworkTables`, per identificativo del dispositivo:
 
 - `copyTables(network)` copia le tabelle di adesso, una per dispositivo, anche vuota;
-- `fillTables(network, tables)` aggiunge le righe ai dispositivi, con le regole di sempre: salta un dispositivo spento e le righe di uno switch su una porta che non ha.
+- `fillTables(network, tables)` aggiunge le righe ai dispositivi, con le regole di sempre: salta un dispositivo spento e le righe di uno switch su una porta che non ha o su una porta inattiva.
+
+Le righe di uno switch sono `[MAC, porta]`, senza la VLAN: con le sole porte access la VLAN di una riga è sempre quella della sua porta, e `fillTables` la mette lì.
 
 Il `Simulator` riceve le tabelle di partenza dal costruttore, le applica subito e le tiene da parte: `reset()` svuota tutto e poi le rimette. `setStartingTables(tables)` le cambia senza toccare quelle di adesso; l'interfaccia lo chiama dopo un salvataggio con le tabelle. Eliminando un dispositivo si tolgono anche le sue, perché un dispositivo nuovo che ne prende l'identificativo non le erediti. Dopo le tabelle il simulatore ricalcola il segnale, e uno switch dimentica subito le righe di una porta senza segnale. Le tabelle di partenza non sono configurazione: annulla e ripristina non le toccano.
 
@@ -271,6 +285,8 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `configureInterface(deviceId, portName, ip, mask)` | Cambia l'indirizzo di un'interfaccia di un router; con `null` lo toglie |
 | `enableInterface(deviceId, portName)`, `disableInterface(deviceId, portName)` | Accende o spegne un'interfaccia di un router o una porta di uno switch (su un Cisco: `no shutdown` e `shutdown`). La scheda di un host non si spegne: l'azione viene rifiutata |
 | `addRoute(deviceId, route)`, `removeRoute(deviceId, route)` | Aggiunge o toglie una rotta statica di un router |
+| `addVlan(deviceId, vlan, name)`, `renameVlan(deviceId, vlan, name)`, `removeVlan(deviceId, vlan)` | Crea, rinomina o elimina una VLAN di uno switch. Creare una VLAN che c'è già non cambia nulla; la VLAN 1 non si rinomina e non si elimina |
+| `setPortVlan(deviceId, portName, vlan)` | Mette una porta di uno switch in una VLAN, anche se la VLAN non esiste: allora la porta è inattiva |
 
 Un ping rivolto a uno switch o lanciato da un host spento, e qualsiasi azione su un dispositivo o un collegamento inesistente, vengono rifiutati con un errore. Così anche qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
 
@@ -290,7 +306,7 @@ Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` r
 | `link-changed` | Un cavo è stato staccato o riattaccato |
 | `power-changed` | Un dispositivo è stato spento o acceso |
 | `simulation-suspended` | Il simulatore si è fermato per una tempesta di broadcast. Contiene quanti frame erano in viaggio |
-| `device-added`, `device-removed`, `link-added`, `link-removed`, `device-renamed`, `host-configured` | La rete è stata modificata. Le tracce di ciò che è stato tolto ne portano il nome, perché dopo non lo si può più leggere dalla rete |
+| `device-added`, `device-removed`, `link-added`, `link-removed`, `device-renamed`, `host-configured`, `vlan-changed`, `port-vlan-changed` | La rete è stata modificata. Le tracce di ciò che è stato tolto ne portano il nome, perché dopo non lo si può più leggere dalla rete |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
 
@@ -480,11 +496,14 @@ Un echo reply o un avviso ICMP indirizzato a uno degli indirizzi del router vien
 
 Per ogni frame ricevuto su una porta:
 
-1. **Apprendimento.** Registra nella tabella MAC che l'indirizzo sorgente si raggiunge da quella porta. Se il MAC era già noto su un'altra porta, vale l'informazione più recente.
-2. **Decisione**, presa da `chooseOutputPorts`, che non modifica nulla:
-   - destinazione broadcast, oppure sconosciuta: tutte le porte tranne quella di arrivo (flooding);
-   - destinazione nota su un'altra porta: solo quella;
+1. **VLAN.** La VLAN del frame è quella della porta di arrivo. Se la VLAN non esiste più, la porta è inattiva: il frame viene scartato (`inactive-vlan`) e lo switch non impara nulla.
+2. **Apprendimento.** Registra nella tabella MAC di quella VLAN che l'indirizzo sorgente si raggiunge da quella porta. Se il MAC era già noto su un'altra porta, vale l'informazione più recente.
+3. **Decisione**, presa da `chooseOutputPorts`, che non modifica nulla e guarda solo la stessa VLAN:
+   - destinazione broadcast, oppure sconosciuta nella VLAN: tutte le porte della stessa VLAN tranne quella di arrivo (flooding);
+   - destinazione nota su un'altra porta: solo quella, che è della stessa VLAN perché è lì che lo switch l'ha imparata;
    - destinazione nota sulla porta di arrivo: nessuna, il frame viene scartato.
+
+Una riga della tabella di una VLAN indica sempre una porta di quella VLAN: lo switch impara solo dalla porta di arrivo, e quando una porta cambia VLAN dimentica le sue righe nella VLAN di prima. Due switch uniti da porte access si passano frame senza VLAN, e ciascuno li mette nella VLAN della sua porta: se i due capi hanno VLAN diverse, le due VLAN diventano una rete sola.
 
 Lo switch inoltra il frame così com'è, senza modificarlo, e non guarda che cosa contiene: gli bastano i due indirizzi MAC. Per questo l'aggiunta di IPv4 e ICMP non ha richiesto di toccarlo.
 
@@ -518,7 +537,12 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | Primo ping di un router verso un vicino mai visto | Il primo echo request va perso mentre parte l'ARP: `.!!!!` | Il pacchetto aspetta la risposta ARP e parte: `!!!!!` (D-97) |
 | `traceroute` di un router | Tre sonde per salto, in UDP | Una sonda ICMP per salto, come `tracert` |
 | Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
-| Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11) |
+| Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11). Con le VLAN la tempesta resta nella VLAN del ciclo |
+| Trunk e tag 802.1Q | Un cavo tra switch porta più VLAN, distinte dal tag | Non ancora: solo porte access, una VLAN per cavo (previsti in L2-2) |
+| VLAN diverse ai due capi di un cavo tra switch | CDP lo segnala, e le due VLAN si uniscono | Le due VLAN si uniscono, senza avvisi |
+| VTP, DTP | Propagano le VLAN e negoziano i trunk | Assenti: ogni switch ha le sue VLAN |
+| VLAN 1002–1005 e intervallo esteso (1006–4094) | Esistono | Non disponibili: si usano i numeri da 1 a 1001 |
+| Nomi delle VLAN | Due VLAN non possono avere lo stesso nome | Il nome non si controlla contro gli altri |
 
 ## Guasti
 
@@ -564,11 +588,11 @@ I guasti fanno parte della configurazione: un file può contenere un dispositivo
 
 ## Modificare la rete
 
-Le modifiche stanno in `src/engine/editing.ts`, quelle che riguardano solo i router (indirizzi delle interfacce, rotte statiche) in `src/engine/router-editing.ts`, e accendere e spegnere una porta in `src/engine/port-editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
+Le modifiche stanno in `src/engine/editing.ts`, quelle che riguardano solo i router (indirizzi delle interfacce, rotte statiche) in `src/engine/router-editing.ts`, accendere e spegnere una porta in `src/engine/port-editing.ts`, e le VLAN degli switch in `src/engine/vlan-editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
 
 ### Tornare a una configurazione di prima
 
-`src/engine/snapshot.ts` serve ad annullare e ripristinare. `takeSnapshot` fotografa la configurazione: dispositivi con nome, porte e indirizzi, e cavi. Niente tabelle, niente pacchetti.
+`src/engine/snapshot.ts` serve ad annullare e ripristinare. `takeSnapshot` fotografa la configurazione: dispositivi con nome, porte, indirizzi e VLAN, e cavi. Niente tabelle, niente pacchetti.
 
 L'azione `restore-configuration` riporta la rete a una fotografia. Non sostituisce la rete: `stepsToRestore` confronta la rete di adesso con la fotografia e restituisce le modifiche che le separano, e il simulatore le esegue una alla volta come farebbe con quelle dell'utente. Nell'ordine: via i cavi e i dispositivi che nella fotografia non ci sono, poi tornano i dispositivi tolti e gli altri riprendono nome e indirizzi, infine tornano i cavi.
 
@@ -580,6 +604,7 @@ L'azione `restore-configuration` riporta la rete a una fotografia. Non sostituis
 | Un cavo ha solo cambiato porta | Viene spostato, non tolto e rimesso |
 | Interfacce e rotte di un router | Indirizzo, stato acceso o spento e rotte tornano quelli della fotografia. Lo stato di un'interfaccia è configurazione, non un guasto: su un router si imposta |
 | Porte di uno switch | Lo stato acceso o spento torna quello della fotografia, per la stessa ragione |
+| VLAN di uno switch | Tornano il registro e la VLAN di ogni porta. Prima si creano le VLAN che mancano, poi le porte tornano nella loro VLAN, poi si correggono i nomi, per ultime si eliminano le VLAN in più |
 | Guasti | Non sono modifiche: ciò che c'è da entrambe le parti resta acceso o spento, collegato o staccato, com'è adesso. Ciò che torna, torna com'era nella fotografia |
 
 La fotografia deve venire dalla stessa rete, in un momento precedente o successivo della stessa serie di modifiche: è ciò che garantisce che nomi e porte da rimettere siano liberi.
@@ -606,7 +631,7 @@ Un PC nuovo nasce acceso, senza cavi e senza configurazione IP. Uno switch nuovo
 | Originale | Che cosa prende la copia |
 | --- | --- |
 | PC o server | Maschera e gateway, e il primo indirizzo libero della stessa sottorete dopo quello dell'originale. Libero vuol dire non usato da un host né da un'interfaccia di router, diverso dal gateway, e accettato da `checkIpConfig` (quindi non il broadcast). Se non ce n'è, o se l'originale non è configurato, la copia nasce non configurata |
-| Switch | Il numero di porte, e quali sono spente |
+| Switch | Il numero di porte, quali sono spente, le VLAN e la VLAN di ogni porta |
 | Router | Solo il numero di interfacce: nascono spente e senza indirizzi, e non ci sono rotte. Copiare gli indirizzi produrrebbe soltanto conflitti |
 
 La copia nasce accesa, senza cavi e con le tabelle vuote, come ogni dispositivo nuovo; la traccia è quella di un dispositivo aggiunto (`device-added`). L'indirizzo successivo lo calcola `nextFreeAddress`, che scorre gli indirizzi come numeri con `ipToNumber` e `numberToIp` (`model/addresses.ts`). Dove mettere la copia sul disegno lo decide l'interfaccia.
@@ -622,6 +647,8 @@ La copia nasce accesa, senza cavi e con le tabelle vuote, come ogni dispositivo 
 | Dare un indirizzo a un'interfaccia | L'indirizzo non supera le regole degli host, o la sua rete si sovrappone a quella di un'altra interfaccia dello stesso router |
 | Aggiungere una rotta | Indirizzi o maschera sono scritti male, rete e maschera non vanno d'accordo, o il router ha già la stessa rotta |
 | Togliere una rotta | Il router non ha quella rotta |
+| Creare una VLAN, spostare una porta | Il numero non è un intero da 1 a 1001, il nome non va bene, la porta non esiste o il dispositivo non è uno switch |
+| Rinominare o eliminare una VLAN | È la VLAN 1, o lo switch non ha quella VLAN |
 
 Una modifica rifiutata non cambia nulla: la rete resta com'era.
 
@@ -634,6 +661,8 @@ Si può modificare la rete mentre il traffico viaggia.
 - **Configurare un host**: l'host riparte da capo, come dopo un riavvio della scheda. Dimentica la tabella ARP e ciò che stava aspettando. Gli altri host invece ricordano ancora il suo vecchio indirizzo: un ping verso quello parte, arriva, e viene scartato.
 - **Spegnere un'interfaccia di un router**: è come staccarne il cavo. I frame che ci viaggiavano vanno persi e il segnale sparisce dai due capi.
 - **Cambiare l'indirizzo di un'interfaccia**: il router dimentica la tabella ARP e ciò che stava aspettando, come un host.
+- **Spostare una porta in un'altra VLAN**: lo switch dimentica le righe di quella porta nella VLAN di prima, e solo quelle. Un frame già sul cavo verso la porta, arrivando, appartiene alla VLAN nuova.
+- **Eliminare una VLAN**: lo switch dimentica tutte le sue righe; le porte restano assegnate al suo numero, inattive. I frame già sul cavo arrivano, e lo switch li scarta. Ricreando la VLAN, le porte tornano attive.
 - Dopo ogni modifica ogni dispositivo torna a sapere quali cavi ha: gli host se sentono il segnale, gli switch quali MAC dimenticare.
 
 A simulazione sospesa le modifiche sono rifiutate, come ogni altra azione.
@@ -667,7 +696,8 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 Non ancora nel codice:
 
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
-- **Spanning tree** (DEV-11) e gli altri protocolli: VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
+- **Le VLAN nel file, nella CLI e nel pannello** (L2-1B, C, D): oggi esistono solo nel motore, e si creano solo dai test; un file salvato non le contiene ancora.
+- **Spanning tree** (DEV-11) e gli altri protocolli: trunk 802.1Q e routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
 
@@ -691,7 +721,7 @@ test("lo switch impara il MAC di chi chiede e inoltra la richiesta a tutti gli a
   const traces = sim.step(); // la richiesta arriva allo switch
 
   expect(sim.time).toBe(1);
-  expect(sw.macTable.get(PC1_MAC)).toBe("Fa0/1");
+  expect(macTableOf(sw).get(PC1_MAC)).toBe("Fa0/1");
   expect(sentBySwitchTo(traces)).toEqual(["d2", "d3"]); // non verso PC1, non su Fa0/4
 });
 ```
@@ -714,6 +744,7 @@ I file di test, uno per argomento:
 | `link-faults.test.ts` | Cavo staccato |
 | `power-faults.test.ts` | Dispositivo spento |
 | `switch-ports.test.ts` | Porta di switch spenta e riaccesa |
+| `vlan.test.ts` | VLAN sulle porte access: isolamento, tabella MAC per VLAN, VLAN eliminate, due switch, ciclo in una VLAN, annulla e duplica, invarianti |
 | `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
 | `duplicating.test.ts` | Duplicare un PC, un server, uno switch e un router; l'indirizzo libero successivo |
 | `router-model.test.ts` | Il router nel modello: controlli su interfacce e rotte, reti sovrapposte, segnale |

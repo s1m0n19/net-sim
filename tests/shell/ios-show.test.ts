@@ -9,7 +9,18 @@ import {
 } from "../../src/engine/actions";
 import { Simulator } from "../../src/engine/simulator";
 import { show } from "../../src/shell/ios/show";
-import { buildLan, buildThreeNetworks, buildTwoLans, PC1_MAC, PC2_IP, PC2_MAC } from "../engine/builders";
+import {
+  buildLan,
+  buildThreeNetworks,
+  buildTwoLans,
+  buildVlanLan,
+  PC1_MAC,
+  PC2_IP,
+  PC2_MAC,
+  PC3_MAC,
+  PC4_IP,
+  PC4_MAC,
+} from "../engine/builders";
 
 function run(sim: Simulator): void {
   while (sim.canStep()) sim.step();
@@ -246,6 +257,21 @@ describe("show mac address-table", () => {
     expect(show("mac-address-table", sim.network, "s1").slice(5)).toEqual([
       `   1    ${PC1_MAC}    DYNAMIC     Fa0/1`,
       `   1    ${PC2_MAC}    DYNAMIC     Fa0/2`,
+    ]);
+  });
+
+  test("con più VLAN scrive la VLAN di ogni riga, in ordine di VLAN", () => {
+    const { sim } = buildVlanLan();
+    sim.dispatch(ping("d3", PC4_IP, 1));
+    run(sim);
+    sim.dispatch(ping("d1", PC2_IP, 1));
+    run(sim);
+
+    expect(show("mac-address-table", sim.network, "s1").slice(5)).toEqual([
+      `  10    ${PC1_MAC}    DYNAMIC     Fa0/1`,
+      `  10    ${PC2_MAC}    DYNAMIC     Fa0/2`,
+      `  20    ${PC3_MAC}    DYNAMIC     Fa0/3`,
+      `  20    ${PC4_MAC}    DYNAMIC     Fa0/4`,
     ]);
   });
 });

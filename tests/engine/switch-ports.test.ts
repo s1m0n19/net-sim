@@ -4,6 +4,7 @@ import type { Switch } from "../../src/engine/model/network";
 import { Simulator } from "../../src/engine/simulator";
 import { takeSnapshot } from "../../src/engine/snapshot";
 import { PC1_MAC, PC2_IP, PC2_MAC, PC3_IP, buildLan } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 // Nella LAN di prova PC1 sta sulla porta Fa0/1 di SW1 (cavo l1), PC2 sulla
 // Fa0/2 e PC3 sulla Fa0/3.
@@ -75,11 +76,11 @@ describe("porte di uno switch", () => {
     const { sim, sw } = buildLan();
     sim.dispatch(ping("d1", PC2_IP, 1));
     run(sim);
-    expect([...sw.macTable.keys()].sort()).toEqual([PC1_MAC, PC2_MAC]);
+    expect([...macTableOf(sw).keys()].sort()).toEqual([PC1_MAC, PC2_MAC]);
 
     const traces = sim.dispatch(disableInterface("s1", "Fa0/1"));
 
-    expect([...sw.macTable.keys()]).toEqual([PC2_MAC]);
+    expect([...macTableOf(sw).keys()]).toEqual([PC2_MAC]);
     expect(traces.map((t) => t.kind)).toEqual(["interface-changed", "table-changed"]);
   });
 

@@ -26,6 +26,11 @@ export type Action =
   | { kind: "set-interface-enabled"; deviceId: string; portName: string; enabled: boolean }
   | { kind: "add-route"; deviceId: string; route: StaticRoute }
   | { kind: "remove-route"; deviceId: string; route: StaticRoute }
+  // Modifiche alle VLAN di uno switch.
+  | { kind: "add-vlan"; deviceId: string; vlan: number; name: string | null }
+  | { kind: "rename-vlan"; deviceId: string; vlan: number; name: string }
+  | { kind: "remove-vlan"; deviceId: string; vlan: number }
+  | { kind: "set-port-vlan"; deviceId: string; portName: string; vlan: number }
   | { kind: "restore-configuration"; snapshot: Snapshot };
 
 /**
@@ -301,4 +306,54 @@ export function addRoute(deviceId: string, route: StaticRoute): Action {
  */
 export function removeRoute(deviceId: string, route: StaticRoute): Action {
   return { kind: "remove-route", deviceId, route };
+}
+
+/**
+ * Crea l'azione "crea questa VLAN su uno switch" (su un Cisco: `vlan 10`).
+ * Se la VLAN c'è già, non cambia nulla.
+ *
+ * @param deviceId - identificativo dello switch
+ * @param vlan - il numero della VLAN, da 1 a 1001
+ * @param name - il nome; se manca, "VLAN" e il numero su quattro cifre
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function addVlan(deviceId: string, vlan: number, name: string | null = null): Action {
+  return { kind: "add-vlan", deviceId, vlan, name };
+}
+
+/**
+ * Crea l'azione "cambia il nome di questa VLAN di uno switch".
+ *
+ * @param deviceId - identificativo dello switch
+ * @param vlan - il numero della VLAN, che non può essere la 1
+ * @param name - il nuovo nome
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function renameVlan(deviceId: string, vlan: number, name: string): Action {
+  return { kind: "rename-vlan", deviceId, vlan, name };
+}
+
+/**
+ * Crea l'azione "elimina questa VLAN da uno switch" (su un Cisco:
+ * `no vlan 10`). Le sue porte restano assegnate al numero, inattive.
+ *
+ * @param deviceId - identificativo dello switch
+ * @param vlan - il numero della VLAN, che non può essere la 1
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function removeVlan(deviceId: string, vlan: number): Action {
+  return { kind: "remove-vlan", deviceId, vlan };
+}
+
+/**
+ * Crea l'azione "metti questa porta di uno switch in questa VLAN" (su un
+ * Cisco: `switchport access vlan 10`).
+ *
+ * @param deviceId - identificativo dello switch
+ * @param portName - la porta, per esempio "Fa0/1"
+ * @param vlan - il numero della VLAN, da 1 a 1001, anche se non esiste
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function setPortVlan(deviceId: string, portName: string, vlan: number): Action {
+  return { kind: "set-port-vlan", deviceId, portName, vlan };
 }

@@ -21,12 +21,14 @@ import {
   type RouterInterface,
   type SwitchPort,
 } from "./model/network";
+import { DEFAULT_VLAN } from "./model/vlans";
 
-// Le modifiche che riguardano solo i router stanno in router-editing.ts, e
-// accendere e spegnere una porta in port-editing.ts; chi usa questo file
-// le trova anche qui.
+// Le modifiche che riguardano solo i router stanno in router-editing.ts,
+// accendere e spegnere una porta in port-editing.ts, le VLAN degli switch
+// in vlan-editing.ts; chi usa questo file le trova anche qui.
 export * from "./port-editing";
 export * from "./router-editing";
+export * from "./vlan-editing";
 
 // Che cosa si può aggiungere: un PC, uno switch con un certo numero di
 // porte, oppure un router con un certo numero di interfacce.
@@ -84,11 +86,12 @@ function newSwitch(network: Network, portCount: number): Device {
   if (!Number.isInteger(portCount) || portCount < 1) {
     throw new Error(`Numero di porte non valido: ${portCount}`);
   }
-  // Le porte di uno switch nascono accese: basta attaccare il cavo.
+  // Le porte di uno switch nascono accese, nella VLAN 1: basta attaccare il cavo.
   const ports: SwitchPort[] = freeMacs(network, portCount).map((mac, index) => ({
     name: `Fa0/${index + 1}`,
     mac,
     enabled: true,
+    vlan: DEFAULT_VLAN,
   }));
   return createSwitch({
     id: freeName(usedIds(network), "s"),

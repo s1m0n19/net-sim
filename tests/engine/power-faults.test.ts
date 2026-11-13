@@ -4,6 +4,7 @@ import { ARP_TIMEOUT_TICKS } from "../../src/engine/protocols/arp";
 import { ECHO_TIMEOUT_TICKS } from "../../src/engine/protocols/icmp";
 import type { Simulator } from "../../src/engine/simulator";
 import { PC1_IP, PC1_MAC, PC2_IP, PC2_MAC, buildLan, buildTwoHosts } from "./builders";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 // Nella LAN di prova: d1, d2 e d3 sono i tre PC, s1 è lo switch.
 
@@ -97,13 +98,13 @@ describe("un PC spento", () => {
     const { sim, sw } = buildLan();
     sim.dispatch(ping("d1", PC2_IP, 1));
     run(sim);
-    expect(sw.macTable.has(PC2_MAC)).toBe(true);
+    expect(macTableOf(sw).has(PC2_MAC)).toBe(true);
 
     sim.dispatch(powerOff("d2"));
     sim.dispatch(ping("d1", "192.168.1.99", 1)); // un broadcast: andrebbe a tutti
     run(sim);
 
-    expect(sw.macTable.has(PC2_MAC)).toBe(false);
+    expect(macTableOf(sw).has(PC2_MAC)).toBe(false);
     const reachedPc2 = sim.traces.some((t) => t.kind === "frame-sent" && t.time > 8 && t.to.deviceId === "d2");
     expect(reachedPc2).toBe(false);
   });
@@ -195,7 +196,7 @@ describe("uno switch spento", () => {
 
     sim.dispatch(powerOff("s1"));
 
-    expect(sw.macTable.size).toBe(0);
+    expect(macTableOf(sw).size).toBe(0);
   });
 
   test("riacceso, la rete riprende a funzionare e lo switch impara da capo", () => {
@@ -210,7 +211,7 @@ describe("uno switch spento", () => {
     run(sim);
 
     expect(results(sim).at(-1)?.[1]).toBe("reply");
-    expect([...sw.macTable.keys()]).toEqual([PC1_MAC, PC2_MAC]);
+    expect([...macTableOf(sw).keys()]).toEqual([PC1_MAC, PC2_MAC]);
   });
 
   test("i PC conservano la propria tabella ARP: sono rimasti accesi", () => {

@@ -9,6 +9,7 @@
 import { isValidIp } from "../engine/model/ip-config";
 import type { Device } from "../engine/model/network";
 import type { NetworkTables, TableRows } from "../engine/model/tables";
+import { macEntries } from "../engine/model/vlans";
 import { checkFields, checkUnique, isUsableMac, readText } from "./fields";
 
 /**
@@ -95,7 +96,9 @@ function readMacRows(rows: any[], device: Device): TableRows {
  */
 export function tableToWrite(device: Device): object {
   if (device.kind === "switch") {
-    return { macTable: [...device.macTable].map(([mac, port]) => ({ mac, port })) };
+    // Il formato non ha ancora la VLAN delle righe (arriva con L2-1B):
+    // finché le VLAN non si possono configurare, sono tutte della VLAN 1.
+    return { macTable: macEntries(device).map(({ mac, port }) => ({ mac, port })) };
   }
   return { arpTable: [...device.arpTable].map(([ip, mac]) => ({ ip, mac })) };
 }

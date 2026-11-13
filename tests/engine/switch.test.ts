@@ -3,6 +3,7 @@ import { chooseOutputPorts, receiveFrameOnSwitch } from "../../src/engine/device
 import { BROADCAST_MAC } from "../../src/engine/model/addresses";
 import type { EthernetFrame } from "../../src/engine/model/frames";
 import { createSwitch, type Switch } from "../../src/engine/model/network";
+import { macTableOf } from "../../src/engine/model/vlans";
 
 const MAC_A = "02:00:00:00:00:0a";
 const MAC_B = "02:00:00:00:00:0b";
@@ -43,7 +44,7 @@ describe("apprendimento", () => {
 
     const reaction = receiveFrameOnSwitch(sw, "Fa0/1", frame(MAC_A, MAC_B));
 
-    expect(sw.macTable.get(MAC_A)).toBe("Fa0/1");
+    expect(macTableOf(sw).get(MAC_A)).toBe("Fa0/1");
     expect(reaction.tableChanged).toBe(true);
   });
 
@@ -54,7 +55,7 @@ describe("apprendimento", () => {
     const reaction = receiveFrameOnSwitch(sw, "Fa0/1", frame(MAC_A, MAC_B));
 
     expect(reaction.tableChanged).toBe(false);
-    expect(sw.macTable.size).toBe(1);
+    expect(macTableOf(sw).size).toBe(1);
   });
 
   test("un MAC che ricompare su un'altra porta viene aggiornato", () => {
@@ -63,7 +64,7 @@ describe("apprendimento", () => {
 
     const reaction = receiveFrameOnSwitch(sw, "Fa0/3", frame(MAC_A, MAC_B));
 
-    expect(sw.macTable.get(MAC_A)).toBe("Fa0/3");
+    expect(macTableOf(sw).get(MAC_A)).toBe("Fa0/3");
     expect(reaction.tableChanged).toBe(true);
   });
 
@@ -72,7 +73,7 @@ describe("apprendimento", () => {
 
     receiveFrameOnSwitch(sw, "Fa0/1", frame(MAC_A, MAC_B));
 
-    expect(sw.macTable.has(MAC_B)).toBe(false);
+    expect(macTableOf(sw).has(MAC_B)).toBe(false);
   });
 });
 
@@ -117,8 +118,8 @@ describe("inoltro", () => {
   test("scegliere le porte di uscita non modifica la tabella MAC", () => {
     const sw = fourPortSwitch();
 
-    chooseOutputPorts(sw, "Fa0/1", MAC_B);
+    chooseOutputPorts(sw, 1, "Fa0/1", MAC_B); // nella VLAN 1, come tutte le porte
 
-    expect(sw.macTable.size).toBe(0);
+    expect(macTableOf(sw).size).toBe(0);
   });
 });

@@ -8,6 +8,7 @@
 import { freePortsOf } from "../engine/editing";
 import { maskToPrefix, networkAddress } from "../engine/model/addresses";
 import { linkCarriesSignal, type Network } from "../engine/model/network";
+import { macEntries } from "../engine/model/vlans";
 import { routingTableOf } from "../engine/protocols/routing";
 import type { Simulator } from "../engine/simulator";
 import type { Annotation } from "../storage/annotations-file";
@@ -73,7 +74,7 @@ export function buildView(
       routingRows: [],
     };
     if (device.kind === "switch") {
-      return { ...base, ...none, macRows: [...device.macTable] };
+      return { ...base, ...none, macRows: macEntries(device).map(({ mac, port }): [string, string] => [mac, port]) };
     }
     if (device.kind === "router") {
       return {

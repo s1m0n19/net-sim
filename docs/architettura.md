@@ -66,7 +66,7 @@ net-sim/
 ├── src/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
-│   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts, tables.ts
+│   │   ├── model/             addresses.ts, frames.ts, network.ts, ip-config.ts, router-config.ts, tables.ts, vlans.ts
 │   │   ├── protocols/         arp.ts, ipv4.ts, icmp.ts, routing.ts
 │   │   ├── devices/           host.ts (con host-output, host-sending, host-ping), switch.ts,
 │   │   │                      router.ts (con router-sending, router-ping), echo-series.ts
@@ -81,6 +81,7 @@ net-sim/
 │   │   ├── duplicating.ts     duplicare un dispositivo, con l'indirizzo libero successivo
 │   │   ├── port-editing.ts    accendere e spegnere una porta di switch o un'interfaccia di router
 │   │   ├── router-editing.ts  modifiche a un router: indirizzi delle interfacce e rotte statiche
+│   │   ├── vlan-editing.ts    VLAN di uno switch: crearle, rinominarle, eliminarle, spostare le porte
 │   │   ├── network-changes.ts le stesse modifiche a simulazione in corso
 │   │   ├── snapshot.ts        fotografia della configurazione, per annullare e ripristinare
 │   │   └── actions.ts         le azioni accettate dal motore

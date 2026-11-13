@@ -7,7 +7,9 @@
 //
 // - un PC o un server: maschera e gateway, e il primo indirizzo libero della
 //   stessa sottorete dopo quello dell'originale;
-// - uno switch: il numero di porte, e quali sono spente;
+// - uno switch: il numero di porte, quali sono spente, le VLAN e la VLAN
+//   di ogni porta. Le tabelle MAC no: la copia nasce senza aver imparato
+//   nulla, come ogni dispositivo nuovo;
 // - un router: il numero di interfacce, che nascono spente e senza indirizzi,
 //   senza rotte. Copiarne gli indirizzi produrrebbe solo conflitti.
 //
@@ -33,7 +35,9 @@ export function duplicateDevice(network: Network, deviceId: string): Device {
   if (original.kind === "switch" && copy.kind === "switch") {
     copy.ports.forEach((port, index) => {
       port.enabled = original.ports[index].enabled;
+      port.vlan = original.ports[index].vlan;
     });
+    copy.vlans = original.vlans.map((vlan) => ({ ...vlan }));
   }
   if (original.kind === "host" && copy.kind === "host") {
     const ip = nextFreeAddress(network, original);

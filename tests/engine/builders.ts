@@ -222,3 +222,105 @@ export function buildThreeNetworks(): { sim: Simulator; pc1: Host; pc2: Host; r1
   };
   return { sim: new Simulator(network), pc1, pc2, r1, r2 };
 }
+
+// --- Reti con VLAN -----------------------------------------------------------
+
+export const PC4_MAC = "02:00:00:00:00:04";
+export const PC5_MAC = "02:00:00:00:00:05";
+export const PC4_IP = "192.168.1.13";
+export const PC5_IP = "192.168.1.14";
+
+// Una LAN divisa in due VLAN sullo stesso switch, tutti nella stessa
+// sottorete 192.168.1.0/24:
+//
+//   VLAN 10 (STUDENTI): PC1 su Fa0/1, PC2 su Fa0/2, PC5 su Fa0/5
+//   VLAN 20 (DOCENTI):  PC3 su Fa0/3, PC4 su Fa0/4
+//
+// La porta Fa0/6 resta scollegata, nella VLAN 1.
+export function buildVlanLan(): {
+  sim: Simulator;
+  sw: Switch;
+  pc1: Host;
+  pc2: Host;
+  pc3: Host;
+  pc4: Host;
+  pc5: Host;
+} {
+  const pc1 = host("d1", "PC1", PC1_MAC, PC1_IP);
+  const pc2 = host("d2", "PC2", PC2_MAC, PC2_IP);
+  const pc3 = host("d3", "PC3", PC3_MAC, PC3_IP);
+  const pc4 = host("d4", "PC4", PC4_MAC, PC4_IP);
+  const pc5 = host("d5", "PC5", PC5_MAC, PC5_IP);
+  const vlanOfPort = [10, 10, 20, 20, 10, 1];
+  const sw = createSwitch({
+    id: "s1",
+    name: "SW1",
+    ports: vlanOfPort.map((vlan, index) => ({ name: `Fa0/${index + 1}`, mac: `02:00:00:00:01:0${index + 1}`, vlan })),
+    vlans: [
+      { id: 10, name: "STUDENTI" },
+      { id: 20, name: "DOCENTI" },
+    ],
+  });
+  const network: Network = {
+    devices: [sw, pc1, pc2, pc3, pc4, pc5],
+    links: [
+      linkToSwitch("l1", "d1", "Fa0/1"),
+      linkToSwitch("l2", "d2", "Fa0/2"),
+      linkToSwitch("l3", "d3", "Fa0/3"),
+      linkToSwitch("l4", "d4", "Fa0/4"),
+      linkToSwitch("l5", "d5", "Fa0/5"),
+    ],
+  };
+  return { sim: new Simulator(network), sw, pc1, pc2, pc3, pc4, pc5 };
+}
+
+// Due switch uniti da un cavo tra due porte access, Fa0/3 di SW1 e Fa0/3
+// di SW2; tutti nella sottorete 192.168.1.0/24:
+//
+//   SW1: PC1 su Fa0/1 nella VLAN 10, PC3 su Fa0/2 nella VLAN 20,
+//        Fa0/3 verso SW2 nella VLAN 10
+//   SW2: PC2 su Fa0/1 e Fa0/3 verso SW1, entrambe nella VLAN `farVlan`
+//
+// Il cavo tra gli switch non porta la VLAN: ogni switch dà ai frame la
+// VLAN della sua porta.
+export function buildTwoVlanSwitches(farVlan: number): {
+  sim: Simulator;
+  sw1: Switch;
+  sw2: Switch;
+} {
+  const pc1 = host("d1", "PC1", PC1_MAC, PC1_IP);
+  const pc2 = host("d2", "PC2", PC2_MAC, PC2_IP);
+  const pc3 = host("d3", "PC3", PC3_MAC, PC3_IP);
+  const sw1 = createSwitch({
+    id: "s1",
+    name: "SW1",
+    ports: [
+      { name: "Fa0/1", mac: "02:00:00:00:01:01", vlan: 10 },
+      { name: "Fa0/2", mac: "02:00:00:00:01:02", vlan: 20 },
+      { name: "Fa0/3", mac: "02:00:00:00:01:03", vlan: 10 },
+    ],
+    vlans: [
+      { id: 10, name: "VLAN0010" },
+      { id: 20, name: "VLAN0020" },
+    ],
+  });
+  const sw2 = createSwitch({
+    id: "s2",
+    name: "SW2",
+    ports: [
+      { name: "Fa0/1", mac: "02:00:00:00:02:01", vlan: farVlan },
+      { name: "Fa0/3", mac: "02:00:00:00:02:03", vlan: farVlan },
+    ],
+    vlans: [{ id: farVlan, name: `VLAN00${farVlan}` }],
+  });
+  const network: Network = {
+    devices: [sw1, sw2, pc1, pc2, pc3],
+    links: [
+      cable("l1", "d1", "Fa0", "s1", "Fa0/1"),
+      cable("l2", "d3", "Fa0", "s1", "Fa0/2"),
+      cable("l3", "s1", "Fa0/3", "s2", "Fa0/3"),
+      cable("l4", "d2", "Fa0", "s2", "Fa0/1"),
+    ],
+  };
+  return { sim: new Simulator(network), sw1, sw2 };
+}
