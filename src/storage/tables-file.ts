@@ -7,9 +7,9 @@
 // switch il campo "macTable". Il formato è descritto in docs/formato-file.md.
 
 import { isValidIp } from "../engine/model/ip-config";
-import type { Device } from "../engine/model/network";
+import type { Device, Switch } from "../engine/model/network";
 import type { NetworkTables, TableRows } from "../engine/model/tables";
-import { macEntries } from "../engine/model/vlans";
+import { DEFAULT_VLAN, activeVlanOf, macEntries } from "../engine/model/vlans";
 import { checkFields, checkUnique, isUsableMac, readText } from "./fields";
 
 /**
@@ -26,7 +26,8 @@ import { checkFields, checkUnique, isUsableMac, readText } from "./fields";
  *   dispositivo del file ha una tabella
  * @throws Error se un dispositivo ha la tabella dell'altro tipo, o se una
  *   tabella non è un elenco, ha una riga con un campo mancante o scritto
- *   male, una riga ripetuta, o indica una porta che lo switch non ha
+ *   male, una riga ripetuta (per uno switch, lo stesso MAC nella stessa
+ *   VLAN), o indica una porta che lo switch non ha o che è inattiva
  */
 export function readTables(source: any[], devices: Device[]): NetworkTables | null {
   const tables: NetworkTables = new Map();
@@ -68,22 +69,40 @@ function readArpRows(rows: any[], deviceName: string): TableRows {
 
 // Le righe di una tabella MAC: un MAC e la porta da cui lo si raggiunge,
 // che deve essere una porta di quello switch.
-function readMacRows(rows: any[], device: Device): TableRows {
+//
+// La riga non dice la VLAN: è quella della sua porta, perché con le porte
+// access uno switch impara un MAC solo nella VLAN della porta da cui lo ha
+// visto (D-143). Per questo la porta deve essere attiva, cioè la sua VLAN
+// deve esistere, e lo stesso MAC può comparire due volte solo su porte di
+// VLAN diverse. I file di prima delle VLAN hanno tutte le porte nella
+// VLAN 1, e le loro righe si leggono come sempre.
+function readMacRows(rows: any[], sw: Switch): TableRows {
+  const vlanOfRow: number[] = [];
   const read: TableRows = rows.map((row, index) => {
-    const where = `${device.name}, tabella MAC, riga n. ${index + 1}`;
+    const where = `${sw.name}, tabella MAC, riga n. ${index + 1}`;
     checkFields(row, ["mac", "port"], where);
     const mac = readText(row, "mac", where);
     const port = readText(row, "port", where);
     if (!isUsableMac(mac)) throw new Error(`${where}: indirizzo MAC non valido: ${mac}.`);
-    if (!device.ports.some((p) => p.name === port)) {
+    const found = sw.ports.find((p) => p.name === port);
+    if (found === undefined) {
       throw new Error(`${where}: indica una porta inesistente: ${port}.`);
     }
+    const vlan = activeVlanOf(sw, port);
+    if (vlan === null) {
+      throw new Error(`${where}: la porta ${port} è inattiva, perché la VLAN ${found.vlan} non esiste.`);
+    }
+    vlanOfRow.push(vlan);
     return [mac, port];
   });
-  checkUnique(
-    read.map(([mac]) => mac.toLowerCase()),
-    `${device.name}: MAC ripetuto nella tabella MAC`,
-  );
+  // Un MAC si ripete solo in VLAN diverse: ogni VLAN ha la sua tabella.
+  for (const vlan of new Set(vlanOfRow)) {
+    const where = vlan === DEFAULT_VLAN ? "nella tabella MAC" : `nella tabella MAC della VLAN ${vlan}`;
+    checkUnique(
+      read.filter((_row, index) => vlanOfRow[index] === vlan).map(([mac]) => mac.toLowerCase()),
+      `${sw.name}: MAC ripetuto ${where}`,
+    );
+  }
   return read;
 }
 
@@ -96,8 +115,7 @@ function readMacRows(rows: any[], device: Device): TableRows {
  */
 export function tableToWrite(device: Device): object {
   if (device.kind === "switch") {
-    // Il formato non ha ancora la VLAN delle righe (arriva con L2-1B):
-    // finché le VLAN non si possono configurare, sono tutte della VLAN 1.
+    // Le righe non scrivono la VLAN: è quella della loro porta (D-143).
     return { macTable: macEntries(device).map(({ mac, port }) => ({ mac, port })) };
   }
   return { arpTable: [...device.arpTable].map(([ip, mac]) => ({ ip, mac })) };

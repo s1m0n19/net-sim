@@ -8,6 +8,7 @@ import { FILE_FORMAT, type Position } from "./load";
 import { versionToWrite } from "./migrations";
 import { annotationsToWrite, type Annotation } from "./annotations-file";
 import { tableToWrite } from "./tables-file";
+import { portVlanToWrite, usesVlans, vlansToWrite } from "./vlans-file";
 
 /** Che cosa scrivere nel file oltre alla configurazione e alle posizioni. */
 export interface SaveOptions {
@@ -20,7 +21,7 @@ export interface SaveOptions {
 /**
  * Trasforma una rete nel testo di un file.
  *
- * Nel file va la configurazione: dispositivi con porte e indirizzi, cavi,
+ * Nel file va la configurazione: dispositivi con porte, indirizzi e VLAN, cavi,
  * posizioni sul disegno, e i guasti (dispositivi spenti, cavi staccati).
  * Le annotazioni del disegno, se ce ne sono; le tabelle ARP e MAC solo se
  * chieste (FILE-5). Il resto dello stato di
@@ -54,6 +55,8 @@ export function serializeNetwork(
       ...(device.kind === "router"
         ? { routes: device.routes.map((r) => ({ network: r.network, mask: r.mask, nextHop: r.nextHop })) }
         : {}),
+      // Le VLAN di uno switch, solo se ne ha oltre la 1 (D-143).
+      ...(device.kind === "switch" ? vlansToWrite(device) : {}),
       // I guasti si scrivono solo quando ci sono: un dispositivo nasce acceso.
       ...(device.powered ? {} : { powered: false }),
       ...(withTables ? tableToWrite(device) : {}),
@@ -69,9 +72,10 @@ export function serializeNetwork(
 
   const file = {
     format: FILE_FORMAT,
-    // La versione più bassa che basta: senza annotazioni il file resta di
-    // versione 1, e lo aprono anche le versioni precedenti dell'app (D-108).
-    version: versionToWrite(annotations.length > 0),
+    // La versione più bassa che basta: senza annotazioni e senza VLAN il
+    // file resta di versione 1, e lo aprono anche le versioni precedenti
+    // dell'app (D-108).
+    version: versionToWrite(annotations.length > 0, usesVlans(network)),
     network: { devices, links },
     // Un file senza annotazioni resta com'era prima che esistessero.
     ...(annotations.length > 0 ? { annotations: annotationsToWrite(annotations) } : {}),
@@ -85,12 +89,13 @@ function portsToWrite(device: Device) {
     case "host":
       return device.ports.map((port) => ({ name: port.name, mac: port.mac }));
     case "switch":
-      // Una porta di switch nasce accesa: lo stato si scrive solo quando è
-      // spenta, così il file di una LAN resta corto.
+      // Una porta di switch nasce accesa e nella VLAN 1: stato e VLAN si
+      // scrivono solo quando sono diversi, così il file di una LAN resta corto.
       return device.ports.map((port) => ({
         name: port.name,
         mac: port.mac,
         ...(port.enabled ? {} : { enabled: false }),
+        ...portVlanToWrite(port),
       }));
     case "router":
       // Le interfacce di un router portano con sé indirizzo e stato:

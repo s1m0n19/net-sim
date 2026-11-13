@@ -89,6 +89,7 @@ net-sim/
 │   │   ├── load.ts            lettura dei file di rete
 │   │   ├── save.ts            scrittura dei file di rete
 │   │   ├── tables-file.ts     le tabelle ARP e MAC nel file, da leggere e da scrivere
+│   │   ├── vlans-file.ts      le VLAN degli switch nel file (formato 3), da leggere e da scrivere
 │   │   ├── annotations-file.ts riquadri e note del disegno: il tipo, e come stanno nel file
 │   │   ├── fields.ts          i controlli sui singoli campi di un file
 │   │   ├── migrations.ts      le versioni del formato, e il passaggio dall'una all'altra

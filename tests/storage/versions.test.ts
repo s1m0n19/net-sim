@@ -43,9 +43,9 @@ function altered(text: string, change: (data: any) => void): string {
 }
 
 describe("versioni del formato", () => {
-  test("l'app legge fino all'ultima versione, la 2", () => {
+  test("l'app legge fino all'ultima versione, la 3", () => {
     expect(FILE_VERSION).toBe(LATEST_VERSION);
-    expect(LATEST_VERSION).toBe(2);
+    expect(LATEST_VERSION).toBe(3);
   });
 
   test.each(Object.keys(examples))("l'esempio %s si apre, e risalvato resta di versione 1", (path) => {
@@ -70,14 +70,22 @@ describe("versioni del formato", () => {
   });
 
   test("la versione da scrivere è la più bassa che basta", () => {
-    expect(versionToWrite(false)).toBe(1);
-    expect(versionToWrite(true)).toBe(2);
+    expect(versionToWrite(false, false)).toBe(1);
+    expect(versionToWrite(true, false)).toBe(2);
+    expect(versionToWrite(false, true)).toBe(3);
+    expect(versionToWrite(true, true)).toBe(3);
   });
 
-  test("un file di versione 1 arriva alla 2 senza cambiare contenuto", () => {
+  test("un file di versione 1 arriva alla 3 senza cambiare contenuto", () => {
     const data = JSON.parse(lanFile);
 
-    expect(migrateToLatest(data)).toEqual({ ...data, version: 2 });
+    expect(migrateToLatest(data)).toEqual({ ...data, version: 3 });
+  });
+
+  test("un file di versione 2 arriva alla 3 senza cambiare contenuto", () => {
+    const data = { ...JSON.parse(lanFile), version: 2, annotations: [NOTE] };
+
+    expect(migrateToLatest(data)).toEqual({ ...data, version: 3 });
   });
 
   test("un file di versione 1 con annotazioni non viene dall'app, e si rifiuta", () => {
@@ -95,7 +103,7 @@ describe("campi sconosciuti", () => {
     ["in uno switch", lanFile, (d: any) => (d.network.devices[0].stp = true), 'SW1: campo sconosciuto: "stp".'],
     ["nella posizione", lanFile, (d: any) => (d.network.devices[1].position.z = 0), 'PC1, posizione: campo sconosciuto: "z".'],
     ["in una porta di PC", lanFile, (d: any) => (d.network.devices[1].ports[0].enabled = true), 'PC1 Fa0: campo sconosciuto: "enabled".'],
-    ["in una porta di switch", lanFile, (d: any) => (d.network.devices[0].ports[0].vlan = 1), 'SW1 Fa0/1: campo sconosciuto: "vlan".'],
+    ["in una porta di switch", lanFile, (d: any) => (d.network.devices[0].ports[0].mode = "trunk"), 'SW1 Fa0/1: campo sconosciuto: "mode".'],
     ["in un cavo", lanFile, (d: any) => (d.network.links[0].speed = 100), 'Collegamento l1: campo sconosciuto: "speed".'],
     ["in un capo di un cavo", lanFile, (d: any) => (d.network.links[0].b.vlan = 1), 'Collegamento l1, capo b: campo sconosciuto: "vlan".'],
     ["in un router", routerFile, (d: any) => (d.network.devices[2].ospf = {}), 'R1: campo sconosciuto: "ospf".'],

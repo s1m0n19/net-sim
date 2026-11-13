@@ -23,6 +23,7 @@ import { checkFields, checkUnique, isUsableMac, readFlag, readNumber, readText, 
 import { LATEST_VERSION, migrateToLatest } from "./migrations";
 import { readAnnotations, type Annotation } from "./annotations-file";
 import { readTables } from "./tables-file";
+import { fileUsesVlans, readPortVlan, readVlans } from "./vlans-file";
 
 export const FILE_FORMAT = "net-sim";
 /** La versione più recente del formato, che l'app sa leggere (vedi migrations.ts). */
@@ -37,12 +38,12 @@ const FIELDS = {
   // messaggio preciso, quale tabella spetta a quale dispositivo.
   device: {
     host: ["id", "kind", "name", "position", "ports", "powered", "ip", "mask", "gateway", "arpTable", "macTable"],
-    switch: ["id", "kind", "name", "position", "ports", "powered", "arpTable", "macTable"],
+    switch: ["id", "kind", "name", "position", "ports", "powered", "vlans", "arpTable", "macTable"],
     router: ["id", "kind", "name", "position", "ports", "powered", "routes", "arpTable", "macTable"],
   },
   port: {
     host: ["name", "mac"],
-    switch: ["name", "mac", "enabled"],
+    switch: ["name", "mac", "enabled", "vlan"],
     router: ["name", "mac", "ip", "mask", "enabled"],
   },
   position: ["x", "y"],
@@ -80,12 +81,14 @@ export interface LoadedFile {
  *   le annotazioni
  * @throws Error con un messaggio che dice che cosa non va, se: il testo non
  *   è JSON valido; non è un file di net-sim; è di una versione più recente
- *   dell'app o non valida; un oggetto ha un campo sconosciuto;
+ *   dell'app o non valida, o troppo vecchia per ciò che contiene
+ *   (annotazioni, VLAN); un oggetto ha un campo sconosciuto;
  *   a un dispositivo o a un collegamento manca un campo, o è del tipo
  *   sbagliato; un tipo di dispositivo è sconosciuto; identificativi,
  *   nomi di porta o indirizzi MAC sono duplicati; la configurazione IP di
  *   un host non è accettabile; un collegamento indica una porta che non
- *   esiste, o una porta ha più di un collegamento; una tabella non va
+ *   esiste, o una porta ha più di un collegamento; le VLAN di uno switch
+ *   non vanno (vedi readVlans in vlans-file.ts); una tabella non va
  *   (vedi readTables in tables-file.ts); un'annotazione non va (vedi
  *   readAnnotations in annotations-file.ts)
  */
@@ -158,6 +161,10 @@ function checkedVersion(data: any): any {
   if (version === 1 && data.annotations !== undefined) {
     throw new Error("Le annotazioni richiedono la versione 2 del formato.");
   }
+  // Allo stesso modo le VLAN esistono solo dalla versione 3.
+  if (version < 3 && fileUsesVlans(data)) {
+    throw new Error("Le VLAN richiedono la versione 3 del formato.");
+  }
   return migrateToLatest(data);
 }
 
@@ -197,8 +204,10 @@ function readDevice(d: any, where: string): { device: Device; position: Position
       const role = kind === "server" ? "server" : "pc";
       return { device: createHost({ id, name, role, ports, powered, ...config }), position };
     }
-    case "switch":
-      return { device: createSwitch({ id, name, ports: readSwitchPorts(d, ports, name), powered }), position };
+    case "switch": {
+      const vlans = readVlans(d, name);
+      return { device: createSwitch({ id, name, ports: readSwitchPorts(d, ports, name), powered, vlans }), position };
+    }
     case "router": {
       const interfaces = readInterfaces(d, ports, name);
       const routes = readRoutes(d, name);
@@ -229,15 +238,15 @@ function readPorts(d: any, deviceName: string, family: "host" | "switch" | "rout
   return ports;
 }
 
-// Le porte di uno switch: alle porte, già lette, si aggiunge lo stato. Una
-// porta senza il campo "enabled" è accesa, come nasce su uno switch: nel
-// file si scrive solo quando è spenta. La VLAN il file non la dice ancora
-// (arriva con L2-1B): ogni porta sta nella VLAN 1, come la fa nascere
-// `createSwitch`.
+// Le porte di uno switch: alle porte, già lette, si aggiungono lo stato e
+// la VLAN. Una porta senza il campo "enabled" è accesa, come nasce su uno
+// switch: nel file si scrive solo quando è spenta. Allo stesso modo una
+// porta senza il campo "vlan" sta nella VLAN 1 (vedi vlans-file.ts).
 function readSwitchPorts(d: any, ports: Port[], switchName: string): SwitchConfig["ports"] {
   return ports.map((port, index) => ({
     ...port,
     enabled: readFlag(d.ports[index], "enabled", `${switchName} ${port.name}`),
+    vlan: readPortVlan(d.ports[index], `${switchName} ${port.name}`),
   }));
 }
 

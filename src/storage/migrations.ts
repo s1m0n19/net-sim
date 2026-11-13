@@ -10,12 +10,13 @@
 //
 //   1  la rete, le posizioni, i guasti e, se chieste, le tabelle
 //   2  in più, le annotazioni del disegno (riquadri e note)
+//   3  in più, le VLAN degli switch (decisione D-143)
 //
 // Un file di una versione precedente viene portato all'ultima un passo
 // alla volta, prima dei controlli, con le funzioni qui sotto.
 
 /** La versione più recente del formato: quella che l'app sa leggere e scrivere. */
-export const LATEST_VERSION = 2;
+export const LATEST_VERSION = 3;
 
 // Per ogni versione, il passo che porta un file alla versione successiva.
 // Lavora sul JSON appena letto, prima di qualsiasi controllo.
@@ -23,6 +24,9 @@ const STEPS: Record<number, (data: any) => any> = {
   // Da 1 a 2: la versione 2 aggiunge soltanto le annotazioni, che un file
   // di versione 1 non ha. Il contenuto resta com'è.
   1: (data) => ({ ...data, version: 2 }),
+  // Da 2 a 3: la versione 3 aggiunge soltanto le VLAN, che un file di
+  // versione 2 non ha: tutte le sue porte stanno nella VLAN 1.
+  2: (data) => ({ ...data, version: 3 }),
 };
 
 /**
@@ -45,8 +49,12 @@ export function migrateToLatest(data: any): any {
  * descriverlo, perché anche le versioni precedenti dell'app lo possano aprire.
  *
  * @param hasAnnotations - se il disegno ha almeno un'annotazione
- * @returns 2 se ci sono annotazioni, altrimenti 1
+ * @param hasVlans - se almeno uno switch ha una VLAN oltre la 1, o una
+ *   porta fuori dalla VLAN 1 (vedi `usesVlans` in vlans-file.ts)
+ * @returns 3 se ci sono VLAN, altrimenti 2 se ci sono annotazioni,
+ *   altrimenti 1
  */
-export function versionToWrite(hasAnnotations: boolean): number {
+export function versionToWrite(hasAnnotations: boolean, hasVlans: boolean): number {
+  if (hasVlans) return 3;
   return hasAnnotations ? 2 : 1;
 }

@@ -81,8 +81,8 @@ Uno switch si scrive così, come in `examples/lan-switch.netsim.json`:
 | Campo | Contenuto |
 | --- | --- |
 | `format` | Sempre `"net-sim"`. Serve a riconoscere il file e a rifiutare un JSON qualsiasi |
-| `version` | Numero intero della versione del formato: 1, oppure 2 se il file ha annotazioni (vedi «Versioni») |
-| `annotations` | Solo nella versione 2: riquadri e note del disegno (vedi «Annotazioni») |
+| `version` | Numero intero della versione del formato: 1; 2 se il file ha annotazioni; 3 se ha VLAN (vedi «Versioni») |
+| `annotations` | Dalla versione 2: riquadri e note del disegno (vedi «Annotazioni») |
 | `network.devices` | I dispositivi, con la loro configurazione |
 | `network.links` | I collegamenti, ciascuno tra due porte |
 
@@ -96,12 +96,12 @@ Campi di ogni dispositivo:
 | `position` | Coordinate `x` e `y` sul disegno | tutti |
 | `ports` | Le porte, ciascuna con `name` e `mac` | tutti |
 | `ports[].enabled` | `false` se la porta è spenta. Facoltativo: se manca, è accesa, e nel file si scrive solo quando è spenta. Per le interfacce di un router la regola è diversa, vedi sotto | switch |
+| `ports[].vlan` | Dalla versione 3: la VLAN della porta. Facoltativo: se manca, la porta sta nella VLAN 1 (vedi «VLAN») | switch |
+| `vlans` | Dalla versione 3: le VLAN dello switch oltre la 1. Facoltativo (vedi «VLAN») | switch |
 | `ip`, `mask`, `gateway` | La configurazione IPv4. Ciascuno può essere `null` | host e server |
 | `powered` | `false` se il dispositivo è spento. Facoltativo: se manca, è acceso | tutti |
 | `arpTable` | La tabella ARP, solo se salvata con le tabelle (vedi «Tabelle») | host, server e router |
 | `macTable` | La tabella MAC, solo se salvata con le tabelle | switch |
-
-Le VLAN degli switch (decisione D-142) esistono per ora solo nel motore: il formato non le contiene ancora, e un file aperto mette tutte le porte nella VLAN 1. Il formato delle VLAN, con la versione 3, è previsto in L2-1B. Finché le VLAN non si possono configurare dall'app, salvare non perde nulla.
 
 Campi di ogni collegamento:
 
@@ -183,6 +183,46 @@ Le annotazioni del disegno (requisito ED-9, decisione D-103) sono di due tipi: *
 
 All'apertura si rifiutano un tipo o un colore sconosciuto, un campo mancante, sconosciuto o del tipo sbagliato, una grandezza non positiva e un identificativo ripetuto (per esempio «Annotazione a1: colore sconosciuto: fucsia.»). Un file di versione 1 che contiene annotazioni non viene dall'app, e si rifiuta: «Le annotazioni richiedono la versione 2 del formato.»
 
+## VLAN
+
+Uno switch può avere VLAN sulle porte access (decisione D-142); nel file dalla versione 3 (decisione D-143). Lettura e scrittura stanno in `src/storage/vlans-file.ts`. Si scrive solo ciò che non si ricava da sé:
+
+- il campo `vlans` dello switch elenca le VLAN oltre la 1, in ordine di numero, ciascuna con `id` (un intero da 2 a 1001) e `name` (da 1 a 32 caratteri, senza spazi). La VLAN 1 non si scrive mai: c'è sempre e si chiama sempre `default`. Uno switch con la sola VLAN 1 non ha il campo;
+- il campo `vlan` di una porta dice la sua VLAN, quando non è la 1.
+
+```json
+{
+  "id": "s1",
+  "kind": "switch",
+  "name": "SW1",
+  "position": { "x": 350, "y": 150 },
+  "ports": [
+    { "name": "Fa0/1", "mac": "02:00:00:00:01:01", "vlan": 10 },
+    { "name": "Fa0/2", "mac": "02:00:00:00:01:02", "vlan": 20 },
+    { "name": "Fa0/3", "mac": "02:00:00:00:01:03" }
+  ],
+  "vlans": [
+    { "id": 10, "name": "STUDENTI" },
+    { "id": 20, "name": "DOCENTI" }
+  ]
+}
+```
+
+Una porta può indicare una VLAN che non è nel registro: è una porta rimasta su una VLAN eliminata, accesa ma inattiva. È una configurazione legittima, e si salva e si riapre così. Una VLAN può stare nel registro senza porte.
+
+| Controllo | Esempio di messaggio |
+| --- | --- |
+| `vlans` è un elenco di oggetti con `id` e `name`, e nient'altro | «SW1, VLAN n. 1: campo sconosciuto: "state".» |
+| Il numero è un intero da 1 a 1001 | «SW1, VLAN n. 1: Numero di VLAN non valido: 1002. Si usano i numeri da 1 a 1001.» |
+| La VLAN 1 non si ridefinisce | «SW1, VLAN n. 1: la VLAN 1 c'è sempre e non si scrive nel file.» |
+| Nessuna VLAN è ripetuta | «SW1: VLAN ripetuta: 10.» |
+| Il nome è scritto correttamente | «SW1, VLAN n. 1: Il nome della VLAN non può contenere spazi.» |
+| La VLAN di una porta è un intero da 1 a 1001 | «SW1 Fa0/1: il campo "vlan" manca o non è un numero.» |
+| Le VLAN stanno solo negli switch | «PC1 Fa0: campo sconosciuto: "vlan".» |
+| Un file di versione 1 o 2 non ha VLAN | «Le VLAN richiedono la versione 3 del formato.» |
+
+Il file non porta il tag 802.1Q né le porte trunk, che non esistono ancora. Dall'app le VLAN non si configurano ancora: la CLI e il pannello arriveranno con L2-1C e L2-1D. Intanto un file con le VLAN, preparato a mano, si apre, funziona e si risalva com'è.
+
 ## Tabelle
 
 Un file salvato con l'interruttore **Tabelle** acceso (requisito FILE-5, decisione D-100) porta con sé la tabella che ogni dispositivo aveva in quel momento: `arpTable` per host, server e router, `macTable` per gli switch. Il campo c'è per ogni dispositivo, anche quando la tabella è vuota. Lettura e scrittura stanno in `src/storage/tables-file.ts`.
@@ -200,6 +240,8 @@ Un file salvato con l'interruttore **Tabelle** acceso (requisito FILE-5, decisio
 ]
 ```
 
+Le righe della tabella MAC non scrivono la VLAN: è quella della loro porta, perché con le porte access uno switch impara un MAC solo nella VLAN della porta da cui l'ha visto (D-143). Aprendo il file, ogni riga va nella tabella della VLAN della sua porta; le righe dei file di prima delle VLAN finiscono quindi nella VLAN 1, come prima. Lo stesso MAC può comparire in due righe solo su porte di VLAN diverse.
+
 Aprendo il file, le tabelle non entrano nei dispositivi letti: il lettore le restituisce a parte (`LoadedFile.tables`, null se il file non ne ha), e il simulatore le usa come **tabelle di partenza**. Le applica subito, e ci torna con Ricomincia. Valgono le regole di sempre: un dispositivo spento non sa nulla, e uno switch dimentica le righe di una porta senza segnale.
 
 All'apertura si controlla solo che le righe siano scritte bene. Una riga sbagliata per quella rete (un indirizzo di un'altra sottorete, il MAC di un altro PC) è ammessa: è proprio ciò che serve a un esercizio.
@@ -211,7 +253,8 @@ All'apertura si controlla solo che le righe siano scritte bene. Una riga sbaglia
 | Ogni riga ha i suoi due campi | «PC1, tabella ARP, riga n. 1: il campo "mac" manca o non è un testo.» |
 | Indirizzi IP e MAC sono scritti correttamente | «PC1, tabella ARP, riga n. 1: indirizzo IP non valido: 192.168.1.300.» |
 | Una riga di uno switch indica una sua porta | «SW1, tabella MAC, riga n. 1: indica una porta inesistente: Fa0/9.» |
-| Nessun indirizzo è ripetuto nella stessa tabella | «PC1: indirizzo ripetuto nella tabella ARP: 192.168.1.11.» |
+| La porta di una riga è attiva: la sua VLAN esiste | «SW1, tabella MAC, riga n. 1: la porta Fa0/3 è inattiva, perché la VLAN 20 non esiste.» |
+| Nessun indirizzo è ripetuto nella stessa tabella; per uno switch, nella stessa VLAN | «PC1: indirizzo ripetuto nella tabella ARP: 192.168.1.11.», «SW1: MAC ripetuto nella tabella MAC della VLAN 10: 02:00:00:00:00:01.» |
 
 Sono campi facoltativi: i file scritti prima restano validi, e il numero di versione non cambia.
 
@@ -277,19 +320,21 @@ Il formato ha un numero di versione (requisito FILE-2, decisione D-108). Le vers
 | --- | --- |
 | 1 | La rete, le posizioni, i guasti e, se chieste, le tabelle |
 | 2 | Le annotazioni del disegno |
+| 3 | Le VLAN degli switch: il registro e la VLAN delle porte |
 
 Tre regole tengono al sicuro i file passati da una versione dell'app all'altra:
 
 - **Il numero sale quando una versione precedente perderebbe dati.** Ogni versione dell'app, dalla prima, rifiuta un numero di versione che non conosce: un file più recente non può essere aperto a metà e poi risalvato senza ciò che non capisce. Per questo, quando il formato acquista qualcosa che una versione precedente scarterebbe, il numero sale.
-- **L'app scrive la versione più bassa che basta.** Un file senza annotazioni resta di versione 1, e lo aprono anche le versioni precedenti dell'app; solo un file con annotazioni è di versione 2.
+- **L'app scrive la versione più bassa che basta.** Un file senza annotazioni e senza VLAN resta di versione 1, e lo aprono anche le versioni precedenti dell'app; un file con annotazioni è di versione 2; un file con almeno una VLAN oltre la 1, o una porta fuori dalla VLAN 1 (anche su una VLAN eliminata), è di versione 3. Tolte tutte le VLAN, il file torna alla versione più bassa.
 - **I campi sconosciuti fanno rifiutare il file.** Se un giorno la prima regola venisse dimenticata, il file verrebbe rifiutato invece di perdere in silenzio il campo nuovo. Lo stesso vale per un file modificato a mano con un campo in più.
 
-Aprendo un file di una versione precedente, l'app lo porta all'ultima un passo alla volta (`migrateToLatest`), prima dei controlli. Il passo da 1 a 2 non cambia il contenuto. Un file più recente dell'app viene rifiutato con l'invito a ricaricare la pagina.
+Aprendo un file di una versione precedente, l'app lo porta all'ultima un passo alla volta (`migrateToLatest`), prima dei controlli. Il passo da 1 a 2 e quello da 2 a 3 non cambiano il contenuto: un file di prima delle VLAN ha tutte le porte nella VLAN 1. Un file di versione 1 con annotazioni, o di versione 1 o 2 con campi delle VLAN, non viene dall'app, e si rifiuta. Un file più recente dell'app viene rifiutato con l'invito a ricaricare la pagina.
 
 I test lo verificano anche con file salvati dalla versione dell'app pubblicata il 18 ottobre 2026, generati con il suo stesso codice (`tests/storage/fixtures/stabile/`): si aprono, e risalvati restano identici, riga per riga.
 
 ## Previsto
 
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
+- **Porte trunk** (L2-2): modalità della porta, VLAN consentite e nativa; allora anche le righe della tabella MAC dovranno dire la loro VLAN, perché una porta trunk ne porta più d'una.
 - **Vista**: inquadratura ed etichette visibili al momento del salvataggio.
 - **Esercizi e verifiche**: una sezione con consegna, obiettivi e parte protetta da password (tappa T1), e una con punteggio e registro delle attività (tappa T4).
