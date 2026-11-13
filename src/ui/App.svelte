@@ -40,7 +40,12 @@
     const has = session.selection !== null;
     const presenting = preferences.presenting;
     untrack(() => {
-      if (presenting) preferences.sideOpen = followContent(preferences.sideOpen, selectedBefore, has);
+      if (presenting) {
+        const next = followContent(preferences.sideOpen, selectedBefore, has);
+        // Chiuso per far posto alla fascia aperta (D-140): non si riapre da solo.
+        const yielded = preferences.sideYieldedToStrip && preferences.stripOpen && next && !preferences.sideOpen;
+        preferences.sideOpen = yielded ? false : next;
+      }
       selectedBefore = has;
     });
   });

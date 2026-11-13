@@ -17,6 +17,7 @@
   import { viewGestures } from "./view-gestures";
   import DeviceNode from "./DeviceNode.svelte";
   import { nameSides, type NameSide } from "./name-side";
+  import { networkCovered } from "../layout/presentation-space";
   import LinkLine from "./LinkLine.svelte";
   import PinnedTable, { pinnedSize } from "./PinnedTable.svelte";
   import PortMenu from "./PortMenu.svelte";
@@ -113,6 +114,52 @@
     // In presentazione l'inquadratura non ha il limite di scala dell'editor.
     if (!first && preferences.presenting) untrack(() => session.fitView(pinnedBoxes, scale, false));
   });
+
+  // In presentazione, quando si apre la fascia in basso, la rete può finire
+  // sotto la barra della simulazione (C-1, D-140). Una volta sola, nel
+  // momento in cui la fascia si apre: se un dispositivo è coperto o fuori
+  // dal disegno, si chiude il pannello laterale, che stringe il disegno e
+  // manda a capo la barra; se non basta, si riadatta l'inquadratura, come
+  // entrando in presentazione. Nient'altro la cambia: né la simulazione,
+  // né gli eventi, né la selezione, né chiudere la fascia.
+  let stripWasOpen = preferences.stripOpen;
+  $effect(() => {
+    const open = preferences.stripOpen;
+    const presenting = preferences.presenting;
+    untrack(() => {
+      const opened = open && !stripWasOpen;
+      stripWasOpen = open;
+      if (!open) preferences.sideYieldedToStrip = false;
+      if (opened && presenting) void makeRoomForStrip();
+    });
+  });
+
+  // Aspetta che la pagina si sia disposta di nuovo: la fascia, il pannello
+  // e il disegno prendono le loro misure nel fotogramma dopo.
+  const afterLayout = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+  function covered(): boolean {
+    if (canvas === undefined) return false;
+    const rect = (element: Element) => {
+      const box = element.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width, height: box.height };
+    };
+    const devices = [...canvas.querySelectorAll("g.device rect.box")].map(rect);
+    const commands = [...canvas.querySelectorAll(":scope > .zoom, :scope > .bar")].map(rect);
+    return networkCovered(devices, commands, rect(canvas));
+  }
+
+  async function makeRoomForStrip() {
+    await afterLayout();
+    if (!preferences.presenting || !preferences.stripOpen || !covered()) return;
+    if (preferences.sideOpen) {
+      preferences.sideOpen = false;
+      preferences.sideYieldedToStrip = true;
+      await afterLayout();
+      if (!preferences.presenting || !preferences.stripOpen || !covered()) return;
+    }
+    session.fitView(pinnedBoxes, preferences.scale, false);
+  }
 
   // L'inquadratura. Se l'utente l'ha scelta, è quella. Altrimenti è
   // automatica: il foglio di base, allargato quanto serve per far stare

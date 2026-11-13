@@ -19,34 +19,8 @@ import {
   presentationZoom,
   projectCommand,
   textBox,
+  treeNetwork,
 } from "./helpers";
-
-// La rete ad albero delle lezioni: un router in cima, due switch, tre PC
-// sotto ciascuno, con il PC centrale proprio sotto lo switch.
-function treeNetwork(): string {
-  let mac = 0;
-  const nextMac = () => `02:00:00:00:00:${(++mac).toString(16).padStart(2, "0")}`;
-  const host = (id: string, name: string, x: number, ip: string, gateway: string) => ({
-    id, kind: "host", name, position: { x, y: 420 }, ports: [{ name: "Fa0", mac: nextMac() }], ip, mask: "255.255.255.0", gateway,
-  });
-  const sw = (id: string, name: string, x: number) => ({
-    id, kind: "switch", name, position: { x, y: 260 }, ports: [1, 2, 3, 4].map((n) => ({ name: `Fa0/${n}`, mac: nextMac() })),
-  });
-  const devices = [
-    { id: "r1", kind: "router", name: "R1", position: { x: 450, y: 120 }, routes: [],
-      ports: [{ name: "Gi0/0", mac: nextMac(), ip: "192.168.1.1", mask: "255.255.255.0", enabled: true }, { name: "Gi0/1", mac: nextMac(), ip: "192.168.2.1", mask: "255.255.255.0", enabled: true }] },
-    sw("s1", "SW1", 250), sw("s2", "SW2", 650),
-    host("p1", "PC1", 130, "192.168.1.10", "192.168.1.1"), host("p2", "PC2", 250, "192.168.1.11", "192.168.1.1"), host("p3", "PC3", 370, "192.168.1.12", "192.168.1.1"),
-    host("p4", "PC4", 530, "192.168.2.10", "192.168.2.1"), host("p5", "PC5", 650, "192.168.2.11", "192.168.2.1"), host("p6", "PC6", 770, "192.168.2.12", "192.168.2.1"),
-  ];
-  const link = (id: string, a: string, pa: string, b: string, pb: string) => ({ id, a: { deviceId: a, portName: pa }, b: { deviceId: b, portName: pb } });
-  const links = [
-    link("l1", "s1", "Fa0/1", "r1", "Gi0/0"), link("l2", "s2", "Fa0/1", "r1", "Gi0/1"),
-    link("l3", "p1", "Fa0", "s1", "Fa0/2"), link("l4", "p2", "Fa0", "s1", "Fa0/3"), link("l5", "p3", "Fa0", "s1", "Fa0/4"),
-    link("l6", "p4", "Fa0", "s2", "Fa0/2"), link("l7", "p5", "Fa0", "s2", "Fa0/3"), link("l8", "p6", "Fa0", "s2", "Fa0/4"),
-  ];
-  return JSON.stringify({ format: "net-sim", version: 1, network: { devices, links } });
-}
 
 // Il lato del nome di ogni dispositivo, letto dal disegno.
 function sides(page: Page): Promise<Record<string, string>> {

@@ -24,6 +24,13 @@ class Preferences {
   stripHeight = $state(STRIP_HEIGHT.initial);
 
   // Modalità presentazione: l'app proiettata in aula.
+  /**
+   * In presentazione, il pannello laterale è stato chiuso per far posto
+   * alla fascia in basso (D-140): finché la fascia resta aperta non si
+   * riapre da solo selezionando qualcosa. Non si salva.
+   */
+  sideYieldedToStrip = $state(false);
+
   presenting = $state(false);
   // Di quanto si ingrandisce tutto in presentazione; si regola dalla barra.
   magnification = $state(1.4);
