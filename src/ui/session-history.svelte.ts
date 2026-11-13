@@ -46,6 +46,31 @@ export class SessionHistory extends SessionDemo {
     return problem;
   }
 
+  // Come `attempt`, ma per più azioni che sono una modifica sola: si
+  // eseguono nell'ordine e si annullano con un passo. Se una viene
+  // rifiutata, la rete torna com'era prima della prima, così non resta
+  // mai fatta a metà; restituisce il motivo del rifiuto, o null.
+  protected attemptTogether(actions: Action[]): string | null {
+    if (actions.length === 1) return this.attempt(actions[0]);
+    if (this.simulator === null || actions.length === 0) return null;
+    const before = this.capture();
+    let done = 0;
+    try {
+      for (const action of actions) {
+        this.simulator.dispatch(action);
+        done += 1;
+      }
+      this.remember(before);
+      this.notice = null;
+      this.refresh();
+      return null;
+    } catch (thrown) {
+      if (done > 0) this.simulator.dispatch(restoreConfiguration(before.config));
+      this.refresh();
+      return messageOf(thrown);
+    }
+  }
+
   /**
    * Annulla l'ultima modifica alla rete: un dispositivo o un cavo aggiunto,
    * tolto o spostato, un nome o un indirizzo cambiato. Guasti e traffico

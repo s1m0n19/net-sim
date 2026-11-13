@@ -179,7 +179,7 @@ I test riguardano il motore, la lettura dei file e le parti dell'interfaccia che
 | `pannello.spec.ts` | Il pannello laterale: PC e server (identità e IPv4, Invio, uscita dal campo, Esc), valore rifiutato e cambio di dispositivo, router a 4 e 8 interfacce, tabelle ARP e MAC e pulsanti per appuntarle, rotte collegate, statiche e non usate, strati Ethernet, ARP, IPv4 e ICMP, passaggio da dispositivo a cavo e pacchetto, cinque grandezze di finestra e presentazione (D-114) |
 | `responsive.spec.ts` | La schermata a 1920×1080, 1366×768, 1280×800, 1024×768 e 900×700: niente scorrimento di lato, comandi interi nella finestra, pannello, colonna, molti terminali, fascia alzata, salvare; la presentazione a ogni ingrandimento; il percorso di uno studente a 1366×768 e 1024×768 (D-112) |
 | `router.spec.ts` | Due LAN e un router costruiti con il mouse; le due metà della lezione del criterio di accettazione del rilascio 2: gateway, MAC e TTL attraverso un router, poi routing statico con tre reti e due router |
-| `cli.spec.ts` | La lezione del criterio di accettazione della CLI: due router configurati da terminale, `show`, `ping` e `traceroute`, uno switch con una porta spenta |
+| `cli.spec.ts` | La lezione del criterio di accettazione della CLI: due router configurati da terminale, `show`, `ping` e `traceroute`, uno switch con una porta spenta, e le VLAN da CLI (modalità `config-vlan`, Tab, cronologia dei comandi, `show vlan brief`, ping dentro e fuori dalla VLAN) |
 
 Le finestre di Chrome per scegliere dove aprire e salvare non si possono comandare da un test: lì l'app viene provata con il ripiego che usa negli altri browser, cioè campo di tipo file e scaricamento. L'aspetto (colori, dimensioni, leggibilità) resta da guardare a occhio.
 

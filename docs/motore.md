@@ -696,7 +696,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 Non ancora nel codice:
 
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
-- **Le VLAN nella CLI e nel pannello** (L2-1C, D): oggi si creano dai test o da un file scritto a mano (formato 3, D-143), non dall'app.
+- **Le VLAN nel pannello** (L2-1D): oggi si configurano dalla CLI degli switch (D-144) o da un file scritto a mano (formato 3, D-143).
 - **Spanning tree** (DEV-11) e gli altri protocolli: trunk 802.1Q e routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo

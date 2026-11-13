@@ -32,9 +32,12 @@ export interface Vlan {
 /** La VLAN di ogni porta, se non si dice altro, e l'unica che non si elimina. */
 export const DEFAULT_VLAN = 1;
 
-// Su uno switch Cisco i numeri da 1002 a 1005 sono riservati e quelli da
-// 1006 in su sono l'intervallo esteso: qui si usano solo quelli normali.
-const MAX_VLAN_ID = 1001;
+/**
+ * Il numero più alto di una VLAN. Su uno switch Cisco i numeri da 1002 a
+ * 1005 sono riservati e quelli da 1006 in su sono l'intervallo esteso: qui
+ * si usano solo quelli normali.
+ */
+export const MAX_VLAN_ID = 1001;
 const MAX_VLAN_NAME_LENGTH = 32;
 
 /**

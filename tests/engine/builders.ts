@@ -237,29 +237,32 @@ export const PC5_IP = "192.168.1.14";
 //   VLAN 20 (DOCENTI):  PC3 su Fa0/3, PC4 su Fa0/4
 //
 // La porta Fa0/6 resta scollegata, nella VLAN 1.
-export function buildVlanLan(): {
-  sim: Simulator;
-  sw: Switch;
-  pc1: Host;
-  pc2: Host;
-  pc3: Host;
-  pc4: Host;
-  pc5: Host;
-} {
+export function buildVlanLan(): FiveHostLan {
+  return fiveHostLan([10, 10, 20, 20, 10, 1], [
+    { id: 10, name: "STUDENTI" },
+    { id: 20, name: "DOCENTI" },
+  ]);
+}
+
+// La stessa rete di buildVlanLan, ma senza VLAN: tutte le porte nella
+// VLAN 1, come uno switch appena acceso. Serve a configurare le VLAN da zero.
+export function buildFlatLan(): FiveHostLan {
+  return fiveHostLan([1, 1, 1, 1, 1, 1], []);
+}
+
+type FiveHostLan = { sim: Simulator; sw: Switch; pc1: Host; pc2: Host; pc3: Host; pc4: Host; pc5: Host };
+
+function fiveHostLan(vlanOfPort: number[], vlans: { id: number; name: string }[]): FiveHostLan {
   const pc1 = host("d1", "PC1", PC1_MAC, PC1_IP);
   const pc2 = host("d2", "PC2", PC2_MAC, PC2_IP);
   const pc3 = host("d3", "PC3", PC3_MAC, PC3_IP);
   const pc4 = host("d4", "PC4", PC4_MAC, PC4_IP);
   const pc5 = host("d5", "PC5", PC5_MAC, PC5_IP);
-  const vlanOfPort = [10, 10, 20, 20, 10, 1];
   const sw = createSwitch({
     id: "s1",
     name: "SW1",
     ports: vlanOfPort.map((vlan, index) => ({ name: `Fa0/${index + 1}`, mac: `02:00:00:00:01:0${index + 1}`, vlan })),
-    vlans: [
-      { id: 10, name: "STUDENTI" },
-      { id: 20, name: "DOCENTI" },
-    ],
+    vlans,
   });
   const network: Network = {
     devices: [sw, pc1, pc2, pc3, pc4, pc5],

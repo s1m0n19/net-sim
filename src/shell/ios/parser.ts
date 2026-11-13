@@ -6,6 +6,7 @@
 //   - una riga giusta, ma che non è finita      % Incomplete command.
 
 import { isValidIp } from "../../engine/model/ip-config";
+import { checkVlanId } from "../../engine/model/vlans";
 import type { Command, CommandNode, DeviceInfo } from "./grammar";
 import { matchInterface } from "./interface-names";
 
@@ -113,6 +114,15 @@ export function walk(roots: CommandNode[], words: Word[], device: DeviceInfo): W
       if (number !== undefined) i++;
       node = interfaceNode;
       values.push(match.name);
+      next = visible(node.next, device);
+      continue;
+    }
+    // Il numero di una VLAN: cifre soltanto, nell'intervallo che il motore
+    // accetta. Fuori intervallo il segno va sotto il numero, come su IOS.
+    const vlanNode = next.find((n) => n.token.kind === "vlan-id");
+    if (vlanNode !== undefined && /^\d+$/.test(word.text) && checkVlanId(Number(word.text)) === null) {
+      node = vlanNode;
+      values.push(String(Number(word.text)));
       next = visible(node.next, device);
       continue;
     }

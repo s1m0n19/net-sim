@@ -37,6 +37,10 @@ function showCommands(withConfiguration: boolean): CommandNode {
         only: "switch",
         next: [keyword("address-table", "MAC address table", { command: show("mac-address-table") })],
       }),
+      keyword("vlan", "VLAN status", {
+        only: "switch",
+        next: [keyword("brief", "One line per VLAN", { command: show("vlan-brief") })],
+      }),
     ],
   });
 }
@@ -121,11 +125,20 @@ const CONFIG: CommandNode[] = [
     only: "router",
     next: [keyword("route", "Add a static route", { next: routeArguments("ip-route") })],
   }),
+  // `vlan 10`: crea la VLAN, se non c'è, e porta a configurarla.
+  keyword("vlan", "Create a VLAN and configure it", {
+    only: "switch",
+    next: [argument("vlan-id", "VLAN number", { command: ([id]) => ({ kind: "vlan", id: Number(id) }) })],
+  }),
   keyword("no", "Remove a setting", {
     next: [
       keyword("ip", "IP configuration", {
         only: "router",
         next: [keyword("route", "Remove a static route", { next: routeArguments("no-ip-route") })],
+      }),
+      keyword("vlan", "Delete a VLAN", {
+        only: "switch",
+        next: [argument("vlan-id", "VLAN number", { command: ([id]) => ({ kind: "no-vlan", id: Number(id) }) })],
       }),
     ],
   }),
@@ -164,15 +177,61 @@ const INTERFACE_ONLY: CommandNode[] = [
         ],
       }),
       keyword("shutdown", "Turn the interface on", { command: () => ({ kind: "no-shutdown" }) }),
+      keyword("switchport", "Set the VLAN of a switch port", {
+        only: "switch",
+        next: [
+          keyword("access", "Settings of an access port", {
+            next: [
+              keyword("vlan", "Put the port back in VLAN 1", {
+                command: () => ({ kind: "no-switchport-access-vlan" }),
+              }),
+            ],
+          }),
+        ],
+      }),
     ],
   }),
   keyword("shutdown", "Turn the interface off", { command: () => ({ kind: "shutdown" }) }),
+  // Le porte di uno switch sono tutte access: `switchport mode access` si
+  // accetta, ma non cambia nulla. Le porte trunk non ci sono ancora.
+  keyword("switchport", "Set the VLAN of a switch port", {
+    only: "switch",
+    next: [
+      keyword("mode", "Set the mode of the port", {
+        next: [keyword("access", "Access port, in a single VLAN", { command: () => ({ kind: "switchport-mode-access" }) })],
+      }),
+      keyword("access", "Settings of an access port", {
+        next: [
+          keyword("vlan", "Set the VLAN of the port", {
+            next: [
+              argument("vlan-id", "VLAN number", {
+                command: ([id]) => ({ kind: "switchport-access-vlan", id: Number(id) }),
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  }),
 ];
 
 // Dentro un'interfaccia valgono anche i comandi della configurazione
 // globale: si può passare a un'altra interfaccia, o aggiungere una rotta,
 // senza prima uscire.
 const CONFIG_IF: CommandNode[] = merge(INTERFACE_ONLY, CONFIG);
+
+// I comandi che valgono solo dentro una VLAN (`vlan 10`). Come dentro
+// un'interfaccia, valgono anche quelli della configurazione globale.
+const VLAN_ONLY: CommandNode[] = [
+  keyword("name", "Set the name of the VLAN", {
+    next: [argument("word", "Name of the VLAN, up to 32 characters", { command: ([name]) => ({ kind: "vlan-name", name }) })],
+  }),
+  keyword("no", "Remove a setting", {
+    next: [keyword("name", "Give the VLAN back its default name", { command: () => ({ kind: "no-vlan-name" }) })],
+  }),
+];
+
+const CONFIG_VLAN: CommandNode[] = merge(VLAN_ONLY, CONFIG);
 
 /**
  * Dice quali comandi si possono scrivere in una modalità.
@@ -191,6 +250,8 @@ export function commandsFor(mode: Mode): CommandNode[] {
       return CONFIG;
     case "config-if":
       return CONFIG_IF;
+    case "config-vlan":
+      return CONFIG_VLAN;
   }
 }
 

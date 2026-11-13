@@ -7,8 +7,9 @@
 //   R1#              modalità privilegiata (`enable`): si guarda tutto
 //   R1(config)#      configurazione globale (`configure terminal`)
 //   R1(config-if)#   configurazione di un'interfaccia (`interface ...`)
+//   SW1(config-vlan)# configurazione di una VLAN di uno switch (`vlan 10`)
 
-export type Mode = "user" | "privileged" | "config" | "config-if";
+export type Mode = "user" | "privileged" | "config" | "config-if" | "config-vlan";
 
 // A che punto è una sessione della CLI.
 export interface CliState {
@@ -16,6 +17,8 @@ export interface CliState {
   // L'interfaccia che si sta configurando, con il nome breve del modello
   // ("Gi0/0"); null fuori dalla modalità config-if.
   interfaceName: string | null;
+  // La VLAN che si sta configurando; c'è solo nella modalità config-vlan.
+  vlanId?: number;
 }
 
 // Una sessione appena aperta: modalità utente, senza password.
@@ -38,5 +41,7 @@ export function promptOf(deviceName: string, mode: Mode): string {
       return `${deviceName}(config)#`;
     case "config-if":
       return `${deviceName}(config-if)#`;
+    case "config-vlan":
+      return `${deviceName}(config-vlan)#`;
   }
 }

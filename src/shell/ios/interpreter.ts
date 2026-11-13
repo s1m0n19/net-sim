@@ -70,12 +70,15 @@ function run(state: CliState, command: Command): Outcome {
       return moveTo("config", ["Enter configuration commands, one per line.  End with CNTL/Z."]);
     case "interface":
       return { state: { mode: "config-if", interfaceName: command.name }, lines: [], command: null };
+    case "vlan":
+      // Si entra nella VLAN; crearla, se non c'è, tocca alla rete.
+      return { state: { mode: "config-vlan", interfaceName: null, vlanId: command.id }, lines: [], command };
     case "end":
       return moveTo("privileged");
     case "exit":
       // Si torna indietro di un passo; dalle prime due modalità si esce
       // dalla sessione, che riparte dalla modalità utente.
-      if (state.mode === "config-if") return moveTo("config");
+      if (state.mode === "config-if" || state.mode === "config-vlan") return moveTo("config");
       if (state.mode === "config") return moveTo("privileged");
       return moveTo("user");
     case "save":
@@ -85,9 +88,12 @@ function run(state: CliState, command: Command): Outcome {
     case "hostname":
     case "ip-route":
     case "no-ip-route":
+    case "no-vlan": {
       // Un comando della configurazione globale scritto da dentro
-      // un'interfaccia riporta alla configurazione globale.
-      return { state: state.mode === "config-if" ? { mode: "config", interfaceName: null } : state, lines: [], command };
+      // un'interfaccia o una VLAN riporta alla configurazione globale.
+      const inside = state.mode === "config-if" || state.mode === "config-vlan";
+      return { state: inside ? { mode: "config", interfaceName: null } : state, lines: [], command };
+    }
     default:
       return { state, lines: [], command };
   }

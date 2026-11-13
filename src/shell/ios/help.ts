@@ -6,6 +6,7 @@
 //
 // Tab completa la parola che si sta scrivendo, se ce n'è una sola possibile.
 
+import { MAX_VLAN_ID } from "../../engine/model/vlans";
 import { commandsFor } from "./commands";
 import type { CommandNode, DeviceInfo } from "./grammar";
 import { interfaceTypesOf } from "./interface-names";
@@ -100,6 +101,8 @@ function describe(nodes: CommandNode[], device: DeviceInfo): [string, string][] 
         return [["A.B.C.D", node.help]];
       case "word":
         return [["WORD", node.help]];
+      case "vlan-id":
+        return [[`<1-${MAX_VLAN_ID}>`, node.help]];
       case "interface":
         // Al posto di un'interfaccia si elencano i tipi che il dispositivo ha.
         return interfaceTypesOf(device.interfaces).map((type) => [type.full, type.help]);

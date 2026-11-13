@@ -50,13 +50,17 @@ export class SessionCli extends SessionRouter {
     if (line.trim() !== "") terminal.history.push(line.trim());
     const print = (lines: string[]) => terminal.entries.push({ kind: "text", prompt, command: line, lines });
 
+    const before = terminal.cli;
     const outcome = interpret(describeDevice(device), terminal.cli, line);
     terminal.cli = outcome.state;
     if (outcome.command === null) {
       print(outcome.lines);
       return;
     }
-    this.runCommand(terminal, device, outcome.command, prompt, line, print);
+    const refused = this.runCommand(terminal, device, outcome.command, prompt, line, print);
+    // `vlan 10` rifiutato (a simulazione sospesa) non porta dentro una VLAN
+    // che non c'è.
+    if (refused && outcome.command.kind === "vlan") terminal.cli = before;
   }
 
   /**
@@ -99,7 +103,7 @@ export class SessionCli extends SessionRouter {
     const terminal = this.terminals.find((t) => t.deviceId === deviceId);
     const device = this.cliDevice(deviceId);
     if (terminal?.cli == null || device === null || this.isOff(deviceId)) return;
-    if (terminal.cli.mode !== "config" && terminal.cli.mode !== "config-if") return;
+    if (terminal.cli.mode !== "config" && terminal.cli.mode !== "config-if" && terminal.cli.mode !== "config-vlan") return;
     const prompt = promptOf(device.name, terminal.cli.mode);
     terminal.entries.push({ kind: "text", prompt, command: "^Z", lines: [] });
     terminal.cli = { mode: "privileged", interfaceName: null };
@@ -136,6 +140,7 @@ export class SessionCli extends SessionRouter {
   }
 
   // Esegue un comando che la CLI non ha potuto eseguire da sola.
+  // Restituisce true se il motore ha rifiutato la modifica.
   private runCommand(
     terminal: Terminal,
     device: Router | Switch,
@@ -143,11 +148,11 @@ export class SessionCli extends SessionRouter {
     prompt: string,
     line: string,
     print: (lines: string[]) => void,
-  ): void {
+  ): boolean {
     switch (command.kind) {
       case "show":
         print(show(command.topic, this.simulator!.network, device.id));
-        return;
+        return false;
       case "ping":
       case "traceroute": {
         // Come al prompt dei PC: una conversazione di cui leggere gli
@@ -160,7 +165,7 @@ export class SessionCli extends SessionRouter {
         const conversation = this.simulator!.conversations.at(-1);
         if (problem !== null || conversation === undefined || this.simulator!.conversations.length === before) {
           print(problem === null ? [] : [`% ${problem}`]);
-          return;
+          return false;
         }
         const started = { prompt, command: line, target: command.target, startTime: this.view.time };
         terminal.entries.push(
@@ -168,18 +173,19 @@ export class SessionCli extends SessionRouter {
             ? { kind: "ping", ...started, count: PING_COUNT, conversationId: conversation.id }
             : { kind: "tracert", ...started, maxHops: DEFAULT_MAX_HOPS, conversationId: conversation.id },
         );
-        return;
+        return false;
       }
       default: {
-        // Un comando di configurazione: diventa un'azione del motore, la
-        // stessa del pannello, e un passo della cronologia.
-        const configured = configure(command, this.simulator!.network, device.id, terminal.cli?.interfaceName ?? null);
+        // Un comando di configurazione: diventa una o più azioni del
+        // motore, le stesse del pannello, e un passo solo della cronologia.
+        const configured = configure(command, this.simulator!.network, device.id, terminal.cli ?? INITIAL_STATE);
         if (configured === null) {
           print([]);
-          return;
+          return false;
         }
-        const problem = configured.action === null ? null : this.attempt(configured.action);
+        const problem = this.attemptTogether(configured.actions);
         print([...configured.lines, ...(problem === null ? [] : [`% ${problem}`])]);
+        return problem !== null;
       }
     }
   }

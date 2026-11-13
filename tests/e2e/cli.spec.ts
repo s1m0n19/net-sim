@@ -196,3 +196,42 @@ test("la CLI di uno switch: tabella MAC e una porta spenta", async ({ page }) =>
   await expect(page.getByRole("textbox", { name: /Riga di comando di SW1/ })).toBeVisible();
   await expect(offNotice).toHaveCount(0);
 });
+
+test("le VLAN dalla CLI di uno switch: modalità, Tab, cronologia, show e ping", async ({ page }) => {
+  test.setTimeout(120_000);
+
+  // PC1, PC2 e PC3 su SW1, tutti in 192.168.1.0/24 e nella VLAN 1.
+  await openApp(page);
+  await openNetwork(page, "lan-switch.netsim.json", exampleFile("lan-switch"));
+  await device(page, "SW1").click();
+  await action(page, "Apri il terminale di SW1").click();
+  await typeLines(page, ["en", "conf t"]);
+
+  // Tab completa "vlan"; il prompt dice la modalità nuova.
+  await prompt(page).fill("vl");
+  await prompt(page).press("Tab");
+  await expect(prompt(page)).toHaveValue("vlan ");
+  await prompt(page).pressSequentially("10");
+  await prompt(page).press("Enter");
+  await typeCommand(page, "name STUDENTI");
+  expect(await screenLines(page)).toContain("SW1(config-vlan)#name STUDENTI");
+
+  // Fa0/1 e Fa0/2 nella VLAN 10; la seconda ripescando il comando con la freccia.
+  await typeLines(page, ["int fa0/1", "sw acc vl 10", "int fa0/2"]);
+  await prompt(page).press("ArrowUp");
+  await prompt(page).press("ArrowUp");
+  await expect(prompt(page)).toHaveValue("sw acc vl 10");
+  await prompt(page).press("Enter");
+  await typeLines(page, ["end", "show vlan brief"]);
+  await expect(terminal(page)).toContainText(/10 +STUDENTI +active +Fa0\/1, Fa0\/2/);
+  await expect(terminal(page)).toContainText(/1 +default +active +Fa0\/3, Fa0\/4/);
+
+  // PC1 raggiunge PC2, nella sua VLAN, ma non PC3, rimasto nella VLAN 1.
+  await device(page, "PC1").click();
+  await action(page, "Apri il terminale di PC1").click();
+  await typeCommand(page, "ping -n 1 192.168.1.11");
+  await runFast(page);
+  await expect(terminal(page)).toContainText("Reply from 192.168.1.11", { timeout: 40_000 });
+  await typeCommand(page, "ping -n 1 192.168.1.12");
+  await expect(terminal(page)).toContainText("Destination host unreachable", { timeout: 40_000 });
+});

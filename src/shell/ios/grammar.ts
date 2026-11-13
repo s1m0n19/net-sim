@@ -24,7 +24,8 @@ export type ShowTopic =
   | "ip-route"
   | "arp"
   | "interfaces"
-  | "mac-address-table";
+  | "mac-address-table"
+  | "vlan-brief";
 
 // Che cosa l'utente ha chiesto, una volta capita la riga.
 export type Command =
@@ -43,6 +44,14 @@ export type Command =
   | { kind: "no-shutdown" }
   | { kind: "ip-route"; network: string; mask: string; nextHop: string }
   | { kind: "no-ip-route"; network: string; mask: string; nextHop: string }
+  // Le VLAN di uno switch.
+  | { kind: "vlan"; id: number } // crea la VLAN, se non c'è, e porta in config-vlan
+  | { kind: "no-vlan"; id: number }
+  | { kind: "vlan-name"; name: string } // dentro config-vlan
+  | { kind: "no-vlan-name" }
+  | { kind: "switchport-mode-access" } // dentro un'interfaccia
+  | { kind: "switchport-access-vlan"; id: number }
+  | { kind: "no-switchport-access-vlan" }
   // Guardare e provare.
   | { kind: "show"; topic: ShowTopic }
   | { kind: "ping"; target: string }
@@ -58,6 +67,8 @@ export type Token =
   | { kind: "address" }
   // Un testo qualsiasi senza spazi, per esempio un nome.
   | { kind: "word" }
+  // Il numero di una VLAN, da 1 a MAX_VLAN_ID.
+  | { kind: "vlan-id" }
   // Un'interfaccia del dispositivo.
   | { kind: "interface" };
 

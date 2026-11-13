@@ -15,7 +15,7 @@ import {
   type Router,
   type Switch,
 } from "../../engine/model/network";
-import { macEntries } from "../../engine/model/vlans";
+import { DEFAULT_VLAN, defaultVlanName, macEntries } from "../../engine/model/vlans";
 import { routingTableOf } from "../../engine/protocols/routing";
 import type { ShowTopic } from "./grammar";
 import { fullInterfaceName } from "./interface-names";
@@ -50,6 +50,8 @@ export function show(topic: ShowTopic, network: Network, deviceId: string): stri
       return interfaces(network, device);
     case "mac-address-table":
       return device.kind === "switch" ? macTable(device) : [];
+    case "vlan-brief":
+      return device.kind === "switch" ? vlanBrief(device) : [];
   }
 }
 
@@ -58,12 +60,26 @@ export function show(topic: ShowTopic, network: Network, deviceId: string): stri
 // Il punto esclamativo separa i blocchi, e IOS lo ignora quando legge.
 function configurationOf(device: Router | Switch): string[] {
   const lines = ["!", `hostname ${device.name}`, "!"];
+  // Le VLAN di uno switch, oltre la 1. Su IOS stanno a parte (vlan.dat),
+  // e compaiono qui solo in certe configurazioni: qui ci sono sempre, così
+  // un comando mostra tutto. Il nome si scrive solo se non è quello da sé.
+  if (device.kind === "switch") {
+    for (const vlan of device.vlans) {
+      if (vlan.id === DEFAULT_VLAN) continue;
+      lines.push(`vlan ${vlan.id}`);
+      if (vlan.name !== defaultVlanName(vlan.id)) lines.push(` name ${vlan.name}`);
+      lines.push("!");
+    }
+  }
   for (const port of device.ports) {
     lines.push(`interface ${fullInterfaceName(port.name)}`);
     if (device.kind === "router") {
       const address = addressOf(device, port.name);
       lines.push(address === null ? " no ip address" : ` ip address ${address.ip} ${address.mask}`);
     }
+    // Anche una VLAN eliminata: la porta resta assegnata al suo numero.
+    const vlan = "vlan" in port ? port.vlan : DEFAULT_VLAN;
+    if (vlan !== DEFAULT_VLAN) lines.push(` switchport access vlan ${vlan}`);
     if (!port.enabled) lines.push(" shutdown");
     lines.push("!");
   }
@@ -170,6 +186,27 @@ function interfaces(network: Network, device: Router | Switch): string[] {
     lines.push(`  Hardware address is ${port.mac}`);
     const address = addressOf(device, port.name);
     if (address !== null) lines.push(`  Internet address is ${address.ip}/${maskToPrefix(address.mask)}`);
+  }
+  return lines;
+}
+
+// show vlan brief: una riga per VLAN, con le porte che ci stanno, quattro
+// per riga. Le porte rimaste su una VLAN eliminata sono inattive e non
+// compaiono, come su IOS. Le VLAN da 1002 a 1005, che IOS elenca sempre,
+// qui non esistono.
+function vlanBrief(sw: Switch): string[] {
+  const PORTS_PER_LINE = 4;
+  const lines = [
+    "VLAN Name                             Status    Ports",
+    "---- -------------------------------- --------- -------------------------------",
+  ];
+  for (const vlan of sw.vlans) {
+    const ports = sw.ports.filter((port) => port.vlan === vlan.id).map((port) => port.name);
+    const groups: string[] = [];
+    for (let i = 0; i < ports.length; i += PORTS_PER_LINE) groups.push(ports.slice(i, i + PORTS_PER_LINE).join(", "));
+    const head = `${String(vlan.id).padEnd(4)} ${vlan.name.padEnd(32)} ${"active".padEnd(9)} `;
+    lines.push(`${head}${groups[0] ?? ""}`.trimEnd());
+    for (const group of groups.slice(1)) lines.push(`${" ".repeat(head.length)}${group}`);
   }
   return lines;
 }

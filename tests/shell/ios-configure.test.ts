@@ -24,8 +24,8 @@ function cliOn(sim: Simulator, deviceId: string) {
     const outcome = interpret(describeDevice(device()), state, line);
     state = outcome.state;
     if (outcome.command === null) return outcome.lines;
-    const configured = configure(outcome.command, sim.network, deviceId, state.interfaceName);
-    if (configured?.action != null) sim.dispatch(configured.action);
+    const configured = configure(outcome.command, sim.network, deviceId, state);
+    for (const action of configured?.actions ?? []) sim.dispatch(action);
     return [...outcome.lines, ...(configured?.lines ?? [])];
   }
 
@@ -254,8 +254,8 @@ describe("i comandi che non configurano", () => {
   test("show e ping non sono affare di questo passaggio", () => {
     const { sim } = buildTwoLans();
 
-    expect(configure({ kind: "show", topic: "ip-route" }, sim.network, "r1", null)).toBeNull();
-    expect(configure({ kind: "ping", target: "192.168.2.10" }, sim.network, "r1", null)).toBeNull();
+    expect(configure({ kind: "show", topic: "ip-route" }, sim.network, "r1", INITIAL_STATE)).toBeNull();
+    expect(configure({ kind: "ping", target: "192.168.2.10" }, sim.network, "r1", INITIAL_STATE)).toBeNull();
   });
 });
 
