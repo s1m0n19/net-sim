@@ -10,6 +10,8 @@
   import PairTable from "./PairTable.svelte";
   import PanelSection from "./PanelSection.svelte";
   import RouteEditor from "./RouteEditor.svelte";
+  import SwitchPorts from "./SwitchPorts.svelte";
+  import VlanEditor from "./VlanEditor.svelte";
   import PacketLayers from "./PacketLayers.svelte";
   import AnnotationPanel from "./AnnotationPanel.svelte";
 
@@ -146,10 +148,18 @@
             <span class="value">{device.portCount}</span>
           </div>
         </PanelSection>
+
+        <PanelSection title="VLAN">
+          <VlanEditor {device} />
+        </PanelSection>
+
+        <PanelSection title="Porte">
+          <SwitchPorts {device} />
+        </PanelSection>
       {/key}
 
       <PanelSection title="Tabella MAC" pin={{ pinned: session.isPinned(device.id), toggle: () => session.togglePin(device.id) }}>
-        <PairTable columns={["Indirizzo MAC", "Porta"]} rows={device.macRows} />
+        <PairTable columns={["VLAN", "Indirizzo MAC", "Porta"]} rows={device.macRows} />
       </PanelSection>
     {/if}
   {:else if link !== undefined}

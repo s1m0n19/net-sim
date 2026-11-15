@@ -27,14 +27,40 @@ export interface DeviceView {
   linkUp: boolean;
   arpRows: [ip: string, mac: string][];
   pending: string[];
-  // Quante porte ha; solo per gli switch, la tabella MAC.
+  // Quante porte ha; solo per gli switch, la tabella MAC (VLAN, MAC e
+  // porta di ogni riga), le VLAN configurate e le porte.
   portCount: number;
-  macRows: [mac: string, port: string][];
+  macRows: [vlan: string, mac: string, port: string][];
+  vlans: VlanView[];
+  switchPorts: SwitchPortView[];
   // Solo per i router: le interfacce, le rotte statiche impostate e la
   // tabella di routing com'è adesso.
   interfaces: InterfaceView[];
   routes: RouteView[];
   routingRows: RoutingRowView[];
+}
+
+// Una VLAN configurata su uno switch.
+export interface VlanView {
+  id: number;
+  name: string;
+  // La VLAN 1: c'è sempre, non si rinomina e non si elimina.
+  isDefault: boolean;
+  // Le porte che ci stanno, nell'ordine dello switch.
+  ports: string[];
+}
+
+// Una porta di uno switch, come la mostra il pannello.
+export interface SwitchPortView {
+  name: string;
+  // La VLAN assegnata alla porta, anche se non esiste più.
+  vlan: number;
+  // Il nome di quella VLAN; null se la VLAN non esiste: la porta è inattiva.
+  vlanName: string | null;
+  // false = spenta (`shutdown`).
+  enabled: boolean;
+  // Il nome del dispositivo all'altro capo del cavo; null se non c'è un cavo.
+  linkedTo: string | null;
 }
 
 // Una riga della tabella di routing di un router.

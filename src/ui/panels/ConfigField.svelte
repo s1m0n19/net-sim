@@ -11,6 +11,7 @@
     mono = true,
     placeholder = "",
     onproblem,
+    ariaLabel,
   }: {
     label: string;
     // Nome del campo nella pagina: serve a ritrovarlo, e a dare un id.
@@ -25,6 +26,9 @@
     // Chiamata quando il motivo del rifiuto compare o sparisce: chi contiene
     // il campo può segnalarlo anche quando il campo non si vede (D-131).
     onproblem?: (problem: string | null) => void;
+    // Il nome del campo per il lettore di schermo, quando l'etichetta
+    // visibile da sola non basta (il numero di una VLAN, accanto al suo nome).
+    ariaLabel?: string;
   } = $props();
 
   let draft = $state("");
@@ -80,6 +84,7 @@
     autocomplete="off"
     spellcheck="false"
     {placeholder}
+    aria-label={ariaLabel}
     aria-invalid={problem !== null}
     aria-describedby={problem !== null ? `problem-${name}` : undefined}
     bind:value={draft}

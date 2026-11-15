@@ -221,7 +221,7 @@ Una porta può indicare una VLAN che non è nel registro: è una porta rimasta s
 | Le VLAN stanno solo negli switch | «PC1 Fa0: campo sconosciuto: "vlan".» |
 | Un file di versione 1 o 2 non ha VLAN | «Le VLAN richiedono la versione 3 del formato.» |
 
-Il file non porta il tag 802.1Q né le porte trunk, che non esistono ancora. Dall'app le VLAN si configurano dalla CLI degli switch (D-144); il pannello arriverà con L2-1D.
+Il file non porta il tag 802.1Q né le porte trunk, che non esistono ancora. Dall'app le VLAN si configurano dalla CLI degli switch (D-144) e dal pannello dello switch (D-145).
 
 ## Tabelle
 

@@ -1,14 +1,15 @@
 <script lang="ts">
-  // Una tabella a due colonne del pannello laterale: la tabella ARP
-  // (indirizzo IP e MAC) o la tabella MAC di uno switch (indirizzo e porta).
-  // Mostra le righe così come sono, senza giudicarle (D-114).
+  // Una tabella del pannello laterale: la tabella ARP (indirizzo IP e MAC)
+  // o la tabella MAC di uno switch (VLAN, indirizzo e porta). Le colonne
+  // sono quante ne dà chi la usa. Mostra le righe così come sono, senza
+  // giudicarle (D-114).
   let {
     columns,
     rows,
     empty = "Vuota.",
   }: {
-    columns: [string, string];
-    rows: [string, string][];
+    columns: string[];
+    rows: string[][];
     empty?: string;
   } = $props();
 </script>
@@ -18,11 +19,17 @@
 {:else}
   <table>
     <thead>
-      <tr><th scope="col">{columns[0]}</th><th scope="col">{columns[1]}</th></tr>
+      <tr>
+        {#each columns as column (column)}<th scope="col">{column}</th>{/each}
+      </tr>
     </thead>
     <tbody>
-      {#each rows as [first, second] (first)}
-        <tr><td>{first}</td><td>{second}</td></tr>
+      <!-- Una riga si riconosce da tutte le sue celle: lo stesso MAC può
+           stare in due VLAN. -->
+      {#each rows as row (row.join(" "))}
+        <tr>
+          {#each row as cell, index (index)}<td>{cell}</td>{/each}
+        </tr>
       {/each}
     </tbody>
   </table>

@@ -322,12 +322,12 @@ Largo 290 px; in presentazione, ingrandito, al massimo due quinti della finestra
 
 Sotto, **sezioni** separate da una riga sottile, ciascuna con un titolo breve in maiuscoletto (`panels/PanelSection.svelte`). Niente schede, niente riquadri decorativi: lo spazio va ai dati. Le etichette dei campi stanno in una colonna larga uguale in tutte le sezioni, così i campi cominciano tutti nello stesso punto; i valori che non si cambiano, come il MAC, sono allineati al testo dei campi ma senza bordo.
 
-Una tabella che si appunta sul disegno ha il suo pulsante accanto al titolo della sezione: «appunta», oppure «✓ appuntata» nel colore d'accento quando è già sul disegno. Il pulsante è descritto dal titolo della sezione, così il lettore di schermo dice di quale tabella è. Le tabelle a due colonne (ARP e MAC, `panels/PairTable.svelte`) hanno le intestazioni attenuate sopra una riga più scura, i valori in carattere a larghezza fissa, e «Vuota.» in corsivo quando non c'è nulla. Nessun colore dice se una riga è giusta.
+Una tabella che si appunta sul disegno ha il suo pulsante accanto al titolo della sezione: «appunta», oppure «✓ appuntata» nel colore d'accento quando è già sul disegno. Il pulsante è descritto dal titolo della sezione, così il lettore di schermo dice di quale tabella è. Le tabelle (ARP con due colonne, MAC con tre: VLAN, indirizzo e porta; `panels/PairTable.svelte`) hanno le intestazioni attenuate sopra una riga più scura, i valori in carattere a larghezza fissa, e «Vuota.» in corsivo quando non c'è nulla. Nessun colore dice se una riga è giusta.
 
 | Selezionato | Sezioni |
 | --- | --- |
 | PC o server | Identità (nome, MAC) · Configurazione IPv4 (indirizzo IP, subnet mask, gateway) · Tabella ARP · In attesa del MAC, se c'è qualcosa in attesa |
-| Switch | Identità (nome, numero di porte) · Tabella MAC |
+| Switch | Identità (nome, numero di porte) · VLAN, con il modulo per crearne una · Porte · Tabella MAC |
 | Router | Identità (nome) · Interfacce · Tabella di routing, con il modulo per aggiungere una rotta · Tabella ARP · In attesa del MAC |
 | Cavo | Capi del cavo |
 | Pacchetto | Contenuto del frame |
@@ -346,6 +346,16 @@ Esc, dentro un campo, rimette il valore della rete senza togliere la selezione. 
 **Togliere la configurazione.** Svuotare l'indirizzo svuota anche maschera e gateway (D-52). Svuotare la sola maschera viene rifiutato.
 
 **Maschera proposta.** Scritto l'indirizzo su un host senza maschera, la maschera si compila da sola con quella della classe dell'indirizzo (255.255.255.0 per 192.168.1.10), come fa Windows. Si può cambiare. Senza questo aiuto il primo indirizzo verrebbe rifiutato, perché indirizzo e maschera vanno impostati insieme.
+
+### Switch
+
+Nome e numero di porte, poi le **VLAN** e le **porte** (D-145), e in fondo la tabella MAC. Le regole sono quelle del motore, le stesse della CLI: il pannello non decide nulla e non suggerisce quali VLAN assegnare.
+
+**VLAN** (`panels/VlanEditor.svelte`). Una riga per VLAN, in ordine di numero: il numero nella colonna delle etichette, il nome, e sotto il nome le porte che ci stanno («2 porte: Fa0/1, Fa0/2», «nessuna porta»; oltre sei porte solo quante sono). La VLAN 1 dice «default» con accanto «predefinita» in corsivo, e il suo nome non è un campo: non si rinomina e non si elimina. Il nome delle altre è un campo, con le regole di conferma di sempre (Invio o uscita dal campo, bordo rosso e motivo se rifiutato); svuotato, la VLAN riprende il nome che prende da sé («VLAN0010»), come `no name`. La crocetta a destra la elimina, senza conferma, perché Annulla la rimette: le sue porte restano assegnate al suo numero, inattive. Sotto l'elenco il pulsante **Nuova VLAN** apre il riquadro **Crea una VLAN**, come quello delle rotte statiche (D-131): Numero, Nome facoltativo e il pulsante Crea VLAN, o Invio. Un valore rifiutato lascia i campi come sono, con il motivo sotto.
+
+**Porte** (`panels/SwitchPorts.svelte`). Una riga per porta: il nome con un cerchietto pieno se accesa, vuoto se spenta; il dispositivo all'altro capo del cavo, o «libera» in corsivo; un elenco per scegliere la VLAN, con le voci «10 · STUDENTI». Una porta spenta lo dice sotto, a parole («spenta»); una porta la cui VLAN è stata eliminata dice «VLAN 30 · inattiva», e nell'elenco resta scelta la voce «30 · inattiva»: la porta non torna da sola nella VLAN 1, e la si riattiva scegliendo una VLAN che c'è. Spenta e inattiva sono due stati diversi, e si possono leggere insieme. Le porte non si accendono né si spengono da qui (D-93). Con molte porte si vedono quelle che contano, cioè con un cavo, fuori dalla VLAN 1 o spente, e il pulsante **Mostra tutte le porte (24)** mostra le altre; se nessuna conta, o contano tutte, si vedono tutte e il pulsante non c'è. Nel pannello stretto l'elenco della VLAN va sotto il nome della porta.
+
+La **tabella MAC** ha tre colonne, VLAN, indirizzo MAC e porta: lo stesso MAC può comparire in due VLAN. Così anche la tabella appuntata sul disegno, con la VLAN nella prima colonna.
 
 ### Router
 
@@ -374,7 +384,7 @@ In fondo, la **tabella ARP** del router.
 
 Tutte e due le tabelle si appuntano sul disegno, ciascuna con il suo pulsante; nascono una a sinistra e una a destra sotto il router. Dalla barretta si appunta la tabella di routing, che è quella che serve in lezione.
 
-Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta». Una porta di switch spenta si vede allo stesso modo, sul capo del cavo vicino allo switch (D-93). Le porte degli switch non hanno un interruttore nel pannello: si spengono dalla CLI dello switch, con `shutdown`, oppure arrivano spente da un file.
+Sul disegno un'interfaccia spenta si riconosce dal quadratino rosso sul capo del cavo vicino al router; con l'etichetta Porte accesa, accanto al nome della porta compare «spenta». Una porta di switch spenta si vede allo stesso modo, sul capo del cavo vicino allo switch (D-93). Le porte degli switch non hanno un interruttore nel pannello: si spengono dalla CLI dello switch, con `shutdown`, oppure arrivano spente da un file. Il pannello dello switch ne mostra lo stato, e ne cambia la VLAN (vedi «Switch»).
 
 **Indirizzi sul disegno** (D-75). Un router non ha un indirizzo solo, quindi sotto di lui resta soltanto il nome: l'indirizzo di ogni interfaccia è scritto accanto al suo cavo, sul capo vicino al router, con il prefisso (`192.168.1.1/24`). Così si vede a colpo d'occhio quale indirizzo guarda quale rete. Li accende e li spegne l'interruttore IP, come per i PC.
 

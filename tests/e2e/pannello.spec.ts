@@ -167,7 +167,7 @@ test("tabelle ARP e MAC, e i pulsanti per appuntarle", async ({ page }) => {
 
   await device(page, "SW1").click();
   const mac = section(page, "Tabella MAC");
-  await expect(mac.locator("thead th")).toHaveText(["Indirizzo MAC", "Porta"]);
+  await expect(mac.locator("thead th")).toHaveText(["VLAN", "Indirizzo MAC", "Porta"]);
   await expect(mac.locator("tbody tr")).not.toHaveCount(0);
 
   // Il pulsante dice di quale tabella è, e se è appuntata.

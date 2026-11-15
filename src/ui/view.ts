@@ -7,8 +7,8 @@
 
 import { freePortsOf } from "../engine/editing";
 import { maskToPrefix, networkAddress } from "../engine/model/addresses";
-import { linkCarriesSignal, type Network } from "../engine/model/network";
-import { macEntries } from "../engine/model/vlans";
+import { linkCarriesSignal, otherEndOf, type Network } from "../engine/model/network";
+import { DEFAULT_VLAN, macEntries } from "../engine/model/vlans";
 import { routingTableOf } from "../engine/protocols/routing";
 import type { Simulator } from "../engine/simulator";
 import type { Annotation } from "../storage/annotations-file";
@@ -69,12 +69,34 @@ export function buildView(
       pending: [],
       portCount: device.ports.length,
       macRows: [],
+      vlans: [],
+      switchPorts: [],
       interfaces: [],
       routes: [],
       routingRows: [],
     };
     if (device.kind === "switch") {
-      return { ...base, ...none, macRows: macEntries(device).map(({ mac, port }): [string, string] => [mac, port]) };
+      return {
+        ...base,
+        ...none,
+        macRows: macEntries(device).map(({ vlan, mac, port }): [string, string, string] => [String(vlan), mac, port]),
+        vlans: device.vlans.map((vlan) => ({
+          id: vlan.id,
+          name: vlan.name,
+          isDefault: vlan.id === DEFAULT_VLAN,
+          ports: device.ports.filter((port) => port.vlan === vlan.id).map((port) => port.name),
+        })),
+        switchPorts: device.ports.map((port) => {
+          const other = otherEndOf(network, { deviceId: device.id, portName: port.name });
+          return {
+            name: port.name,
+            vlan: port.vlan,
+            vlanName: device.vlans.find((vlan) => vlan.id === port.vlan)?.name ?? null,
+            enabled: port.enabled,
+            linkedTo: other === null ? null : nameOf(network, other.deviceId),
+          };
+        }),
+      };
     }
     if (device.kind === "router") {
       return {

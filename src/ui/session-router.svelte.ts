@@ -1,6 +1,7 @@
-// Configurare un router dal pannello laterale: accendere e spegnere le
-// interfacce, impostarne gli indirizzi, aggiungere e togliere le rotte
-// statiche.
+// Configurare un router o uno switch dal pannello laterale: accendere e
+// spegnere le interfacce, impostarne gli indirizzi, aggiungere e togliere
+// le rotte statiche; creare, rinominare ed eliminare le VLAN di uno switch,
+// e scegliere la VLAN di ogni porta.
 //
 // È il settimo strato di `session`. Come gli altri metodi che modificano la
 // rete, anche questi passano da `attempt`, che registra la modifica nella
@@ -8,11 +9,16 @@
 
 import {
   addRoute,
+  addVlan,
   configureInterface,
   disableInterface,
   enableInterface,
   removeRoute,
+  removeVlan,
+  renameVlan,
+  setPortVlan,
 } from "../engine/actions";
+import { MAX_VLAN_ID, defaultVlanName, vlanExists } from "../engine/model/vlans";
 import { networksOverlap, prefixToMask } from "../engine/model/addresses";
 import { defaultMaskFor } from "../engine/model/ip-config";
 import { checkInterfaceAddress, checkRoute, nextHopIsOwnAddress } from "../engine/model/router-config";
@@ -140,6 +146,58 @@ export class SessionRouter extends SessionAnnotations {
   /** Toglie una rotta statica da un router. */
   removeRoute(deviceId: string, route: { network: string; mask: string; nextHop: string }): void {
     const problem = this.attempt(removeRoute(deviceId, route));
+    if (problem !== null) this.notice = problem;
+  }
+
+  /**
+   * Crea una VLAN su uno switch, come scritta nel pannello. Numero e nome
+   * li controlla il motore, con le stesse regole della CLI e del file.
+   *
+   * @param deviceId - lo switch
+   * @param idText - il numero scritto, da 1 a 1001
+   * @param nameText - il nome scritto; vuoto, la VLAN prende il suo
+   *   ("VLAN0010")
+   * @returns null se la VLAN è stata creata, altrimenti il motivo del
+   *   rifiuto, da scrivere sotto i campi
+   */
+  addVlan(deviceId: string, idText: string, nameText: string): string | null {
+    const text = idText.trim();
+    if (!/^\d+$/.test(text)) return `Scrivi il numero della VLAN, da 1 a ${MAX_VLAN_ID}.`;
+    const id = Number(text);
+    const sw = this.simulator?.network.devices.find((device) => device.id === deviceId);
+    // Il motore lascerebbe la VLAN com'è senza dirlo: qui lo si dice.
+    if (sw?.kind === "switch" && vlanExists(sw, id)) return `La VLAN ${id} c'è già.`;
+    const name = nameText.trim() === "" ? null : nameText.trim();
+    return this.attempt(addVlan(deviceId, id, name));
+  }
+
+  /**
+   * Cambia il nome di una VLAN di uno switch. Un nome vuoto le ridà quello
+   * che prende da sé, come `no name` nella CLI.
+   *
+   * @returns null se il nome è stato accettato, altrimenti il motivo del
+   *   rifiuto, da scrivere sotto il campo
+   */
+  renameVlan(deviceId: string, id: number, text: string): string | null {
+    const name = text.trim() === "" ? defaultVlanName(id) : text.trim();
+    const sw = this.simulator?.network.devices.find((device) => device.id === deviceId);
+    // Già così: nessun passo vuoto nella cronologia.
+    if (sw?.kind === "switch" && sw.vlans.some((vlan) => vlan.id === id && vlan.name === name)) return null;
+    return this.attempt(renameVlan(deviceId, id, name));
+  }
+
+  /**
+   * Elimina una VLAN di uno switch. Le sue porte restano assegnate al
+   * numero, inattive, come nella CLI: nessuna torna da sola nella VLAN 1.
+   */
+  removeVlan(deviceId: string, id: number): void {
+    const problem = this.attempt(removeVlan(deviceId, id));
+    if (problem !== null) this.notice = problem;
+  }
+
+  /** Mette una porta di uno switch in una VLAN. */
+  setPortVlan(deviceId: string, portName: string, id: number): void {
+    const problem = this.attempt(setPortVlan(deviceId, portName, id));
     if (problem !== null) this.notice = problem;
   }
 

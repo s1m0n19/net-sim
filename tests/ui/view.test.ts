@@ -66,9 +66,10 @@ describe("dispositivi da disegnare", () => {
     const devices = view().devices;
     expect(devices.find((d) => d.name === "PC1")!.arpRows).toEqual([["192.168.1.11", "02:00:00:00:00:02"]]);
     expect(devices.find((d) => d.name === "PC3")!.arpRows).toEqual([]);
+    // Le righe della tabella MAC portano anche la VLAN (D-145).
     expect(devices.find((d) => d.name === "SW1")!.macRows).toEqual([
-      ["02:00:00:00:00:01", "Fa0/1"],
-      ["02:00:00:00:00:02", "Fa0/2"],
+      ["1", "02:00:00:00:00:01", "Fa0/1"],
+      ["1", "02:00:00:00:00:02", "Fa0/2"],
     ]);
   });
 

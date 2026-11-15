@@ -15,8 +15,11 @@
     return `${TITLES[table]} · ${device.name}`;
   }
 
-  // Le righe da mostrare: due colonne di testo, e una chiave per riconoscerle.
-  function rowsOf(device: DeviceView, table: PinTable): { key: string; left: string; right: string }[] {
+  type Row = { key: string; first?: string; left: string; right: string };
+
+  // Le righe da mostrare: due colonne di testo, una terza in testa per la
+  // VLAN della tabella MAC, e una chiave per riconoscerle.
+  function rowsOf(device: DeviceView, table: PinTable): Row[] {
     if (table === "routing") {
       // "C 192.168.1.0/24   Gi0/0" e "S 192.168.2.0/24   via 10.0.0.2 Gi0/1".
       return device.routingRows.map((row) => ({
@@ -25,8 +28,18 @@
         right: `${row.nextHop === null ? "" : `via ${row.nextHop} `}${row.portName ?? "non usata"}`,
       }));
     }
-    const rows = table === "mac" ? device.macRows : device.arpRows;
-    return rows.map(([left, right]) => ({ key: left, left, right }));
+    if (table === "mac") {
+      // Lo stesso MAC può stare in due VLAN: la chiave le comprende.
+      return device.macRows.map(([vlan, mac, port]) => ({ key: `${vlan} ${mac}`, first: vlan, left: mac, right: port }));
+    }
+    return device.arpRows.map(([left, right]) => ({ key: left, left, right }));
+  }
+
+  // Quanti caratteri occupa la prima colonna, con lo spazio che la separa
+  // dalla seconda; zero se la tabella non ce l'ha.
+  function firstWidth(rows: Row[]): number {
+    const widest = Math.max(0, ...rows.map((row) => row.first?.length ?? 0));
+    return widest === 0 ? 0 : widest + 2;
   }
 
   /**
@@ -35,7 +48,8 @@
    */
   export function pinnedSize(device: DeviceView, table: PinTable): { width: number; height: number } {
     const rows = rowsOf(device, table);
-    const widest = Math.max(titleOf(device, table).length + 4, ...rows.map((row) => row.left.length + row.right.length + 3));
+    const first = firstWidth(rows);
+    const widest = Math.max(titleOf(device, table).length + 4, ...rows.map((row) => first + row.left.length + row.right.length + 3));
     return { width: widest * CHAR + 20, height: HEAD + Math.max(rows.length, 1) * ROW + 8 };
   }
 </script>
@@ -88,8 +102,11 @@
   }
 
   // Una riga persa resta visibile, barrata, ancora per un momento.
-  let lost = $state<{ key: string; left: string; right: string }[]>([]);
-  let before: { key: string; left: string; right: string }[] = [];
+  let lost = $state<Row[]>([]);
+  let before: Row[] = [];
+  // Dove comincia la seconda colonna: dopo la VLAN, se c'è, anche nelle
+  // righe appena perse.
+  const leftX = $derived(10 + firstWidth([...rows, ...lost]) * CHAR);
   $effect(() => {
     const now = rows;
     const gone = before.filter((old) => !now.some((row) => row.key === old.key));
@@ -178,14 +195,16 @@
   {#each rows as row, index (row.key)}
     <g transform="translate(0 {HEAD + index * ROW})" use:markIfNew>
       <rect class="flash" x="2" y="0" width={size.width - 4} height={ROW} />
-      <text class="cell" x="10" y="12">{row.left}</text>
+      {#if row.first !== undefined}<text class="cell" x="10" y="12">{row.first}</text>{/if}
+      <text class="cell" x={leftX} y="12">{row.left}</text>
       <text class="cell right" x={size.width - 10} y="12">{row.right}</text>
     </g>
   {/each}
 
   {#each lost as row, index (row.key)}
     <g class="lost" transform="translate(0 {HEAD + (rows.length + index) * ROW})">
-      <text class="cell" x="10" y="12">{row.left}</text>
+      {#if row.first !== undefined}<text class="cell" x="10" y="12">{row.first}</text>{/if}
+      <text class="cell" x={leftX} y="12">{row.left}</text>
       <text class="cell right" x={size.width - 10} y="12">{row.right}</text>
     </g>
   {/each}
