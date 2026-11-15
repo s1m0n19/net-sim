@@ -19,6 +19,9 @@ import {
   removeVlan,
   renameDevice,
   renameVlan,
+  setAllowedVlans,
+  setNativeVlan,
+  setPortMode,
   setPortVlan,
   type Action,
 } from "../../engine/actions";
@@ -38,8 +41,15 @@ import {
   nextHopIsOwnAddress,
   sameRoute,
 } from "../../engine/model/router-config";
-import { DEFAULT_VLAN, defaultVlanName, vlanExists } from "../../engine/model/vlans";
-import type { Command, DeviceInfo } from "./grammar";
+import {
+  ALL_VLANS,
+  normalizeVlanList,
+  sameAllowedVlans,
+  type AllowedVlans,
+  type PortMode,
+} from "../../engine/model/trunks";
+import { DEFAULT_VLAN, MAX_VLAN_ID, defaultVlanName, vlanExists } from "../../engine/model/vlans";
+import type { AllowedChange, Command, DeviceInfo } from "./grammar";
 import type { CliState } from "./modes";
 import { fullInterfaceName } from "./interface-names";
 
@@ -102,9 +112,14 @@ export function configure(command: Command, network: Network, deviceId: string, 
       const name = command.kind === "vlan-name" ? command.name : defaultVlanName(state.vlanId);
       return nameVlan(device, state.vlanId, name);
     }
-    case "switchport-mode-access":
+    case "switchport-mode":
+    case "no-switchport-mode":
     case "switchport-access-vlan":
     case "no-switchport-access-vlan":
+    case "switchport-trunk-native":
+    case "no-switchport-trunk-native":
+    case "switchport-trunk-allowed":
+    case "no-switchport-trunk-allowed":
     case "ip-address":
     case "no-ip-address":
     case "shutdown":
@@ -128,13 +143,79 @@ export function configure(command: Command, network: Network, deviceId: string, 
       return setEnabled(network, device, interfaceName, false);
     case "no-shutdown":
       return setEnabled(network, device, interfaceName, true);
-    case "switchport-mode-access":
-      // Tutte le porte sono access: non c'è nulla da cambiare.
-      return NOTHING;
     case "switchport-access-vlan":
       return device.kind === "switch" ? setAccessVlan(device, interfaceName, command.id) : NOTHING;
     case "no-switchport-access-vlan":
       return device.kind === "switch" ? setAccessVlan(device, interfaceName, DEFAULT_VLAN) : NOTHING;
+  }
+  // I comandi dei trunk: solo sulle porte di uno switch.
+  if (device.kind !== "switch") return NOTHING;
+  const port = device.ports.find((p) => p.name === interfaceName);
+  if (port === undefined) return NOTHING;
+  switch (command.kind) {
+    case "switchport-mode":
+      return changeMode(device, interfaceName, port.mode, command.mode);
+    case "no-switchport-mode":
+      return changeMode(device, interfaceName, port.mode, "access");
+    case "switchport-trunk-native":
+      return changeNative(device, interfaceName, port.nativeVlan, command.id);
+    case "no-switchport-trunk-native":
+      return changeNative(device, interfaceName, port.nativeVlan, DEFAULT_VLAN);
+    case "switchport-trunk-allowed":
+      return changeAllowed(device, interfaceName, port.allowedVlans, allowedAfter(port.allowedVlans, command.change));
+    case "no-switchport-trunk-allowed":
+      return changeAllowed(device, interfaceName, port.allowedVlans, ALL_VLANS);
+  }
+  return NOTHING;
+}
+
+// switchport mode access, switchport mode trunk, no switchport mode. VLAN
+// access, nativa e VLAN consentite restano come sono.
+function changeMode(sw: Switch, portName: string, now: PortMode, wanted: PortMode): Configured {
+  if (now === wanted) return NOTHING;
+  return { actions: [setPortMode(sw.id, portName, wanted)], lines: [] };
+}
+
+// switchport trunk native vlan 99, e no per tornare alla 1. Vale anche su
+// una porta access, dove resta memorizzata; la VLAN non si crea.
+function changeNative(sw: Switch, portName: string, now: number, wanted: number): Configured {
+  if (now === wanted) return NOTHING;
+  return { actions: [setNativeVlan(sw.id, portName, wanted)], lines: [] };
+}
+
+// switchport trunk allowed vlan ...: il motore riceve sempre l'elenco
+// intero, così ogni comando è un passo solo della cronologia.
+function changeAllowed(sw: Switch, portName: string, now: AllowedVlans, wanted: AllowedVlans): Configured {
+  if (sameAllowedVlans(now, wanted)) return NOTHING;
+  return { actions: [setAllowedVlans(sw.id, portName, wanted)], lines: [] };
+}
+
+/**
+ * Le VLAN consentite dopo un `switchport trunk allowed vlan ...`.
+ *
+ * Con tutte le VLAN consentite, `add` non cambia nulla, e `remove` lascia
+ * l'elenco esplicito di tutte le altre, da 1 a 1001.
+ *
+ * @param now - le VLAN consentite adesso
+ * @param change - che cosa chiede il comando
+ * @returns le VLAN consentite dopo il comando
+ */
+export function allowedAfter(now: AllowedVlans, change: AllowedChange): AllowedVlans {
+  switch (change.kind) {
+    case "all":
+      return ALL_VLANS;
+    case "none":
+      return Object.freeze([]);
+    case "set":
+      return normalizeVlanList(change.vlans);
+    case "add":
+      return now === ALL_VLANS ? ALL_VLANS : normalizeVlanList([...now, ...change.vlans]);
+    case "remove": {
+      const kept = (vlan: number) => !change.vlans.includes(vlan);
+      if (now !== ALL_VLANS) return normalizeVlanList(now.filter(kept));
+      const everything = Array.from({ length: MAX_VLAN_ID }, (_, index) => index + 1);
+      return normalizeVlanList(everything.filter(kept));
+    }
   }
 }
 

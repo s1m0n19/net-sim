@@ -103,6 +103,8 @@ function describe(nodes: CommandNode[], device: DeviceInfo): [string, string][] 
         return [["WORD", node.help]];
       case "vlan-id":
         return [[`<1-${MAX_VLAN_ID}>`, node.help]];
+      case "vlan-list":
+        return [["WORD", node.help]];
       case "interface":
         // Al posto di un'interfaccia si elencano i tipi che il dispositivo ha.
         return interfaceTypesOf(device.interfaces).map((type) => [type.full, type.help]);

@@ -1,6 +1,6 @@
 # La CLI di router e switch
 
-**Stato:** descrive il codice al 13 novembre 2026. La CLI del rilascio 2 è completa, e sugli switch configura le VLAN delle porte access (D-144); le porte trunk sono *previste* per L2-2, i comandi dei protocolli di routing dinamico (RIP, OSPF) per la tappa T5.
+**Stato:** descrive il codice al 15 novembre 2026. La CLI del rilascio 2 è completa, e sugli switch configura le VLAN delle porte access (D-144) e le porte trunk 802.1Q (D-151…D-155); i comandi dei protocolli di routing dinamico (RIP, OSPF) per la tappa T5.
 
 Su un router o uno switch il terminale non è il prompt di Windows dei PC, ma una riga di comando in stile Cisco IOS: si entra per gradi in modalità diverse, si scrivono comandi abbreviati, si chiede aiuto con `?`. È ciò che gli studenti troveranno sugli apparati veri e nei libri.
 
@@ -47,11 +47,11 @@ A collegarlo allo schermo e al motore è l'ottavo strato della sessione, `src/ui
 
 `exit` torna indietro di un passo, `end` (o Ctrl+Z) torna a `R1#`. Non c'è password. La modalità è di ciascun terminale e torna a `R1>` chiudendo la scheda, con Ricomincia, o spegnendo il dispositivo. Un router o uno switch spento non ha CLI: finché resta spento la scheda non accetta comandi, né `?`, Tab e Ctrl+Z, e la configurazione non si cambia da lì (D-109).
 
-Router e switch non hanno gli stessi comandi: un nodo dell'albero può essere riservato a un tipo di dispositivo (campo `only`). Sullo switch non esistono `ip address`, `ip route`, `ping`, `traceroute` e `show ip route`; ci sono in più `show mac address-table` e i comandi delle VLAN (vedi sotto). Su un router `vlan`, `no vlan`, `switchport` e `show vlan brief` danno l'errore con il segno `^`, come ogni parola che lì non può stare.
+Router e switch non hanno gli stessi comandi: un nodo dell'albero può essere riservato a un tipo di dispositivo (campo `only`). Sullo switch non esistono `ip address`, `ip route`, `ping`, `traceroute` e `show ip route`; ci sono in più `show mac address-table` e i comandi delle VLAN e dei trunk (vedi sotto). Su un router `vlan`, `no vlan`, `switchport`, `show vlan brief`, `show interfaces trunk` e `show interfaces … switchport` danno l'errore con il segno `^`, come ogni parola che lì non può stare.
 
 ## Le VLAN dello switch
 
-Le porte di uno switch sono tutte **access**: ciascuna sta in una VLAN sola (D-142). Dalla CLI si creano, si nominano e si eliminano le VLAN, e si sceglie la VLAN di ogni porta (D-144). I comandi diventano le azioni `add-vlan`, `rename-vlan`, `remove-vlan` e `set-port-vlan` del motore, che decide tutto il resto: chi riceve che cosa, che cosa entra nella tabella MAC.
+Una porta di switch è **access**, in una VLAN sola (D-142), oppure **trunk** (vedi «I trunk dello switch»). Dalla CLI si creano, si nominano e si eliminano le VLAN, e si sceglie la VLAN di ogni porta (D-144). I comandi diventano le azioni `add-vlan`, `rename-vlan`, `remove-vlan` e `set-port-vlan` del motore, che decide tutto il resto: chi riceve che cosa, che cosa entra nella tabella MAC.
 
 | Comando | Dove | Che cosa fa |
 | --- | --- | --- |
@@ -62,13 +62,34 @@ Le porte di uno switch sono tutte **access**: ciascuna sta in una VLAN sola (D-1
 | `switchport mode access` | interfaccia | Si accetta e non cambia nulla: tutte le porte sono già access. Non si ricorda e non compare in `show running-config` |
 | `switchport access vlan 30` | interfaccia | Mette la porta nella VLAN 30. Se la VLAN non c'è la crea, come IOS, e lo dice: `% Access VLAN does not exist. Creating vlan 30`. Creare e spostare sono una modifica sola, che si annulla con un passo |
 | `no switchport access vlan` | interfaccia | Riporta la porta nella VLAN 1; la VLAN di prima resta |
-| `show vlan brief` | tutte | Una riga per VLAN, in ordine di numero: nome, stato, porte, quattro per riga. Le VLAN senza porte compaiono; le porte rimaste su una VLAN eliminata no |
+| `show vlan brief` | tutte | Una riga per VLAN, in ordine di numero: nome, stato, porte access, quattro per riga. Le VLAN senza porte compaiono; le porte rimaste su una VLAN eliminata e le porte trunk no |
 | `show mac address-table` | privilegiata e utente | La colonna `Vlan` è quella vera della riga: lo stesso MAC può comparire in due VLAN |
 | `show running-config` | privilegiata | I blocchi `vlan 10` / ` name STUDENTI` (il nome solo se non è quello da sé) dopo `hostname`, e ` switchport access vlan 10` nelle interfacce fuori dalla VLAN 1, anche se la VLAN è stata eliminata |
 
 Il numero di una VLAN è un argomento a sé (`vlan-id` in `grammar.ts`): solo cifre, da 1 a 1001, come accetta il motore (`checkVlanId`); `?` lo mostra come `<1-1001>`. Un numero fuori intervallo dà il segno `^` sotto il numero.
 
-Le porte trunk, le VLAN native e consentite, DTP e `interface range` non ci sono: `switchport mode trunk` dà l'errore con il segno `^`.
+## I trunk dello switch
+
+Una porta **trunk** porta più VLAN sullo stesso cavo, distinte dal tag 802.1Q (D-146). Dalla CLI se ne sceglie il modo, la VLAN nativa e le VLAN consentite (D-151). I comandi diventano le azioni `set-port-mode`, `set-native-vlan` e `set-allowed-vlans` del motore, una per comando: ogni comando che cambia qualcosa è un passo della cronologia, e uno che non cambia nulla (`switchport mode trunk` su un trunk, `add` di una VLAN già consentita) non ne aggiunge.
+
+| Comando | Modalità | Che cosa fa |
+| --- | --- | --- |
+| `switchport mode trunk` | interfaccia | Rende la porta trunk. VLAN access, nativa e VLAN consentite restano come sono |
+| `switchport mode access`, `no switchport mode` | interfaccia | Riporta la porta access; nativa e consentite restano memorizzate, e tornano a valere se la porta torna trunk |
+| `switchport trunk native vlan 99` | interfaccia | Sceglie la VLAN nativa, quella che sul trunk passa senza tag. Vale anche su una porta access, dove resta senza effetto; la VLAN non si crea e il modo non cambia |
+| `no switchport trunk native vlan` | interfaccia | Torna alla nativa 1 |
+| `switchport trunk allowed vlan 10,20,30-35` | interfaccia | Le VLAN consentite diventano quelle dell'elenco |
+| `switchport trunk allowed vlan all`, `… none` | interfaccia | Tutte le VLAN, oppure nessuna |
+| `switchport trunk allowed vlan add 30`, `… remove 20` | interfaccia | Aggiunge o toglie VLAN all'elenco di adesso. Con tutte le VLAN consentite, `add` non cambia nulla e `remove 20` lascia tutte le altre (`1-19,21-1001`) |
+| `no switchport trunk allowed vlan` | interfaccia | Torna a tutte le VLAN |
+| `show interfaces trunk` | privilegiata e utente | Le porte trunk che funzionano (accese, con il segnale): modo `on`, incapsulamento `802.1q`, stato `trunking`, nativa; poi le VLAN consentite; poi quelle consentite e configurate sullo switch, cioè quelle che il trunk porta davvero, calcolate. Senza trunk funzionanti non stampa nulla, come IOS |
+| `show interfaces fa0/24 switchport` | privilegiata e utente | La configurazione di una porta: modo amministrativo (`trunk` o `static access`) e modo in uso (`down` se la porta è spenta o senza segnale), incapsulamento `dot1q`, VLAN access e nativa (con il nome, o `Inactive` se lo switch non ce l'ha), VLAN consentite (`ALL`, un elenco, `NONE`). Vale anche per una porta access che conserva nativa e consentite |
+| `show interfaces fa0/1` | privilegiata e utente | Lo stato di una sola interfaccia, come `show interfaces` (anche sui router) |
+| `show running-config` | privilegiata | Sotto ogni interfaccia, nell'ordine di IOS: ` switchport access vlan`, ` switchport trunk native vlan`, ` switchport trunk allowed vlan` (con gli intervalli, `none` per nessuna), ` switchport mode trunk`. Solo ciò che non è il valore di partenza, anche su una porta access |
+
+L'elenco delle VLAN è un argomento a sé (`vlan-list` in `grammar.ts`): numeri e intervalli crescenti separati da virgole, senza spazi, ciascuno da 1 a 1001. Lo controlla `vlanListError` in `parser.ts`, che indica il primo carattere sbagliato, dove va il segno `^`: in `10,,20` la seconda virgola, in `20-10` il `10`, in `10,` la fine della parola. `?` lo mostra come `WORD`; Tab non completa i numeri. L'elenco lo leggono poi `parseVlanList` del motore e, per `add` e `remove`, `allowedAfter` in `configure.ts`, che calcola l'elenco intero da passare all'azione.
+
+L'incapsulamento è sempre 802.1Q: `switchport trunk encapsulation` non esiste (D-152), come su uno switch che conosce solo 802.1Q, e non serve per rendere trunk una porta. Il trunk si configura a mano: `switchport mode dynamic`, `switchport nonegotiate`, DTP, VTP e `allowed vlan except` non ci sono.
 
 ## L'albero dei comandi
 
@@ -136,7 +157,11 @@ Come per il motore ([motore.md](motore.md), «Semplificazioni»), la CLI è fede
 | VLAN in `show running-config` | Stanno a parte, in `vlan.dat`, salvo in modalità VTP transparent | Sempre in `show running-config`, e salvate con il file |
 | `show vlan brief` | Elenca anche le VLAN da 1002 a 1005 | Solo le VLAN che esistono qui, da 1 a 1001 |
 | `vlan 10,20`, `vlan 10-20`, `interface range` | Più VLAN o porte in un comando | Una alla volta |
-| Porte trunk, VTP, DTP | Presenti | Assenti: le porte sono tutte access |
+| `switchport trunk encapsulation dot1q` | Su certi modelli va scritto prima di `mode trunk` | Non esiste: l'incapsulamento è sempre 802.1Q (D-152) |
+| Tutte le VLAN consentite | `1-4094` | `1-1001`, l'intervallo che net-sim usa (D-153) |
+| `show interfaces trunk` | Un quarto blocco sullo spanning tree e il pruning | Tre blocchi: lo spanning tree non c'è |
+| `show interfaces … switchport` | Una trentina di righe, anche su DTP, voce, VLAN private | Le otto righe che dicono modo, VLAN access, nativa e consentite |
+| VTP, DTP, `allowed vlan except` | Presenti | Assenti: ogni switch ha le sue VLAN, e un trunk si configura a mano |
 
 ## Aggiungere un comando o una modalità
 
@@ -162,7 +187,9 @@ Parser e aiuto non cambiano.
 | `tests/shell/ios-show.test.ts` | Ogni comando `show` |
 | `tests/shell/ios-vlan.test.ts` | I comandi delle VLAN: modalità, parametri, aiuto, `show`, router, le lezioni da CLI e il salvataggio |
 | `tests/ui/cli-vlan.test.ts` | Le VLAN dalla CLI nella sessione: un passo della cronologia per comando, nessuno stato a metà, Ctrl+Z, file |
+| `tests/shell/ios-trunk.test.ts` | I comandi dei trunk: modo, nativa, VLAN consentite con elenchi, `add` e `remove`, errori con il segno `^`, aiuto, abbreviazioni, router, `show interfaces trunk`, `show interfaces … switchport`, running-config, due switch configurati da CLI |
+| `tests/ui/cli-trunk.test.ts` | I trunk dalla CLI nella sessione: un passo della cronologia per comando, ping, file di versione 4 |
 | `tests/shell/ios-ping.test.ts` | Il testo di `ping` e `traceroute` |
 | `tests/engine/router-ping.test.ts` | Ping e traceroute lanciati da un router, nel motore |
 | `tests/ui/cli.test.ts` | La CLI nella sessione: prompt, cronologia, pannello, ping che cresce con la simulazione |
-| `tests/e2e/cli.spec.ts` | La lezione del criterio di accettazione, in un browser vero, e le VLAN da CLI con Tab, cronologia dei comandi e ping |
+| `tests/e2e/cli.spec.ts` | La lezione del criterio di accettazione, in un browser vero, le VLAN da CLI con Tab, cronologia dei comandi e ping, e un trunk tra due switch configurato da CLI, provato, salvato e riaperto |

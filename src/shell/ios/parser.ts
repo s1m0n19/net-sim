@@ -126,6 +126,17 @@ export function walk(roots: CommandNode[], words: Word[], device: DeviceInfo): W
       next = visible(node.next, device);
       continue;
     }
+    // Un elenco di VLAN: se è scritto male, il segno va sotto il primo
+    // carattere che lo rende sbagliato.
+    const listNode = next.find((n) => n.token.kind === "vlan-list");
+    if (listNode !== undefined) {
+      const wrongAt = vlanListError(word.text);
+      if (wrongAt !== null) return { ok: false, error: "invalid", position: word.start + wrongAt };
+      node = listNode;
+      values.push(word.text);
+      next = visible(node.next, device);
+      continue;
+    }
     const wordNode = next.find((n) => n.token.kind === "word");
     if (wordNode !== undefined) {
       node = wordNode;
@@ -159,6 +170,42 @@ export function parseLine(roots: CommandNode[], line: string, device: DeviceInfo
   }
   if (reached.node?.command === undefined) return { kind: "incomplete" };
   return { kind: "command", command: reached.node.command(reached.values) };
+}
+
+/**
+ * Controlla un elenco di VLAN scritto come in IOS: numeri e intervalli
+ * crescenti separati da virgole, ciascun numero da 1 a 1001. Per esempio
+ * "10,20,30-35".
+ *
+ * @param text - la parola scritta
+ * @returns null se l'elenco va bene; altrimenti la posizione, dentro la
+ *   parola, del primo carattere che lo rende sbagliato (la lunghezza della
+ *   parola, se manca qualcosa alla fine, come in "10,")
+ */
+export function vlanListError(text: string): number | null {
+  let at = 0;
+  // Un numero di VLAN che comincia in `at`: la sua fine, oppure null.
+  const number = (): { value: number; end: number } | null => {
+    const digits = /^\d+/.exec(text.slice(at));
+    if (digits === null) return null;
+    const value = Number(digits[0]);
+    return checkVlanId(value) === null ? { value, end: at + digits[0].length } : null;
+  };
+  for (;;) {
+    const first = number();
+    if (first === null) return at;
+    at = first.end;
+    if (text[at] === "-") {
+      at++;
+      const last = number();
+      // Un intervallo al contrario, "20-10", è sbagliato dal suo secondo numero.
+      if (last === null || last.value < first.value) return at;
+      at = last.end;
+    }
+    if (at === text.length) return null;
+    if (text[at] !== ",") return at;
+    at++;
+  }
 }
 
 // Quanti caratteri iniziali di una parola scritta coincidono con l'inizio

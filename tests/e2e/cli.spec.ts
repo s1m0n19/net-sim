@@ -1,6 +1,7 @@
 // La lezione del criterio di accettazione della CLI (SPEC.md, sezione 5):
 // due router configurati per intero dal terminale, poi la CLI di uno switch.
 
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import {
   action,
@@ -234,4 +235,92 @@ test("le VLAN dalla CLI di uno switch: modalità, Tab, cronologia, show e ping",
   await expect(terminal(page)).toContainText("Reply from 192.168.1.11", { timeout: 40_000 });
   await typeCommand(page, "ping -n 1 192.168.1.12");
   await expect(terminal(page)).toContainText("Destination host unreachable", { timeout: 40_000 });
+});
+
+// Due switch uniti da un cavo tra le Fa0/24, ancora access, con le VLAN 10
+// e 20: PC1 (VLAN 10) e PC2 (VLAN 20) su SW1, PC3 (VLAN 10) e PC4 (VLAN 20)
+// su SW2, tutti in 192.168.1.0/24.
+function twoSwitchesFile(): string {
+  const sw = (id: string, name: string, byte: string, x: number) => ({
+    id,
+    kind: "switch",
+    name,
+    position: { x, y: 120 },
+    ports: [
+      { name: "Fa0/1", mac: `02:00:00:00:${byte}:01`, vlan: 10 },
+      { name: "Fa0/2", mac: `02:00:00:00:${byte}:02`, vlan: 20 },
+      { name: "Fa0/3", mac: `02:00:00:00:${byte}:03` },
+      { name: "Fa0/24", mac: `02:00:00:00:${byte}:24` },
+    ],
+    vlans: [
+      { id: 10, name: "STUDENTI" },
+      { id: 20, name: "DOCENTI" },
+    ],
+  });
+  const pc = (n: number, x: number) => ({
+    id: `d${n}`,
+    kind: "host",
+    name: `PC${n}`,
+    position: { x, y: 320 },
+    ports: [{ name: "Fa0", mac: `02:00:00:00:00:0${n}` }],
+    ip: `192.168.1.${9 + n}`,
+    mask: "255.255.255.0",
+    gateway: null,
+  });
+  const end = (deviceId: string, portName: string) => ({ deviceId, portName });
+  return JSON.stringify({
+    format: "net-sim",
+    version: 3,
+    network: {
+      devices: [sw("s1", "SW1", "01", 200), sw("s2", "SW2", "02", 600), pc(1, 100), pc(2, 300), pc(3, 500), pc(4, 700)],
+      links: [
+        { id: "l1", a: end("d1", "Fa0"), b: end("s1", "Fa0/1") },
+        { id: "l2", a: end("d2", "Fa0"), b: end("s1", "Fa0/2") },
+        { id: "l3", a: end("d3", "Fa0"), b: end("s2", "Fa0/1") },
+        { id: "l4", a: end("d4", "Fa0"), b: end("s2", "Fa0/2") },
+        { id: "l5", a: end("s1", "Fa0/24"), b: end("s2", "Fa0/24") },
+      ],
+    },
+  });
+}
+
+test("un trunk 802.1Q tra due switch, configurato tutto dalla CLI, provato, salvato e riaperto", async ({ page }) => {
+  test.setTimeout(150_000);
+  await openApp(page);
+  await openNetwork(page, "trunk.netsim.json", twoSwitchesFile());
+
+  // I due capi del trunk, uno per switch, con le VLAN 10 e 20 consentite.
+  for (const name of ["SW1", "SW2"]) {
+    await device(page, name).click();
+    await action(page, `Apri il terminale di ${name}`).click();
+    await typeLines(page, ["en", "conf t", "int fa0/24", "sw mo tr", "switchport trunk allowed vlan 10,20", "end"]);
+  }
+  await typeCommand(page, "show interfaces trunk");
+  await expect(terminal(page)).toContainText(/Fa0\/24 +on +802\.1q +trunking +1/);
+  await expect(terminal(page)).toContainText(/Vlans allowed on trunk\s*Fa0\/24 +10,20/);
+
+  // PC1 raggiunge PC3, nella VLAN 10 dall'altra parte del trunk, ma non PC4.
+  await device(page, "PC1").click();
+  await action(page, "Apri il terminale di PC1").click();
+  await typeCommand(page, "ping -n 1 192.168.1.12");
+  await runFast(page);
+  await expect(terminal(page)).toContainText("Reply from 192.168.1.12", { timeout: 40_000 });
+  await typeCommand(page, "ping -n 1 192.168.1.13");
+  await expect(terminal(page)).toContainText("Destination host unreachable", { timeout: 40_000 });
+  await page.getByRole("button", { name: /Pausa/ }).click();
+
+  // Si salva: il file è di versione 4, con i trunk.
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Salva", exact: true }).click();
+  const saved = readFileSync(await (await download).path(), "utf-8");
+  const data = JSON.parse(saved);
+  expect(data.version).toBe(4);
+  expect(data.network.devices[1].ports[3]).toEqual({ name: "Fa0/24", mac: "02:00:00:00:02:24", mode: "trunk", allowedVlans: [10, 20] });
+
+  // Riaperto, SW2 ha ancora il suo trunk.
+  await openNetwork(page, "trunk.netsim.json", saved);
+  await device(page, "SW2").click();
+  await action(page, "Apri il terminale di SW2").click();
+  await typeLines(page, ["en", "show running-config"]);
+  await expect(terminal(page)).toContainText(/interface FastEthernet0\/24\s*switchport trunk allowed vlan 10,20\s*switchport mode trunk/);
 });

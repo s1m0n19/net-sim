@@ -238,8 +238,12 @@ describe("aiuto, completamento e abbreviazioni", () => {
     expect(cli.help("switchport ")).toEqual([
       "  access  Settings of an access port",
       "  mode    Set the mode of the port",
+      "  trunk   Settings of a trunk port",
     ]);
-    expect(cli.help("switchport mode ")).toEqual(["  access  Access port, in a single VLAN"]);
+    expect(cli.help("switchport mode ")).toEqual([
+      "  access  Access port, in a single VLAN",
+      "  trunk   Trunk port, carrying several VLANs",
+    ]);
     expect(cli.help("switchport access vlan ")).toEqual(["  <1-1001>  VLAN number"]);
   });
 
@@ -261,7 +265,7 @@ describe("aiuto, completamento e abbreviazioni", () => {
 });
 
 describe("le porte access", () => {
-  test("switchport mode access si accetta e non cambia nulla", () => {
+  test("switchport mode access su una porta già access non cambia nulla", () => {
     const { sim, sw } = buildFlatLan();
     const cli = cliOn(sim, "s1");
     cli.script([...CONFIG, "interface fa0/1"]);
@@ -269,8 +273,7 @@ describe("le porte access", () => {
 
     expect(cli.type("switchport mode access")).toEqual([]);
     expect(sim.traces.length).toBe(before);
-    expect(sw.ports[0].vlan).toBe(1);
-    expect(cli.type("switchport mode trunk")).toEqual(invalidAt(15 + 16));
+    expect(sw.ports[0]).toMatchObject({ mode: "access", vlan: 1 });
   });
 
   test("switchport access vlan su una VLAN che c'è sposta la porta, senza messaggi", () => {

@@ -24,8 +24,21 @@ export type ShowTopic =
   | "ip-route"
   | "arp"
   | "interfaces"
+  | "interface" // una sola interfaccia: `show interfaces fa0/1`
+  | "interface-switchport" // `show interfaces fa0/24 switchport`
+  | "interfaces-trunk"
   | "mac-address-table"
   | "vlan-brief";
+
+// Come cambiano le VLAN consentite di un trunk (`switchport trunk allowed
+// vlan ...`): un elenco nuovo, tutte, nessuna, oppure aggiungerne o
+// toglierne alcune all'elenco di adesso.
+export type AllowedChange =
+  | { kind: "set"; vlans: readonly number[] }
+  | { kind: "all" }
+  | { kind: "none" }
+  | { kind: "add"; vlans: readonly number[] }
+  | { kind: "remove"; vlans: readonly number[] };
 
 // Che cosa l'utente ha chiesto, una volta capita la riga.
 export type Command =
@@ -49,11 +62,18 @@ export type Command =
   | { kind: "no-vlan"; id: number }
   | { kind: "vlan-name"; name: string } // dentro config-vlan
   | { kind: "no-vlan-name" }
-  | { kind: "switchport-mode-access" } // dentro un'interfaccia
+  | { kind: "switchport-mode"; mode: "access" | "trunk" } // dentro un'interfaccia
+  | { kind: "no-switchport-mode" }
   | { kind: "switchport-access-vlan"; id: number }
   | { kind: "no-switchport-access-vlan" }
-  // Guardare e provare.
-  | { kind: "show"; topic: ShowTopic }
+  // I trunk di uno switch, dentro un'interfaccia.
+  | { kind: "switchport-trunk-native"; id: number }
+  | { kind: "no-switchport-trunk-native" }
+  | { kind: "switchport-trunk-allowed"; change: AllowedChange }
+  | { kind: "no-switchport-trunk-allowed" }
+  // Guardare e provare. `interfaceName` (nome breve) c'è solo per i
+  // `show` di una sola interfaccia.
+  | { kind: "show"; topic: ShowTopic; interfaceName?: string }
   | { kind: "ping"; target: string }
   | { kind: "traceroute"; target: string }
   // `copy running-config startup-config` e `write memory`.
@@ -69,6 +89,9 @@ export type Token =
   | { kind: "word" }
   // Il numero di una VLAN, da 1 a MAX_VLAN_ID.
   | { kind: "vlan-id" }
+  // Un elenco di VLAN, come IOS: numeri e intervalli separati da virgole,
+  // senza spazi ("10,20,30-35"), da 1 a MAX_VLAN_ID.
+  | { kind: "vlan-list" }
   // Un'interfaccia del dispositivo.
   | { kind: "interface" };
 

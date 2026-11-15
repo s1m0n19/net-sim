@@ -8,7 +8,8 @@
 //
 // Le descrizioni sono in inglese, come sugli apparati.
 
-import { argument, keyword, type Command, type CommandNode, type ShowTopic } from "./grammar";
+import { parseVlanList } from "../../engine/model/trunks";
+import { argument, keyword, type AllowedChange, type Command, type CommandNode, type ShowTopic } from "./grammar";
 import type { Mode } from "./modes";
 
 const show = (topic: ShowTopic) => (): Command => ({ kind: "show", topic });
@@ -32,7 +33,21 @@ function showCommands(withConfiguration: boolean): CommandNode {
         ],
       }),
       keyword("arp", "ARP table", { command: show("arp") }),
-      keyword("interfaces", "Status of the interfaces", { command: show("interfaces") }),
+      keyword("interfaces", "Status of the interfaces", {
+        command: show("interfaces"),
+        next: [
+          keyword("trunk", "Ports in trunk mode", { only: "switch", command: show("interfaces-trunk") }),
+          argument("interface", "", {
+            command: ([interfaceName]) => ({ kind: "show", topic: "interface", interfaceName }),
+            next: [
+              keyword("switchport", "Access and trunk settings of the port", {
+                only: "switch",
+                command: ([interfaceName]) => ({ kind: "show", topic: "interface-switchport", interfaceName }),
+              }),
+            ],
+          }),
+        ],
+      }),
       keyword("mac", "MAC addresses", {
         only: "switch",
         next: [keyword("address-table", "MAC address table", { command: show("mac-address-table") })],
@@ -146,6 +161,26 @@ const CONFIG: CommandNode[] = [
 
 const noIpAddress = (): Command => ({ kind: "no-ip-address" });
 
+// Ciò che segue `switchport trunk allowed vlan`: un elenco che prende il
+// posto di quello di prima, `all`, `none`, oppure `add` e `remove` con un
+// elenco da aggiungere o da togliere. L'elenco l'ha già controllato il
+// parser (gettone vlan-list).
+const allowed = (change: AllowedChange): Command => ({ kind: "switchport-trunk-allowed", change });
+const VLAN_LIST_HELP = "VLAN numbers and ranges, like 10,20,30-35";
+const ALLOWED_VLANS: CommandNode[] = [
+  argument("vlan-list", VLAN_LIST_HELP, { command: ([list]) => allowed({ kind: "set", vlans: parseVlanList(list) }) }),
+  keyword("add", "Add VLANs to the list", {
+    next: [argument("vlan-list", VLAN_LIST_HELP, { command: ([list]) => allowed({ kind: "add", vlans: parseVlanList(list) }) })],
+  }),
+  keyword("all", "All VLANs", { command: () => allowed({ kind: "all" }) }),
+  keyword("none", "No VLAN", { command: () => allowed({ kind: "none" }) }),
+  keyword("remove", "Remove VLANs from the list", {
+    next: [
+      argument("vlan-list", VLAN_LIST_HELP, { command: ([list]) => allowed({ kind: "remove", vlans: parseVlanList(list) }) }),
+    ],
+  }),
+];
+
 // I comandi che valgono solo dentro un'interfaccia.
 const INTERFACE_ONLY: CommandNode[] = [
   keyword("ip", "IP configuration", {
@@ -187,18 +222,52 @@ const INTERFACE_ONLY: CommandNode[] = [
               }),
             ],
           }),
+          keyword("mode", "Make the port an access port again", { command: () => ({ kind: "no-switchport-mode" }) }),
+          keyword("trunk", "Settings of a trunk port", {
+            next: [
+              keyword("allowed", "VLANs the trunk lets through", {
+                next: [keyword("vlan", "Allow all VLANs again", { command: () => ({ kind: "no-switchport-trunk-allowed" }) })],
+              }),
+              keyword("native", "Native VLAN of the trunk", {
+                next: [keyword("vlan", "Set the native VLAN back to 1", { command: () => ({ kind: "no-switchport-trunk-native" }) })],
+              }),
+            ],
+          }),
         ],
       }),
     ],
   }),
   keyword("shutdown", "Turn the interface off", { command: () => ({ kind: "shutdown" }) }),
-  // Le porte di uno switch sono tutte access: `switchport mode access` si
-  // accetta, ma non cambia nulla. Le porte trunk non ci sono ancora.
+  // Una porta di switch è access, in una VLAN, oppure trunk, con più VLAN
+  // distinte dal tag 802.1Q. Il trunk si configura a mano (`mode trunk`):
+  // nessuna negoziazione, niente `dynamic`, e l'incapsulamento è sempre
+  // 802.1Q, quindi `switchport trunk encapsulation` non c'è (D-152).
   keyword("switchport", "Set the VLAN of a switch port", {
     only: "switch",
     next: [
       keyword("mode", "Set the mode of the port", {
-        next: [keyword("access", "Access port, in a single VLAN", { command: () => ({ kind: "switchport-mode-access" }) })],
+        next: [
+          keyword("access", "Access port, in a single VLAN", { command: () => ({ kind: "switchport-mode", mode: "access" }) }),
+          keyword("trunk", "Trunk port, carrying several VLANs", { command: () => ({ kind: "switchport-mode", mode: "trunk" }) }),
+        ],
+      }),
+      keyword("trunk", "Settings of a trunk port", {
+        next: [
+          keyword("allowed", "VLANs the trunk lets through", {
+            next: [keyword("vlan", "Set the VLANs the trunk lets through", { next: ALLOWED_VLANS })],
+          }),
+          keyword("native", "Native VLAN of the trunk, sent without tag", {
+            next: [
+              keyword("vlan", "Set the native VLAN", {
+                next: [
+                  argument("vlan-id", "VLAN number", {
+                    command: ([id]) => ({ kind: "switchport-trunk-native", id: Number(id) }),
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
       }),
       keyword("access", "Settings of an access port", {
         next: [

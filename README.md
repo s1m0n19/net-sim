@@ -185,14 +185,16 @@ I messaggi sono in inglese. L'output di `ping` cresce mentre la simulazione avan
 | `ip route 192.168.2.0 255.255.255.0 10.0.0.2`, `no ip route …` | Aggiunge o toglie una rotta statica (router) |
 | `vlan 10`, `name STUDENTI`, `no vlan 10` | Crea una VLAN ed entra a configurarla (`SW1(config-vlan)#`), le dà il nome, la elimina (switch) |
 | `switchport mode access`, `switchport access vlan 10`, `no switchport access vlan` | Mette la porta in una VLAN, creandola se manca, o la riporta nella VLAN 1 (switch) |
-| `show running-config`, `show ip interface brief`, `show ip route`, `show arp`, `show interfaces`, `show mac address-table`, `show vlan brief` | Mostrano configurazione e tabelle |
+| `switchport mode trunk`, `no switchport mode` | Rende la porta trunk, o la riporta access (switch) |
+| `switchport trunk native vlan 99`, `switchport trunk allowed vlan 10,20,30-35` (anche `all`, `none`, `add 30`, `remove 20`), e i loro `no` | Sceglie la VLAN nativa e le VLAN consentite del trunk (switch) |
+| `show running-config`, `show ip interface brief`, `show ip route`, `show arp`, `show interfaces`, `show mac address-table`, `show vlan brief`, `show interfaces trunk`, `show interfaces fa0/24 switchport` | Mostrano configurazione e tabelle |
 | `ping 192.168.2.10`, `traceroute 192.168.2.10` | Dal router: cinque echo request (`!` risposta, `.` nulla, `U` irraggiungibile), o un salto per riga |
 | `do …` | Esegue un `show`, un `ping` o un `traceroute` senza uscire dalla configurazione |
 | `copy running-config startup-config`, `write memory` | Rispondono `[OK]`: la rete si salva con il file |
 
 Ciò che si configura dalla CLI compare subito nel pannello e sul disegno, e viceversa.
 
-**VLAN.** Uno switch divide le sue porte in VLAN: due PC nella stessa sottorete IP ma in VLAN diverse non si raggiungono, perché i broadcast, e quindi l'ARP, restano nella VLAN della porta da cui entrano. Nel pannello dello switch la sezione VLAN elenca le VLAN con le loro porte (la VLAN 1 «default» c'è sempre), e Nuova VLAN ne crea una, con numero da 1 a 1001 e nome facoltativo; la sezione Porte dice per ogni porta il dispositivo collegato e la VLAN, da scegliere in un elenco. Una VLAN eliminata lascia le sue porte inattive, con il loro numero, finché non la si ricrea. La tabella MAC dice in quale VLAN è stata imparata ogni riga. Lo stesso si fa dalla CLI. Le porte sono solo access: niente trunk, e un cavo tra due switch porta i frame senza la VLAN.
+**VLAN.** Uno switch divide le sue porte in VLAN: due PC nella stessa sottorete IP ma in VLAN diverse non si raggiungono, perché i broadcast, e quindi l'ARP, restano nella VLAN della porta da cui entrano. Nel pannello dello switch la sezione VLAN elenca le VLAN con le loro porte (la VLAN 1 «default» c'è sempre), e Nuova VLAN ne crea una, con numero da 1 a 1001 e nome facoltativo; la sezione Porte dice per ogni porta il dispositivo collegato e la VLAN, da scegliere in un elenco. Una VLAN eliminata lascia le sue porte inattive, con il loro numero, finché non la si ricrea. La tabella MAC dice in quale VLAN è stata imparata ogni riga. Lo stesso si fa dalla CLI. Un cavo tra due porte access porta i frame senza la VLAN; per portare più VLAN tra due switch serve un **trunk** 802.1Q, che per ora si configura solo dalla CLI dello switch: `switchport mode trunk` sulla porta ai due capi, e se serve la VLAN nativa e le VLAN consentite. Sul trunk i frame portano il numero della loro VLAN, tranne quelli della nativa; `show interfaces trunk` dice quali VLAN passano davvero.
 
 Per provare: `examples/vlan-due-gruppi.netsim.json` è già diviso in VLAN 10 e VLAN 20, da mostrare alla LIM; `examples/vlan-esercitazione.netsim.json` è la stessa rete senza VLAN, con la consegna in una nota.
 

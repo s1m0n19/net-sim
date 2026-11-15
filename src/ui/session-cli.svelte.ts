@@ -151,7 +151,7 @@ export class SessionCli extends SessionRouter {
   ): boolean {
     switch (command.kind) {
       case "show":
-        print(show(command.topic, this.simulator!.network, device.id));
+        print(show(command.topic, this.simulator!.network, device.id, command.interfaceName));
         return false;
       case "ping":
       case "traceroute": {
