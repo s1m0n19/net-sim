@@ -576,7 +576,7 @@ Restano: strumenti dell'editor, progettati il 18 ottobre 2026 dopo la prova in a
 | Stato | Requisiti |
 | --- | --- |
 | **Fatto** | ED-6 duplicare, un dispositivo alla volta (D-101) · ED-8 esportare come immagine (D-119) · ED-9 annotazioni, riquadri e note (D-103, D-117) · ED-7 griglia magnetica · FILE-5 tabelle nel file · DEV-3 router · DEV-4 routing statico e tabella di routing · DEV-5 server · CFG-3 `tracert` · CFG-4 CLI in stile IOS · CFG-5 CLI e pannello sincronizzati · SIM-18 messaggi ICMP di errore |
-| **Fatto in parte** | SIM-7 porta spenta: interfacce dei router e porte degli switch sì, scheda di un host no · DEV-6 VLAN (tappa T2), anticipata: porte access nel motore (D-142), nel file (D-143), nella CLI (D-144) e nel pannello (D-145); restano trunk e routing tra VLAN |
+| **Fatto in parte** | SIM-7 porta spenta: interfacce dei router e porte degli switch sì, scheda di un host no · DEV-6 VLAN (tappa T2), anticipata: porte access nel motore (D-142), nel file (D-143), nella CLI (D-144) e nel pannello (D-145), collaudate insieme il 15 novembre 2026 (L2-1E), con le reti di esempio `vlan-due-gruppi` (già divisa, per la LIM) e `vlan-esercitazione` (da completare); restano trunk e routing tra VLAN |
 | **Da fare** | NF-2 offline e installabile |
 
 ### Rispetto al criterio di accettazione degli strumenti dell'editor

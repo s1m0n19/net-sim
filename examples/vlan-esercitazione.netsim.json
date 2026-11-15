@@ -1,0 +1,179 @@
+{
+  "format": "net-sim",
+  "version": 2,
+  "network": {
+    "devices": [
+      {
+        "id": "s1",
+        "kind": "switch",
+        "name": "SW1",
+        "position": {
+          "x": 400,
+          "y": 230
+        },
+        "ports": [
+          {
+            "name": "Fa0/1",
+            "mac": "02:00:00:00:01:01"
+          },
+          {
+            "name": "Fa0/2",
+            "mac": "02:00:00:00:01:02"
+          },
+          {
+            "name": "Fa0/3",
+            "mac": "02:00:00:00:01:03"
+          },
+          {
+            "name": "Fa0/4",
+            "mac": "02:00:00:00:01:04"
+          },
+          {
+            "name": "Fa0/5",
+            "mac": "02:00:00:00:01:05"
+          },
+          {
+            "name": "Fa0/6",
+            "mac": "02:00:00:00:01:06"
+          },
+          {
+            "name": "Fa0/7",
+            "mac": "02:00:00:00:01:07"
+          },
+          {
+            "name": "Fa0/8",
+            "mac": "02:00:00:00:01:08"
+          }
+        ]
+      },
+      {
+        "id": "d1",
+        "kind": "host",
+        "name": "PC1",
+        "position": {
+          "x": 120,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:01"
+          }
+        ],
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d2",
+        "kind": "host",
+        "name": "PC2",
+        "position": {
+          "x": 280,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:02"
+          }
+        ],
+        "ip": "192.168.1.11",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d3",
+        "kind": "host",
+        "name": "PC3",
+        "position": {
+          "x": 520,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:03"
+          }
+        ],
+        "ip": "192.168.1.12",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d4",
+        "kind": "host",
+        "name": "PC4",
+        "position": {
+          "x": 680,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:04"
+          }
+        ],
+        "ip": "192.168.1.13",
+        "mask": "255.255.255.0",
+        "gateway": null
+      }
+    ],
+    "links": [
+      {
+        "id": "l1",
+        "a": {
+          "deviceId": "d1",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/1"
+        }
+      },
+      {
+        "id": "l2",
+        "a": {
+          "deviceId": "d2",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/2"
+        }
+      },
+      {
+        "id": "l3",
+        "a": {
+          "deviceId": "d3",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/3"
+        }
+      },
+      {
+        "id": "l4",
+        "a": {
+          "deviceId": "d4",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/4"
+        }
+      }
+    ]
+  },
+  "annotations": [
+    {
+      "kind": "note",
+      "id": "a1",
+      "x": 60,
+      "y": -60,
+      "color": "blue",
+      "text": "Esercitazione: dividi la LAN in due VLAN\n1. Su SW1 crea la VLAN 10 STUDENTI e la VLAN 20 DOCENTI\n2. Metti PC1 e PC2 nella VLAN 10, PC3 e PC4 nella VLAN 20\n3. Prova i ping: chi risponde, e chi no? Perché?\n4. Leggi la tabella MAC di SW1"
+    }
+  ]
+}

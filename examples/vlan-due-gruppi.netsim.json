@@ -1,0 +1,205 @@
+{
+  "format": "net-sim",
+  "version": 3,
+  "network": {
+    "devices": [
+      {
+        "id": "s1",
+        "kind": "switch",
+        "name": "SW1",
+        "position": {
+          "x": 400,
+          "y": 150
+        },
+        "ports": [
+          {
+            "name": "Fa0/1",
+            "mac": "02:00:00:00:01:01",
+            "vlan": 10
+          },
+          {
+            "name": "Fa0/2",
+            "mac": "02:00:00:00:01:02",
+            "vlan": 10
+          },
+          {
+            "name": "Fa0/3",
+            "mac": "02:00:00:00:01:03",
+            "vlan": 20
+          },
+          {
+            "name": "Fa0/4",
+            "mac": "02:00:00:00:01:04",
+            "vlan": 20
+          },
+          {
+            "name": "Fa0/5",
+            "mac": "02:00:00:00:01:05"
+          },
+          {
+            "name": "Fa0/6",
+            "mac": "02:00:00:00:01:06"
+          },
+          {
+            "name": "Fa0/7",
+            "mac": "02:00:00:00:01:07"
+          },
+          {
+            "name": "Fa0/8",
+            "mac": "02:00:00:00:01:08"
+          }
+        ],
+        "vlans": [
+          {
+            "id": 10,
+            "name": "STUDENTI"
+          },
+          {
+            "id": 20,
+            "name": "DOCENTI"
+          }
+        ]
+      },
+      {
+        "id": "d1",
+        "kind": "host",
+        "name": "PC1",
+        "position": {
+          "x": 120,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:01"
+          }
+        ],
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d2",
+        "kind": "host",
+        "name": "PC2",
+        "position": {
+          "x": 280,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:02"
+          }
+        ],
+        "ip": "192.168.1.11",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d3",
+        "kind": "host",
+        "name": "PC3",
+        "position": {
+          "x": 520,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:03"
+          }
+        ],
+        "ip": "192.168.1.12",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d4",
+        "kind": "host",
+        "name": "PC4",
+        "position": {
+          "x": 680,
+          "y": 420
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:04"
+          }
+        ],
+        "ip": "192.168.1.13",
+        "mask": "255.255.255.0",
+        "gateway": null
+      }
+    ],
+    "links": [
+      {
+        "id": "l1",
+        "a": {
+          "deviceId": "d1",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/1"
+        }
+      },
+      {
+        "id": "l2",
+        "a": {
+          "deviceId": "d2",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/2"
+        }
+      },
+      {
+        "id": "l3",
+        "a": {
+          "deviceId": "d3",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/3"
+        }
+      },
+      {
+        "id": "l4",
+        "a": {
+          "deviceId": "d4",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/4"
+        }
+      }
+    ]
+  },
+  "annotations": [
+    {
+      "kind": "box",
+      "id": "a1",
+      "x": 50,
+      "y": 320,
+      "width": 300,
+      "height": 170,
+      "color": "green",
+      "label": "VLAN 10 · STUDENTI"
+    },
+    {
+      "kind": "box",
+      "id": "a2",
+      "x": 450,
+      "y": 320,
+      "width": 300,
+      "height": 170,
+      "color": "blue",
+      "label": "VLAN 20 · DOCENTI"
+    }
+  ]
+}
