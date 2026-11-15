@@ -318,9 +318,9 @@ describe("i file di prima", () => {
 
   test("un file di una versione futura non si apre", () => {
     const data = JSON.parse(save(buildVlanLan().sim.network));
-    data.version = 4;
+    data.version = 5;
 
-    expect(() => loadNetworkFile(JSON.stringify(data))).toThrow("versione più recente di net-sim (formato 4)");
+    expect(() => loadNetworkFile(JSON.stringify(data))).toThrow("versione più recente di net-sim (formato 5)");
   });
 });
 

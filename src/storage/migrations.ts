@@ -16,7 +16,7 @@
 // alla volta, prima dei controlli, con le funzioni qui sotto.
 
 /** La versione più recente del formato: quella che l'app sa leggere e scrivere. */
-export const LATEST_VERSION = 3;
+export const LATEST_VERSION = 4;
 
 // Per ogni versione, il passo che porta un file alla versione successiva.
 // Lavora sul JSON appena letto, prima di qualsiasi controllo.
@@ -27,6 +27,10 @@ const STEPS: Record<number, (data: any) => any> = {
   // Da 2 a 3: la versione 3 aggiunge soltanto le VLAN, che un file di
   // versione 2 non ha: tutte le sue porte stanno nella VLAN 1.
   2: (data) => ({ ...data, version: 3 }),
+  // Da 3 a 4: la versione 4 aggiunge soltanto i trunk (D-150), che un file
+  // di versione 3 non ha: le sue porte sono access, con nativa 1 e tutte le
+  // VLAN consentite, i valori che prende una porta senza quei campi.
+  3: (data) => ({ ...data, version: 4 }),
 };
 
 /**
@@ -51,10 +55,14 @@ export function migrateToLatest(data: any): any {
  * @param hasAnnotations - se il disegno ha almeno un'annotazione
  * @param hasVlans - se almeno uno switch ha una VLAN oltre la 1, o una
  *   porta fuori dalla VLAN 1 (vedi `usesVlans` in vlans-file.ts)
- * @returns 3 se ci sono VLAN, altrimenti 2 se ci sono annotazioni,
- *   altrimenti 1
+ * @param hasTrunks - se almeno una porta ha una configurazione di trunk
+ *   diversa da quella di partenza, anche se ora è access (vedi `usesTrunks`
+ *   in trunks-file.ts)
+ * @returns 4 se ci sono trunk, altrimenti 3 se ci sono VLAN, altrimenti 2
+ *   se ci sono annotazioni, altrimenti 1
  */
-export function versionToWrite(hasAnnotations: boolean, hasVlans: boolean): number {
+export function versionToWrite(hasAnnotations: boolean, hasVlans: boolean, hasTrunks = false): number {
+  if (hasTrunks) return 4;
   if (hasVlans) return 3;
   return hasAnnotations ? 2 : 1;
 }

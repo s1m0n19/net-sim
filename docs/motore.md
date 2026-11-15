@@ -168,7 +168,7 @@ Un tag uguale alla nativa si accetta come qualsiasi altro. Un frame rifiutato no
 
 Nulla corregge una configurazione sbagliata: native diverse ai due capi di un trunk fondono le due VLAN, un access collegato a un trunk passa solo la nativa, e nessun avviso lo spiega (D-149, SIM-8). PC, server e router scartano i frame con tag (`tagged-frame`), prima di guardarci dentro: un PC collegato a un trunk sente solo la nativa. Nel router è il punto in cui arriveranno le sottointerfacce (L3-1).
 
-Limite di questa fase (L2-2A): i trunk esistono nel motore e nei test, ma non nel file, nella CLI e nel pannello. Le tabelle di partenza (`tables.ts`) mettono le righe di una porta nella sua VLAN access, che su un trunk non basta: vanno riviste con il formato 4 (L2-2B).
+Nel file i trunk ci sono dalla versione 4 (D-150, [formato-file.md](formato-file.md)), con la VLAN nelle righe MAC delle porte trunk. Limite di adesso: CLI e pannello non li configurano ancora (L2-2C, L2-2D).
 
 ### Tabelle di partenza (`tables.ts`)
 
@@ -177,7 +177,7 @@ Una rete può partire con le tabelle già compilate, se il file le contiene (req
 - `copyTables(network)` copia le tabelle di adesso, una per dispositivo, anche vuota;
 - `fillTables(network, tables)` aggiunge le righe ai dispositivi, con le regole di sempre: salta un dispositivo spento e le righe di uno switch su una porta che non ha o su una porta inattiva.
 
-Le righe di uno switch sono `[MAC, porta]`, senza la VLAN: con le sole porte access la VLAN di una riga è sempre quella della sua porta, e `fillTables` la mette lì.
+Le righe di uno switch sono `[MAC, porta]` sulle porte access, e `[MAC, porta, VLAN]` sulle porte trunk (`TableRow`, D-150), come nel file: una porta access impara solo nella sua VLAN, un trunk in più VLAN. `fillTables` mette una riga senza VLAN nella VLAN della sua porta solo se la porta è access, e una riga con la VLAN in quella VLAN solo se esiste e la porta la porta; altrimenti la salta. La VLAN non si ricava mai da un trunk.
 
 Il `Simulator` riceve le tabelle di partenza dal costruttore, le applica subito e le tiene da parte: `reset()` svuota tutto e poi le rimette. `setStartingTables(tables)` le cambia senza toccare quelle di adesso; l'interfaccia lo chiama dopo un salvataggio con le tabelle. Eliminando un dispositivo si tolgono anche le sue, perché un dispositivo nuovo che ne prende l'identificativo non le erediti. Dopo le tabelle il simulatore ricalcola il segnale, e uno switch dimentica subito le righe di una porta senza segnale. Le tabelle di partenza non sono configurazione: annulla e ripristina non le toccano.
 
@@ -568,7 +568,7 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | `traceroute` di un router | Tre sonde per salto, in UDP | Una sonda ICMP per salto, come `tracert` |
 | Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11). Con le VLAN la tempesta resta nella VLAN del ciclo |
-| Trunk e tag 802.1Q | Un cavo tra switch porta più VLAN, distinte dal tag | Porte trunk con nativa e VLAN consentite; il tag è solo il numero della VLAN, senza TPID, priorità né doppi tag. Nel motore da L2-2A; file, CLI e pannello nelle fasi successive |
+| Trunk e tag 802.1Q | Un cavo tra switch porta più VLAN, distinte dal tag | Porte trunk con nativa e VLAN consentite; il tag è solo il numero della VLAN, senza TPID, priorità né doppi tag. Nel motore e nel file; CLI e pannello nelle fasi successive |
 | Native diverse ai due capi di un trunk | CDP lo segnala, e le due VLAN si uniscono | Le due VLAN si uniscono, senza avvisi |
 | Frame con tag su una porta access | Scartato | Scartato, anche se il tag è la VLAN della porta |
 | VLAN diverse ai due capi di un cavo tra switch | CDP lo segnala, e le due VLAN si uniscono | Le due VLAN si uniscono, senza avvisi |
@@ -731,7 +731,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 Non ancora nel codice:
 
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
-- **Spanning tree** (DEV-11) e gli altri protocolli: trunk 802.1Q nel file, nella CLI e nel pannello (L2-2B…D), routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
+- **Spanning tree** (DEV-11) e gli altri protocolli: trunk 802.1Q nella CLI e nel pannello (L2-2C, L2-2D), routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
 

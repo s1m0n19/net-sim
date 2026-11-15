@@ -36,12 +36,16 @@ function resaved(text: string, annotations?: Annotation[]): string {
 }
 
 // La versione più bassa che basta a una rete letta da un file, ricavata dal
-// suo contenuto: 3 se uno switch ha una VLAN oltre la 1 o una porta fuori
-// dalla VLAN 1, 2 se ci sono annotazioni, altrimenti 1.
+// suo contenuto: 4 se una porta ha una configurazione di trunk diversa da
+// quella di partenza, 3 se uno switch ha una VLAN oltre la 1 o una porta
+// fuori dalla VLAN 1, 2 se ci sono annotazioni, altrimenti 1.
 function minimumVersion(loaded: ReturnType<typeof loadNetworkFile>): number {
-  const hasVlans = loaded.network.devices.some(
-    (device) => device.kind === "switch" && (device.vlans.length > 1 || device.ports.some((port) => port.vlan !== 1)),
+  const switches = loaded.network.devices.flatMap((device) => (device.kind === "switch" ? [device] : []));
+  const hasTrunks = switches.some((sw) =>
+    sw.ports.some((port) => port.mode !== "access" || port.nativeVlan !== 1 || port.allowedVlans !== "all"),
   );
+  if (hasTrunks) return 4;
+  const hasVlans = switches.some((sw) => sw.vlans.length > 1 || sw.ports.some((port) => port.vlan !== 1));
   if (hasVlans) return 3;
   return loaded.annotations.length > 0 ? 2 : 1;
 }
@@ -54,9 +58,9 @@ function altered(text: string, change: (data: any) => void): string {
 }
 
 describe("versioni del formato", () => {
-  test("l'app legge fino all'ultima versione, la 3", () => {
+  test("l'app legge fino all'ultima versione, la 4", () => {
     expect(FILE_VERSION).toBe(LATEST_VERSION);
-    expect(LATEST_VERSION).toBe(3);
+    expect(LATEST_VERSION).toBe(4);
   });
 
   test.each(Object.keys(examples))("l'esempio %s si apre, e risalvato ha la versione più bassa che basta al suo contenuto", (path) => {
@@ -106,16 +110,16 @@ describe("versioni del formato", () => {
     expect(versionToWrite(true, true)).toBe(3);
   });
 
-  test("un file di versione 1 arriva alla 3 senza cambiare contenuto", () => {
+  test("un file di versione 1 arriva alla 4 senza cambiare contenuto", () => {
     const data = JSON.parse(lanFile);
 
-    expect(migrateToLatest(data)).toEqual({ ...data, version: 3 });
+    expect(migrateToLatest(data)).toEqual({ ...data, version: 4 });
   });
 
-  test("un file di versione 2 arriva alla 3 senza cambiare contenuto", () => {
+  test("un file di versione 2 arriva alla 4 senza cambiare contenuto", () => {
     const data = { ...JSON.parse(lanFile), version: 2, annotations: [NOTE] };
 
-    expect(migrateToLatest(data)).toEqual({ ...data, version: 3 });
+    expect(migrateToLatest(data)).toEqual({ ...data, version: 4 });
   });
 
   test("un file di versione 1 con annotazioni non viene dall'app, e si rifiuta", () => {
@@ -133,7 +137,7 @@ describe("campi sconosciuti", () => {
     ["in uno switch", lanFile, (d: any) => (d.network.devices[0].stp = true), 'SW1: campo sconosciuto: "stp".'],
     ["nella posizione", lanFile, (d: any) => (d.network.devices[1].position.z = 0), 'PC1, posizione: campo sconosciuto: "z".'],
     ["in una porta di PC", lanFile, (d: any) => (d.network.devices[1].ports[0].enabled = true), 'PC1 Fa0: campo sconosciuto: "enabled".'],
-    ["in una porta di switch", lanFile, (d: any) => (d.network.devices[0].ports[0].mode = "trunk"), 'SW1 Fa0/1: campo sconosciuto: "mode".'],
+    ["in una porta di switch", lanFile, (d: any) => (d.network.devices[0].ports[0].speed = "100"), 'SW1 Fa0/1: campo sconosciuto: "speed".'],
     ["in un cavo", lanFile, (d: any) => (d.network.links[0].speed = 100), 'Collegamento l1: campo sconosciuto: "speed".'],
     ["in un capo di un cavo", lanFile, (d: any) => (d.network.links[0].b.vlan = 1), 'Collegamento l1, capo b: campo sconosciuto: "vlan".'],
     ["in un router", routerFile, (d: any) => (d.network.devices[2].ospf = {}), 'R1: campo sconosciuto: "ospf".'],
