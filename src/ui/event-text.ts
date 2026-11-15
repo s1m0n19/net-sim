@@ -167,6 +167,12 @@ export function describeTrace(network: Network, trace: Trace, index: number): Ev
     }
     case "port-vlan-changed":
       return row(trace.deviceId, `sposta la porta ${trace.portName} dalla VLAN ${trace.from} alla VLAN ${trace.vlan}`);
+    case "port-mode-changed":
+      return row(trace.deviceId, `rende ${trace.mode} la porta ${trace.portName}`);
+    case "trunk-changed": {
+      const what = trace.change === "native-vlan" ? "la VLAN nativa" : "le VLAN consentite";
+      return row(trace.deviceId, `cambia ${what} della porta ${trace.portName}`);
+    }
     case "simulation-suspended":
       return row(null, "simulazione sospesa: tempesta di broadcast");
   }

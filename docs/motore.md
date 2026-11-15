@@ -122,7 +122,7 @@ interface Switch {
   kind: "switch";
   id: string;
   name: string;
-  ports: SwitchPort[];                // una porta, più `enabled` (false = spenta) e `vlan`
+  ports: SwitchPort[];                // una porta, più `enabled` (false = spenta), `vlan`, `mode`, `nativeVlan`, `allowedVlans`
   powered: boolean;                   // false = spento
   vlans: Vlan[];                      // le VLAN configurate, { id, name }; la 1 c'è sempre
   // stato di esecuzione
@@ -141,7 +141,34 @@ Uno switch ha le VLAN sulle porte access (requisito DEV-6, prima parte L2-1, dec
 
 `createSwitch` mette la VLAN 1 nel registro anche se la configurazione non la dice, e le porte senza VLAN nella 1: una rete senza VLAN funziona come prima. La tabella MAC è divisa per VLAN, perché ogni VLAN impara per conto suo: lo stesso MAC può stare in due VLAN, su porte diverse. Chi la legge usa le funzioni di `vlans.ts`: `macTableOf(sw, vlan)` la tabella di una VLAN, `macEntries(sw)` tutte le righe con la loro VLAN, `learnMac` e `forgetMacs` per scriverla. `activeVlanOf(sw, porta)` dice la VLAN di una porta, oppure null se è inattiva.
 
-Il frame non porta la VLAN: non c'è il tag 802.1Q, che verrà con le porte trunk (L2-2). Per lo switch la VLAN di un frame è quella della porta da cui è entrato. Gli host non sanno nulla delle VLAN.
+Su una porta access il frame non porta la VLAN: per lo switch la VLAN del frame è quella della porta da cui è entrato. Gli host non sanno nulla delle VLAN.
+
+### Trunk 802.1Q (`trunks.ts`)
+
+Una porta di switch può essere **trunk** (requisito DEV-6, seconda parte L2-2, decisioni D-146…D-148): porta più VLAN sullo stesso cavo, di solito verso un altro switch, e le distingue con il **tag 802.1Q**, il campo facoltativo `vlanTag` del frame. Tre campi della porta, con i loro valori di partenza:
+
+- `mode`: `"access"` (in partenza) oppure `"trunk"`;
+- `nativeVlan`: la VLAN nativa, 1 in partenza. I suoi frame passano sul trunk senza tag, e un frame senza tag che arriva su un trunk appartiene a lei;
+- `allowedVlans`: le VLAN consentite, `"all"` in partenza, oppure un elenco in ordine di numero, senza doppioni (vuoto = nessuna). Gli elenchi non si modificano mai: uno nuovo prende il posto del vecchio, e fotografia, duplicazione e `createSwitch` ne fanno una copia.
+
+`vlan` resta la VLAN access della porta. Nativa e consentite restano memorizzate anche su una porta access, dove non hanno effetto, e la VLAN access resta su una porta trunk: cambiare modo non azzera nulla, come su IOS.
+
+Il frame senza tag non ha il campo `vlanTag` (mai `vlanTag: undefined`), così i frame di sempre restano identici. Del tag vero si tiene solo il numero della VLAN: TPID, priorità (PCP, DEI) e doppi tag (Q-in-Q) non ci sono.
+
+In quale VLAN entra un frame lo dice `ingressVlanOf(sw, porta, frame)`, che restituisce `{ vlan }` oppure `{ dropped }`:
+
+| Porta | Frame | Esito |
+| --- | --- | --- |
+| access | senza tag | la VLAN della porta; `inactive-vlan` se non esiste più |
+| access | con tag (qualsiasi) | scartato, `tagged-on-access`, come su uno switch Catalyst |
+| trunk | con tag V | V, se consentita (altrimenti `vlan-not-allowed`) ed esistente (altrimenti `vlan-not-configured`) |
+| trunk | senza tag | la nativa, con gli stessi due controlli |
+
+Un tag uguale alla nativa si accetta come qualsiasi altro. Un frame rifiutato non fa imparare nulla. Le altre funzioni: `carriesVlan(porta, vlan)` dice se una porta fa uscire una VLAN (access: è la sua; trunk: è consentita); `isAllowed`, `normalizeVlanList`, `copyAllowedVlans`, `sameAllowedVlans` lavorano sulle VLAN consentite; `parseVlanList("10,20,30-35")` e `formatVlanList` leggono e scrivono gli elenchi come IOS, e serviranno alla CLI (L2-2C).
+
+Nulla corregge una configurazione sbagliata: native diverse ai due capi di un trunk fondono le due VLAN, un access collegato a un trunk passa solo la nativa, e nessun avviso lo spiega (D-149, SIM-8). PC, server e router scartano i frame con tag (`tagged-frame`), prima di guardarci dentro: un PC collegato a un trunk sente solo la nativa. Nel router è il punto in cui arriveranno le sottointerfacce (L3-1).
+
+Limite di questa fase (L2-2A): i trunk esistono nel motore e nei test, ma non nel file, nella CLI e nel pannello. Le tabelle di partenza (`tables.ts`) mettono le righe di una porta nella sua VLAN access, che su un trunk non basta: vanno riviste con il formato 4 (L2-2B).
 
 ### Tabelle di partenza (`tables.ts`)
 
@@ -287,6 +314,9 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `addRoute(deviceId, route)`, `removeRoute(deviceId, route)` | Aggiunge o toglie una rotta statica di un router |
 | `addVlan(deviceId, vlan, name)`, `renameVlan(deviceId, vlan, name)`, `removeVlan(deviceId, vlan)` | Crea, rinomina o elimina una VLAN di uno switch. Creare una VLAN che c'è già non cambia nulla; la VLAN 1 non si rinomina e non si elimina |
 | `setPortVlan(deviceId, portName, vlan)` | Mette una porta di uno switch in una VLAN, anche se la VLAN non esiste: allora la porta è inattiva |
+| `setPortMode(deviceId, portName, mode)` | Rende una porta di uno switch access o trunk; VLAN access, nativa e consentite restano |
+| `setNativeVlan(deviceId, portName, vlan)` | Sceglie la VLAN nativa di una porta, anche se la VLAN non esiste o non è consentita |
+| `setAllowedVlans(deviceId, portName, vlans)` | Sceglie le VLAN consentite: `"all"` o un elenco, che il motore mette in ordine senza doppioni |
 
 Un ping rivolto a uno switch o lanciato da un host spento, e qualsiasi azione su un dispositivo o un collegamento inesistente, vengono rifiutati con un errore. Così anche qualsiasi azione a simulazione sospesa. Lo stesso vale per un ping verso un testo che non è un indirizzo IPv4, o con un numero di richieste che non è un intero positivo.
 
@@ -306,7 +336,7 @@ Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` r
 | `link-changed` | Un cavo è stato staccato o riattaccato |
 | `power-changed` | Un dispositivo è stato spento o acceso |
 | `simulation-suspended` | Il simulatore si è fermato per una tempesta di broadcast. Contiene quanti frame erano in viaggio |
-| `device-added`, `device-removed`, `link-added`, `link-removed`, `device-renamed`, `host-configured`, `vlan-changed`, `port-vlan-changed` | La rete è stata modificata. Le tracce di ciò che è stato tolto ne portano il nome, perché dopo non lo si può più leggere dalla rete |
+| `device-added`, `device-removed`, `link-added`, `link-removed`, `device-renamed`, `host-configured`, `vlan-changed`, `port-vlan-changed`, `port-mode-changed`, `trunk-changed` | La rete è stata modificata. Le tracce di ciò che è stato tolto ne portano il nome, perché dopo non lo si può più leggere dalla rete |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
 
@@ -496,16 +526,16 @@ Un echo reply o un avviso ICMP indirizzato a uno degli indirizzi del router vien
 
 Per ogni frame ricevuto su una porta:
 
-1. **VLAN.** La VLAN del frame è quella della porta di arrivo. Se la VLAN non esiste più, la porta è inattiva: il frame viene scartato (`inactive-vlan`) e lo switch non impara nulla.
+1. **VLAN.** La VLAN del frame la decide la porta di arrivo, con `ingressVlanOf` (vedi «Trunk 802.1Q»): su una porta access è la sua VLAN, su un trunk quella del tag o la nativa. Se la porta rifiuta il frame (per esempio `inactive-vlan`, se la sua VLAN non esiste più), lo switch lo scarta e non impara nulla.
 2. **Apprendimento.** Registra nella tabella MAC di quella VLAN che l'indirizzo sorgente si raggiunge da quella porta. Se il MAC era già noto su un'altra porta, vale l'informazione più recente.
 3. **Decisione**, presa da `chooseOutputPorts`, che non modifica nulla e guarda solo la stessa VLAN:
-   - destinazione broadcast, oppure sconosciuta nella VLAN: tutte le porte della stessa VLAN tranne quella di arrivo (flooding);
-   - destinazione nota su un'altra porta: solo quella, che è della stessa VLAN perché è lì che lo switch l'ha imparata;
+   - destinazione broadcast, oppure sconosciuta nella VLAN: tutte le porte che portano la VLAN (`carriesVlan`: le access della VLAN e i trunk che la consentono) tranne quella di arrivo (flooding);
+   - destinazione nota su un'altra porta: solo quella, che porta la VLAN perché è lì che lo switch l'ha imparata; se nel frattempo non la porta più, la riga non conta e il frame va in flooding;
    - destinazione nota sulla porta di arrivo: nessuna, il frame viene scartato.
 
-Una riga della tabella di una VLAN indica sempre una porta di quella VLAN: lo switch impara solo dalla porta di arrivo, e quando una porta cambia VLAN dimentica le sue righe nella VLAN di prima. Due switch uniti da porte access si passano frame senza VLAN, e ciascuno li mette nella VLAN della sua porta: se i due capi hanno VLAN diverse, le due VLAN diventano una rete sola.
+Una riga della tabella di una VLAN indica sempre una porta che porta quella VLAN: lo switch impara solo dalla porta di arrivo, e quando una porta smette di portare una VLAN dimentica le sue righe in quella VLAN. Una porta trunk compare nelle tabelle di più VLAN. Due switch uniti da porte access si passano frame senza VLAN, e ciascuno li mette nella VLAN della sua porta: se i due capi hanno VLAN diverse, le due VLAN diventano una rete sola.
 
-Lo switch inoltra il frame così com'è, senza modificarlo, e non guarda che cosa contiene: gli bastano i due indirizzi MAC. Per questo l'aggiunta di IPv4 e ICMP non ha richiesto di toccarlo.
+Lo switch non guarda che cosa contiene il frame: gli bastano i due indirizzi MAC e il tag. Per questo l'aggiunta di IPv4 e ICMP non ha richiesto di toccarlo. Il contenuto resta quello arrivato; ogni porta di uscita ha però un frame suo, preparato da `frameLeaving(sw, porta, vlan, frame)`: senza tag su una porta access e sul trunk per la nativa, con `vlanTag` sul trunk per le altre VLAN. Si parte sempre dal frame senza tag, e il frame arrivato non cambia, così un tag messo per una porta non finisce mai su un'altra. È `deliverToSwitch` (`delivery.ts`) a trasmettere su ogni porta il suo frame; `Simulator.transmit` non sa nulla di VLAN.
 
 Un frame inoltrato su una porta senza cavo non parte.
 
@@ -538,9 +568,11 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | `traceroute` di un router | Tre sonde per salto, in UDP | Una sonda ICMP per salto, come `tracert` |
 | Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11). Con le VLAN la tempesta resta nella VLAN del ciclo |
-| Trunk e tag 802.1Q | Un cavo tra switch porta più VLAN, distinte dal tag | Non ancora: solo porte access, una VLAN per cavo (previsti in L2-2) |
+| Trunk e tag 802.1Q | Un cavo tra switch porta più VLAN, distinte dal tag | Porte trunk con nativa e VLAN consentite; il tag è solo il numero della VLAN, senza TPID, priorità né doppi tag. Nel motore da L2-2A; file, CLI e pannello nelle fasi successive |
+| Native diverse ai due capi di un trunk | CDP lo segnala, e le due VLAN si uniscono | Le due VLAN si uniscono, senza avvisi |
+| Frame con tag su una porta access | Scartato | Scartato, anche se il tag è la VLAN della porta |
 | VLAN diverse ai due capi di un cavo tra switch | CDP lo segnala, e le due VLAN si uniscono | Le due VLAN si uniscono, senza avvisi |
-| VTP, DTP | Propagano le VLAN e negoziano i trunk | Assenti: ogni switch ha le sue VLAN |
+| VTP, DTP | Propagano le VLAN e negoziano i trunk | Assenti: ogni switch ha le sue VLAN, e un trunk si configura a mano |
 | VLAN 1002–1005 e intervallo esteso (1006–4094) | Esistono | Non disponibili: si usano i numeri da 1 a 1001 |
 | Nomi delle VLAN | Due VLAN non possono avere lo stesso nome | Il nome non si controlla contro gli altri |
 
@@ -588,7 +620,7 @@ I guasti fanno parte della configurazione: un file può contenere un dispositivo
 
 ## Modificare la rete
 
-Le modifiche stanno in `src/engine/editing.ts`, quelle che riguardano solo i router (indirizzi delle interfacce, rotte statiche) in `src/engine/router-editing.ts`, accendere e spegnere una porta in `src/engine/port-editing.ts`, e le VLAN degli switch in `src/engine/vlan-editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
+Le modifiche stanno in `src/engine/editing.ts`, quelle che riguardano solo i router (indirizzi delle interfacce, rotte statiche) in `src/engine/router-editing.ts`, accendere e spegnere una porta in `src/engine/port-editing.ts`, le VLAN degli switch in `src/engine/vlan-editing.ts` e le porte trunk in `src/engine/trunk-editing.ts`: funzioni che cambiano la configurazione della rete e nient'altro. Non sanno nulla di frame in viaggio, attese o tracce. A tenere in ordine la simulazione attorno a ogni modifica pensa `src/engine/network-changes.ts` (`applyEdit`), chiamato dal simulatore: i frame che viaggiavano su un cavo tolto vanno persi, chi cambia configurazione riparte da capo, e ogni dispositivo torna a sapere quali cavi ha.
 
 ### Tornare a una configurazione di prima
 
@@ -604,7 +636,7 @@ L'azione `restore-configuration` riporta la rete a una fotografia. Non sostituis
 | Un cavo ha solo cambiato porta | Viene spostato, non tolto e rimesso |
 | Interfacce e rotte di un router | Indirizzo, stato acceso o spento e rotte tornano quelli della fotografia. Lo stato di un'interfaccia è configurazione, non un guasto: su un router si imposta |
 | Porte di uno switch | Lo stato acceso o spento torna quello della fotografia, per la stessa ragione |
-| VLAN di uno switch | Tornano il registro e la VLAN di ogni porta. Prima si creano le VLAN che mancano, poi le porte tornano nella loro VLAN, poi si correggono i nomi, per ultime si eliminano le VLAN in più |
+| VLAN di uno switch | Tornano il registro e, per ogni porta, VLAN, nativa, consentite e modo. Prima si creano le VLAN che mancano, poi le porte tornano alla loro configurazione, poi si correggono i nomi, per ultime si eliminano le VLAN in più |
 | Guasti | Non sono modifiche: ciò che c'è da entrambe le parti resta acceso o spento, collegato o staccato, com'è adesso. Ciò che torna, torna com'era nella fotografia |
 
 La fotografia deve venire dalla stessa rete, in un momento precedente o successivo della stessa serie di modifiche: è ciò che garantisce che nomi e porte da rimettere siano liberi.
@@ -631,7 +663,7 @@ Un PC nuovo nasce acceso, senza cavi e senza configurazione IP. Uno switch nuovo
 | Originale | Che cosa prende la copia |
 | --- | --- |
 | PC o server | Maschera e gateway, e il primo indirizzo libero della stessa sottorete dopo quello dell'originale. Libero vuol dire non usato da un host né da un'interfaccia di router, diverso dal gateway, e accettato da `checkIpConfig` (quindi non il broadcast). Se non ce n'è, o se l'originale non è configurato, la copia nasce non configurata |
-| Switch | Il numero di porte, quali sono spente, le VLAN e la VLAN di ogni porta |
+| Switch | Il numero di porte, quali sono spente, le VLAN, e di ogni porta VLAN, modo, nativa e VLAN consentite (con un elenco suo) |
 | Router | Solo il numero di interfacce: nascono spente e senza indirizzi, e non ci sono rotte. Copiare gli indirizzi produrrebbe soltanto conflitti |
 
 La copia nasce accesa, senza cavi e con le tabelle vuote, come ogni dispositivo nuovo; la traccia è quella di un dispositivo aggiunto (`device-added`). L'indirizzo successivo lo calcola `nextFreeAddress`, che scorre gli indirizzi come numeri con `ipToNumber` e `numberToIp` (`model/addresses.ts`). Dove mettere la copia sul disegno lo decide l'interfaccia.
@@ -649,6 +681,7 @@ La copia nasce accesa, senza cavi e con le tabelle vuote, come ogni dispositivo 
 | Togliere una rotta | Il router non ha quella rotta |
 | Creare una VLAN, spostare una porta | Il numero non è un intero da 1 a 1001, il nome non va bene, la porta non esiste o il dispositivo non è uno switch |
 | Rinominare o eliminare una VLAN | È la VLAN 1, o lo switch non ha quella VLAN |
+| Modo, nativa, VLAN consentite di una porta | Il modo non è `access` o `trunk`, un numero non è una VLAN da 1 a 1001, la porta non esiste o il dispositivo non è uno switch. Una nativa o una VLAN consentita che lo switch non ha è permessa |
 
 Una modifica rifiutata non cambia nulla: la rete resta com'era.
 
@@ -662,7 +695,9 @@ Si può modificare la rete mentre il traffico viaggia.
 - **Spegnere un'interfaccia di un router**: è come staccarne il cavo. I frame che ci viaggiavano vanno persi e il segnale sparisce dai due capi.
 - **Cambiare l'indirizzo di un'interfaccia**: il router dimentica la tabella ARP e ciò che stava aspettando, come un host.
 - **Spostare una porta in un'altra VLAN**: lo switch dimentica le righe di quella porta nella VLAN di prima, e solo quelle. Un frame già sul cavo verso la porta, arrivando, appartiene alla VLAN nuova.
-- **Eliminare una VLAN**: lo switch dimentica tutte le sue righe; le porte restano assegnate al suo numero, inattive. I frame già sul cavo arrivano, e lo switch li scarta. Ricreando la VLAN, le porte tornano attive.
+- **Eliminare una VLAN**: lo switch dimentica tutte le sue righe, anche quelle dei trunk; le porte restano assegnate al suo numero, inattive. I frame già sul cavo arrivano, e lo switch li scarta. Ricreando la VLAN, le porte tornano attive.
+- **Cambiare modo a una porta**: lo switch dimentica tutte le righe di quella porta, in ogni VLAN.
+- **Cambiare la nativa di un trunk**: lo switch dimentica le righe di quella porta nella nativa di prima. **Togliere VLAN dalle consentite di un trunk**: dimentica le righe di quella porta in quelle VLAN. Su una porta access nativa e consentite non hanno effetto, e non si dimentica nulla; lo stesso per la VLAN access di una porta trunk. I frame già sul cavo, arrivando, seguono la configurazione nuova.
 - Dopo ogni modifica ogni dispositivo torna a sapere quali cavi ha: gli host se sentono il segnale, gli switch quali MAC dimenticare.
 
 A simulazione sospesa le modifiche sono rifiutate, come ogni altra azione.
@@ -696,7 +731,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 Non ancora nel codice:
 
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
-- **Spanning tree** (DEV-11) e gli altri protocolli: trunk 802.1Q e routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
+- **Spanning tree** (DEV-11) e gli altri protocolli: trunk 802.1Q nel file, nella CLI e nel pannello (L2-2B…D), routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
 
@@ -744,6 +779,7 @@ I file di test, uno per argomento:
 | `power-faults.test.ts` | Dispositivo spento |
 | `switch-ports.test.ts` | Porta di switch spenta e riaccesa |
 | `vlan.test.ts` | VLAN sulle porte access: isolamento, tabella MAC per VLAN, VLAN eliminate, due switch, ciclo in una VLAN, annulla e duplica, invarianti |
+| `trunk.test.ts` | Trunk 802.1Q: VLAN di ingresso, uscita e tag, due switch uniti da un trunk, configurazioni sbagliate (native diverse, access contro trunk, VLAN non consentite o non configurate), cambi a traffico in corso, pulizia delle tabelle MAC, azioni, annulla e duplica, reti di L2-1 senza tag |
 | `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
 | `duplicating.test.ts` | Duplicare un PC, un server, uno switch e un router; l'indirizzo libero successivo |
 | `router-model.test.ts` | Il router nel modello: controlli su interfacce e rotte, reti sovrapposte, segnale |

@@ -3,9 +3,18 @@ import type { Ipv4Address, MacAddress } from "./addresses";
 // L'incapsulamento è rappresentato alla lettera: il frame Ethernet
 // contiene nel campo `payload` l'unità del livello superiore.
 // Il campo `etherType` dice che cosa c'è dentro, come nel frame vero.
+//
+// Il campo `vlanTag` è il tag IEEE 802.1Q: il numero della VLAN scritto
+// nel frame mentre attraversa un cavo trunk tra due switch (D-147). È ciò
+// che sta sul cavo, non la VLAN in cui lo switch tratta il frame. Un frame
+// senza tag non ha il campo (mai `vlanTag: undefined`): così i frame di
+// sempre restano identici. Del tag vero si tiene solo il numero: il TPID
+// (0x8100) è sempre lo stesso, e priorità (PCP, DEI) e doppi tag (Q-in-Q)
+// non servono a nessuna lezione. Dopo il tag, `etherType` resta quello del
+// contenuto, come nel frame vero.
 export type EthernetFrame =
-  | { dstMac: MacAddress; srcMac: MacAddress; etherType: "ARP"; payload: ArpPacket }
-  | { dstMac: MacAddress; srcMac: MacAddress; etherType: "IPv4"; payload: Ipv4Packet };
+  | { dstMac: MacAddress; srcMac: MacAddress; vlanTag?: number; etherType: "ARP"; payload: ArpPacket }
+  | { dstMac: MacAddress; srcMac: MacAddress; vlanTag?: number; etherType: "IPv4"; payload: Ipv4Packet };
 
 export interface ArpPacket {
   operation: "request" | "reply";

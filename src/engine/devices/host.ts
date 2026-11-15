@@ -51,6 +51,12 @@ export function startArpResolution(host: Host, targetIp: Ipv4Address): EthernetF
 export function receiveFrame(host: Host, frame: EthernetFrame): HostReaction {
   const myMac = host.ports[0].mac;
 
+  // Un frame con il tag 802.1Q viene da una porta trunk: la scheda di rete
+  // di un PC non sa che farne, e lo scarta prima di guardarci dentro.
+  if (frame.vlanTag !== undefined) {
+    return { ...NOTHING, dropped: "tagged-frame", tableChanged: false };
+  }
+
   // Un host accetta solo i frame diretti a lui o a tutti.
   if (frame.dstMac !== myMac && frame.dstMac !== BROADCAST_MAC) {
     return { ...NOTHING, dropped: "not-my-mac", tableChanged: false };

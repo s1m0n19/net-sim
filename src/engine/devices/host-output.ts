@@ -11,7 +11,9 @@ import type { PendingPacket } from "../model/network";
 
 // Perché un frame è stato scartato. Serve ai test: l'interfaccia mostra
 // che il frame è stato scartato, ma non ne spiega la causa.
-export type DropReason = "not-my-mac" | "arp-not-for-me" | "ip-not-for-me";
+// "tagged-frame": il frame porta un tag 802.1Q, e la scheda di rete di un
+// PC non conosce le VLAN (succede se lo si collega a una porta trunk).
+export type DropReason = "not-my-mac" | "arp-not-for-me" | "ip-not-for-me" | "tagged-frame";
 
 // Un'attesa dell'host: se scade, l'host deve fare qualcosa.
 export type HostTimer =

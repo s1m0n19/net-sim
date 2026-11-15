@@ -10,6 +10,7 @@ import type { RouterDropReason } from "./devices/router";
 import type { SwitchDropReason } from "./devices/switch";
 import type { EthernetFrame, Ipv4Packet } from "./model/frames";
 import type { PortRef, StaticRoute } from "./model/network";
+import type { PortMode } from "./model/trunks";
 
 export type Trace =
   | {
@@ -113,6 +114,10 @@ export type Trace =
   // Modifiche alle VLAN di uno switch.
   | { time: number; kind: "vlan-changed"; deviceId: string; vlan: number; change: "added" | "renamed" | "removed" }
   | { time: number; kind: "port-vlan-changed"; deviceId: string; portName: string; vlan: number; from: number }
+  // Modifiche alle porte trunk di uno switch: il modo, oppure la nativa o
+  // le VLAN consentite.
+  | { time: number; kind: "port-mode-changed"; deviceId: string; portName: string; mode: PortMode; from: PortMode }
+  | { time: number; kind: "trunk-changed"; deviceId: string; portName: string; change: "native-vlan" | "allowed-vlans" }
   | {
       // Il simulatore si è fermato da solo: c'è una tempesta di broadcast.
       time: number;

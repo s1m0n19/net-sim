@@ -17,8 +17,9 @@
 // stata eliminata: allora la porta è accesa ma inattiva, e non fa passare
 // nulla finché la VLAN non torna o la porta non cambia VLAN.
 //
-// Il frame non porta la VLAN: per lo switch, la VLAN di un frame è quella
-// della porta da cui è entrato. Il tag 802.1Q verrà con le porte trunk.
+// Su una porta access il frame non porta la VLAN: per lo switch, la VLAN
+// del frame è quella della porta da cui è entrato. Sulle porte trunk la
+// dice il tag 802.1Q del frame (model/trunks.ts).
 
 import type { MacAddress } from "./addresses";
 import type { Switch } from "./network";

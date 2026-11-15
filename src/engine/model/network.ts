@@ -1,5 +1,6 @@
 import type { Ipv4Address, MacAddress } from "./addresses";
 import type { Ipv4Packet } from "./frames";
+import { ALL_VLANS, copyAllowedVlans, type AllowedVlans, type PortMode } from "./trunks";
 import { DEFAULT_VLAN, defaultVlans, type Vlan } from "./vlans";
 
 export interface Network {
@@ -80,16 +81,28 @@ export interface Host {
   awaitedEchoes: AwaitedEcho[];
 }
 
-// Una porta di uno switch: oltre a nome e MAC, si può spegnere, e sta in
-// una VLAN.
+// Una porta di uno switch: oltre a nome e MAC, si può spegnere, ed è una
+// porta access, in una VLAN, oppure una porta trunk, che porta più VLAN
+// verso un altro switch (model/vlans.ts).
 export interface SwitchPort extends Port {
   // false = la porta è spenta ("shutdown"): è come se il cavo non ci
   // fosse. Su uno switch le porte nascono accese.
   enabled: boolean;
-  // La VLAN della porta, che è una porta access (model/vlans.ts). Il
-  // numero resta anche se la VLAN viene eliminata: la porta allora è
-  // inattiva. Su uno switch le porte nascono nella VLAN 1.
+  // La VLAN access della porta. Il numero resta anche se la VLAN viene
+  // eliminata: la porta allora è inattiva. Resta anche quando la porta
+  // diventa trunk, per quando tornerà access. Su uno switch le porte
+  // nascono nella VLAN 1.
   vlan: number;
+  // "access": la porta sta in una VLAN, e i frame passano senza tag.
+  // "trunk": la porta porta più VLAN, distinte dal tag 802.1Q. Le porte
+  // nascono access.
+  mode: PortMode;
+  // La VLAN nativa del trunk: i suoi frame passano sul cavo senza tag.
+  // 1 in partenza. Come le VLAN consentite, resta memorizzata anche su una
+  // porta access, come su IOS, dove però non ha effetto.
+  nativeVlan: number;
+  // Le VLAN che il trunk lascia passare: "all", tutte, in partenza.
+  allowedVlans: AllowedVlans;
 }
 
 export interface Switch {
@@ -164,7 +177,7 @@ export type HostConfig = Pick<Host, "id" | "name" | "ports" | "ip" | "mask" | "g
   role?: Host["role"];
 };
 export type SwitchConfig = Pick<Switch, "id" | "name"> & {
-  ports: (Port & { enabled?: boolean; vlan?: number })[];
+  ports: (Port & { enabled?: boolean; vlan?: number; mode?: PortMode; nativeVlan?: number; allowedVlans?: AllowedVlans })[];
   powered?: boolean;
   vlans?: Vlan[];
 };
@@ -207,6 +220,10 @@ export function createSwitch(config: SwitchConfig): Switch {
     ...port,
     enabled: port.enabled ?? true,
     vlan: port.vlan ?? DEFAULT_VLAN,
+    mode: port.mode ?? "access",
+    nativeVlan: port.nativeVlan ?? DEFAULT_VLAN,
+    // Una copia: la porta non condivide l'elenco con chi l'ha descritta.
+    allowedVlans: copyAllowedVlans(port.allowedVlans ?? ALL_VLANS),
   }));
   const vlans = defaultVlans().filter((vlan) => !config.vlans?.some((other) => other.id === vlan.id));
   vlans.push(...(config.vlans ?? []).map((vlan) => ({ ...vlan })));

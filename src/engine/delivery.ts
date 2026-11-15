@@ -9,7 +9,7 @@
 import type { HostOutput, HostTimer, TimerRequest } from "./devices/host";
 import { receiveFrame, timerExpired } from "./devices/host";
 import { receiveFrameOnRouter, routerTimerExpired, type RouterOutput } from "./devices/router";
-import { receiveFrameOnSwitch } from "./devices/switch";
+import { frameLeaving, receiveFrameOnSwitch } from "./devices/switch";
 import type { FrameArrival, TimerExpiry } from "./events";
 import type { EthernetFrame } from "./model/frames";
 import { findDevice, type Host, type Network, type PortRef, type Router, type Switch } from "./model/network";
@@ -188,10 +188,12 @@ function deliverToSwitch(sim: Wire, sw: Switch, event: FrameArrival, produced: T
     return;
   }
 
-  // Lo switch inoltra il frame così com'è, senza modificarlo. Le copie
-  // partono nello stesso istante e arriveranno insieme.
+  // Lo switch inoltra il frame senza toccarne il contenuto: ogni porta ha
+  // la sua copia, con il tag 802.1Q solo dove serve (frameLeaving). Le
+  // copie partono nello stesso istante e arriveranno insieme.
   for (const portName of reaction.forwardTo) {
-    sim.transmit({ deviceId: sw.id, portName }, frame, conversationId, hops + 1, produced);
+    const leaving = frameLeaving(sw, portName, reaction.vlan!, frame);
+    sim.transmit({ deviceId: sw.id, portName }, leaving, conversationId, hops + 1, produced);
   }
 }
 

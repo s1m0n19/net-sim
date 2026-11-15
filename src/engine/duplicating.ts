@@ -7,9 +7,9 @@
 //
 // - un PC o un server: maschera e gateway, e il primo indirizzo libero della
 //   stessa sottorete dopo quello dell'originale;
-// - uno switch: il numero di porte, quali sono spente, le VLAN e la VLAN
-//   di ogni porta. Le tabelle MAC no: la copia nasce senza aver imparato
-//   nulla, come ogni dispositivo nuovo;
+// - uno switch: il numero di porte, quali sono spente, le VLAN, e di ogni
+//   porta la VLAN, il modo, la nativa e le VLAN consentite. Le tabelle MAC
+//   no: la copia nasce senza aver imparato nulla, come ogni dispositivo nuovo;
 // - un router: il numero di interfacce, che nascono spente e senza indirizzi,
 //   senza rotte. Copiarne gli indirizzi produrrebbe solo conflitti.
 //
@@ -19,6 +19,7 @@ import { addDevice, type DeviceTemplate } from "./editing";
 import { ipToNumber, numberToIp, sameNetwork, type Ipv4Address } from "./model/addresses";
 import { checkIpConfig } from "./model/ip-config";
 import { findDevice, type Device, type Host, type Network } from "./model/network";
+import { copyAllowedVlans } from "./model/trunks";
 
 /**
  * Aggiunge alla rete una copia di un dispositivo.
@@ -34,8 +35,12 @@ export function duplicateDevice(network: Network, deviceId: string): Device {
 
   if (original.kind === "switch" && copy.kind === "switch") {
     copy.ports.forEach((port, index) => {
-      port.enabled = original.ports[index].enabled;
-      port.vlan = original.ports[index].vlan;
+      const from = original.ports[index];
+      port.enabled = from.enabled;
+      port.vlan = from.vlan;
+      port.mode = from.mode;
+      port.nativeVlan = from.nativeVlan;
+      port.allowedVlans = copyAllowedVlans(from.allowedVlans);
     });
     copy.vlans = original.vlans.map((vlan) => ({ ...vlan }));
   }

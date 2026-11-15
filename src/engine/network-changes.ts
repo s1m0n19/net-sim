@@ -21,8 +21,11 @@ import {
   type Device,
   type Link,
   type StaticRoute,
+  type Switch,
+  type SwitchPort,
 } from "./model/network";
 import { sameRoute } from "./model/router-config";
+import { isAllowed } from "./model/trunks";
 import { forgetMacs } from "./model/vlans";
 import type { DeviceSnapshot } from "./snapshot";
 import { stepsToRestore, type RestoreStep, type Snapshot } from "./snapshot";
@@ -170,6 +173,43 @@ export function applyEdit(sim: SimulationState, action: EditAction, produced: Tr
       forgetMacsWhere(sim, deviceId, (entryVlan, entryPort) => entryVlan === from && entryPort === portName, produced);
       break;
     }
+    case "set-port-mode": {
+      const { deviceId, portName, mode } = action;
+      const from = editing.setPortMode(sim.network, deviceId, portName, mode);
+      if (from === null) break;
+      produced.push({ time, kind: "port-mode-changed", deviceId, portName, mode, from });
+      // Cambiano tutte le VLAN che la porta porta: lo switch dimentica
+      // tutto ciò che aveva imparato da lì, in ogni VLAN.
+      forgetMacsWhere(sim, deviceId, (_entryVlan, entryPort) => entryPort === portName, produced);
+      break;
+    }
+    case "set-native-vlan": {
+      const { deviceId, portName, vlan } = action;
+      const from = editing.setNativeVlan(sim.network, deviceId, portName, vlan);
+      if (from === null) break;
+      produced.push({ time, kind: "trunk-changed", deviceId, portName, change: "native-vlan" });
+      // Su un trunk, i frame senza tag entravano nella nativa di prima: chi
+      // era stato imparato così, da quella porta, non si raggiunge più lì.
+      // Su una porta access la nativa non ha effetto: nulla da dimenticare.
+      if (isTrunk(sim, deviceId, portName)) {
+        forgetMacsWhere(sim, deviceId, (entryVlan, entryPort) => entryVlan === from && entryPort === portName, produced);
+      }
+      break;
+    }
+    case "set-allowed-vlans": {
+      const { deviceId, portName, vlans } = action;
+      if (editing.setAllowedVlans(sim.network, deviceId, portName, vlans) === null) break;
+      produced.push({ time, kind: "trunk-changed", deviceId, portName, change: "allowed-vlans" });
+      // Su un trunk, le VLAN non più consentite non si raggiungono più da
+      // quella porta. Su una porta access l'elenco non ha effetto.
+      const port = switchPortOf(sim, deviceId, portName);
+      if (port.mode === "trunk") {
+        const doomed = (entryVlan: number, entryPort: string) =>
+          entryPort === portName && !isAllowed(port.allowedVlans, entryVlan);
+        forgetMacsWhere(sim, deviceId, doomed, produced);
+      }
+      break;
+    }
     case "restore-configuration":
       restore(sim, action.snapshot, produced);
       break;
@@ -227,6 +267,17 @@ function deviceFrom(snapshot: DeviceSnapshot): Device {
         routes: snapshot.routes.map((route) => ({ ...route })),
       });
   }
+}
+
+// Una porta di uno switch, che la modifica appena fatta ha già trovato.
+function switchPortOf(sim: SimulationState, deviceId: string, portName: string): SwitchPort {
+  const sw = findDevice(sim.network, deviceId) as Switch;
+  return sw.ports.find((port) => port.name === portName)!;
+}
+
+// Dice se una porta di uno switch è trunk.
+function isTrunk(sim: SimulationState, deviceId: string, portName: string): boolean {
+  return switchPortOf(sim, deviceId, portName).mode === "trunk";
 }
 
 // Uno switch dimentica le righe della tabella MAC che una modifica alle

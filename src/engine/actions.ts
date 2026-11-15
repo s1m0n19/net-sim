@@ -3,6 +3,7 @@ import type { DeviceTemplate } from "./editing";
 import type { Ipv4Address } from "./model/addresses";
 import type { IpConfig } from "./model/ip-config";
 import type { PortRef, StaticRoute } from "./model/network";
+import type { AllowedVlans, PortMode } from "./model/trunks";
 import { DEFAULT_MAX_HOPS, DEFAULT_PING_COUNT } from "./protocols/icmp";
 
 // Le azioni sono l'unico modo in cui l'esterno comanda il motore.
@@ -31,6 +32,10 @@ export type Action =
   | { kind: "rename-vlan"; deviceId: string; vlan: number; name: string }
   | { kind: "remove-vlan"; deviceId: string; vlan: number }
   | { kind: "set-port-vlan"; deviceId: string; portName: string; vlan: number }
+  // Modifiche alle porte trunk di uno switch.
+  | { kind: "set-port-mode"; deviceId: string; portName: string; mode: PortMode }
+  | { kind: "set-native-vlan"; deviceId: string; portName: string; vlan: number }
+  | { kind: "set-allowed-vlans"; deviceId: string; portName: string; vlans: AllowedVlans }
   | { kind: "restore-configuration"; snapshot: Snapshot };
 
 /**
@@ -356,4 +361,47 @@ export function removeVlan(deviceId: string, vlan: number): Action {
  */
 export function setPortVlan(deviceId: string, portName: string, vlan: number): Action {
   return { kind: "set-port-vlan", deviceId, portName, vlan };
+}
+
+/**
+ * Crea l'azione "rendi access o trunk questa porta di uno switch" (su un
+ * Cisco: `switchport mode trunk`). La VLAN access, la nativa e le VLAN
+ * consentite restano memorizzate, qualunque sia il modo.
+ *
+ * @param deviceId - identificativo dello switch
+ * @param portName - la porta, per esempio "Fa0/24"
+ * @param mode - "access" oppure "trunk"
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function setPortMode(deviceId: string, portName: string, mode: PortMode): Action {
+  return { kind: "set-port-mode", deviceId, portName, mode };
+}
+
+/**
+ * Crea l'azione "usa questa VLAN nativa sul trunk" (su un Cisco:
+ * `switchport trunk native vlan 99`). Vale anche su una porta access, dove
+ * resta memorizzata senza effetto.
+ *
+ * @param deviceId - identificativo dello switch
+ * @param portName - la porta
+ * @param vlan - il numero della VLAN, da 1 a 1001, anche se non esiste
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function setNativeVlan(deviceId: string, portName: string, vlan: number): Action {
+  return { kind: "set-native-vlan", deviceId, portName, vlan };
+}
+
+/**
+ * Crea l'azione "lascia passare sul trunk solo queste VLAN" (su un Cisco:
+ * `switchport trunk allowed vlan 10,20`). Vale anche su una porta access,
+ * dove resta memorizzata senza effetto.
+ *
+ * @param deviceId - identificativo dello switch
+ * @param portName - la porta
+ * @param vlans - "all", oppure i numeri delle VLAN, in qualsiasi ordine;
+ *   un elenco vuoto non lascia passare nulla
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function setAllowedVlans(deviceId: string, portName: string, vlans: AllowedVlans): Action {
+  return { kind: "set-allowed-vlans", deviceId, portName, vlans };
 }

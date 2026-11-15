@@ -10,6 +10,7 @@ import {
   type Router,
   type RouterInterface,
   type Switch,
+  type SwitchPort,
 } from "../../src/engine/model/network";
 import { Simulator } from "../../src/engine/simulator";
 
@@ -323,6 +324,56 @@ export function buildTwoVlanSwitches(farVlan: number): {
       cable("l2", "d3", "Fa0", "s1", "Fa0/2"),
       cable("l3", "s1", "Fa0/3", "s2", "Fa0/3"),
       cable("l4", "d2", "Fa0", "s2", "Fa0/1"),
+    ],
+  };
+  return { sim: new Simulator(network), sw1, sw2 };
+}
+
+// La configurazione di trunk di una porta, per buildTrunkSwitches.
+export type TrunkPortConfig = Partial<Pick<SwitchPort, "mode" | "vlan" | "nativeVlan" | "allowedVlans">>;
+
+// Due switch uniti da un trunk 802.1Q tra le porte Fa0/24, con le VLAN 10
+// (STUDENTI) e 20 (DOCENTI); tutti nella sottorete 192.168.1.0/24:
+//
+//   SW1: PC1 su Fa0/1 nella VLAN 10, PC2 su Fa0/2 nella VLAN 20
+//   SW2: PC3 su Fa0/1 nella VLAN 10, PC4 su Fa0/2 nella VLAN 20
+//
+// Fa0/3 resta libera su tutti e due, access nella VLAN 1. Le Fa0/24 sono
+// trunk con nativa 1 e tutte le VLAN consentite; `sw1Trunk` e `sw2Trunk`
+// cambiano la configurazione della Fa0/24 di ciascuno.
+export function buildTrunkSwitches(
+  sw1Trunk: TrunkPortConfig = {},
+  sw2Trunk: TrunkPortConfig = {},
+): { sim: Simulator; sw1: Switch; sw2: Switch } {
+  const pc1 = host("d1", "PC1", PC1_MAC, PC1_IP);
+  const pc2 = host("d2", "PC2", PC2_MAC, PC2_IP);
+  const pc3 = host("d3", "PC3", PC3_MAC, PC3_IP);
+  const pc4 = host("d4", "PC4", PC4_MAC, PC4_IP);
+  const trunkSwitch = (id: string, name: string, macByte: string, trunk: TrunkPortConfig) =>
+    createSwitch({
+      id,
+      name,
+      ports: [
+        { name: "Fa0/1", mac: `02:00:00:00:${macByte}:01`, vlan: 10 },
+        { name: "Fa0/2", mac: `02:00:00:00:${macByte}:02`, vlan: 20 },
+        { name: "Fa0/3", mac: `02:00:00:00:${macByte}:03` },
+        { name: "Fa0/24", mac: `02:00:00:00:${macByte}:24`, mode: "trunk", ...trunk },
+      ],
+      vlans: [
+        { id: 10, name: "STUDENTI" },
+        { id: 20, name: "DOCENTI" },
+      ],
+    });
+  const sw1 = trunkSwitch("s1", "SW1", "01", sw1Trunk);
+  const sw2 = trunkSwitch("s2", "SW2", "02", sw2Trunk);
+  const network: Network = {
+    devices: [sw1, sw2, pc1, pc2, pc3, pc4],
+    links: [
+      cable("l1", "d1", "Fa0", "s1", "Fa0/1"),
+      cable("l2", "d2", "Fa0", "s1", "Fa0/2"),
+      cable("l3", "d3", "Fa0", "s2", "Fa0/1"),
+      cable("l4", "d4", "Fa0", "s2", "Fa0/2"),
+      cable("l5", "s1", "Fa0/24", "s2", "Fa0/24"),
     ],
   };
   return { sim: new Simulator(network), sw1, sw2 };

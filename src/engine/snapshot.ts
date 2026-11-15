@@ -15,6 +15,7 @@
 import type { Action } from "./actions";
 import type { HostConfig, Link, Network, Router, RouterConfig, Switch } from "./model/network";
 import { sameRoute } from "./model/router-config";
+import { copyAllowedVlans, sameAllowedVlans } from "./model/trunks";
 
 // Un dispositivo come sta nella fotografia: la sua configurazione, senza
 // stato di esecuzione.
@@ -48,7 +49,10 @@ export type RestoreStep =
           | "add-vlan"
           | "rename-vlan"
           | "remove-vlan"
-          | "set-port-vlan";
+          | "set-port-vlan"
+          | "set-port-mode"
+          | "set-native-vlan"
+          | "set-allowed-vlans";
       }
     >
   | { kind: "put-device"; device: DeviceSnapshot }
@@ -74,7 +78,9 @@ export function takeSnapshot(network: Network): Snapshot {
         return {
           kind: "switch",
           ...common,
-          ports: device.ports.map((port) => ({ ...port })),
+          // L'elenco delle VLAN consentite si copia: la fotografia non deve
+          // condividere nulla con la rete.
+          ports: device.ports.map((port) => ({ ...port, allowedVlans: copyAllowedVlans(port.allowedVlans) })),
           vlans: device.vlans.map((vlan) => ({ ...vlan })),
         };
       case "router":
@@ -186,9 +192,11 @@ function portStateSteps(
 
 // Le modifiche che riportano le VLAN di uno switch alla sua fotografia.
 // L'ordine evita di passare da stati che la fotografia non aveva: prima si
-// creano le VLAN che mancano, poi le porte tornano nella loro VLAN, poi
-// si correggono i nomi, e per ultime si eliminano le VLAN in più, quando
-// nessuna porta che deve restare attiva ci sta più.
+// creano le VLAN che mancano, poi le porte tornano nella loro VLAN e alla
+// loro configurazione di trunk, poi si correggono i nomi, e per ultime si
+// eliminano le VLAN in più, quando nessuna porta che deve restare attiva
+// ci sta più. Modo, nativa e VLAN consentite accettano qualsiasi valore
+// valido, quindi il loro ordine non crea stati illegittimi.
 function vlanSteps(sw: Switch, wanted: Extract<DeviceSnapshot, { kind: "switch" }>): RestoreStep[] {
   const steps: RestoreStep[] = [];
   const deviceId = sw.id;
@@ -199,8 +207,19 @@ function vlanSteps(sw: Switch, wanted: Extract<DeviceSnapshot, { kind: "switch" 
   }
   for (const port of wanted.ports) {
     const now = sw.ports.find((p) => p.name === port.name);
-    if (now !== undefined && now.vlan !== port.vlan) {
+    if (now === undefined) continue;
+    if (now.vlan !== port.vlan) {
       steps.push({ kind: "set-port-vlan", deviceId, portName: port.name, vlan: port.vlan });
+    }
+    if (now.nativeVlan !== port.nativeVlan) {
+      steps.push({ kind: "set-native-vlan", deviceId, portName: port.name, vlan: port.nativeVlan });
+    }
+    if (!sameAllowedVlans(now.allowedVlans, port.allowedVlans)) {
+      const vlans = copyAllowedVlans(port.allowedVlans);
+      steps.push({ kind: "set-allowed-vlans", deviceId, portName: port.name, vlans });
+    }
+    if (now.mode !== port.mode) {
+      steps.push({ kind: "set-port-mode", deviceId, portName: port.name, mode: port.mode });
     }
   }
   for (const vlan of wanted.vlans) {

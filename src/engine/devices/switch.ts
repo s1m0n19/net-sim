@@ -4,10 +4,12 @@
 // i due indirizzi MAC. Con quello sorgente impara dove si trovano i
 // dispositivi; con quello di destinazione decide dove inoltrare.
 //
-// Ogni porta sta in una VLAN (model/vlans.ts), e ogni VLAN si comporta
-// come uno switch a parte: impara nella sua tabella e inoltra solo sulle
-// sue porte. Finché non si configurano VLAN, tutte le porte stanno nella
-// VLAN 1 e lo switch è quello di sempre.
+// Ogni VLAN (model/vlans.ts) si comporta come uno switch a parte: impara
+// nella sua tabella e inoltra solo sulle porte che la portano. Una porta
+// access porta la sua VLAN; una porta trunk porta le VLAN consentite, e
+// sul cavo le distingue con il tag 802.1Q (model/trunks.ts). Finché non si
+// configurano VLAN, tutte le porte sono access nella VLAN 1 e lo switch è
+// quello di sempre.
 //
 // Come per l'host, queste funzioni non spediscono nulla: dicono al
 // simulatore su quali porte il frame deve uscire.
@@ -15,17 +17,24 @@
 import { BROADCAST_MAC, type MacAddress } from "../model/addresses";
 import type { EthernetFrame } from "../model/frames";
 import type { Switch } from "../model/network";
-import { activeVlanOf, learnMac, macTableOf } from "../model/vlans";
+import { carriesVlan, ingressVlanOf, type IngressDrop } from "../model/trunks";
+import { learnMac, macTableOf } from "../model/vlans";
 
 // Perché lo switch ha scartato un frame. Serve ai test.
 // - "destination-on-incoming-port": il destinatario sta dalla parte da cui
 //   il frame è arrivato, che quindi è già dove deve essere;
-// - "inactive-vlan": la porta di arrivo è in una VLAN che non esiste più.
-export type SwitchDropReason = "destination-on-incoming-port" | "inactive-vlan";
+// - gli altri: la porta di arrivo ha rifiutato il frame (vedi IngressDrop
+//   in model/trunks.ts), per esempio "inactive-vlan" se è in una VLAN che
+//   non esiste più.
+export type SwitchDropReason = "destination-on-incoming-port" | IngressDrop;
 
 // Che cosa ha fatto lo switch dopo aver ricevuto un frame.
 export interface SwitchReaction {
   forwardTo: string[]; // nomi delle porte di uscita
+  // La VLAN in cui lo switch ha trattato il frame; null se la porta di
+  // arrivo lo ha rifiutato. Serve a preparare il frame per ogni uscita
+  // (frameLeaving).
+  vlan: number | null;
   dropped: SwitchDropReason | null;
   tableChanged: boolean;
 }
@@ -34,10 +43,11 @@ export interface SwitchReaction {
  * Decide che cosa fa uno switch quando gli arriva un frame: prima impara,
  * poi sceglie le porte di uscita. Può aggiornare la tabella MAC dello switch.
  *
- * Tutto avviene dentro la VLAN della porta di arrivo, che è la VLAN del
- * frame: il frame non porta nessun segno della VLAN, è la porta a darla.
- * Se la VLAN della porta non esiste più, la porta è inattiva: il frame
- * viene scartato e lo switch non impara nulla.
+ * Tutto avviene dentro la VLAN di ingresso del frame: su una porta access
+ * è la VLAN della porta, su una porta trunk quella del tag, o la nativa per
+ * un frame senza tag (ingressVlanOf). Se la porta rifiuta il frame, per
+ * esempio perché la sua VLAN non esiste più, lo switch lo scarta e non
+ * impara nulla.
  *
  * @param sw - lo switch che riceve; la sua tabella MAC può essere modificata
  * @param inPort - nome della porta da cui il frame è entrato
@@ -50,31 +60,36 @@ export function receiveFrameOnSwitch(
   inPort: string,
   frame: EthernetFrame,
 ): SwitchReaction {
-  // 1. La VLAN del frame è quella della porta da cui è entrato.
-  const vlan = activeVlanOf(sw, inPort);
-  if (vlan === null) {
-    return { forwardTo: [], dropped: "inactive-vlan", tableChanged: false };
+  // 1. La VLAN del frame la decide la porta da cui è entrato.
+  const ingress = ingressVlanOf(sw, inPort, frame);
+  if ("dropped" in ingress) {
+    return { forwardTo: [], vlan: null, dropped: ingress.dropped, tableChanged: false };
   }
+  const vlan = ingress.vlan;
 
   // 2. Apprendimento, nella tabella di quella VLAN: chi ha spedito questo
-  //    frame si raggiunge dalla porta di arrivo.
+  //    frame si raggiunge dalla porta di arrivo. Una porta trunk impara
+  //    così in più tabelle, una per VLAN.
   const tableChanged = learnMac(sw, vlan, frame.srcMac, inPort);
 
   // 3. Decisione, guardando solo la stessa VLAN.
   const forwardTo = chooseOutputPorts(sw, vlan, inPort, frame.dstMac);
   const dropped = macTableOf(sw, vlan).get(frame.dstMac) === inPort ? "destination-on-incoming-port" : null;
 
-  return { forwardTo, dropped, tableChanged };
+  return { forwardTo, vlan, dropped, tableChanged };
 }
 
 /**
  * Sceglie le porte su cui inoltrare un frame di una VLAN. Non modifica nulla.
  *
- * - Destinazione broadcast o sconosciuta nella VLAN: tutte le porte della
- *   stessa VLAN tranne quella di arrivo (flooding). Le porte delle altre
- *   VLAN non lo ricevono mai.
- * - Destinazione nota su un'altra porta: solo quella, che è nella stessa
- *   VLAN perché è lì che lo switch l'ha imparata.
+ * - Destinazione broadcast o sconosciuta nella VLAN: tutte le porte che
+ *   portano la VLAN tranne quella di arrivo (flooding): le porte access
+ *   della VLAN e i trunk che la consentono. Le altre porte non lo
+ *   ricevono mai.
+ * - Destinazione nota su un'altra porta: solo quella, che porta la VLAN
+ *   perché è lì che lo switch l'ha imparata. Se nel frattempo la porta non
+ *   la porta più, la riga non vale: il frame va in flooding, come per una
+ *   destinazione sconosciuta.
  * - Destinazione nota sulla porta di arrivo: nessuna, il frame è già dove
  *   deve arrivare.
  *
@@ -82,19 +97,48 @@ export function receiveFrameOnSwitch(
  * mettere nulla su un cavo che non porta segnale.
  *
  * @param sw - lo switch, di cui si leggono porte e tabella MAC
- * @param vlan - la VLAN del frame, cioè quella della porta di arrivo
+ * @param vlan - la VLAN di ingresso del frame
  * @param inPort - nome della porta da cui il frame è entrato
  * @param dstMac - indirizzo MAC di destinazione del frame
  * @returns i nomi delle porte di uscita, eventualmente nessuno
  */
 export function chooseOutputPorts(sw: Switch, vlan: number, inPort: string, dstMac: MacAddress): string[] {
-  const knownPort = dstMac === BROADCAST_MAC ? undefined : macTableOf(sw, vlan).get(dstMac);
+  const learned = dstMac === BROADCAST_MAC ? undefined : macTableOf(sw, vlan).get(dstMac);
+  const knownPort = learned === undefined || carries(sw, learned, vlan) ? learned : undefined;
 
   if (knownPort === undefined) {
-    return sw.ports.filter((port) => port.vlan === vlan && port.name !== inPort).map((port) => port.name);
+    return sw.ports.filter((port) => carriesVlan(port, vlan) && port.name !== inPort).map((port) => port.name);
   }
   if (knownPort === inPort) {
     return [];
   }
   return [knownPort];
+}
+
+/**
+ * Prepara il frame che esce da una porta: la stessa cosa arrivata, con il
+ * tag 802.1Q se la porta è un trunk e la VLAN non è la sua nativa, e senza
+ * tag in tutti gli altri casi. Il frame arrivato non cambia: ogni porta di
+ * uscita ha un frame suo, così un tag messo per una porta non finisce mai
+ * su un'altra.
+ *
+ * @param sw - lo switch
+ * @param portName - la porta di uscita
+ * @param vlan - la VLAN in cui lo switch ha trattato il frame
+ * @param frame - il frame arrivato, con o senza tag
+ * @returns un frame nuovo, da trasmettere su quella porta
+ */
+export function frameLeaving(sw: Switch, portName: string, vlan: number, frame: EthernetFrame): EthernetFrame {
+  // Si parte sempre dal frame senza tag: quello di arrivo apparteneva al
+  // cavo da cui è entrato.
+  const { vlanTag: _arrived, ...untagged } = frame;
+  const port = sw.ports.find((p) => p.name === portName);
+  if (port === undefined || port.mode === "access" || vlan === port.nativeVlan) return untagged;
+  return { ...untagged, vlanTag: vlan };
+}
+
+// Dice se una porta dello switch porta ancora una VLAN.
+function carries(sw: Switch, portName: string, vlan: number): boolean {
+  const port = sw.ports.find((p) => p.name === portName);
+  return port !== undefined && carriesVlan(port, vlan);
 }

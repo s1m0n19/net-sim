@@ -19,15 +19,17 @@ import {
   type Network,
   type PortRef,
   type RouterInterface,
-  type SwitchPort,
+  type SwitchConfig,
 } from "./model/network";
 import { DEFAULT_VLAN } from "./model/vlans";
 
 // Le modifiche che riguardano solo i router stanno in router-editing.ts,
 // accendere e spegnere una porta in port-editing.ts, le VLAN degli switch
-// in vlan-editing.ts; chi usa questo file le trova anche qui.
+// in vlan-editing.ts, le porte trunk in trunk-editing.ts; chi usa questo
+// file le trova anche qui.
 export * from "./port-editing";
 export * from "./router-editing";
+export * from "./trunk-editing";
 export * from "./vlan-editing";
 
 // Che cosa si può aggiungere: un PC, uno switch con un certo numero di
@@ -86,8 +88,9 @@ function newSwitch(network: Network, portCount: number): Device {
   if (!Number.isInteger(portCount) || portCount < 1) {
     throw new Error(`Numero di porte non valido: ${portCount}`);
   }
-  // Le porte di uno switch nascono accese, nella VLAN 1: basta attaccare il cavo.
-  const ports: SwitchPort[] = freeMacs(network, portCount).map((mac, index) => ({
+  // Le porte di uno switch nascono accese, access nella VLAN 1: basta
+  // attaccare il cavo. Gli altri valori di partenza li dà createSwitch.
+  const ports: SwitchConfig["ports"] = freeMacs(network, portCount).map((mac, index) => ({
     name: `Fa0/${index + 1}`,
     mac,
     enabled: true,

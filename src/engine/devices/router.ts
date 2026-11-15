@@ -61,6 +61,11 @@ export function receiveFrameOnRouter(
   const port = router.ports.find((p) => p.name === portName);
   if (port === undefined) return { ...NOTHING, dropped: "not-my-mac", tableChanged: false };
 
+  // Un frame con il tag 802.1Q si scarta, prima di guardarci dentro: è il
+  // punto in cui le sottointerfacce (encapsulation dot1Q) sceglieranno a
+  // chi consegnarlo.
+  if (frame.vlanTag !== undefined) return { ...NOTHING, dropped: "tagged-frame", tableChanged: false };
+
   // Un'interfaccia accetta ciò che è indirizzato a lei, e i broadcast.
   if (frame.dstMac !== port.mac && frame.dstMac !== BROADCAST_MAC) {
     return { ...NOTHING, dropped: "not-my-mac", tableChanged: false };

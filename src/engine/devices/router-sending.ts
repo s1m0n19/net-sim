@@ -25,7 +25,10 @@ export type RouterDropReason =
   // Il TTL è arrivato a zero: il pacchetto ha fatto troppa strada.
   | "ttl-expired"
   // Nessuna rotta porta alla destinazione.
-  | "no-route";
+  | "no-route"
+  // Il frame porta un tag 802.1Q: le interfacce del router non conoscono
+  // ancora le VLAN (le sottointerfacce arriveranno con il routing tra VLAN).
+  | "tagged-frame";
 
 // Un frame da spedire, con l'interfaccia da cui farlo uscire.
 export interface PortFrame {
