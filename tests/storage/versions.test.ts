@@ -7,7 +7,7 @@ import { FILE_VERSION, loadNetworkFile } from "../../src/storage/load";
 import { LATEST_VERSION, migrateToLatest, versionToWrite } from "../../src/storage/migrations";
 import { serializeNetwork } from "../../src/storage/save";
 
-// Le reti di esempio, scritte a mano.
+// Le reti di esempio: scritte a mano, tranne le due sulle VLAN, salvate dall'app.
 const examples = import.meta.glob("../../examples/*.netsim.json", { query: "?raw", import: "default", eager: true }) as Record<
   string,
   string
@@ -35,6 +35,17 @@ function resaved(text: string, annotations?: Annotation[]): string {
   });
 }
 
+// La versione più bassa che basta a una rete letta da un file, ricavata dal
+// suo contenuto: 3 se uno switch ha una VLAN oltre la 1 o una porta fuori
+// dalla VLAN 1, 2 se ci sono annotazioni, altrimenti 1.
+function minimumVersion(loaded: ReturnType<typeof loadNetworkFile>): number {
+  const hasVlans = loaded.network.devices.some(
+    (device) => device.kind === "switch" && (device.vlans.length > 1 || device.ports.some((port) => port.vlan !== 1)),
+  );
+  if (hasVlans) return 3;
+  return loaded.annotations.length > 0 ? 2 : 1;
+}
+
 // Un file di esempio con una modifica fatta a mano.
 function altered(text: string, change: (data: any) => void): string {
   const data = JSON.parse(text);
@@ -48,8 +59,27 @@ describe("versioni del formato", () => {
     expect(LATEST_VERSION).toBe(3);
   });
 
-  test.each(Object.keys(examples))("l'esempio %s si apre, e risalvato resta di versione 1", (path) => {
-    expect(JSON.parse(resaved(examples[path])).version).toBe(1);
+  test.each(Object.keys(examples))("l'esempio %s si apre, e risalvato ha la versione più bassa che basta al suo contenuto", (path) => {
+    const loaded = loadNetworkFile(examples[path]);
+    const text = resaved(examples[path]);
+
+    // La versione attesa si ricava da ciò che la rete contiene, non dal
+    // numero scritto nel file: le VLAN chiedono la 3, le sole annotazioni la 2.
+    expect(JSON.parse(text).version).toBe(minimumVersion(loaded));
+    // Riaperto, il file risalvato ha la stessa rete, le stesse posizioni e
+    // le stesse annotazioni.
+    const reopened = loadNetworkFile(text);
+    expect(reopened.network).toEqual(loaded.network);
+    expect(reopened.positions).toEqual(loaded.positions);
+    expect(reopened.annotations).toEqual(loaded.annotations);
+  });
+
+  test("tra gli esempi ci sono i tre casi: rete senza altro (1), annotazioni senza VLAN (2), VLAN (3)", () => {
+    const versionOf = (name: string) => JSON.parse(resaved(examples[`../../examples/${name}.netsim.json`])).version;
+
+    expect(versionOf("lan-switch")).toBe(1);
+    expect(versionOf("vlan-esercitazione")).toBe(2);
+    expect(versionOf("vlan-due-gruppi")).toBe(3);
   });
 
   test.each(Object.keys(fromStable))("il file %s, salvato dalla versione pubblicata, si risalva identico", (path) => {
