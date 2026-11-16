@@ -34,12 +34,18 @@ export interface SaveOptions {
  *   finisce nell'origine
  * @param options - le tabelle, se vanno scritte, e le annotazioni
  * @returns il contenuto del file, in JSON leggibile
+ * @throws Error se un router ha sottointerfacce: il formato non le sa ancora
+ *   scrivere (arriveranno con la versione 5, L3-1C), e salvarle senza di
+ *   loro le perderebbe in silenzio (D-173)
  */
 export function serializeNetwork(
   network: Network,
   positions: Map<string, Position>,
   options: SaveOptions = {},
 ): string {
+  if (network.devices.some((device) => device.kind === "router" && device.subinterfaces.length > 0)) {
+    throw new Error("Le sottointerfacce non si possono ancora salvare.");
+  }
   const withTables = options.tables ?? false;
   const annotations = options.annotations ?? [];
   const devices = network.devices.map((device) => {

@@ -131,6 +131,25 @@ export interface RouterInterface extends Port {
   enabled: boolean;
 }
 
+// Una sottointerfaccia di un router (router-on-a-stick, L3-1, D-158): una
+// interfaccia logica senza cavo proprio, appoggiata a una porta fisica e a
+// una VLAN 802.1Q. Il suo nome è quello della porta seguito da un punto e
+// da un numero, "Gi0/0.10"; usa il MAC della porta (model/subinterfaces.ts).
+// Per ora esiste nel modello e nelle modifiche, ma non porta traffico.
+export interface Subinterface {
+  name: string; // "Gi0/0.10"
+  parent: string; // la porta fisica, "Gi0/0"
+  // La VLAN di `encapsulation dot1Q N`; null finché non è impostata.
+  vlan: number | null;
+  // `encapsulation dot1Q N native`: i frame della VLAN passano senza tag.
+  native: boolean;
+  ip: Ipv4Address | null;
+  mask: Ipv4Address | null;
+  // false = spenta (`shutdown`). Le sottointerfacce nascono accese: sono
+  // operative solo se lo è anche la loro porta.
+  enabled: boolean;
+}
+
 // Una rotta statica: "per raggiungere questa rete, passa da questo vicino".
 export interface StaticRoute {
   network: Ipv4Address; // l'indirizzo della rete di destinazione
@@ -143,9 +162,12 @@ export interface Router {
   id: string;
   name: string;
   // Configurazione: la imposta l'utente.
-  ports: RouterInterface[];
+  ports: RouterInterface[]; // solo le porte fisiche, quelle con un cavo
   powered: boolean; // false = il dispositivo è spento
   routes: StaticRoute[];
+  // Le sottointerfacce, in nessun ordine particolare (model/subinterfaces.ts
+  // le presenta in ordine). Un router di oggi non ne ha.
+  subinterfaces: Subinterface[];
   // Stato di esecuzione: cambia mentre la rete funziona.
   arpTable: Map<Ipv4Address, MacAddress>;
   // Pacchetti da inoltrare, in attesa della risposta ARP.
@@ -181,7 +203,10 @@ export type SwitchConfig = Pick<Switch, "id" | "name"> & {
   powered?: boolean;
   vlans?: Vlan[];
 };
-export type RouterConfig = Pick<Router, "id" | "name" | "ports" | "routes"> & { powered?: boolean };
+export type RouterConfig = Pick<Router, "id" | "name" | "ports" | "routes"> & {
+  powered?: boolean;
+  subinterfaces?: Subinterface[];
+};
 
 /**
  * Crea un host appena acceso: con la configurazione data e lo stato di
@@ -235,7 +260,8 @@ export function createSwitch(config: SwitchConfig): Switch {
  * Crea un router appena acceso: con la configurazione data, la tabella ARP
  * vuota, nessun pacchetto in attesa e nessun ping in corso.
  *
- * @param config - identificativo, nome, interfacce e rotte statiche
+ * @param config - identificativo, nome, interfacce, rotte statiche e,
+ *   facoltative, le sottointerfacce
  * @returns il router pronto per essere messo in una rete
  */
 export function createRouter(config: RouterConfig): Router {
@@ -243,6 +269,8 @@ export function createRouter(config: RouterConfig): Router {
     kind: "router",
     ...config,
     powered: config.powered ?? true,
+    // Una copia: il router non condivide le sottointerfacce con chi l'ha descritto.
+    subinterfaces: (config.subinterfaces ?? []).map((sub) => ({ ...sub })),
     arpTable: new Map(),
     pendingPackets: [],
     nextEchoSequence: 1,

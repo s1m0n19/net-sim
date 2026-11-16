@@ -167,6 +167,17 @@ export function describeTrace(network: Network, trace: Trace, index: number): Ev
       return row(trace.deviceId, `aggiunge la rotta verso ${routeText(trace.route)}`);
     case "route-removed":
       return row(trace.deviceId, `toglie la rotta verso ${routeText(trace.route)}`);
+    case "subinterface-added":
+      return row(trace.deviceId, `crea la sottointerfaccia ${trace.name}`);
+    case "subinterface-removed":
+      return row(trace.deviceId, `toglie la sottointerfaccia ${trace.name}`);
+    case "subinterface-changed":
+      return row(
+        trace.deviceId,
+        trace.vlan === null
+          ? `toglie la VLAN dalla sottointerfaccia ${trace.name}`
+          : `mette la sottointerfaccia ${trace.name} nella VLAN ${trace.vlan}${trace.native ? " (native)" : ""}`,
+      );
     case "vlan-changed": {
       const verb = { added: "crea", renamed: "rinomina", removed: "elimina" }[trace.change];
       return row(trace.deviceId, `${verb} la VLAN ${trace.vlan}`);

@@ -20,6 +20,7 @@ import {
   linkAt,
   type Device,
   type Link,
+  type Router,
   type StaticRoute,
   type Switch,
   type SwitchPort,
@@ -109,12 +110,39 @@ export function applyEdit(sim: SimulationState, action: EditAction, produced: Tr
     }
     case "configure-interface": {
       const { deviceId, portName, ip, mask } = action;
-      const router = editing.configureInterface(sim.network, deviceId, portName, ip, mask);
+      const { router, changed } = editing.configureInterface(sim.network, deviceId, portName, ip, mask);
+      if (!changed) break;
       // Come per un host: con un indirizzo nuovo, ciò che il router
-      // sapeva e aspettava non vale più.
-      forgetTimersOf(sim, router.id);
-      clearRuntimeState(router);
+      // sapeva e aspettava non vale più. Vale anche per una
+      // sottointerfaccia (D-174).
+      forgetRuntimeOf(sim, router);
       produced.push({ time, kind: "interface-configured", deviceId, portName });
+      break;
+    }
+    case "add-subinterface": {
+      // Una sottointerfaccia nuova è vuota: non cambia nulla di ciò che il
+      // router sa o aspetta.
+      const { deviceId, name } = action;
+      editing.addSubinterface(sim.network, deviceId, name);
+      produced.push({ time, kind: "subinterface-added", deviceId, name });
+      break;
+    }
+    case "remove-subinterface": {
+      // Le voci ARP e i pacchetti che passavano di lì non valgono più
+      // (D-174). La porta padre e il suo cavo restano.
+      const { deviceId, name } = action;
+      editing.removeSubinterface(sim.network, deviceId, name);
+      forgetRuntimeOf(sim, findDevice(sim.network, deviceId) as Router);
+      produced.push({ time, kind: "subinterface-removed", deviceId, name });
+      break;
+    }
+    case "set-subinterface-encapsulation": {
+      // Cambia la VLAN da cui arrivano e su cui partono i frame: ciò che il
+      // router sapeva e aspettava su quella sottointerfaccia non vale più (D-174).
+      const { deviceId, name, vlan, native } = action;
+      if (!editing.setSubinterfaceEncapsulation(sim.network, deviceId, name, vlan, native)) break;
+      forgetRuntimeOf(sim, findDevice(sim.network, deviceId) as Router);
+      produced.push({ time, kind: "subinterface-changed", deviceId, name, vlan, native });
       break;
     }
     case "set-interface-enabled": {
@@ -267,6 +295,15 @@ function deviceFrom(snapshot: DeviceSnapshot): Device {
         routes: snapshot.routes.map((route) => ({ ...route })),
       });
   }
+}
+
+// Un router dimentica ciò che sapeva e aspettava, attese comprese: è ciò
+// che succede quando cambia un suo indirizzo o una sua sottointerfaccia
+// (D-174). Le voci ARP e i pacchetti in attesa erano legati alle reti e
+// alle VLAN di prima.
+function forgetRuntimeOf(sim: SimulationState, router: Router): void {
+  forgetTimersOf(sim, router.id);
+  clearRuntimeState(router);
 }
 
 // Una porta di uno switch, che la modifica appena fatta ha già trovato.

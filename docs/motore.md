@@ -170,6 +170,16 @@ Nulla corregge una configurazione sbagliata: native diverse ai due capi di un tr
 
 Nel file i trunk ci sono dalla versione 4 (D-150, [formato-file.md](formato-file.md)), con la VLAN nelle righe MAC delle porte trunk. Dalla CLI degli switch si configurano da L2-2C ([cli.md](cli.md)); dal pannello dello switch da L2-2D ([interfaccia.md](interfaccia.md)).
 
+### Sottointerfacce dei router (`subinterfaces.ts`)
+
+Un router può avere **sottointerfacce** (router-on-a-stick, progetto L3-1, decisioni D-158…D-174): interfacce logiche senza cavo proprio, appoggiate a una porta fisica (il padre) e a una VLAN 802.1Q, con il MAC del padre. Stanno in `Router.subinterfaces`; `Router.ports` resta l'elenco delle sole porte fisiche, quelle con un cavo. Una sottointerfaccia ha `name` («Gi0/0.10»), `parent`, `vlan` (null finché non si sceglie), `native`, `ip`, `mask`, `enabled` (nasce accesa). `createRouter` le copia; un router di oggi ne ha zero.
+
+`layer3InterfacesOf(router)` elenca le interfacce logiche: ogni porta, nell'ordine del router, seguita dalle sue sottointerfacce per numero. `interfaceOfAddress(router, ip)` dà l'unica interfaccia logica nella cui rete sta un indirizzo.
+
+`checkSubinterfaces(router)` controlla i vincoli strutturali, rifiutati da ogni modifica: V1 nome `porta.numero`; V2 il padre è una porta fisica; V3 numero da 1 a 4094; V4 nomi unici; V5 VLAN null o da 1 a 1001; V6 nessuna VLAN ripetuta sullo stesso padre; V7 native solo con una VLAN, al più una per padre; V8 indirizzo e maschera insieme, validi, e solo con una VLAN; V9 le reti di tutte le interfacce logiche, porte comprese, non si sovrappongono; V10 una porta con una sottointerfaccia native non ha indirizzo. Sono invece ammessi, anche se non fanno passare traffico, una sottointerfaccia senza VLAN, senza indirizzo, spenta, o con il padre spento.
+
+**Limite di questa fase (L3-1A):** le sottointerfacce esistono nel modello, nelle modifiche, nella fotografia e nella duplicazione, ma non portano traffico: il router scarta ancora i frame con il tag (`tagged-frame`), e ARP, routing e ICMP usano solo le porte fisiche (L3-1B). Non si salvano nel file, che le rifiuta con un errore (D-173, fino al formato 5 di L3-1C), né si configurano dalla CLI o dal pannello (L3-1D, L3-1E).
+
 ### Tabelle di partenza (`tables.ts`)
 
 Una rete può partire con le tabelle già compilate, se il file le contiene (requisito FILE-5, decisione D-100). `tables.ts` tratta la tabella che ogni dispositivo impara (ARP per host e router, MAC per lo switch) come un elenco di coppie di testi, `TableRows`, e una rete intera come `NetworkTables`, per identificativo del dispositivo:
@@ -309,8 +319,10 @@ Se nella coda resta solo un'attesa, il passo salta direttamente alla sua scadenz
 | `moveLinkEnd(linkId, end, portName)` | Sposta un capo di un cavo su un'altra porta dello stesso dispositivo |
 | `renameDevice(deviceId, name)` | Cambia il nome di un dispositivo |
 | `configureHost(deviceId, config)` | Cambia indirizzo, maschera e gateway di un host |
-| `configureInterface(deviceId, portName, ip, mask)` | Cambia l'indirizzo di un'interfaccia di un router; con `null` lo toglie |
-| `enableInterface(deviceId, portName)`, `disableInterface(deviceId, portName)` | Accende o spegne un'interfaccia di un router o una porta di uno switch (su un Cisco: `no shutdown` e `shutdown`). La scheda di un host non si spegne: l'azione viene rifiutata |
+| `configureInterface(deviceId, portName, ip, mask)` | Cambia l'indirizzo di un'interfaccia di un router, anche di una sottointerfaccia (che deve avere la sua VLAN); con `null` lo toglie |
+| `enableInterface(deviceId, portName)`, `disableInterface(deviceId, portName)` | Accende o spegne un'interfaccia di un router, una sua sottointerfaccia (senza toccare la porta padre) o una porta di uno switch (su un Cisco: `no shutdown` e `shutdown`). La scheda di un host non si spegne: l'azione viene rifiutata |
+| `addSubinterface(deviceId, name)`, `removeSubinterface(deviceId, name)` | Crea una sottointerfaccia vuota (senza VLAN, senza indirizzo, accesa), o la toglie; porta padre e cavi restano |
+| `setSubinterfaceEncapsulation(deviceId, name, vlan, native)` | Sceglie la VLAN di una sottointerfaccia, ed eventualmente native; con `null` la toglie, ma solo se la sottointerfaccia non ha un indirizzo |
 | `addRoute(deviceId, route)`, `removeRoute(deviceId, route)` | Aggiunge o toglie una rotta statica di un router |
 | `addVlan(deviceId, vlan, name)`, `renameVlan(deviceId, vlan, name)`, `removeVlan(deviceId, vlan)` | Crea, rinomina o elimina una VLAN di uno switch. Creare una VLAN che c'è già non cambia nulla; la VLAN 1 non si rinomina e non si elimina |
 | `setPortVlan(deviceId, portName, vlan)` | Mette una porta di uno switch in una VLAN, anche se la VLAN non esiste: allora la porta è inattiva |
@@ -336,7 +348,7 @@ Mentre lavora, il simulatore registra ciò che accade. `dispatch()` e `step()` r
 | `link-changed` | Un cavo è stato staccato o riattaccato |
 | `power-changed` | Un dispositivo è stato spento o acceso |
 | `simulation-suspended` | Il simulatore si è fermato per una tempesta di broadcast. Contiene quanti frame erano in viaggio |
-| `device-added`, `device-removed`, `link-added`, `link-removed`, `device-renamed`, `host-configured`, `vlan-changed`, `port-vlan-changed`, `port-mode-changed`, `trunk-changed` | La rete è stata modificata. Le tracce di ciò che è stato tolto ne portano il nome, perché dopo non lo si può più leggere dalla rete |
+| `device-added`, `device-removed`, `link-added`, `link-removed`, `device-renamed`, `host-configured`, `vlan-changed`, `port-vlan-changed`, `port-mode-changed`, `trunk-changed`, `subinterface-added`, `subinterface-removed`, `subinterface-changed` | La rete è stata modificata. Le tracce di ciò che è stato tolto ne portano il nome, perché dopo non lo si può più leggere dalla rete |
 
 Il campo `reason` di un frame scartato serve ai test. L'interfaccia mostra che il frame è stato scartato, ma non ne spiega la causa: l'app si comporta come una rete vera (requisito SIM-8).
 
@@ -635,6 +647,7 @@ L'azione `restore-configuration` riporta la rete a una fotografia. Non sostituis
 | La configurazione IP di un host torna quella di prima | L'host dimentica tabella ARP e attese, come per ogni cambio di configurazione (D-48) |
 | Un cavo ha solo cambiato porta | Viene spostato, non tolto e rimesso |
 | Interfacce e rotte di un router | Indirizzo, stato acceso o spento e rotte tornano quelli della fotografia. Lo stato di un'interfaccia è configurazione, non un guasto: su un router si imposta |
+| Sottointerfacce di un router | Tornano tutte, con VLAN, native, indirizzo e stato, senza mai passare da uno stato che viola i vincoli: prima si tolgono gli indirizzi che devono sparire o che si sovrapporrebbero, poi le VLAN che cambiano, poi le sottointerfacce in più; poi si creano quelle che mancano e si rimettono VLAN, indirizzi, stati e rotte. Un indirizzo che cambia soltanto si rimette con un passo solo, come prima |
 | Porte di uno switch | Lo stato acceso o spento torna quello della fotografia, per la stessa ragione |
 | VLAN di uno switch | Tornano il registro e, per ogni porta, VLAN, nativa, consentite e modo. Prima si creano le VLAN che mancano, poi le porte tornano alla loro configurazione, poi si correggono i nomi, per ultime si eliminano le VLAN in più |
 | Guasti | Non sono modifiche: ciò che c'è da entrambe le parti resta acceso o spento, collegato o staccato, com'è adesso. Ciò che torna, torna com'era nella fotografia |
@@ -664,7 +677,7 @@ Un PC nuovo nasce acceso, senza cavi e senza configurazione IP. Uno switch nuovo
 | --- | --- |
 | PC o server | Maschera e gateway, e il primo indirizzo libero della stessa sottorete dopo quello dell'originale. Libero vuol dire non usato da un host né da un'interfaccia di router, diverso dal gateway, e accettato da `checkIpConfig` (quindi non il broadcast). Se non ce n'è, o se l'originale non è configurato, la copia nasce non configurata |
 | Switch | Il numero di porte, quali sono spente, le VLAN, e di ogni porta VLAN, modo, nativa e VLAN consentite (con un elenco suo) |
-| Router | Solo il numero di interfacce: nascono spente e senza indirizzi, e non ci sono rotte. Copiare gli indirizzi produrrebbe soltanto conflitti |
+| Router | Il numero di interfacce, che nascono spente e senza indirizzi, senza rotte: copiare gli indirizzi produrrebbe soltanto conflitti. Delle sottointerfacce la struttura (numero, porta nella stessa posizione, VLAN, native), senza indirizzi e accese (D-169) |
 
 La copia nasce accesa, senza cavi e con le tabelle vuote, come ogni dispositivo nuovo; la traccia è quella di un dispositivo aggiunto (`device-added`). L'indirizzo successivo lo calcola `nextFreeAddress`, che scorre gli indirizzi come numeri con `ipToNumber` e `numberToIp` (`model/addresses.ts`). Dove mettere la copia sul disegno lo decide l'interfaccia.
 
@@ -681,6 +694,7 @@ La copia nasce accesa, senza cavi e con le tabelle vuote, come ogni dispositivo 
 | Togliere una rotta | Il router non ha quella rotta |
 | Creare una VLAN, spostare una porta | Il numero non è un intero da 1 a 1001, il nome non va bene, la porta non esiste o il dispositivo non è uno switch |
 | Rinominare o eliminare una VLAN | È la VLAN 1, o lo switch non ha quella VLAN |
+| Creare o cambiare una sottointerfaccia, darle un indirizzo, dare un indirizzo a una porta | Viola un vincolo V1–V10 (vedi «Sottointerfacce dei router»): il router resta com'era, senza tracce |
 | Modo, nativa, VLAN consentite di una porta | Il modo non è `access` o `trunk`, un numero non è una VLAN da 1 a 1001, la porta non esiste o il dispositivo non è uno switch. Una nativa o una VLAN consentita che lo switch non ha è permessa |
 
 Una modifica rifiutata non cambia nulla: la rete resta com'era.
@@ -694,6 +708,7 @@ Si può modificare la rete mentre il traffico viaggia.
 - **Configurare un host**: l'host riparte da capo, come dopo un riavvio della scheda. Dimentica la tabella ARP e ciò che stava aspettando. Gli altri host invece ricordano ancora il suo vecchio indirizzo: un ping verso quello parte, arriva, e viene scartato.
 - **Spegnere un'interfaccia di un router**: è come staccarne il cavo. I frame che ci viaggiavano vanno persi e il segnale sparisce dai due capi.
 - **Cambiare l'indirizzo di un'interfaccia**: il router dimentica la tabella ARP e ciò che stava aspettando, come un host.
+- **Sottointerfacce** (D-174): toglierne una, cambiarne la VLAN, il flag native o l'indirizzo fa dimenticare al router tabella ARP, pacchetti in attesa, ping in corso e attese, come un cambio di indirizzo. Crearne una vuota o accenderla e spegnerla non tocca nulla. Una modifica rifiutata, o che non cambia nulla, non tocca nulla.
 - **Spostare una porta in un'altra VLAN**: lo switch dimentica le righe di quella porta nella VLAN di prima, e solo quelle. Un frame già sul cavo verso la porta, arrivando, appartiene alla VLAN nuova.
 - **Eliminare una VLAN**: lo switch dimentica tutte le sue righe, anche quelle dei trunk; le porte restano assegnate al suo numero, inattive. I frame già sul cavo arrivano, e lo switch li scarta. Ricreando la VLAN, le porte tornano attive.
 - **Cambiare modo a una porta**: lo switch dimentica tutte le righe di quella porta, in ogni VLAN.
@@ -780,6 +795,7 @@ I file di test, uno per argomento:
 | `switch-ports.test.ts` | Porta di switch spenta e riaccesa |
 | `vlan.test.ts` | VLAN sulle porte access: isolamento, tabella MAC per VLAN, VLAN eliminate, due switch, ciclo in una VLAN, annulla e duplica, invarianti |
 | `trunk.test.ts` | Trunk 802.1Q: VLAN di ingresso, uscita e tag, due switch uniti da un trunk, configurazioni sbagliate (native diverse, access contro trunk, VLAN non consentite o non configurate), cambi a traffico in corso, pulizia delle tabelle MAC, azioni, annulla e duplica, reti di L2-1 senza tag |
+| `subinterfaces.test.ts` | Sottointerfacce dei router (L3-1A): interfacce logiche, vincoli V1–V10, azioni e rifiuti senza effetti, azzeramento dello stato del router (D-174), Annulla e Ripristina passo per passo con i vincoli controllati a ogni passo, duplicazione senza indirizzi, frame con tag ancora scartati |
 | `editing.test.ts` | Aggiungere, collegare, togliere, rinominare, configurare |
 | `duplicating.test.ts` | Duplicare un PC, un server, uno switch e un router; l'indirizzo libero successivo |
 | `router-model.test.ts` | Il router nel modello: controlli su interfacce e rotte, reti sovrapposte, segnale |

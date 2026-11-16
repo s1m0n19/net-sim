@@ -27,6 +27,10 @@ export type Action =
   | { kind: "set-interface-enabled"; deviceId: string; portName: string; enabled: boolean }
   | { kind: "add-route"; deviceId: string; route: StaticRoute }
   | { kind: "remove-route"; deviceId: string; route: StaticRoute }
+  // Le sottointerfacce di un router (router-on-a-stick, L3-1).
+  | { kind: "add-subinterface"; deviceId: string; name: string }
+  | { kind: "remove-subinterface"; deviceId: string; name: string }
+  | { kind: "set-subinterface-encapsulation"; deviceId: string; name: string; vlan: number | null; native: boolean }
   // Modifiche alle VLAN di uno switch.
   | { kind: "add-vlan"; deviceId: string; vlan: number; name: string | null }
   | { kind: "rename-vlan"; deviceId: string; vlan: number; name: string }
@@ -404,4 +408,43 @@ export function setNativeVlan(deviceId: string, portName: string, vlan: number):
  */
 export function setAllowedVlans(deviceId: string, portName: string, vlans: AllowedVlans): Action {
   return { kind: "set-allowed-vlans", deviceId, portName, vlans };
+}
+
+/**
+ * Crea l'azione "crea questa sottointerfaccia di un router" (su un Cisco:
+ * `interface Gi0/0.10`). Nasce senza VLAN, senza indirizzo, accesa.
+ *
+ * @param deviceId - identificativo del router
+ * @param name - il nome, per esempio "Gi0/0.10": porta padre, punto, numero da 1 a 4094
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function addSubinterface(deviceId: string, name: string): Action {
+  return { kind: "add-subinterface", deviceId, name };
+}
+
+/**
+ * Crea l'azione "togli questa sottointerfaccia" (su un Cisco:
+ * `no interface Gi0/0.10`).
+ *
+ * @param deviceId - identificativo del router
+ * @param name - il nome della sottointerfaccia
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function removeSubinterface(deviceId: string, name: string): Action {
+  return { kind: "remove-subinterface", deviceId, name };
+}
+
+/**
+ * Crea l'azione "usa questa VLAN su questa sottointerfaccia" (su un Cisco:
+ * `encapsulation dot1Q 10`, con `native` alla fine se richiesto). Con VLAN
+ * null toglie l'incapsulamento, se la sottointerfaccia non ha un indirizzo.
+ *
+ * @param deviceId - identificativo del router
+ * @param name - il nome della sottointerfaccia
+ * @param vlan - la VLAN, da 1 a 1001, oppure null
+ * @param native - se i frame della VLAN passano senza tag
+ * @returns l'azione da passare a `Simulator.dispatch`
+ */
+export function setSubinterfaceEncapsulation(deviceId: string, name: string, vlan: number | null, native = false): Action {
+  return { kind: "set-subinterface-encapsulation", deviceId, name, vlan, native };
 }

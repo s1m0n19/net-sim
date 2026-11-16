@@ -9,6 +9,7 @@ import {
   type Network,
   type Router,
   type RouterInterface,
+  type Subinterface,
   type Switch,
   type SwitchPort,
 } from "../../src/engine/model/network";
@@ -377,4 +378,50 @@ export function buildTrunkSwitches(
     ],
   };
   return { sim: new Simulator(network), sw1, sw2 };
+}
+
+// La rete del router-on-a-stick (progetto L3-1): R1 con Gi0/0 accesa e
+// senza indirizzo, collegata alla Fa0/24 di SW1, trunk; Gi0/1 libera e
+// spenta. SW1 ha la VLAN 10 (PC1 su Fa0/1, 192.168.10.10, gateway .1) e la
+// VLAN 20 (PC2 su Fa0/2, 192.168.20.10, gateway .1). `subinterfaces` sono
+// quelle di R1: se non si dice altro, Gi0/0.10 (dot1Q 10, 192.168.10.1/24)
+// e Gi0/0.20 (dot1Q 20, 192.168.20.1/24).
+export function buildRouterOnAStick(subinterfaces?: Subinterface[]): { sim: Simulator; r1: Router; sw1: Switch } {
+  const pc1 = routedHost("d1", "PC1", "02:00:00:00:00:01", "192.168.10.10", "192.168.10.1");
+  const pc2 = routedHost("d2", "PC2", "02:00:00:00:00:02", "192.168.20.10", "192.168.20.1");
+  const r1 = createRouter({
+    id: "r1",
+    name: "R1",
+    ports: [
+      { name: "Gi0/0", mac: "02:00:00:00:03:01", ip: null, mask: null, enabled: true },
+      { name: "Gi0/1", mac: "02:00:00:00:03:02", ip: null, mask: null, enabled: false },
+    ],
+    routes: [],
+    subinterfaces: subinterfaces ?? [
+      { name: "Gi0/0.10", parent: "Gi0/0", vlan: 10, native: false, ip: "192.168.10.1", mask: "255.255.255.0", enabled: true },
+      { name: "Gi0/0.20", parent: "Gi0/0", vlan: 20, native: false, ip: "192.168.20.1", mask: "255.255.255.0", enabled: true },
+    ],
+  });
+  const sw1 = createSwitch({
+    id: "s1",
+    name: "SW1",
+    ports: [
+      { name: "Fa0/1", mac: "02:00:00:00:01:01", vlan: 10 },
+      { name: "Fa0/2", mac: "02:00:00:00:01:02", vlan: 20 },
+      { name: "Fa0/24", mac: "02:00:00:00:01:24", mode: "trunk", allowedVlans: [10, 20] },
+    ],
+    vlans: [
+      { id: 10, name: "STUDENTI" },
+      { id: 20, name: "DOCENTI" },
+    ],
+  });
+  const network: Network = {
+    devices: [r1, sw1, pc1, pc2],
+    links: [
+      wire("l1", ["d1", "Fa0"], ["s1", "Fa0/1"]),
+      wire("l2", ["d2", "Fa0"], ["s1", "Fa0/2"]),
+      wire("l3", ["r1", "Gi0/0"], ["s1", "Fa0/24"]),
+    ],
+  };
+  return { sim: new Simulator(network), r1, sw1 };
 }

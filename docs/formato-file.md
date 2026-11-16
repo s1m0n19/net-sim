@@ -340,6 +340,8 @@ Ciò che **non** viene controllato, di proposito: la coerenza della configurazio
 
 `serializeNetwork` scrive dispositivi, cavi, posizioni e guasti. I campi facoltativi dei guasti (`powered`, `connected`) compaiono solo quando valgono `false`. Le tabelle si scrivono solo se chieste (il terzo parametro, `withTables`); il resto dello stato di esecuzione mai.
 
+Le sottointerfacce dei router (L3-1A) non hanno ancora un posto nel file: arriverà con la versione 5 (L3-1C, D-170). Fino ad allora `serializeNetwork` rifiuta una rete con almeno una sottointerfaccia, con l'errore «Le sottointerfacce non si possono ancora salvare.», invece di scrivere un file che le perde (D-173); lo stesso vale per la copia di recupero. Le reti senza sottointerfacce si salvano come prima.
+
 Chrome ed Edge, i browser di riferimento, permettono a una pagina di scrivere in un file scelto dall'utente (File System Access API): la prima volta Salva chiede dove, poi aggiorna lo stesso file, e lo stesso vale per un file aperto con Apri. Salva con nome chiede sempre dove. Dove questa funzione manca, il file viene scaricato ogni volta (D-57).
 
 ## Versioni

@@ -11,7 +11,10 @@
 //   porta la VLAN, il modo, la nativa e le VLAN consentite. Le tabelle MAC
 //   no: la copia nasce senza aver imparato nulla, come ogni dispositivo nuovo;
 // - un router: il numero di interfacce, che nascono spente e senza indirizzi,
-//   senza rotte. Copiarne gli indirizzi produrrebbe solo conflitti.
+//   senza rotte. Copiarne gli indirizzi produrrebbe solo conflitti. Delle
+//   sottointerfacce prende la struttura (numero, porta, VLAN, native), senza
+//   indirizzi e accese, come nascono: le porte della copia sono spente,
+//   quindi nulla funziona finché non le si accende (D-169).
 //
 // La copia nasce accesa e senza cavi, come ogni dispositivo nuovo.
 
@@ -43,6 +46,16 @@ export function duplicateDevice(network: Network, deviceId: string): Device {
       port.allowedVlans = copyAllowedVlans(from.allowedVlans);
     });
     copy.vlans = original.vlans.map((vlan) => ({ ...vlan }));
+  }
+  if (original.kind === "router" && copy.kind === "router") {
+    // La porta padre è quella della copia nella stessa posizione: i nomi
+    // delle porte di un router letto da un file possono essere diversi da
+    // quelli che il motore dà a un router nuovo.
+    copy.subinterfaces = original.subinterfaces.map((sub) => {
+      const parent = copy.ports[original.ports.findIndex((port) => port.name === sub.parent)].name;
+      const number = sub.name.slice(sub.parent.length);
+      return { name: parent + number, parent, vlan: sub.vlan, native: sub.native, ip: null, mask: null, enabled: true };
+    });
   }
   if (original.kind === "host" && copy.kind === "host") {
     const ip = nextFreeAddress(network, original);

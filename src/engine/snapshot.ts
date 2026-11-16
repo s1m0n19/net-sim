@@ -13,7 +13,8 @@
 // con le stesse regole di qualsiasi altra modifica.
 
 import type { Action } from "./actions";
-import type { HostConfig, Link, Network, Router, RouterConfig, Switch } from "./model/network";
+import type { HostConfig, Link, Network, Router, RouterConfig, Subinterface, Switch } from "./model/network";
+import { networksOverlap, type Ipv4Address } from "./model/addresses";
 import { sameRoute } from "./model/router-config";
 import { copyAllowedVlans, sameAllowedVlans } from "./model/trunks";
 
@@ -52,7 +53,10 @@ export type RestoreStep =
           | "set-port-vlan"
           | "set-port-mode"
           | "set-native-vlan"
-          | "set-allowed-vlans";
+          | "set-allowed-vlans"
+          | "add-subinterface"
+          | "remove-subinterface"
+          | "set-subinterface-encapsulation";
       }
     >
   | { kind: "put-device"; device: DeviceSnapshot }
@@ -89,6 +93,7 @@ export function takeSnapshot(network: Network): Snapshot {
           ...common,
           ports: device.ports.map((port) => ({ ...port })),
           routes: device.routes.map((route) => ({ ...route })),
+          subinterfaces: device.subinterfaces.map((sub) => ({ ...sub })),
         };
     }
   });
@@ -236,19 +241,110 @@ function vlanSteps(sw: Switch, wanted: Extract<DeviceSnapshot, { kind: "switch" 
   return steps;
 }
 
-// Le modifiche che riportano un router alla sua fotografia: indirizzo e
-// stato di ogni interfaccia, e le rotte statiche.
+// Le modifiche che riportano un router alla sua fotografia: indirizzi e
+// stato delle interfacce, sottointerfacce, rotte statiche.
+//
+// Le sottointerfacce hanno vincoli che legano interfacce diverse (VLAN unica
+// per porta, una sola native, reti non sovrapposte, nessun indirizzo su una
+// porta con una native: model/subinterfaces.ts). Per non passare mai da uno
+// stato che li viola, prima si smonta e poi si rimonta (D-174, progetto L3-1):
+//
+//   1. via gli indirizzi che devono sparire o che darebbero fastidio;
+//   2. via le VLAN delle sottointerfacce che cambiano VLAN o che verranno tolte;
+//   3. via le sottointerfacce che nella fotografia non ci sono;
+//   4. le sottointerfacce che mancano, vuote;
+//   5. le VLAN della fotografia;
+//   6. gli indirizzi della fotografia;
+//   7. gli stati, acceso o spento;
+//   8. le rotte statiche.
+//
+// Togliere un indirizzo o una VLAN non viola mai un vincolo; rimettere i
+// valori della fotografia, partendo da un sottoinsieme di essi, nemmeno,
+// perché la fotografia era valida. Un indirizzo che cambia soltanto, senza
+// sovrapporsi a nessun indirizzo della fotografia, si rimette direttamente
+// nella fase 6: così un router senza sottointerfacce torna indietro con gli
+// stessi passi di sempre.
 function routerSteps(router: Router, wanted: Extract<DeviceSnapshot, { kind: "router" }>): RestoreStep[] {
   const steps: RestoreStep[] = [];
   const deviceId = router.id;
-  for (const port of wanted.ports) {
-    const now = router.ports.find((p) => p.name === port.name);
-    if (now === undefined) continue;
-    if (now.ip !== port.ip || now.mask !== port.mask) {
-      steps.push({ kind: "configure-interface", deviceId, portName: port.name, ip: port.ip, mask: port.mask });
+  type Address = { ip: Ipv4Address | null; mask: Ipv4Address | null };
+  const wantedSubs = new Map(wanted.subinterfaces.map((sub) => [sub.name, sub]));
+  const sameAddress = (a: Address, b: Address) => a.ip === b.ip && a.mask === b.mask;
+  // L'indirizzo che un'interfaccia logica deve avere; undefined se sparisce.
+  const wantedAddress = (name: string): Address | undefined =>
+    wanted.ports.find((port) => port.name === name) ?? wantedSubs.get(name);
+  const encapsulationChanges = (sub: Subinterface) => {
+    const target = wantedSubs.get(sub.name);
+    return target === undefined || target.vlan !== sub.vlan || target.native !== sub.native;
+  };
+  // Gli indirizzi della fotografia, per sapere se uno vecchio darebbe fastidio.
+  const wantedNetworks = [...wanted.ports, ...wanted.subinterfaces].filter((i) => i.ip !== null && i.mask !== null);
+  const overlapsOthers = (name: string, address: Address) =>
+    wantedNetworks.some((other) => other.name !== name && networksOverlap(address.ip!, address.mask!, other.ip!, other.mask!));
+
+  // Lo stato di lavoro: indirizzi e VLAN come saranno passo dopo passo.
+  const addresses = new Map<string, Address>();
+  for (const port of router.ports) addresses.set(port.name, { ip: port.ip, mask: port.mask });
+  for (const sub of router.subinterfaces) addresses.set(sub.name, { ip: sub.ip, mask: sub.mask });
+  const encapsulations = new Map(router.subinterfaces.map((sub) => [sub.name, { vlan: sub.vlan, native: sub.native }]));
+  const setAddress = (portName: string, address: Address) => {
+    steps.push({ kind: "configure-interface", deviceId, portName, ip: address.ip, mask: address.mask });
+    addresses.set(portName, address);
+  };
+  const setEncapsulation = (name: string, vlan: number | null, native: boolean) => {
+    steps.push({ kind: "set-subinterface-encapsulation", deviceId, name, vlan, native });
+    encapsulations.set(name, { vlan, native });
+  };
+  const NONE: Address = { ip: null, mask: null };
+
+  // 1. Via gli indirizzi che devono sparire o che darebbero fastidio.
+  for (const [name, current] of addresses) {
+    if (current.ip === null) continue;
+    const target = wantedAddress(name);
+    const sub = router.subinterfaces.find((s) => s.name === name);
+    const mustGo =
+      target === undefined ||
+      (sub !== undefined && encapsulationChanges(sub)) ||
+      (!sameAddress(target, current) && (target.ip === null || overlapsOthers(name, current)));
+    if (mustGo) setAddress(name, NONE);
+  }
+  // 2. Via le VLAN che cambiano, e quelle delle sottointerfacce da togliere.
+  for (const sub of router.subinterfaces) {
+    if (sub.vlan !== null && encapsulationChanges(sub)) setEncapsulation(sub.name, null, false);
+  }
+  // 3. Via le sottointerfacce in più.
+  for (const sub of router.subinterfaces) {
+    if (wantedSubs.has(sub.name)) continue;
+    steps.push({ kind: "remove-subinterface", deviceId, name: sub.name });
+    addresses.delete(sub.name);
+    encapsulations.delete(sub.name);
+  }
+  // 4. Le sottointerfacce che mancano, vuote.
+  for (const sub of wanted.subinterfaces) {
+    if (encapsulations.has(sub.name)) continue;
+    steps.push({ kind: "add-subinterface", deviceId, name: sub.name });
+    addresses.set(sub.name, NONE);
+    encapsulations.set(sub.name, { vlan: null, native: false });
+  }
+  // 5. Le VLAN della fotografia.
+  for (const sub of wanted.subinterfaces) {
+    const current = encapsulations.get(sub.name)!;
+    if (current.vlan !== sub.vlan || current.native !== sub.native) setEncapsulation(sub.name, sub.vlan, sub.native);
+  }
+  // 6. Gli indirizzi della fotografia: prima le porte, poi le sottointerfacce.
+  for (const target of [...wanted.ports, ...wanted.subinterfaces]) {
+    const current = addresses.get(target.name);
+    if (current !== undefined && !sameAddress(current, target)) setAddress(target.name, { ip: target.ip, mask: target.mask });
+  }
+  // 7. Gli stati, acceso o spento.
+  steps.push(...portStateSteps(router, wanted));
+  for (const sub of wanted.subinterfaces) {
+    const enabledNow = router.subinterfaces.find((s) => s.name === sub.name)?.enabled ?? true;
+    if (enabledNow !== sub.enabled) {
+      steps.push({ kind: "set-interface-enabled", deviceId, portName: sub.name, enabled: sub.enabled });
     }
   }
-  steps.push(...portStateSteps(router, wanted));
+  // 8. Le rotte statiche.
   for (const route of router.routes) {
     if (!wanted.routes.some((other) => sameRoute(other, route))) {
       steps.push({ kind: "remove-route", deviceId, route: { ...route } });

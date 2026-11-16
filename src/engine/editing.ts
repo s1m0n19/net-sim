@@ -25,10 +25,11 @@ import { DEFAULT_VLAN } from "./model/vlans";
 
 // Le modifiche che riguardano solo i router stanno in router-editing.ts,
 // accendere e spegnere una porta in port-editing.ts, le VLAN degli switch
-// in vlan-editing.ts, le porte trunk in trunk-editing.ts; chi usa questo
-// file le trova anche qui.
+// in vlan-editing.ts, le porte trunk in trunk-editing.ts, le sottointerfacce
+// dei router in subinterface-editing.ts; chi usa questo file le trova anche qui.
 export * from "./port-editing";
 export * from "./router-editing";
+export * from "./subinterface-editing";
 export * from "./trunk-editing";
 export * from "./vlan-editing";
 
