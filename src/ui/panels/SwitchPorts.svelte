@@ -55,6 +55,10 @@
     port.mode === "trunk"
       ? `trunk · nativa ${port.nativeVlan} · VLAN ${allowedText(port)}`
       : `memorizzati per il trunk: nativa ${port.nativeVlan} · VLAN ${allowedText(port)}`;
+  // Il riepilogo in due parti: il testo fino a «VLAN », e gli elementi
+  // dell'elenco, che vanno a capo solo tra l'uno e l'altro.
+  const summaryHead = (port: SwitchPortView) => summaryOf(port).slice(0, summaryOf(port).lastIndexOf("VLAN ") + 5);
+  const summaryItems = (port: SwitchPortView) => summaryOf(port).slice(summaryHead(port).length).split(",");
   const detailsId = (port: SwitchPortView) => `trunk-${device.id}-${port.name}`.replace(/[^\w-]/g, "-");
 </script>
 
@@ -109,7 +113,9 @@
           onclick={() => (open[port.name] = !(open[port.name] ?? false))}
         >
           <span class="chevron" aria-hidden="true"><Chevron direction={open[port.name] ? "down" : "right"} /></span>
-          <span>{summaryOf(port)}</span>
+          <!-- Un elenco lungo va a capo dopo una virgola, mai dentro un numero
+               o un intervallo. -->
+          <span>{summaryHead(port)}{#each summaryItems(port) as item, index (index)}{#if index > 0},<wbr />{/if}<span class="whole">{item}</span>{/each}</span>
         </button>
         <!-- Chiusi restano nella pagina, nascosti: ciò che si stava
              scrivendo non si perde, come nelle schede delle interfacce. -->
@@ -241,8 +247,11 @@
     font-size: var(--text-small);
     font-weight: 600;
     text-align: left;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     cursor: pointer;
+  }
+  .whole {
+    white-space: nowrap;
   }
   .summary.kept {
     color: var(--muted);

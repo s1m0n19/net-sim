@@ -96,7 +96,9 @@
     {#if choice === "some"}
       {#if pendingSome}
         <p class="note">
-          {port.allowedVlans === "all" ? "Ancora tutte: togli le VLAN da non far passare." : "Ancora nessuna: scegli le VLAN da far passare."}
+          {port.allowedVlans === "all"
+            ? "Non è ancora cambiato nulla: passano tutte le VLAN. Togli la spunta a quelle da non far passare."
+            : "Non è ancora cambiato nulla: non passa nessuna VLAN. Spunta quelle da far passare."}
         </p>
       {/if}
       <ul class="boxes" aria-label="VLAN consentite sulla porta {port.name}">
@@ -206,15 +208,22 @@
     grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
     gap: 0 10px;
   }
-  /* Bersagli comodi anche con il dito: ogni scelta alta almeno 28 pixel. */
+  /* Bersagli comodi anche con il dito: ogni scelta alta almeno 28 pixel.
+     Un nome lungo va a capo tra le parole, o ai trattini, e la casella resta
+     accanto alla prima riga. */
   label {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
     min-height: 28px;
+    padding-top: 5px;
+    box-sizing: border-box;
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     cursor: pointer;
+  }
+  label > input {
+    margin-top: 2px;
   }
   input[type="radio"],
   input[type="checkbox"] {

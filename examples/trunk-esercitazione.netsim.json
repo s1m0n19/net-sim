@@ -1,0 +1,394 @@
+{
+  "format": "net-sim",
+  "version": 4,
+  "network": {
+    "devices": [
+      {
+        "id": "s1",
+        "kind": "switch",
+        "name": "SW1",
+        "position": {
+          "x": 260,
+          "y": 160
+        },
+        "ports": [
+          {
+            "name": "Fa0/1",
+            "mac": "02:00:00:00:01:01",
+            "vlan": 10
+          },
+          {
+            "name": "Fa0/2",
+            "mac": "02:00:00:00:01:02",
+            "vlan": 20
+          },
+          {
+            "name": "Fa0/3",
+            "mac": "02:00:00:00:01:03"
+          },
+          {
+            "name": "Fa0/4",
+            "mac": "02:00:00:00:01:04"
+          },
+          {
+            "name": "Fa0/5",
+            "mac": "02:00:00:00:01:05"
+          },
+          {
+            "name": "Fa0/6",
+            "mac": "02:00:00:00:01:06"
+          },
+          {
+            "name": "Fa0/7",
+            "mac": "02:00:00:00:01:07"
+          },
+          {
+            "name": "Fa0/8",
+            "mac": "02:00:00:00:01:08"
+          },
+          {
+            "name": "Fa0/9",
+            "mac": "02:00:00:00:01:09"
+          },
+          {
+            "name": "Fa0/10",
+            "mac": "02:00:00:00:01:10"
+          },
+          {
+            "name": "Fa0/11",
+            "mac": "02:00:00:00:01:11"
+          },
+          {
+            "name": "Fa0/12",
+            "mac": "02:00:00:00:01:12"
+          },
+          {
+            "name": "Fa0/13",
+            "mac": "02:00:00:00:01:13"
+          },
+          {
+            "name": "Fa0/14",
+            "mac": "02:00:00:00:01:14"
+          },
+          {
+            "name": "Fa0/15",
+            "mac": "02:00:00:00:01:15"
+          },
+          {
+            "name": "Fa0/16",
+            "mac": "02:00:00:00:01:16"
+          },
+          {
+            "name": "Fa0/17",
+            "mac": "02:00:00:00:01:17"
+          },
+          {
+            "name": "Fa0/18",
+            "mac": "02:00:00:00:01:18"
+          },
+          {
+            "name": "Fa0/19",
+            "mac": "02:00:00:00:01:19"
+          },
+          {
+            "name": "Fa0/20",
+            "mac": "02:00:00:00:01:20"
+          },
+          {
+            "name": "Fa0/21",
+            "mac": "02:00:00:00:01:21"
+          },
+          {
+            "name": "Fa0/22",
+            "mac": "02:00:00:00:01:22"
+          },
+          {
+            "name": "Fa0/23",
+            "mac": "02:00:00:00:01:23"
+          },
+          {
+            "name": "Fa0/24",
+            "mac": "02:00:00:00:01:24",
+            "mode": "trunk",
+            "allowedVlans": [
+              10,
+              20
+            ]
+          }
+        ],
+        "vlans": [
+          {
+            "id": 10,
+            "name": "STUDENTI"
+          },
+          {
+            "id": 20,
+            "name": "DOCENTI"
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "kind": "switch",
+        "name": "SW2",
+        "position": {
+          "x": 660,
+          "y": 160
+        },
+        "ports": [
+          {
+            "name": "Fa0/1",
+            "mac": "02:00:00:00:02:01",
+            "vlan": 20
+          },
+          {
+            "name": "Fa0/2",
+            "mac": "02:00:00:00:02:02",
+            "vlan": 20
+          },
+          {
+            "name": "Fa0/3",
+            "mac": "02:00:00:00:02:03"
+          },
+          {
+            "name": "Fa0/4",
+            "mac": "02:00:00:00:02:04"
+          },
+          {
+            "name": "Fa0/5",
+            "mac": "02:00:00:00:02:05"
+          },
+          {
+            "name": "Fa0/6",
+            "mac": "02:00:00:00:02:06"
+          },
+          {
+            "name": "Fa0/7",
+            "mac": "02:00:00:00:02:07"
+          },
+          {
+            "name": "Fa0/8",
+            "mac": "02:00:00:00:02:08"
+          },
+          {
+            "name": "Fa0/9",
+            "mac": "02:00:00:00:02:09"
+          },
+          {
+            "name": "Fa0/10",
+            "mac": "02:00:00:00:02:10"
+          },
+          {
+            "name": "Fa0/11",
+            "mac": "02:00:00:00:02:11"
+          },
+          {
+            "name": "Fa0/12",
+            "mac": "02:00:00:00:02:12"
+          },
+          {
+            "name": "Fa0/13",
+            "mac": "02:00:00:00:02:13"
+          },
+          {
+            "name": "Fa0/14",
+            "mac": "02:00:00:00:02:14"
+          },
+          {
+            "name": "Fa0/15",
+            "mac": "02:00:00:00:02:15"
+          },
+          {
+            "name": "Fa0/16",
+            "mac": "02:00:00:00:02:16"
+          },
+          {
+            "name": "Fa0/17",
+            "mac": "02:00:00:00:02:17"
+          },
+          {
+            "name": "Fa0/18",
+            "mac": "02:00:00:00:02:18"
+          },
+          {
+            "name": "Fa0/19",
+            "mac": "02:00:00:00:02:19"
+          },
+          {
+            "name": "Fa0/20",
+            "mac": "02:00:00:00:02:20"
+          },
+          {
+            "name": "Fa0/21",
+            "mac": "02:00:00:00:02:21"
+          },
+          {
+            "name": "Fa0/22",
+            "mac": "02:00:00:00:02:22"
+          },
+          {
+            "name": "Fa0/23",
+            "mac": "02:00:00:00:02:23"
+          },
+          {
+            "name": "Fa0/24",
+            "mac": "02:00:00:00:02:24",
+            "mode": "trunk",
+            "allowedVlans": [
+              10
+            ]
+          }
+        ],
+        "vlans": [
+          {
+            "id": 10,
+            "name": "STUDENTI"
+          },
+          {
+            "id": 20,
+            "name": "DOCENTI"
+          }
+        ]
+      },
+      {
+        "id": "d1",
+        "kind": "host",
+        "name": "PC1",
+        "position": {
+          "x": 160,
+          "y": 400
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:01"
+          }
+        ],
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d2",
+        "kind": "host",
+        "name": "PC2",
+        "position": {
+          "x": 360,
+          "y": 400
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:02"
+          }
+        ],
+        "ip": "192.168.1.11",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d3",
+        "kind": "host",
+        "name": "PC3",
+        "position": {
+          "x": 560,
+          "y": 400
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:03"
+          }
+        ],
+        "ip": "192.168.1.12",
+        "mask": "255.255.255.0",
+        "gateway": null
+      },
+      {
+        "id": "d4",
+        "kind": "host",
+        "name": "PC4",
+        "position": {
+          "x": 760,
+          "y": 400
+        },
+        "ports": [
+          {
+            "name": "Fa0",
+            "mac": "02:00:00:00:00:04"
+          }
+        ],
+        "ip": "192.168.1.13",
+        "mask": "255.255.255.0",
+        "gateway": null
+      }
+    ],
+    "links": [
+      {
+        "id": "l1",
+        "a": {
+          "deviceId": "d1",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/1"
+        }
+      },
+      {
+        "id": "l2",
+        "a": {
+          "deviceId": "d2",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s1",
+          "portName": "Fa0/2"
+        }
+      },
+      {
+        "id": "l3",
+        "a": {
+          "deviceId": "d3",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s2",
+          "portName": "Fa0/1"
+        }
+      },
+      {
+        "id": "l4",
+        "a": {
+          "deviceId": "d4",
+          "portName": "Fa0"
+        },
+        "b": {
+          "deviceId": "s2",
+          "portName": "Fa0/2"
+        }
+      },
+      {
+        "id": "l5",
+        "a": {
+          "deviceId": "s1",
+          "portName": "Fa0/24"
+        },
+        "b": {
+          "deviceId": "s2",
+          "portName": "Fa0/24"
+        }
+      }
+    ]
+  },
+  "annotations": [
+    {
+      "kind": "note",
+      "id": "a1",
+      "x": 150,
+      "y": -170,
+      "color": "blue",
+      "text": "Esercitazione. PC1 e PC3 (VLAN 10 STUDENTI) devono comunicare, come PC2 e PC4 (VLAN 20 DOCENTI); le due VLAN devono restare isolate. La rete ha due errori di configurazione: trovali e correggili.\nStrumenti: ping, show vlan brief, show interfaces trunk, show interfaces fa0/24 switchport, show mac address-table, show running-config, eventi e dettagli dei pacchetti."
+    }
+  ]
+}

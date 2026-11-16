@@ -101,7 +101,7 @@ test("lo studente configura un trunk tra due switch dal pannello, lo prova, guar
   // Su SW2, solo le VLAN 10 e 20: «Solo queste» parte da tutte, e si toglie la 1.
   const ports = section(page, "Porte");
   await ports.getByRole("radio", { name: "Solo queste" }).check();
-  await expect(ports.getByText("Ancora tutte: togli le VLAN da non far passare.")).toBeVisible();
+  await expect(ports.getByText("Non è ancora cambiato nulla: passano tutte le VLAN. Togli la spunta a quelle da non far passare.")).toBeVisible();
   await expect(trunkSummary(page)).toHaveText("trunk · nativa 99 · VLAN tutte"); // nulla è cambiato ancora
   await ports.getByRole("checkbox", { name: "1 · default" }).uncheck();
   await expect(trunkSummary(page)).toHaveText("trunk · nativa 99 · VLAN 10,20");
@@ -207,12 +207,28 @@ for (const size of [
     await portChoice(page, "Fa0/24").selectOption("trunk");
     await trunkSummary(page).click();
     await section(page, "Porte").getByRole("radio", { name: "Solo queste" }).check();
+    // Un elenco lungo: il riepilogo va a capo tra un numero e l'altro, mai
+    // dentro un numero o un intervallo (L2-2E).
+    await section(page, "Porte").getByRole("checkbox", { name: "1 · default" }).uncheck();
+    const add = sidePanel(page).locator('[data-field="allowed-add-s1-Fa0-24"]');
+    await add.fill("100-110,200,300,400,500,600,700,800,900");
+    await add.press("Enter");
+    await expectWholeItems(page);
     await expectFits(page);
 
     await page.getByRole("button", { name: "Presenta" }).click();
     await device(page, "SW1").click();
+    await expectWholeItems(page);
     await expectFits(page);
   });
+}
+
+// Ogni numero o intervallo del riepilogo sta su una riga sola.
+async function expectWholeItems(page: Page): Promise<void> {
+  const items = trunkSummary(page).locator(".whole");
+  await expect(items).toHaveCount(10); // 10, 100-110, 200, 300 … 900
+  const heights = await items.evaluateAll((spans) => spans.map((span) => span.getClientRects().length));
+  expect(heights.every((rects) => rects === 1)).toBe(true);
 }
 
 // Il pannello non scorre di lato, e l'elenco del modo, il riepilogo, il

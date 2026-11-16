@@ -62,7 +62,7 @@ net-sim/
 ├── CLAUDE.md                  regole di lavoro per Claude Code
 ├── wrangler.jsonc             come Cloudflare pubblica il sito e le anteprime (D-99)
 ├── docs/                      questa documentazione
-├── examples/                  reti di esempio: due-pc, lan-switch, anello-switch, due-lan-router, tre-reti-due-router, vlan-due-gruppi, vlan-esercitazione
+├── examples/                  reti di esempio: due-pc, lan-switch, anello-switch, due-lan-router, tre-reti-due-router, vlan-due-gruppi, vlan-esercitazione, trunk-due-switch, trunk-esercitazione (guida per il docente in docs/esercitazioni.md)
 ├── src/
 │   ├── main.ts                avvio della pagina
 │   ├── engine/                motore di simulazione, senza dipendenze
