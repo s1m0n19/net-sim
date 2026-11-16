@@ -7,7 +7,8 @@
 
 import { freePortsOf } from "../engine/editing";
 import { maskToPrefix, networkAddress } from "../engine/model/addresses";
-import { linkCarriesSignal, otherEndOf, type Network } from "../engine/model/network";
+import { linkAt, linkCarriesSignal, otherEndOf, type Network } from "../engine/model/network";
+import { ALL_VLANS, isAllowed } from "../engine/model/trunks";
 import { DEFAULT_VLAN, macEntries } from "../engine/model/vlans";
 import { routingTableOf } from "../engine/protocols/routing";
 import type { Simulator } from "../engine/simulator";
@@ -84,16 +85,29 @@ export function buildView(
           id: vlan.id,
           name: vlan.name,
           isDefault: vlan.id === DEFAULT_VLAN,
-          ports: device.ports.filter((port) => port.vlan === vlan.id).map((port) => port.name),
+          ports: device.ports.filter((port) => port.mode === "access" && port.vlan === vlan.id).map((port) => port.name),
+          trunks: device.ports
+            .filter((port) => port.mode === "trunk" && isAllowed(port.allowedVlans, vlan.id))
+            .map((port) => port.name),
         })),
         switchPorts: device.ports.map((port) => {
-          const other = otherEndOf(network, { deviceId: device.id, portName: port.name });
+          const here = { deviceId: device.id, portName: port.name };
+          const other = otherEndOf(network, here);
+          const cable = linkAt(network, here);
+          const nameOfVlan = (id: number) => device.vlans.find((vlan) => vlan.id === id)?.name ?? null;
           return {
             name: port.name,
             vlan: port.vlan,
-            vlanName: device.vlans.find((vlan) => vlan.id === port.vlan)?.name ?? null,
+            vlanName: nameOfVlan(port.vlan),
             enabled: port.enabled,
             linkedTo: other === null ? null : nameOf(network, other.deviceId),
+            signal: port.enabled && cable !== null && linkCarriesSignal(network, cable),
+            mode: port.mode,
+            nativeVlan: port.nativeVlan,
+            nativeName: nameOfVlan(port.nativeVlan),
+            allowedVlans: port.allowedVlans === ALL_VLANS ? ALL_VLANS : [...port.allowedVlans],
+            carriedVlans: device.vlans.map((vlan) => vlan.id).filter((id) => isAllowed(port.allowedVlans, id)),
+            trunkConfigKept: port.nativeVlan !== DEFAULT_VLAN || port.allowedVlans !== ALL_VLANS,
           };
         }),
       };

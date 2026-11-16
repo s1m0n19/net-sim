@@ -49,8 +49,8 @@ describe("ciò che il pannello mostra dello switch", () => {
     session.setPortVlan("s1", "Fa0/1", 10);
 
     expect(switchView().vlans).toEqual([
-      { id: 1, name: "default", isDefault: true, ports: ["Fa0/2", "Fa0/3", "Fa0/4", "Fa0/5", "Fa0/6"] },
-      { id: 10, name: "STUDENTI", isDefault: false, ports: ["Fa0/1"] },
+      { id: 1, name: "default", isDefault: true, ports: ["Fa0/2", "Fa0/3", "Fa0/4", "Fa0/5", "Fa0/6"], trunks: [] },
+      { id: 10, name: "STUDENTI", isDefault: false, ports: ["Fa0/1"], trunks: [] },
     ]);
   });
 
@@ -60,9 +60,11 @@ describe("ciò che il pannello mostra dello switch", () => {
     session.removeVlan("s1", 30);
 
     const ports = switchView().switchPorts;
-    expect(ports[0]).toEqual({ name: "Fa0/1", vlan: 1, vlanName: "default", enabled: true, linkedTo: "PC1" });
-    expect(ports[2]).toEqual({ name: "Fa0/3", vlan: 30, vlanName: null, enabled: true, linkedTo: "PC3" });
-    expect(ports[5]).toEqual({ name: "Fa0/6", vlan: 1, vlanName: "default", enabled: true, linkedTo: null });
+    // Una porta access senza nulla di trunk: nativa 1, tutte le VLAN.
+    const access = { mode: "access", nativeVlan: 1, nativeName: "default", allowedVlans: "all", carriedVlans: [1], trunkConfigKept: false };
+    expect(ports[0]).toEqual({ name: "Fa0/1", vlan: 1, vlanName: "default", enabled: true, linkedTo: "PC1", signal: true, ...access });
+    expect(ports[2]).toEqual({ name: "Fa0/3", vlan: 30, vlanName: null, enabled: true, linkedTo: "PC3", signal: true, ...access });
+    expect(ports[5]).toEqual({ name: "Fa0/6", vlan: 1, vlanName: "default", enabled: true, linkedTo: null, signal: false, ...access });
   });
 
   test("uno switch da 24 porte ha 24 porte, tutte nella VLAN 1", () => {

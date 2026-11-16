@@ -16,6 +16,13 @@
     <dd>{frame.dstMac}</dd>
     <dt>MAC sorgente</dt>
     <dd>{frame.srcMac}</dd>
+    <!-- Il tag 802.1Q, solo se il frame lo porta davvero su questo cavo: un
+         frame senza tag non ha la riga, anche se viaggia su un trunk (la
+         VLAN nativa). -->
+    {#if frame.vlanTag !== undefined}
+      <dt>Tag 802.1Q</dt>
+      <dd>VLAN {frame.vlanTag}</dd>
+    {/if}
     <dt>EtherType</dt>
     <dd>{frame.etherType}</dd>
   </dl>

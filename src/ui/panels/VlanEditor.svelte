@@ -34,6 +34,12 @@
     }
   }
 
+  // Le porte trunk che consentono la VLAN, a parte: non ci stanno, la
+  // lasciano passare.
+  function trunksText(trunks: string[]): string {
+    return trunks.length === 0 ? "" : ` · trunk: ${trunks.join(", ")}`;
+  }
+
   function portsText(ports: string[]): string {
     if (ports.length === 0) return "nessuna porta";
     const count = ports.length === 1 ? "1 porta" : `${ports.length} porte`;
@@ -61,7 +67,7 @@
           <svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true"><path d="M3 3L11 11M11 3L3 11" /></svg>
         </button>
       {/if}
-      <span class="ports">{portsText(vlan.ports)}</span>
+      <span class="ports">{portsText(vlan.ports)}{trunksText(vlan.trunks)}</span>
     </li>
   {/each}
 </ul>

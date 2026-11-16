@@ -13,8 +13,16 @@
   // Con 24 porte l'elenco intero è lungo: si vedono le porte che contano,
   // cioè quelle con un cavo o con una configurazione diversa da quella di
   // partenza, e un pulsante mostra anche le altre.
+  //
+  // Lo stesso elenco sceglie anche il modo (D-156): le VLAN sotto «Access»,
+  // e sotto «Trunk» la voce Trunk 802.1Q. Una porta trunk, o una porta
+  // access che conserva nativa e VLAN consentite, ha sotto una riga che le
+  // riassume e apre i dettagli (TrunkDetails), chiusi in partenza.
+  import { formatVlanList } from "../../engine/model/trunks";
+  import Chevron from "../theme/Chevron.svelte";
   import { session } from "../session.svelte";
   import type { DeviceView, SwitchPortView } from "../view";
+  import TrunkDetails from "./TrunkDetails.svelte";
 
   let { device }: { device: DeviceView } = $props();
 
@@ -22,21 +30,39 @@
   // e cambiando switch si riparte dalle sole porte che contano.
   let showAll = $state(false);
 
-  const matters = (port: SwitchPortView) => port.linkedTo !== null || port.vlan !== 1 || !port.enabled;
+  const matters = (port: SwitchPortView) =>
+    port.linkedTo !== null || port.vlan !== 1 || !port.enabled || port.mode === "trunk" || port.trunkConfigKept;
   const important = $derived(device.switchPorts.filter(matters));
   // Se nessuna porta conta, o contano tutte, non c'è nulla da nascondere.
   const canHide = $derived(important.length > 0 && important.length < device.switchPorts.length);
   const shown = $derived(showAll || !canHide ? device.switchPorts : important);
 
+  // Quali porte hanno i dettagli di trunk aperti: solo presentazione.
+  let open = $state<Record<string, boolean>>({});
+
+  // Una VLAN rende la porta access in quella VLAN (se era trunk, in un
+  // passo solo); Trunk la rende trunk. Nativa e consentite restano.
   function choose(port: SwitchPortView, event: Event) {
-    const vlan = Number((event.currentTarget as HTMLSelectElement).value);
-    if (vlan !== port.vlan) session.setPortVlan(device.id, port.name, vlan);
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value === "trunk") session.makeTrunk(device.id, port.name);
+    else session.makeAccess(device.id, port.name, Number(value));
   }
+
+  // Le VLAN consentite a parole: «tutte», «nessuna», o l'elenco compatto.
+  const allowedText = (port: SwitchPortView) =>
+    port.allowedVlans === "all" ? "tutte" : port.allowedVlans.length === 0 ? "nessuna" : formatVlanList(port.allowedVlans);
+  const summaryOf = (port: SwitchPortView) =>
+    port.mode === "trunk"
+      ? `trunk · nativa ${port.nativeVlan} · VLAN ${allowedText(port)}`
+      : `memorizzati per il trunk: nativa ${port.nativeVlan} · VLAN ${allowedText(port)}`;
+  const detailsId = (port: SwitchPortView) => `trunk-${device.id}-${port.name}`.replace(/[^\w-]/g, "-");
 </script>
 
 <ul class="ports" aria-label="Porte">
   {#each shown as port (port.name)}
-    {@const inactive = port.vlanName === null}
+    {@const trunk = port.mode === "trunk"}
+    {@const inactive = !trunk && port.vlanName === null}
+    {@const details = trunk || port.trunkConfigKept}
     <li class:off={!port.enabled}>
       <span class="name">
         <span class="mark" class:on={port.enabled} aria-hidden="true"></span>{port.name}<span class="sr-only">, {port.enabled ? "accesa" : "spenta"}</span>
@@ -46,13 +72,24 @@
            che altrimenti lo disegna basso: niente aspetto nativo, e una
            freccia disegnata a parte. -->
       <span class="choice">
-      <select aria-label="VLAN della porta {port.name}" onchange={(event) => choose(port, event)}>
-        {#if inactive}
-          <option value={port.vlan} selected>{port.vlan} · inattiva</option>
-        {/if}
-        {#each device.vlans as vlan (vlan.id)}
-          <option value={vlan.id} selected={vlan.id === port.vlan}>{vlan.id} · {vlan.name}</option>
-        {/each}
+      <!-- Il valore lo dice la rete, anche dopo Annulla o un comando della
+           CLI: per questo sta sull'elenco, non sulle singole voci. -->
+      <select
+        aria-label="VLAN della porta {port.name}, o trunk"
+        value={trunk ? "trunk" : String(port.vlan)}
+        onchange={(event) => choose(port, event)}
+      >
+        <optgroup label="Access">
+          {#if inactive}
+            <option value={String(port.vlan)}>{port.vlan} · inattiva</option>
+          {/if}
+          {#each device.vlans as vlan (vlan.id)}
+            <option value={String(vlan.id)}>{vlan.id} · {vlan.name}</option>
+          {/each}
+        </optgroup>
+        <optgroup label="Trunk">
+          <option value="trunk">Trunk 802.1Q</option>
+        </optgroup>
       </select>
       </span>
       {#if !port.enabled || inactive}
@@ -60,6 +97,25 @@
           {#if !port.enabled}<span>spenta</span>{/if}
           {#if inactive}<span>VLAN {port.vlan} · inattiva</span>{/if}
         </span>
+      {/if}
+      {#if details}
+        <!-- Il riepilogo è anche il pulsante che apre i dettagli: dice
+             a parole se la porta è trunk, o che cosa conserva. -->
+        <button
+          class="summary"
+          class:kept={!trunk}
+          aria-expanded={open[port.name] ?? false}
+          aria-controls={detailsId(port)}
+          onclick={() => (open[port.name] = !(open[port.name] ?? false))}
+        >
+          <span class="chevron" aria-hidden="true"><Chevron direction={open[port.name] ? "down" : "right"} /></span>
+          <span>{summaryOf(port)}</span>
+        </button>
+        <!-- Chiusi restano nella pagina, nascosti: ciò che si stava
+             scrivendo non si perde, come nelle schede delle interfacce. -->
+        <div class="details" id={detailsId(port)} hidden={!open[port.name]}>
+          <TrunkDetails deviceId={device.id} {port} vlans={device.vlans} />
+        </div>
       {/if}
     </li>
   {/each}
@@ -167,6 +223,44 @@
   .off .name {
     color: var(--muted);
   }
+  /* Il riepilogo del trunk, sotto il dispositivo collegato: testo, non un
+     pulsante vistoso; si apre con un clic o con Invio. */
+  .summary {
+    grid-column: 2 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 2px 4px 2px 0;
+    border: none;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: 600;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  .summary.kept {
+    color: var(--muted);
+    font-weight: normal;
+  }
+  .summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: var(--radius);
+  }
+  .chevron {
+    display: inline-flex;
+    padding-top: 2px;
+  }
+  .details {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
   /* Il testo del pulsante va a capo: in presentazione, ingrandito, il
      pannello è stretto. */
   .more {
@@ -181,7 +275,8 @@
     .ports {
       grid-template-columns: max-content minmax(0, 1fr);
     }
-    .choice {
+    .choice,
+    .summary {
       grid-column: 1 / -1;
     }
   }

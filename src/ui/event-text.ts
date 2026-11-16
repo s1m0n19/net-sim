@@ -20,6 +20,12 @@ export function describeFrame(frame: EthernetFrame): string {
   return `ICMP ${frame.payload.payload.type.replace("-", " ")}`;
 }
 
+// Il tag 802.1Q di un frame a parole, da aggiungere dopo la porta; niente
+// se il frame non ha il tag, nemmeno quando viaggia su un trunk.
+function tagText(frame: EthernetFrame): string {
+  return frame.vlanTag === undefined ? "" : ` con tag VLAN ${frame.vlanTag}`;
+}
+
 // Il nome di un dispositivo. L'elenco degli eventi parla anche di
 // dispositivi che nel frattempo sono stati tolti dalla rete: di quelli
 // resta solo l'identificativo.
@@ -111,11 +117,11 @@ export function describeTrace(network: Network, trace: Trace, index: number): Ev
   switch (trace.kind) {
     case "frame-sent": {
       const packet = detailsOf(trace.frameId, trace.frame, nameOf(network, trace.from.deviceId), nameOf(network, trace.to.deviceId));
-      return row(trace.from.deviceId, `invia ${packet.description} dalla porta ${trace.from.portName}, destinazione ${trace.frame.dstMac}`, { protocol: packet.protocol, packet });
+      return row(trace.from.deviceId, `invia ${packet.description} dalla porta ${trace.from.portName}${tagText(trace.frame)}, destinazione ${trace.frame.dstMac}`, { protocol: packet.protocol, packet });
     }
     case "frame-received": {
       const packet = detailsOf(trace.frameId, trace.frame, senderOf(trace.at), nameOf(network, trace.at.deviceId));
-      return row(trace.at.deviceId, `riceve ${packet.description} sulla porta ${trace.at.portName}`, { protocol: packet.protocol, packet });
+      return row(trace.at.deviceId, `riceve ${packet.description} sulla porta ${trace.at.portName}${tagText(trace.frame)}`, { protocol: packet.protocol, packet });
     }
     case "frame-dropped": {
       const packet = detailsOf(trace.frameId, trace.frame, senderOf(trace.at), nameOf(network, trace.at.deviceId));

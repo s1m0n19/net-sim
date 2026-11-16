@@ -46,8 +46,11 @@ export interface VlanView {
   name: string;
   // La VLAN 1: c'è sempre, non si rinomina e non si elimina.
   isDefault: boolean;
-  // Le porte che ci stanno, nell'ordine dello switch.
+  // Le porte access che ci stanno, nell'ordine dello switch, come in
+  // `show vlan brief`: le porte trunk no.
   ports: string[];
+  // Le porte trunk che la consentono, nell'ordine dello switch.
+  trunks: string[];
 }
 
 // Una porta di uno switch, come la mostra il pannello.
@@ -61,6 +64,22 @@ export interface SwitchPortView {
   enabled: boolean;
   // Il nome del dispositivo all'altro capo del cavo; null se non c'è un cavo.
   linkedTo: string | null;
+  // C'è segnale sul cavo: la porta è accesa, il cavo attaccato, l'altro
+  // capo acceso.
+  signal: boolean;
+  // Access, in una VLAN, o trunk (D-146).
+  mode: "access" | "trunk";
+  // La VLAN nativa, e il suo nome; null se lo switch non ha quella VLAN.
+  nativeVlan: number;
+  nativeName: string | null;
+  // Le VLAN consentite: "all", oppure un elenco, anche vuoto.
+  allowedVlans: "all" | number[];
+  // Le VLAN dello switch che il trunk consente: quelle che porterebbe.
+  // Calcolate qui, mai memorizzate.
+  carriedVlans: number[];
+  // Nativa o consentite diverse da quelle di partenza: su una porta access
+  // sono memorizzate e non hanno effetto finché non torna trunk.
+  trunkConfigKept: boolean;
 }
 
 // Una riga della tabella di routing di un router.

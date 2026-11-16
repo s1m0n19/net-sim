@@ -1,7 +1,8 @@
 // Configurare un router o uno switch dal pannello laterale: accendere e
 // spegnere le interfacce, impostarne gli indirizzi, aggiungere e togliere
 // le rotte statiche; creare, rinominare ed eliminare le VLAN di uno switch,
-// e scegliere la VLAN di ogni porta.
+// scegliere la VLAN di ogni porta, renderla trunk e sceglierne nativa e
+// VLAN consentite.
 //
 // È il settimo strato di `session`. Come gli altri metodi che modificano la
 // rete, anche questi passano da `attempt`, che registra la modifica nella
@@ -16,9 +17,15 @@ import {
   removeRoute,
   removeVlan,
   renameVlan,
+  setAllowedVlans,
+  setNativeVlan,
+  setPortMode,
   setPortVlan,
+  type Action,
 } from "../engine/actions";
-import { MAX_VLAN_ID, defaultVlanName, vlanExists } from "../engine/model/vlans";
+import type { SwitchPort } from "../engine/model/network";
+import { ALL_VLANS, normalizeVlanList, parseVlanList, sameAllowedVlans, type AllowedVlans } from "../engine/model/trunks";
+import { DEFAULT_VLAN, MAX_VLAN_ID, defaultVlanName, vlanExists } from "../engine/model/vlans";
 import { networksOverlap, prefixToMask } from "../engine/model/addresses";
 import { defaultMaskFor } from "../engine/model/ip-config";
 import { checkInterfaceAddress, checkRoute, nextHopIsOwnAddress } from "../engine/model/router-config";
@@ -199,6 +206,98 @@ export class SessionRouter extends SessionAnnotations {
   setPortVlan(deviceId: string, portName: string, id: number): void {
     const problem = this.attempt(setPortVlan(deviceId, portName, id));
     if (problem !== null) this.notice = problem;
+  }
+
+  /**
+   * Rende access una porta di uno switch, nella VLAN data: se era trunk,
+   * cambiare modo e VLAN è una modifica sola, che si annulla con un passo.
+   * Nativa e VLAN consentite restano memorizzate.
+   *
+   * @param deviceId - lo switch
+   * @param portName - la porta
+   * @param id - la VLAN access, anche se lo switch non ce l'ha
+   */
+  makeAccess(deviceId: string, portName: string, id: number): void {
+    const port = this.switchPortOf(deviceId, portName);
+    if (port === undefined) return;
+    const actions: Action[] = [];
+    if (port.mode !== "access") actions.push(setPortMode(deviceId, portName, "access"));
+    if (port.vlan !== id) actions.push(setPortVlan(deviceId, portName, id));
+    const problem = this.attemptTogether(actions);
+    if (problem !== null) this.notice = problem;
+  }
+
+  /**
+   * Rende trunk una porta di uno switch. VLAN access, nativa e VLAN
+   * consentite restano come sono, e tornano a valere.
+   */
+  makeTrunk(deviceId: string, portName: string): void {
+    if (this.switchPortOf(deviceId, portName)?.mode === "trunk") return;
+    const problem = this.attempt(setPortMode(deviceId, portName, "trunk"));
+    if (problem !== null) this.notice = problem;
+  }
+
+  /**
+   * Sceglie la VLAN nativa di una porta di uno switch, scritta come numero.
+   * Vuoto torna alla 1, come `no switchport trunk native vlan`. Un numero
+   * che lo switch non ha va bene: la VLAN non si crea.
+   *
+   * @returns null se la nativa è stata accettata (o era già quella),
+   *   altrimenti il motivo del rifiuto, da scrivere sotto il campo
+   */
+  setNativeVlan(deviceId: string, portName: string, text: string): string | null {
+    const typed = text.trim();
+    if (typed !== "" && !/^\d+$/.test(typed)) return `Scrivi il numero della VLAN, da 1 a ${MAX_VLAN_ID}.`;
+    const id = typed === "" ? DEFAULT_VLAN : Number(typed);
+    if (this.switchPortOf(deviceId, portName)?.nativeVlan === id) return null;
+    return this.attempt(setNativeVlan(deviceId, portName, id));
+  }
+
+  /**
+   * Sceglie le VLAN consentite di una porta di uno switch: "all", oppure un
+   * elenco, anche vuoto. Ogni scelta è un passo della cronologia; una che
+   * non cambia nulla non ne aggiunge.
+   *
+   * @returns null se è andata bene, altrimenti il motivo del rifiuto
+   */
+  setAllowedVlans(deviceId: string, portName: string, vlans: AllowedVlans): string | null {
+    const port = this.switchPortOf(deviceId, portName);
+    if (port === undefined) return null;
+    let wanted: AllowedVlans;
+    try {
+      wanted = vlans === ALL_VLANS ? ALL_VLANS : normalizeVlanList(vlans);
+    } catch (thrown) {
+      return thrown instanceof Error ? thrown.message : String(thrown);
+    }
+    if (sameAllowedVlans(port.allowedVlans, wanted)) return null;
+    return this.attempt(setAllowedVlans(deviceId, portName, wanted));
+  }
+
+  /**
+   * Aggiunge alle VLAN consentite di una porta quelle scritte, come
+   * `switchport trunk allowed vlan add`: numeri e intervalli, anche di VLAN
+   * che lo switch non ha ("30,40-45"). Con tutte le VLAN consentite non
+   * cambia nulla.
+   *
+   * @returns null se è andata bene, altrimenti il motivo del rifiuto, da
+   *   scrivere sotto il campo
+   */
+  addAllowedVlans(deviceId: string, portName: string, text: string): string | null {
+    const port = this.switchPortOf(deviceId, portName);
+    if (port === undefined || port.allowedVlans === ALL_VLANS) return null;
+    let added: readonly number[];
+    try {
+      added = parseVlanList(text.trim());
+    } catch (thrown) {
+      return thrown instanceof Error ? thrown.message : String(thrown);
+    }
+    return this.setAllowedVlans(deviceId, portName, [...port.allowedVlans, ...added]);
+  }
+
+  // Una porta di uno switch, com'è nella rete adesso.
+  private switchPortOf(deviceId: string, portName: string): SwitchPort | undefined {
+    const sw = this.simulator?.network.devices.find((device) => device.id === deviceId);
+    return sw?.kind === "switch" ? sw.ports.find((port) => port.name === portName) : undefined;
   }
 
   private interfaceOf(deviceId: string, portName: string) {

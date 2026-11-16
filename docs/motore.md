@@ -168,7 +168,7 @@ Un tag uguale alla nativa si accetta come qualsiasi altro. Un frame rifiutato no
 
 Nulla corregge una configurazione sbagliata: native diverse ai due capi di un trunk fondono le due VLAN, un access collegato a un trunk passa solo la nativa, e nessun avviso lo spiega (D-149, SIM-8). PC, server e router scartano i frame con tag (`tagged-frame`), prima di guardarci dentro: un PC collegato a un trunk sente solo la nativa. Nel router è il punto in cui arriveranno le sottointerfacce (L3-1).
 
-Nel file i trunk ci sono dalla versione 4 (D-150, [formato-file.md](formato-file.md)), con la VLAN nelle righe MAC delle porte trunk. Dalla CLI degli switch si configurano da L2-2C ([cli.md](cli.md)); il pannello non li configura ancora (L2-2D).
+Nel file i trunk ci sono dalla versione 4 (D-150, [formato-file.md](formato-file.md)), con la VLAN nelle righe MAC delle porte trunk. Dalla CLI degli switch si configurano da L2-2C ([cli.md](cli.md)); dal pannello dello switch da L2-2D ([interfaccia.md](interfaccia.md)).
 
 ### Tabelle di partenza (`tables.ts`)
 
@@ -568,7 +568,7 @@ Il motore segue il comportamento normale dei protocolli e tralascia il resto. Qu
 | `traceroute` di un router | Tre sonde per salto, in UDP | Una sonda ICMP per salto, come `tracert` |
 | Tabella ARP del router | Una voce è legata all'interfaccia su cui è stata imparata | Una tabella sola per tutto il router |
 | Spanning tree | Elimina i cicli tra switch | Assente: un ciclo produce una tempesta di broadcast, che il simulatore interrompe sospendendosi. Lo spanning tree è previsto in una tappa futura (requisito DEV-11). Con le VLAN la tempesta resta nella VLAN del ciclo |
-| Trunk e tag 802.1Q | Un cavo tra switch porta più VLAN, distinte dal tag | Porte trunk con nativa e VLAN consentite; il tag è solo il numero della VLAN, senza TPID, priorità né doppi tag. Nel motore, nel file e nella CLI; il pannello in L2-2D |
+| Trunk e tag 802.1Q | Un cavo tra switch porta più VLAN, distinte dal tag | Porte trunk con nativa e VLAN consentite; il tag è solo il numero della VLAN, senza TPID, priorità né doppi tag. Nel motore, nel file, nella CLI e nel pannello |
 | Native diverse ai due capi di un trunk | CDP lo segnala, e le due VLAN si uniscono | Le due VLAN si uniscono, senza avvisi |
 | Frame con tag su una porta access | Scartato | Scartato, anche se il tag è la VLAN della porta |
 | VLAN diverse ai due capi di un cavo tra switch | CDP lo segnala, e le due VLAN si uniscono | Le due VLAN si uniscono, senza avvisi |
@@ -731,7 +731,7 @@ La rete di esempio `examples/anello-switch.netsim.json` ha tre switch ad anello 
 Non ancora nel codice:
 
 - **Scheda di un host spenta** (ciò che resta del requisito SIM-7).
-- **Spanning tree** (DEV-11) e gli altri protocolli: trunk 802.1Q nel pannello (L2-2D), routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
+- **Spanning tree** (DEV-11) e gli altri protocolli: routing tra VLAN, TCP e UDP, DHCP, DNS, e così via, nelle tappe indicate in [SPEC.md](../SPEC.md).
 
 ## Come si aggiunge un protocollo
 
